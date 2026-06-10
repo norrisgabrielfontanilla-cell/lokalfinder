@@ -416,7 +416,10 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <div class="sec" style="padding-top:16px"><span class="sec-t">Vendors Open Now</span><span class="sec-a">See all</span></div>
     <div class="hscrl" id="vendor-cards"></div>
     <div class="dvdr"></div>
-    <div class="sec"><span class="sec-t">Today's Picks 🔥</span></div>
+    <div style="padding:16px 16px 4px">
+      <div style="font-size:22px;font-weight:800;color:var(--t1);line-height:1.2">🔥 Today's Picks</div>
+      <div style="font-size:13px;color:var(--t2);margin-top:4px">Fresh from your neighbors. Order now before it sells out! 👀</div>
+    </div>
     <div id="todays-picks"></div>
     <div style="height:80px"></div>
   </div>
@@ -588,24 +591,16 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <a id="s-vendor-call" href="#" style="background:var(--g);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none">📞 Call</a>
     </div>
 
-    <!-- Chat box -->
-    <div style="background:var(--w);border-radius:var(--rs);border:1px solid var(--bd);margin-bottom:14px;overflow:hidden">
-      <div style="padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;font-weight:700;color:var(--t1)">💬 Chat with Vendor</div>
-        <div style="font-size:10px;color:var(--t3)" id="chat-status">Live</div>
-      </div>
-      <div id="chat-messages" style="height:180px;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px">
-        <div style="text-align:center;font-size:11px;color:var(--t3);padding:20px 0">No messages yet. Say hi to your vendor!</div>
-      </div>
-      <div style="padding:8px 10px;border-top:.5px solid var(--bd);display:flex;gap:8px;align-items:center">
-        <input id="chat-input" type="text" placeholder="Type a message…" maxlength="200"
-          style="flex:1;padding:8px 12px;border-radius:20px;border:1.5px solid var(--bdm);font-size:13px;font-family:var(--ff);outline:none"
-          onkeydown="if(event.key==='Enter')sendChatMsg('customer')">
-        <button onclick="sendChatMsg('customer')" style="width:36px;height:36px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>
-      </div>
-    </div>
+    <!-- Chat button -->
+    <button onclick="openChatPanel('customer')" style="width:100%;padding:13px;background:var(--s2);border:1.5px solid var(--bdm);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--t1);cursor:pointer;font-family:var(--ff);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
+      <span>💬</span><span>Chat with Vendor</span><span id="chat-unread-badge" style="display:none;background:var(--g);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px">0</span>
+    </button>
 
     <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
+    <div id="cancel-order-wrap" style="margin-top:10px;display:none">
+      <button onclick="customerCancelOrder()" style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--red);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--ff)">Cancel Order</button>
+      <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px">You can only cancel while waiting for acceptance</div>
+    </div>
     <div style="height:20px"></div>
   </div>
 </div>
@@ -813,11 +808,9 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
         <div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">No orders yet today</div>
       </div>
       <div id="ve-cash-note" style="margin:0 16px;display:none" class="warn-note"></div>
-      <div class="sec" style="margin-top:4px"><span class="sec-t">Payout History</span></div>
-      <div style="margin:0 16px;background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);overflow:hidden">
-        <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)"><span>Yesterday</span><span style="font-weight:700;color:var(--g)">₱1,240 ✓ Sent</span></div>
-        <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)"><span>2 days ago</span><span style="font-weight:700;color:var(--g)">₱980 ✓ Sent</span></div>
-        <div style="display:flex;justify-content:space-between;padding:9px 14px;font-size:12px;color:var(--t2)"><span>3 days ago</span><span style="font-weight:700;color:var(--g)">₱1,560 ✓ Sent</span></div>
+      <div class="sec" style="margin-top:4px"><span class="sec-t">Earnings History</span></div>
+      <div id="ve-history" style="margin:0 16px;background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);overflow:hidden">
+        <div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">No history yet</div>
       </div>
     </div>
     <div style="height:80px"></div>
@@ -1120,6 +1113,25 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 </div>
 
 <div id="toast"></div>
+
+<!-- ── FLOATING CHAT PANEL ── -->
+<div id="chat-panel" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--w);border-top:1px solid var(--bd);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.12);z-index:9999;flex-direction:column;max-height:75vh">
+  <div style="padding:12px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;gap:10px">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0"></div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;color:var(--t1)" id="chatpanel-title">Chat</div>
+      <div style="font-size:11px;color:var(--t3)" id="chatpanel-sub">Live</div>
+    </div>
+    <button onclick="closeChatPanel()" style="background:var(--s2);border:none;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+  </div>
+  <div id="chatpanel-messages" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;min-height:200px;max-height:50vh"></div>
+  <div style="padding:10px 12px;border-top:.5px solid var(--bd);display:flex;gap:8px;align-items:center">
+    <input id="chatpanel-input" type="text" placeholder="Type a message…" maxlength="200"
+      style="flex:1;padding:9px 14px;border-radius:20px;border:1.5px solid var(--bdm);font-size:14px;font-family:var(--ff);outline:none"
+      onkeydown="if(event.key==='Enter')sendChatFromPanel()">
+    <button onclick="sendChatFromPanel()" style="width:38px;height:38px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>
+  </div>
+</div>
 </div><!-- /app -->
 
 <script>
@@ -1245,6 +1257,9 @@ window.addEventListener('DOMContentLoaded',()=>{
 // ═══ CUSTOMER HOME ═══
 function buildVendorCards(){
   const el=document.getElementById('vendor-cards');
+  const vh=Object.values(VENDORS).map(v=>v.id+v.active+v.name+(v.logo?'1':'0')).join(',');
+  if(vh===_vendorHash&&el.children.length>0) return;
+  _vendorHash=vh;
   el.innerHTML=Object.values(VENDORS).filter(v=>v.active).map(v=>{
     const hours=v.openTime&&v.closeTime?fmtTime(v.openTime)+'–'+fmtTime(v.closeTime):'';
     const subLine=v.sub.split('·').slice(0,2).join('·').trim()+(hours?' · '+hours:'');
@@ -1264,23 +1279,55 @@ function buildVendorCards(){
   }).join('');
 }
 
-function buildTodaysPicks(){
-  const el=document.getElementById('todays-picks');
+let _picksBuilt = false;
+let _picksHash = '';
+let _vendorHash = '';
+function buildTodaysPicks(force=false){
+  const container=document.getElementById('todays-picks');
   const picks=[];
   Object.entries(MENU).forEach(([vid,items])=>{
     const v=VENDORS[vid];
     if(!v||!v.active) return;
-    items.slice(0,1).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name}));
+    items.filter(i=>i.avail).slice(0,2).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}));
   });
-  el.innerHTML=picks.map(item=>`
-    <div class="mrow" onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">
-      <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
-        ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
-      </div>
-      <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.vendorName}</div></div>
-      <div class="mrow-price">₱${item.price}</div>
-      <button class="add-btn" onclick="event.stopPropagation();quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>
-    </div>`).join('');
+
+  // Only rebuild if menu actually changed — prevents flicker on every sync
+  const hash = picks.map(p=>p.id+p.price+p.avail).join(',');
+  if(!force && _picksBuilt && hash===_picksHash) return;
+  _picksHash = hash;
+  _picksBuilt = true;
+
+  if(!picks.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--t3)">No items available right now</div>';
+    return;
+  }
+
+  // Shuffle only once (on first build)
+  const shuffled = _picksBuilt && hash===_picksHash ? picks : picks.sort(()=>Math.random()-.5);
+
+  container.innerHTML=`
+    <div style="padding:4px 16px 16px;display:flex;flex-direction:column">
+      ${shuffled.map(item=>`
+        <div onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})"
+          style="background:var(--w);border-bottom:.5px solid var(--bd);cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 0">
+          <!-- Square thumbnail -->
+          <div style="width:80px;height:80px;border-radius:12px;background:var(--s2);overflow:hidden;flex-shrink:0">
+            ${item.photo
+              ? `<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover">`
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px">${item.emoji}</div>`
+            }
+          </div>
+          <!-- Info -->
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--t1);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">${item.vendorEmoji} ${item.vendorName}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--g);margin-top:3px">₱${item.price}</div>
+          </div>
+          <!-- Add button -->
+          <button onclick="event.stopPropagation();quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})"
+            style="width:34px;height:34px;background:var(--g);color:#fff;border:none;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+        </div>`).join('')}
+    </div>`;
 }
 
 function filterCat(el,cat){
@@ -1653,70 +1700,149 @@ function confirmClearOrderHistory(){
 
 
 // ── CHAT ENGINE ──────────────────────────────────────
-// Messages stored per order: orders[].messages = [{from,text,ts}]
+let chatCache = {};
+let activeChatOid = null;
+let activeChatRole = null; // 'customer' or 'vendor'
+let chatUnreadCount = 0;
+let lastKnownMsgCount = {};
 
-function sendChatMsg(from, orderId){
+function openChatPanel(role, orderId){
   const oid = orderId || lastPlacedOrderId;
-  if(!oid) return;
-  const inputId = from==='vendor' ? `vchat-inp-${oid}` : 'chat-input';
-  const input = el(inputId); if(!input) return;
+  if(!oid){ showToast('⚠️ No active order'); return; }
+  activeChatOid = oid;
+  activeChatRole = role;
+
+  const o = orders.find(x=>x.id===oid);
+  const v = o ? VENDORS[o.vendorId] : null;
+
+  // Set panel title
+  el('chatpanel-title').textContent = role==='customer'
+    ? '💬 '+(v?.name||'Vendor')
+    : '💬 Unit '+(o?.unit||'')+(o?' · '+o.name:'');
+  el('chatpanel-sub').textContent = o?.id||'';
+
+  // Show panel
+  const panel = el('chat-panel');
+  panel.style.display='flex';
+  setTimeout(()=>{ el('chatpanel-input').focus(); }, 100);
+
+  // Reset unread
+  chatUnreadCount = 0;
+  lastKnownMsgCount[oid] = (chatCache[oid]||[]).length;
+  const badge = el('chat-unread-badge');
+  if(badge) badge.style.display='none';
+  const vbadge = el('vbadge-'+oid);
+  if(vbadge) vbadge.style.display='none';
+
+  renderChatPanel();
+  syncChats();
+}
+
+function closeChatPanel(){
+  el('chat-panel').style.display='none';
+  activeChatOid = null;
+  activeChatRole = null;
+}
+
+async function sendChatFromPanel(){
+  const oid = activeChatOid;
+  const role = activeChatRole;
+  if(!oid||!role) return;
+  const input = el('chatpanel-input');
   const text = input.value.trim(); if(!text) return;
   input.value='';
 
-  const o = orders.find(x=>x.id===oid); if(!o) return;
-  if(!o.messages) o.messages=[];
-  o.messages.push({from, text, ts: Date.now()});
-  pushOrders();
-  renderChat(oid);
+  if(!chatCache[oid]) chatCache[oid]=[];
+  const msg = {from:role, text, ts:Date.now()};
+  chatCache[oid].push(msg);
+  lastKnownMsgCount[oid] = chatCache[oid].length;
+  renderChatPanel();
+
+  try{
+    await fbSet(ROOM_KEY+'/chats/'+oid.replace(/[^a-zA-Z0-9]/g,'_'), chatCache[oid]);
+  }catch(e){
+    showToast('⚠️ Message may not have sent — check connection');
+    console.error('chat push:', e);
+  }
 }
 
-function renderChat(oid){
-  const o = orders.find(x=>x.id===oid); if(!o) return;
-  const msgs = o.messages||[];
+function renderChatPanel(){
+  const oid = activeChatOid; if(!oid) return;
+  const msgs = chatCache[oid]||[];
+  const role = activeChatRole;
+  const o = orders.find(x=>x.id===oid);
+  const box = el('chatpanel-messages'); if(!box) return;
 
-  // Customer chat box
-  if(lastPlacedOrderId===oid){
-    const box = el('chat-messages');
-    if(box){
-      if(!msgs.length){
-        box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--t3);padding:20px 0">No messages yet. Say hi to your vendor!</div>';
-      } else {
-        box.innerHTML=msgs.map(m=>`
-          <div style="display:flex;justify-content:${m.from==='customer'?'flex-end':'flex-start'}">
-            <div style="max-width:75%;background:${m.from==='customer'?'var(--g)':'var(--s2)'};color:${m.from==='customer'?'#fff':'var(--t1)'};border-radius:${m.from==='customer'?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:8px 12px;font-size:13px;line-height:1.4">
-              ${m.from==='vendor'?'<div style="font-size:10px;font-weight:700;margin-bottom:3px;opacity:.6">Vendor</div>':''}
-              ${esc(m.text)}
-            </div>
-          </div>`).join('');
-        box.scrollTop=box.scrollHeight;
+  if(!msgs.length){
+    box.innerHTML='<div style="text-align:center;font-size:12px;color:var(--t3);padding:30px 0;line-height:1.6">No messages yet.<br>Start the conversation!</div>';
+    return;
+  }
+
+  box.innerHTML = msgs.map(m=>{
+    const isMe = m.from===role;
+    const safe = m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const label = !isMe ? (m.from==='vendor' ? (o?VENDORS[o.vendorId]?.name||'Vendor':'Vendor') : 'Unit '+(o?.unit||'')) : '';
+    return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};margin-bottom:2px">
+      <div style="max-width:78%;background:${isMe?'var(--g)':'var(--s2)'};color:${isMe?'#fff':'var(--t1)'};border-radius:${isMe?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:9px 13px;font-size:14px;line-height:1.4">
+        ${label?`<div style="font-size:10px;font-weight:700;margin-bottom:3px;opacity:.65">${label}</div>`:''}
+        ${safe}
+      </div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function syncChats(){
+  const orderIds = new Set();
+  if(lastPlacedOrderId) orderIds.add(lastPlacedOrderId);
+  if(activeVendorId){
+    orders.filter(o=>o.vendorId===activeVendorId&&!['delivered','declined'].includes(o.status))
+      .forEach(o=>orderIds.add(o.id));
+  }
+
+  for(const oid of orderIds){
+    try{
+      const key = oid.replace(/[^a-zA-Z0-9]/g,'_');
+      const msgs = await fbGet(ROOM_KEY+'/chats/'+key);
+      if(msgs && Array.isArray(msgs) && msgs.length){
+        const prevCount = (chatCache[oid]||[]).length;
+        chatCache[oid] = msgs;
+
+        // If panel is open for this order, re-render
+        if(activeChatOid===oid){
+          renderChatPanel();
+          lastKnownMsgCount[oid] = msgs.length;
+        } else if(msgs.length > prevCount){
+          // New message arrived — show badge and ping
+          const newMsgs = msgs.slice(prevCount);
+          // Determine who we are for this order
+          const myRole = lastPlacedOrderId===oid ? 'customer' : (activeVendorId ? 'vendor' : null);
+          const hasIncoming = myRole && newMsgs.some(m=>m.from!==myRole);
+          if(hasIncoming){
+            playPing();
+            // Show unread badge on customer button
+            if(lastPlacedOrderId===oid){
+              const unread = msgs.length - (lastKnownMsgCount[oid]||0);
+              const badge = el('chat-unread-badge');
+              if(badge){ badge.style.display='inline'; badge.textContent=unread; }
+            }
+            // Show dot on vendor chat button
+            if(activeVendorId){
+              const vbadge = el('vbadge-'+oid);
+              if(vbadge) vbadge.style.display='inline';
+            }
+          }
+        }
       }
-    }
-  }
-
-  // Vendor chat box
-  const vbox = el(`vchat-msgs-${oid}`);
-  if(vbox){
-    if(!msgs.length){
-      vbox.innerHTML='<div style="font-size:11px;color:var(--t3)">No messages yet</div>';
-    } else {
-      vbox.innerHTML=msgs.map(m=>`
-        <div style="display:flex;justify-content:${m.from==='vendor'?'flex-end':'flex-start'}">
-          <div style="max-width:80%;background:${m.from==='vendor'?'var(--g)':'var(--s2)'};color:${m.from==='vendor'?'#fff':'var(--t1)'};border-radius:12px;padding:6px 10px;font-size:12px">
-            ${m.from==='customer'?`<div style="font-size:10px;font-weight:700;margin-bottom:2px;opacity:.6">Unit ${o.unit}</div>`:''}
-            ${esc(m.text)}
-          </div>
-        </div>`).join('');
-      vbox.scrollTop=vbox.scrollHeight;
-    }
+    }catch(e){ /* no chat yet */ }
   }
 }
 
-function loadAllChats(){
-  // Re-render chats for all currently visible order cards
-  orders.forEach(o=>{ if(o.messages&&o.messages.length) renderChat(o.id); });
-  // Also reload customer chat if on success page
-  if(lastPlacedOrderId) renderChat(lastPlacedOrderId);
-}
+function loadAllChats(){ /* no-op — panel-based chat loads on open */ }
+
+
+
+
 
 // Vendor contact number
 function saveVendorContact(){
@@ -1748,6 +1874,20 @@ function loadCustomerVendorContact(oid){
   }
 }
 
+
+async function customerCancelOrder(){
+  if(!lastPlacedOrderId) return;
+  const o = orders.find(x=>x.id===lastPlacedOrderId);
+  if(!o){ showToast('⚠️ Order not found'); return; }
+  if(o.status!=='new'){ showToast('⚠️ Cannot cancel — vendor already accepted'); return; }
+  if(!confirm('Cancel this order?')) return;
+  o.status='declined';
+  o.updatedAt=Date.now();
+  await pushOrders();
+  updateTrackerFromStatus();
+  showToast('✅ Order cancelled');
+  el('cancel-order-wrap').style.display='none';
+}
 
 function goVendorTab(tab){
   currentVendorTab=tab;
@@ -1870,14 +2010,10 @@ function renderVendorOrders(){
 function renderOrderCard(o, vendorView=false){
   const actions=vendorView?getVendorActions(o):'';
   const chatHtml=`
-    <div style="border-top:.5px solid var(--bd);padding:10px 14px">
-      <div id="vchat-msgs-${o.id}" style="max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input id="vchat-inp-${o.id}" type="text" placeholder="Message customer…" maxlength="200"
-          style="flex:1;padding:7px 10px;border-radius:20px;border:1.5px solid var(--bdm);font-size:12px;font-family:var(--ff);outline:none"
-          onkeydown="if(event.key==='Enter')sendChatMsg('vendor','${o.id}')">
-        <button onclick="sendChatMsg('vendor','${o.id}')" style="width:32px;height:32px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:14px;cursor:pointer;flex-shrink:0">↑</button>
-      </div>
+    <div style="border-top:.5px solid var(--bd);padding:8px 14px">
+      <button onclick="openChatPanel('vendor','${o.id}')" style="width:100%;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:12px;font-weight:700;color:var(--t1);cursor:pointer;font-family:var(--ff);display:flex;align-items:center;justify-content:center;gap:6px">
+        💬 Chat with Customer<span id="vbadge-${o.id}" style="display:none;background:var(--g);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px">●</span>
+      </button>
     </div>`;
   return `<div class="ocard" data-oid="${o.id}" data-status="${o.status}" style="${o.status==='done'||o.status==='delivered'?'opacity:.65':''}">
     <div class="ocard-hd">
@@ -2061,26 +2197,68 @@ function addMenuItemConfirm(){
 
 function renderVendorEarnings(){
   if(!activeVendorId) return;
-  const myOrders=orders.filter(o=>o.vendorId===activeVendorId);
-  const gross=myOrders.reduce((s,o)=>s+o.subtotal,0);
-  const fees=myOrders.length*SERVICE_FEE;
-  const cashOrders=myOrders.filter(o=>o.method==='cash');
-  const cashOwed=cashOrders.length*SERVICE_FEE;
+  const allOrders = orders.filter(o=>o.vendorId===activeVendorId&&o.status!=='declined');
+
+  function phDate(o){ return new Date(o.timestamp).toLocaleDateString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric'}); }
+  function phDateKey(o){ return new Date(o.timestamp).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}); }
+  function todayKey(){ return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}); }
+
+  const today = todayKey();
+  const todayOrders = allOrders.filter(o=>phDateKey(o)===today);
+  const gross = todayOrders.reduce((s,o)=>s+o.subtotal,0);
+  const fees = todayOrders.length * SERVICE_FEE;
+  const cashOwed = todayOrders.filter(o=>o.method==='cash').length * SERVICE_FEE;
+
   el('ve-payout').textContent='₱'+gross;
-  el('ve-sub').textContent=myOrders.length+' order'+(myOrders.length!==1?'s':'')+' today';
+  el('ve-sub').textContent=todayOrders.length+' order'+(todayOrders.length!==1?'s':'')+' today';
   el('ve-gross').textContent='₱'+gross;
   el('ve-fees').textContent='−₱'+fees;
-  el('ve-net').textContent='₱'+gross;
+  el('ve-net').textContent='₱'+(gross-fees);
   el('ve-cash-owed').textContent='₱'+cashOwed;
+
   const logEl=el('ve-order-log');
-  logEl.innerHTML=myOrders.length?myOrders.map(o=>`
-    <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)">
-      <span>${o.id} · ${o.items[0].name}${o.items.length>1?' +more':''}</span>
-      <span style="font-weight:700">₱${o.subtotal} <span style="font-size:10px;color:var(--t3);font-weight:400">(${o.method})</span></span>
-    </div>`).join(''):'<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">No orders yet today</div>';
+  if(todayOrders.length){
+    logEl.innerHTML=todayOrders.slice().reverse().map(o=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--bd)">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--t1)">${o.id} · Unit ${o.unit}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:1px">${o.items[0].name}${o.items.length>1?' +'+(o.items.length-1)+' more':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:var(--g)">₱${o.subtotal}</div>
+          <div style="font-size:10px;color:var(--t3)">${o.method==='gcash'?'GCash':'Cash'}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    logEl.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">No orders today yet</div>';
+  }
+
   const note=el('ve-cash-note');
-  if(cashOwed>0){note.style.display='block';note.innerHTML=`<b>Cash settlement:</b> You collected ₱${cashOwed} in service fees from cash orders. Transfer to LokalFinder GCash <b>0917 123 4567</b> by 8PM tonight.`;}
+  if(cashOwed>0){note.style.display='block';note.innerHTML=`<b>Cash settlement:</b> You collected ₱${cashOwed} in platform fees from cash orders. Please transfer to admin by 8PM.`;}
   else note.style.display='none';
+
+  // Real earnings history grouped by day
+  const byDay = {};
+  allOrders.forEach(o=>{
+    const key = phDateKey(o);
+    if(!byDay[key]) byDay[key]={date:phDate(o),total:0,count:0};
+    byDay[key].total += o.subtotal;
+    byDay[key].count++;
+  });
+  const histEl = el('ve-history');
+  const days = Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!days.length){
+    histEl.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">Earnings history will appear here after your first order</div>';
+  } else {
+    histEl.innerHTML = days.map(([key,d],i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;${i<days.length-1?'border-bottom:.5px solid var(--bd)':''}">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">${key===today?'Today':d.date}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:1px">${d.count} order${d.count!==1?'s':''}</div>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--g)">₱${d.total.toLocaleString()}</div>
+      </div>`).join('');
+  }
 }
 
 // ═══ ADMIN ═══
@@ -2128,6 +2306,7 @@ function saveAdminSettings(){
 function loadAdminSettingsForm(){
   const email = localStorage.getItem('lf-adminEmail')||'admin@lokalfinder.ph';
   if(el('settings-email')) el('settings-email').value = email;
+  applyHeroStats(true);
 }
 
 function goAdminTab(tab){
@@ -2147,18 +2326,22 @@ function saveHeroStats(){
   const uc=el('admin-user-display').value.trim()||'0';
   heroStats={vendorCount:vc, userCount:uc};
   try{ localStorage.setItem('lf-heroStats', JSON.stringify(heroStats)); }catch(e){}
-  applyHeroStats();
+  applyHeroStats(true);
   showToast('✅ Front page stats updated!');
 }
-function applyHeroStats(){
+function applyHeroStats(updateInputs=false){
   const vc = heroStats.vendorCount || String(Object.values(VENDORS).filter(v=>v.active).length);
   const uc = heroStats.userCount || '0';
+  // Always update the front page display
   if(el('hero-vendor-count')) el('hero-vendor-count').textContent=vc;
   if(el('hero-user-count')) el('hero-user-count').textContent=uc;
-  if(el('admin-vendor-display')) el('admin-vendor-display').value=vc;
-  if(el('admin-user-display')) el('admin-user-display').value=uc;
-  if(el('admin-vendor-preview')) el('admin-vendor-preview').textContent=vc;
-  if(el('admin-user-preview')) el('admin-user-preview').textContent=uc;
+  // Only update inputs and previews when explicitly requested (on load or save)
+  if(updateInputs){
+    if(el('admin-vendor-display')) el('admin-vendor-display').value=vc;
+    if(el('admin-user-display')) el('admin-user-display').value=uc;
+    if(el('admin-vendor-preview')) el('admin-vendor-preview').textContent=vc;
+    if(el('admin-user-preview')) el('admin-user-preview').textContent=uc;
+  }
 }
 
 function updateAdminStats(){
@@ -2501,6 +2684,10 @@ function updateTrackerFromStatus(){
   const o=orders.find(x=>x.id===lastPlacedOrderId);
   if(!o) return;
 
+  // Show/hide cancel button
+  const cancelWrap = el('cancel-order-wrap');
+  if(cancelWrap) cancelWrap.style.display = o.status==='new' ? 'block' : 'none';
+
   const cfg=STATUS_CONFIG[o.status]||STATUS_CONFIG.new;
   const step=cfg.step;
 
@@ -2593,8 +2780,10 @@ let myOrderIds = [];
 let lastSyncTime = 0;
 let syncPausedUntil = 0;
 
+let _oidCounter = 0;
 function genOrderId(){
-  return '#LF-'+Date.now().toString(36).toUpperCase().slice(-5)+Math.floor(Math.random()*1296).toString(36).toUpperCase().padStart(2,'0');
+  _oidCounter++;
+  return '#LF-'+Date.now().toString(36).toUpperCase().slice(-5)+_oidCounter.toString(36).toUpperCase().padStart(2,'0')+Math.floor(Math.random()*36).toString(36).toUpperCase();
 }
 
 function saveLocal(){
@@ -2673,6 +2862,7 @@ function applyData(d){
   updateTrackerFromStatus();
   loadAllChats();
   if(lastPlacedOrderId) loadCustomerVendorContact(lastPlacedOrderId);
+  syncChats();
   refreshVisible();
 }
 
@@ -2735,7 +2925,7 @@ function refreshVisible(){
 (async function boot(){
   loadLocal();
   loadHeroStats();
-  applyHeroStats();
+  applyHeroStats(true);
   registerServiceWorker();
   showToast('🔄 Connecting…');
   try{
@@ -2754,7 +2944,7 @@ function refreshVisible(){
     showToast('⚠️ Running offline — check internet');
   }
   setInterval(syncFromCloud, 5000);
-  // Check store schedules every minute
+  setInterval(syncChats, 3000);
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
 })();
