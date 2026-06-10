@@ -577,6 +577,34 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <b>📍 Deliver to:</b> <span id="s-unit">Unit 12B</span><br>
       <b>💰 Total paid:</b> <span id="s-total">₱108</span>
     </div>
+
+    <!-- Vendor contact -->
+    <div id="s-vendor-contact" style="background:var(--s2);border-radius:var(--rs);border:1px solid var(--bdm);padding:12px 14px;margin-bottom:14px;display:none;align-items:center;gap:10px">
+      <span style="font-size:22px" id="s-vendor-emoji">🏪</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)" id="s-vendor-name">Vendor</div>
+        <div style="font-size:11px;color:var(--t3)" id="s-vendor-contact-num">No contact number set</div>
+      </div>
+      <a id="s-vendor-call" href="#" style="background:var(--g);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none">📞 Call</a>
+    </div>
+
+    <!-- Chat box -->
+    <div style="background:var(--w);border-radius:var(--rs);border:1px solid var(--bd);margin-bottom:14px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">💬 Chat with Vendor</div>
+        <div style="font-size:10px;color:var(--t3)" id="chat-status">Live</div>
+      </div>
+      <div id="chat-messages" style="height:180px;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="text-align:center;font-size:11px;color:var(--t3);padding:20px 0">No messages yet. Say hi to your vendor!</div>
+      </div>
+      <div style="padding:8px 10px;border-top:.5px solid var(--bd);display:flex;gap:8px;align-items:center">
+        <input id="chat-input" type="text" placeholder="Type a message…" maxlength="200"
+          style="flex:1;padding:8px 12px;border-radius:20px;border:1.5px solid var(--bdm);font-size:13px;font-family:var(--ff);outline:none"
+          onkeydown="if(event.key==='Enter')sendChatMsg('customer')">
+        <button onclick="sendChatMsg('customer')" style="width:36px;height:36px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>
+      </div>
+    </div>
+
     <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
     <div style="height:20px"></div>
   </div>
@@ -674,6 +702,14 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
         </div>
       </div>
       <div id="v-hours-note" style="font-size:10px;color:rgba(255,255,255,.5);margin-top:7px;text-align:center"></div>
+      <!-- Contact number -->
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.4px">📞 CONTACT</div>
+        <input type="tel" id="v-contact-input" placeholder="e.g. 09171234567" maxlength="15"
+          style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:600;font-family:var(--ff)"
+          onchange="saveVendorContact()">
+        <button onclick="saveVendorContact()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
+      </div>
     </div>
   </div>
   <div class="scrl">
@@ -890,6 +926,14 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
   <div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
     <div style="font-size:17px;font-weight:700;color:#fff">All Orders</div>
     <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Every order across all vendors</div>
+  </div>
+  <!-- Filter tabs -->
+  <div style="display:flex;gap:6px;padding:10px 14px;overflow-x:auto;background:#0F4A32;border-bottom:1px solid rgba(255,255,255,.1)">
+    <div id="aof-all" onclick="filterAdminOrders('all',this)" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.9);color:#0F4A32;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">All</div>
+    <div id="aof-followup" onclick="filterAdminOrders('followup',this)" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🚨 Follow-up</div>
+    <div id="aof-new" onclick="filterAdminOrders('new',this)" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">New</div>
+    <div id="aof-active" onclick="filterAdminOrders('active',this)" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Active</div>
+    <div id="aof-done" onclick="filterAdminOrders('done',this)" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Done</div>
   </div>
   <div class="scrl" id="a-all-orders-list"><div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Orders from all vendors appear here in real time.</div></div></div>
   <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
@@ -1400,10 +1444,13 @@ function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   lastPlacedOrderId=order.id;
   myOrderIds.push(order.id);
   pendingOid=null;
+  saveLocal();
   updateAdminStats();
   updateVendorDash(order.vendorId);
   renderOrderHistory();
   goPage('p-csuccess');
+  loadCustomerVendorContact(order.id);
+  renderChat(order.id);
   if(true){  // JSONBin sync
     pushOrders();
     saveMyOrders();
@@ -1577,6 +1624,103 @@ function confirmClearOrderHistory(){
 }
 
 
+// ── CHAT ENGINE ──────────────────────────────────────
+// Messages stored per order: orders[].messages = [{from,text,ts}]
+
+function sendChatMsg(from, orderId){
+  const oid = orderId || lastPlacedOrderId;
+  if(!oid) return;
+  const inputId = from==='vendor' ? `vchat-inp-${oid}` : 'chat-input';
+  const input = el(inputId); if(!input) return;
+  const text = input.value.trim(); if(!text) return;
+  input.value='';
+
+  const o = orders.find(x=>x.id===oid); if(!o) return;
+  if(!o.messages) o.messages=[];
+  o.messages.push({from, text, ts: Date.now()});
+  pushOrders();
+  renderChat(oid);
+}
+
+function renderChat(oid){
+  const o = orders.find(x=>x.id===oid); if(!o) return;
+  const msgs = o.messages||[];
+
+  // Customer chat box
+  if(lastPlacedOrderId===oid){
+    const box = el('chat-messages');
+    if(box){
+      if(!msgs.length){
+        box.innerHTML='<div style="text-align:center;font-size:11px;color:var(--t3);padding:20px 0">No messages yet. Say hi to your vendor!</div>';
+      } else {
+        box.innerHTML=msgs.map(m=>`
+          <div style="display:flex;justify-content:${m.from==='customer'?'flex-end':'flex-start'}">
+            <div style="max-width:75%;background:${m.from==='customer'?'var(--g)':'var(--s2)'};color:${m.from==='customer'?'#fff':'var(--t1)'};border-radius:${m.from==='customer'?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:8px 12px;font-size:13px;line-height:1.4">
+              ${m.from==='vendor'?'<div style="font-size:10px;font-weight:700;margin-bottom:3px;opacity:.6">Vendor</div>':''}
+              ${esc(m.text)}
+            </div>
+          </div>`).join('');
+        box.scrollTop=box.scrollHeight;
+      }
+    }
+  }
+
+  // Vendor chat box
+  const vbox = el(`vchat-msgs-${oid}`);
+  if(vbox){
+    if(!msgs.length){
+      vbox.innerHTML='<div style="font-size:11px;color:var(--t3)">No messages yet</div>';
+    } else {
+      vbox.innerHTML=msgs.map(m=>`
+        <div style="display:flex;justify-content:${m.from==='vendor'?'flex-end':'flex-start'}">
+          <div style="max-width:80%;background:${m.from==='vendor'?'var(--g)':'var(--s2)'};color:${m.from==='vendor'?'#fff':'var(--t1)'};border-radius:12px;padding:6px 10px;font-size:12px">
+            ${m.from==='customer'?`<div style="font-size:10px;font-weight:700;margin-bottom:2px;opacity:.6">Unit ${o.unit}</div>`:''}
+            ${esc(m.text)}
+          </div>
+        </div>`).join('');
+      vbox.scrollTop=vbox.scrollHeight;
+    }
+  }
+}
+
+function loadAllChats(){
+  // Re-render chats for all currently visible order cards
+  orders.forEach(o=>{ if(o.messages&&o.messages.length) renderChat(o.id); });
+  // Also reload customer chat if on success page
+  if(lastPlacedOrderId) renderChat(lastPlacedOrderId);
+}
+
+// Vendor contact number
+function saveVendorContact(){
+  if(!activeVendorId) return;
+  const num = el('v-contact-input').value.trim();
+  VENDORS[activeVendorId].contact=num;
+  pushState();
+  showToast('✅ Contact number saved!');
+}
+
+function loadCustomerVendorContact(oid){
+  const o = orders.find(x=>x.id===oid); if(!o) return;
+  const v = VENDORS[o.vendorId]; if(!v) return;
+  const box = el('s-vendor-contact');
+  if(box){
+    box.style.display='flex';
+    el('s-vendor-emoji').textContent=v.emoji||'🏪';
+    el('s-vendor-name').textContent=v.name;
+    const contactEl = el('s-vendor-contact-num');
+    const callEl = el('s-vendor-call');
+    if(v.contact){
+      contactEl.textContent='📞 '+v.contact;
+      callEl.href='tel:'+v.contact;
+      callEl.style.display='block';
+    } else {
+      contactEl.textContent='No contact number set';
+      callEl.style.display='none';
+    }
+  }
+}
+
+
 function goVendorTab(tab){
   currentVendorTab=tab;
   const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
@@ -1642,6 +1786,7 @@ function updateStoreStatusUI(){
   // Load saved hours into inputs
   if(v.openTime && el('v-open-time')) el('v-open-time').value=v.openTime;
   if(v.closeTime && el('v-close-time')) el('v-close-time').value=v.closeTime;
+  if(v.contact && el('v-contact-input')) el('v-contact-input').value=v.contact;
   // Show hours note
   const note=el('v-hours-note');
   if(note){
@@ -1696,6 +1841,16 @@ function renderVendorOrders(){
 
 function renderOrderCard(o, vendorView=false){
   const actions=vendorView?getVendorActions(o):'';
+  const chatHtml=`
+    <div style="border-top:.5px solid var(--bd);padding:10px 14px">
+      <div id="vchat-msgs-${o.id}" style="max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="vchat-inp-${o.id}" type="text" placeholder="Message customer…" maxlength="200"
+          style="flex:1;padding:7px 10px;border-radius:20px;border:1.5px solid var(--bdm);font-size:12px;font-family:var(--ff);outline:none"
+          onkeydown="if(event.key==='Enter')sendChatMsg('vendor','${o.id}')">
+        <button onclick="sendChatMsg('vendor','${o.id}')" style="width:32px;height:32px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:14px;cursor:pointer;flex-shrink:0">↑</button>
+      </div>
+    </div>`;
   return `<div class="ocard" data-oid="${o.id}" data-status="${o.status}" style="${o.status==='done'||o.status==='delivered'?'opacity:.65':''}">
     <div class="ocard-hd">
       <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)} · Unit ${o.unit}${vendorView?' · '+o.name:''}</div></div>
@@ -1709,6 +1864,7 @@ function renderOrderCard(o, vendorView=false){
       <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'📱 GCash ✓':'💵 Cash'}</span>
     </div>
     ${actions?`<div class="ocard-acts">${actions}</div>`:''}
+    ${vendorView?chatHtml:''}
   </div>`;
 }
 
@@ -1980,27 +2136,71 @@ function renderAdminOrdersPreview(){
     </div>`).join('');
 }
 
+let adminOrderFilter = 'all';
+
+function filterAdminOrders(type, btn){
+  adminOrderFilter = type;
+  document.querySelectorAll('[id^="aof-"]').forEach(b=>{
+    b.style.background='rgba(255,255,255,.15)'; b.style.color='#fff';
+  });
+  if(btn){ btn.style.background='rgba(255,255,255,.9)'; btn.style.color='#0F4A32'; }
+  renderAdminOrders();
+}
+
+function isFollowUp(o){
+  const age = (Date.now() - new Date(o.timestamp).getTime()) / 60000;
+  if(o.status==='new' && age > 5) return true;
+  if(['accepted','preparing'].includes(o.status) && age > 20) return true;
+  return false;
+}
+
 function renderAdminOrders(){
   const el2=el('a-all-orders-list');
   if(!el2) return;
-  if(!orders.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">All orders from all vendors appear here.</div></div>';return;}
-  el2.innerHTML='<div style="height:4px"></div>'+orders.slice().reverse().map(o=>`
-    <div class="ocard" style="margin:0 16px 10px">
+
+  let filtered = orders.slice().reverse();
+  if(adminOrderFilter==='followup') filtered = filtered.filter(o=>isFollowUp(o));
+  else if(adminOrderFilter==='new') filtered = filtered.filter(o=>o.status==='new');
+  else if(adminOrderFilter==='active') filtered = filtered.filter(o=>['accepted','preparing','ready'].includes(o.status));
+  else if(adminOrderFilter==='done') filtered = filtered.filter(o=>['delivered','declined'].includes(o.status));
+
+  const followUpCount = orders.filter(o=>isFollowUp(o)).length;
+  const fuTab = el('aof-followup');
+  if(fuTab) fuTab.textContent = followUpCount > 0 ? `🚨 Follow-up (${followUpCount})` : '🚨 Follow-up';
+
+  if(!filtered.length){
+    const isEmpty = adminOrderFilter==='followup';
+    el2.innerHTML=`<div class="empty"><div class="empty-ico">${isEmpty?'✅':'📋'}</div><div class="empty-ttl">${isEmpty?'No follow-ups needed!':'No orders'}</div><div class="empty-sub">${isEmpty?'All orders are being handled on time.':'Orders from all vendors appear here.'}</div></div>`;
+    return;
+  }
+
+  el2.innerHTML='<div style="height:4px"></div>'+filtered.map(o=>{
+    const followUp = isFollowUp(o);
+    const v = VENDORS[o.vendorId];
+    const contact = v?.contact;
+    return `
+    <div class="ocard" style="margin:0 16px 10px;${followUp?'border:1.5px solid #ef4444;':''}">
+      ${followUp?`<div style="background:#fef2f2;padding:7px 14px;font-size:11px;font-weight:700;color:#ef4444;border-bottom:1px solid #fecaca">🚨 Needs follow-up — ${o.status==='new'?'Not accepted yet':'Order may be stuck'} · ${timeSince(o.timestamp)}</div>`:''}
       <div class="ocard-hd">
-        <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)} · ${VENDORS[o.vendorId]?.name||'Unknown'} · Unit ${o.unit}</div></div>
+        <div>
+          <div class="ocard-id">${o.id}</div>
+          <div class="ocard-tm">${timeSince(o.timestamp)} · ${v?.name||'Unknown'} · Unit ${o.unit} · ${o.name}</div>
+        </div>
         <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
       </div>
-      <div class="ocard-bd">${o.items.map(i=>`<div class="oitem">${i.emoji} ${i.name} × ${i.qty}</div>`).join('')}</div>
+      <div class="ocard-bd">${o.items.map(i=>`<div class="oitem">${i.emoji} ${i.name} x ${i.qty}</div>`).join('')}</div>
       <div class="ocard-ft">
         <div><div class="ocard-total">₱${o.total}</div></div>
         <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'GCash ✓':'Cash'}</span>
       </div>
-      <div class="ocard-acts">
+      <div class="ocard-acts" style="flex-wrap:wrap;gap:6px">
         <button class="oact s" onclick="adminUpdateStatus('${o.id}','${nextStatus(o.status)}')" ${['delivered','declined'].includes(o.status)?'disabled style="opacity:.4;cursor:default"':''}>
           ${nextStatusLabel(o.status)}
         </button>
+        ${followUp&&contact?`<a href="tel:${contact}" style="padding:6px 12px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">📞 Call Vendor</a>`:''}
       </div>
-    </div>`).join('')+'<div style="height:80px"></div>';
+    </div>`;
+  }).join('')+'<div style="height:80px"></div>';
 }
 
 function adminUpdateStatus(oid,status){
@@ -2079,21 +2279,30 @@ function addVendorConfirm(){
   if(!name||!pin){showToast('⚠️ Fill in store name and PIN');return;}
   if(pin.length!==4){showToast('⚠️ PIN must be exactly 4 digits');return;}
   const id='v'+Date.now();
-  VENDORS[id]={id,name,emoji,sub:loc+' · '+cat,bg:'#F5F5F5',rating:'⭐ New',min:'₱50',cats:['food'],active:true};
+  VENDORS[id]={id,name,emoji,sub:loc+' · '+cat,bg:'#F5F5F5',rating:'⭐ New',min:50,cats:['food'],active:true,gcash};
   MENU[id]=[];
   VENDOR_PINS_PLAIN[id]=pin;
-  pushState();
-  // Add to vendor login select
-  const sel=el('v-sel');
-  const opt=document.createElement('option');
-  opt.value=id; opt.textContent=name;
-  sel.appendChild(opt);
+
+  // Push each piece separately to Firebase to ensure it lands
+  Promise.all([
+    fbSet(ROOM_KEY+'/vendors/'+id, VENDORS[id]),
+    fbSet(ROOM_KEY+'/menu/'+id, []),
+    fbSet(ROOM_KEY+'/pins/'+id, pin)
+  ]).then(()=>{
+    showToast('✅ '+name+' added & synced!');
+  }).catch(()=>{
+    showToast('✅ '+name+' added locally — will sync shortly');
+    pushState(); // fallback
+  });
+
+  // Update UI immediately
+  rebuildVendorSelect();
   closeModal('modal-addvendor');
   ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash'].forEach(id2=>el(id2).value='');
   renderAdminVendors();
   buildVendorCards();
+  buildTodaysPicks();
   updateAdminStats();
-  showToast('✅ '+name+' added! PIN: '+pin);
 }
 
 // ═══ MODALS ═══
@@ -2332,10 +2541,16 @@ function genOrderId(){
 }
 
 function saveLocal(){
-  try{ localStorage.setItem('lf-myOrders', JSON.stringify(myOrderIds.slice(-100))); }catch(e){}
+  try{
+    localStorage.setItem('lf-myOrders', JSON.stringify(myOrderIds.slice(-100)));
+    if(lastPlacedOrderId) localStorage.setItem('lf-lastOrder', lastPlacedOrderId);
+  }catch(e){}
 }
 function loadLocal(){
-  try{ myOrderIds=JSON.parse(localStorage.getItem('lf-myOrders')||'[]'); }catch(e){}
+  try{
+    myOrderIds=JSON.parse(localStorage.getItem('lf-myOrders')||'[]');
+    lastPlacedOrderId=localStorage.getItem('lf-lastOrder')||null;
+  }catch(e){}
 }
 
 async function fbGet(path){
@@ -2399,6 +2614,8 @@ function applyData(d){
   buildTodaysPicks();
   checkVendorNewOrders();
   updateTrackerFromStatus();
+  loadAllChats();
+  if(lastPlacedOrderId) loadCustomerVendorContact(lastPlacedOrderId);
   refreshVisible();
 }
 
@@ -2415,12 +2632,10 @@ async function pushOrders(){
 
 async function pushState(){
   try{
-    await fbPatch(ROOM_KEY, {
-      vendors: VENDORS,
-      menu: MENU,
-      pins: VENDOR_PINS_PLAIN,
-      rev: Date.now()
-    });
+    await fbSet(ROOM_KEY+'/vendors', VENDORS);
+    await fbSet(ROOM_KEY+'/menu', MENU);
+    await fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN);
+    await fbSet(ROOM_KEY+'/rev', Date.now());
   }catch(e){ console.error('pushState:', e); }
 }
 
