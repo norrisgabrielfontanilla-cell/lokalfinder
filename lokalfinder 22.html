@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>LokalFinder — GRASS Residences</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@1,600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root{
+  --g:#1A6B4A;--gm:#2D9B6F;--gl:#E8F5EE;--gd:#0F4A32;
+  --acc:#F4A623;--acl:#FEF3DC;
+  --red:#E24B4A;--rl:#FEF0F0;
+  --blu:#2563EB;--bll:#EFF6FF;
+  --w:#fff;--s2:#F5F7F5;--s3:#ECEEE9;
+  --t1:#111A14;--t2:#4A5550;--t3:#9AA49E;
+  --bd:rgba(0,0,0,.08);--bdm:rgba(0,0,0,.13);
+  --sh:0 2px 12px rgba(0,0,0,.07);
+  --shm:0 4px 20px rgba(0,0,0,.10);
+  --shl:0 8px 32px rgba(0,0,0,.13);
+  --r:14px;--rs:10px;--rx:8px;
+  --ff:'Plus Jakarta Sans',system-ui,sans-serif;
+  --ffd:'Fraunces',serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:0}
+
+/* ═══ SHELL ═══ */
+#app{width:100%;max-width:430px;min-height:100vh;background:var(--s2);position:relative;overflow:hidden;display:flex;flex-direction:column}
+@media(min-width:500px){
+  body{padding:20px;align-items:center}
+  #app{min-height:870px;max-height:870px;border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 0 0 1.5px rgba(255,255,255,.1)}
+}
+
+/* ═══ PAGES ═══ */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;position:absolute;inset:0}
+.page.on{display:flex;position:relative}
+.scrl{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.scrl::-webkit-scrollbar{display:none}
+
+/* ═══ NOTCH ═══ */
+.notch{height:50px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 22px 10px;font-size:12px;font-weight:700;flex-shrink:0;background:var(--w)}
+.ni{display:flex;gap:4px;align-items:center}
+
+/* ═══ TOPBAR ═══ */
+.topbar{background:var(--w);border-bottom:.5px solid var(--bd);padding:13px 18px;flex-shrink:0}
+
+/* ═══ BOTTOM NAV ═══ */
+.bnav{background:var(--w);border-top:.5px solid var(--bd);display:flex;padding:8px 0 max(18px,env(safe-area-inset-bottom));flex-shrink:0}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 0;position:relative;user-select:none}
+.bni svg{width:22px;height:22px;stroke:var(--t3);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+.bni span{font-size:10px;font-weight:600;color:var(--t3);transition:color .15s}
+.bni.on svg{stroke:var(--g)}
+.bni.on span{color:var(--g)}
+.bni-dot{position:absolute;top:2px;right:50%;transform:translateX(10px);width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--w)}
+.bni-num{position:absolute;top:0;right:50%;transform:translateX(10px);background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--w)}
+
+/* ═══ TOGGLE ═══ */
+.tog{position:relative;width:50px;height:27px;flex-shrink:0;cursor:pointer}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-t{position:absolute;inset:0;background:var(--s3);border-radius:14px;transition:background .25s;border:.5px solid var(--bdm)}
+.tog input:checked+.tog-t{background:var(--g);border-color:var(--g)}
+.tog-k{position:absolute;top:3px;left:3px;width:21px;height:21px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2);pointer-events:none}
+.tog input:checked~.tog-k{transform:translateX(23px)}
+
+/* ═══ BADGES ═══ */
+.bdg{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px}
+.bdg.open{background:var(--gl);color:var(--gd)}
+.bdg.busy{background:var(--acl);color:#7a5000}
+.bdg.closed{background:var(--s3);color:var(--t3)}
+.bdg.new{background:var(--bll);color:var(--blu)}
+.bdg.prep{background:var(--acl);color:#7a5000}
+.bdg.ready{background:var(--gl);color:var(--gd)}
+.bdg.done{background:var(--s3);color:var(--t3)}
+.bdg.paid{background:#DCFCE7;color:#166534}
+.bdg.cash{background:#FEF9C3;color:#854d0e}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--w);border-radius:var(--r);border:.5px solid var(--bd)}
+.card-sm{background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd)}
+.hscrl{display:flex;gap:12px;padding:0 16px 16px;overflow-x:auto}
+.hscrl::-webkit-scrollbar{display:none}
+
+/* ═══ VENDOR CARD ═══ */
+.vc{min-width:162px;background:var(--w);border-radius:var(--r);border:.5px solid var(--bd);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .12s}
+.vc:active{transform:scale(.97)}
+.vc-img{height:102px;display:flex;align-items:center;justify-content:center;font-size:42px;position:relative}
+.vc-fav{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.88);border:none;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);transition:color .15s}
+.vc-fav.on{color:var(--red)}
+.vc-body{padding:10px 12px 12px}
+.vc-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.vc-sub{font-size:11px;color:var(--t3);margin-bottom:6px}
+.vc-foot{display:flex;align-items:center;justify-content:space-between}
+.vc-price{font-size:11px;font-weight:700;color:var(--g)}
+.vc-rating{font-size:11px;font-weight:600;color:var(--t2)}
+
+/* ═══ MENU ROW ═══ */
+.mrow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--bd);background:var(--w);cursor:pointer;transition:background .1s}
+.mrow:active{background:var(--s2)}
+.mrow:last-child{border-bottom:none}
+.mrow-ico{width:46px;height:46px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.mrow-info{flex:1}
+.mrow-name{font-size:13px;font-weight:700;color:var(--t1)}
+.mrow-desc{font-size:11px;color:var(--t3);margin-top:1px;line-height:1.4}
+.mrow-price{font-size:14px;font-weight:700;color:var(--g);flex-shrink:0}
+.add-btn{width:30px;height:30px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-family:var(--ff);line-height:1;transition:transform .12s}
+.add-btn:active{transform:scale(.88)}
+
+/* ═══ ORDER CARD ═══ */
+.ocard{background:var(--w);border-radius:var(--r);border:.5px solid var(--bd);margin:0 16px 10px;overflow:hidden}
+.ocard-hd{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--bd)}
+.ocard-id{font-size:13px;font-weight:700;color:var(--t1)}
+.ocard-tm{font-size:11px;color:var(--t3);margin-top:1px}
+.ocard-bd{padding:10px 14px}
+.oitem{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);margin-bottom:4px}
+.oitem:last-child{margin-bottom:0}
+.ocard-ft{display:flex;justify-content:space-between;align-items:center;padding:9px 14px 10px;border-top:.5px solid var(--bd)}
+.ocard-total{font-size:14px;font-weight:700;color:var(--g)}
+.ocard-cut{font-size:11px;color:var(--t3);margin-top:1px}
+.ocard-acts{display:flex;gap:8px;padding:9px 14px;border-top:.5px solid var(--bd)}
+.oact{flex:1;padding:10px;border-radius:8px;border:none;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.oact:active{opacity:.8}
+.oact.p{background:var(--g);color:#fff}
+.oact.a{background:var(--acc);color:#fff}
+.oact.s{background:var(--s2);color:var(--t1);border:1px solid var(--bdm)}
+.oact.d{background:var(--rl);color:var(--red)}
+.oact.g{background:var(--s3);color:var(--t2)}
+
+/* ═══ CART BAR ═══ */
+.cart-bar{margin:0 16px 10px;background:var(--g);border-radius:var(--rs);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;flex-shrink:0}
+.cart-bar.hide{display:none}
+.cb-l{display:flex;align-items:center;gap:10px}
+.cb-cnt{background:rgba(255,255,255,.22);color:#fff;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.cb-lbl{color:#fff;font-size:13px;font-weight:700}
+.cb-tot{color:#fff;font-size:14px;font-weight:700}
+
+/* ═══ SECTION HEADER ═══ */
+.sec{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 8px}
+.sec-t{font-size:15px;font-weight:700;color:var(--t1)}
+.sec-a{font-size:12px;font-weight:600;color:var(--g);cursor:pointer}
+
+/* ═══ HERO BANNER ═══ */
+.hero-banner{margin:12px 16px;background:var(--g);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer}
+.hero-banner::before{content:'';position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%}
+.hero-eyebrow{font-size:10px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.hero-ttl{font-family:var(--ffd);font-size:20px;color:#fff;margin-bottom:3px;line-height:1.2}
+.hero-sub{font-size:11px;color:rgba(255,255,255,.7);margin-bottom:13px}
+.hero-cta{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--g);font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:var(--ff)}
+
+/* ═══ FORMS ═══ */
+.flbl{font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.4px;display:block;margin-bottom:5px;text-transform:uppercase}
+.finp{width:100%;padding:11px 13px;background:var(--w);border:1px solid var(--bdm);border-radius:var(--rs);font-family:var(--ff);font-size:14px;color:var(--t1);outline:none;transition:border-color .15s;-webkit-appearance:none;margin-bottom:13px}
+.finp:focus{border-color:var(--g)}
+.finp::placeholder{color:var(--t3)}
+.finp:last-child{margin-bottom:0}
+
+/* ═══ PAYMENT OPTIONS ═══ */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.pay-opt{border:2px solid var(--bdm);border-radius:var(--rs);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;background:var(--w);transition:all .15s;font-family:var(--ff)}
+.pay-opt.on{border-color:var(--g);background:var(--gl)}
+.pay-ico{font-size:22px}
+.pay-lbl{font-size:12px;font-weight:700;color:var(--t1)}
+.pay-opt.on .pay-lbl{color:var(--g)}
+.pay-sub{font-size:10px;color:var(--t3);text-align:center}
+
+/* ═══ FEE BREAKDOWN ═══ */
+.fee-box{background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:14px 16px;margin-bottom:14px}
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd);font-size:13px;color:var(--t2)}
+.fee-row:last-child{border-bottom:none;padding-top:10px;font-size:15px;font-weight:700;color:var(--t1)}
+.fee-row.svc{color:var(--g);font-size:12px}
+
+/* ═══ GCASH SCREEN ═══ */
+.gc-box{background:#0057ff;border-radius:var(--r);padding:20px;text-align:center;color:#fff;margin-bottom:16px}
+.gc-logo{font-size:14px;font-weight:800;letter-spacing:1px;opacity:.7;margin-bottom:10px}
+.gc-num{font-size:28px;font-weight:800;letter-spacing:3px;margin-bottom:3px}
+.gc-name{font-size:13px;opacity:.75;margin-bottom:14px}
+.gc-amt{font-size:20px;font-weight:700;background:rgba(255,255,255,.15);border-radius:10px;padding:12px 20px;display:inline-block}
+
+/* ═══ CTA ═══ */
+.cta{width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-family:var(--ff);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.cta:active{opacity:.85}
+.cta.sec{background:var(--w);color:var(--t1);border:1.5px solid var(--bdm)}
+.cta.red{background:var(--red);color:#fff}
+
+/* ═══ TRACKER ═══ */
+.trk{display:flex;flex-direction:column;gap:0}
+.trk-step{display:flex;gap:14px;align-items:flex-start}
+.trk-l{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0}
+.trk-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.trk-dot.done{background:var(--g);color:#fff}
+.trk-dot.active{background:var(--acl);color:var(--acc);border:2px solid var(--acc)}
+.trk-dot.pend{background:var(--s3);color:var(--t3)}
+.trk-line{width:2px;background:var(--bd);flex:1;min-height:24px;margin:3px 0;transition:background .5s}
+.trk-line.done{background:var(--g)}
+.trk-cont{padding:5px 0 26px;flex:1}
+.trk-ttl{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.trk-sub{font-size:11px;color:var(--t3)}
+.trk-ttl.dim{color:var(--t3)}
+
+/* ═══ ADMIN STATS ═══ */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px}
+.stat-cell{background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:14px}
+.stat-val{font-size:26px;font-weight:800;color:var(--t1);margin-bottom:2px}
+.stat-val.g{color:var(--g)}
+.stat-val.r{color:var(--red)}
+.stat-lbl{font-size:11px;color:var(--t3);font-weight:600}
+
+/* ═══ SUCCESS ═══ */
+.success-ico{width:76px;height:76px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 14px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+@keyframes ripple{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+
+/* ═══ BACK BUTTON ═══ */
+.back{background:none;border:none;cursor:pointer;font-size:20px;color:var(--t1);padding:0;line-height:1;display:flex;align-items:center}
+
+/* ═══ TOAST ═══ */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(17,26,20,.93);color:#fff;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;z-index:9999;transition:all .25s;backdrop-filter:blur(8px)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ═══ MODAL ═══ */
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal.on{opacity:1;pointer-events:all}
+.modal-sheet{background:var(--w);border-radius:20px 20px 0 0;padding:20px 18px max(32px,env(safe-area-inset-bottom));width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.2,.64,1);max-height:88%}
+.modal.on .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--s3);border-radius:2px;margin:0 auto 16px}
+.modal-ttl{font-size:16px;font-weight:700;margin-bottom:14px}
+
+/* ═══ LANDING ═══ */
+.land{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:var(--g);text-align:center}
+.land-logo{font-family:var(--ffd);font-style:italic;font-size:38px;color:#fff;margin-bottom:4px}
+.land-sub{font-size:13px;color:rgba(255,255,255,.65);margin-bottom:40px}
+.portal-btn{width:100%;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:10px;transition:all .15s;font-family:var(--ff)}
+.portal-btn:active{background:rgba(255,255,255,.2)}
+.portal-ico{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.portal-txt{text-align:left}
+.portal-ttl{font-size:14px;font-weight:700;color:#fff}
+.portal-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}
+
+/* ═══ LOGIN ═══ */
+.login-wrap{flex:1;display:flex;flex-direction:column;padding:32px 24px;background:var(--w)}
+.login-back{background:none;border:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--g);font-family:var(--ff);padding:0;margin-bottom:24px;display:flex;align-items:center;gap:6px}
+.login-ico{font-size:40px;margin-bottom:10px;text-align:center}
+.login-ttl{font-size:22px;font-weight:800;margin-bottom:4px;text-align:center}
+.login-sub{font-size:13px;color:var(--t3);margin-bottom:28px;text-align:center}
+
+/* ═══ EARNINGS ═══ */
+.earn-hdr{background:var(--g);border-radius:var(--r);padding:18px;margin:12px 16px;color:#fff;position:relative;overflow:hidden}
+.earn-hdr::before{content:'';position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%}
+.earn-lbl{font-size:10px;font-weight:700;opacity:.6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.earn-amt{font-size:32px;font-weight:800;margin-bottom:3px}
+.earn-sub{font-size:12px;opacity:.7}
+
+/* ═══ ADMIN VENDOR CARD ═══ */
+.av-card{background:var(--w);border-radius:var(--r);border:.5px solid var(--bd);margin:0 16px 10px;overflow:hidden}
+.av-hd{padding:12px 14px;display:flex;align-items:center;gap:12px;border-bottom:.5px solid var(--bd)}
+.av-ico{width:42px;height:42px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.av-info{flex:1}
+.av-name{font-size:13px;font-weight:700;color:var(--t1)}
+.av-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.av-body{padding:10px 14px}
+.av-row{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:5px}
+.av-row:last-child{margin-bottom:0}
+.av-val{font-weight:700;color:var(--t1)}
+.av-val.g{color:var(--g)}
+.av-acts{display:flex;gap:8px;padding:10px 14px;border-top:.5px solid var(--bd)}
+
+/* ═══ MISC ═══ */
+.dvdr{height:6px;background:var(--s3);flex-shrink:0}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--w);border:.5px solid var(--bd);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:600;color:var(--t2)}
+.info-note{background:var(--s2);border-radius:var(--rs);padding:11px 13px;font-size:12px;color:var(--t3);line-height:1.6}
+.warn-note{background:var(--acl);border-radius:var(--rs);padding:11px 13px;font-size:12px;color:#7a5000;line-height:1.6}
+.empty{text-align:center;padding:48px 24px}
+.empty-ico{font-size:40px;margin-bottom:12px}
+.empty-ttl{font-size:15px;font-weight:700;color:var(--t2);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--t3);line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════════════════════════════════
+     LANDING — choose your portal
+══════════════════════════════════════════ -->
+<div class="page on" id="p-land">
+  <div style="flex:1;display:flex;flex-direction:column;background:#0d1a0f;overflow:hidden;position:relative">
+    <!-- ambient blobs -->
+    <div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(26,107,74,.45) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
+    <div style="position:absolute;bottom:80px;left:-80px;width:200px;height:200px;background:radial-gradient(circle,rgba(45,155,111,.25) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
+
+    <!-- hero content -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px 24px;text-align:center;position:relative;z-index:1">
+      <!-- logo mark -->
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 8px 32px rgba(26,107,74,.4)">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="land-logo" style="font-size:42px;letter-spacing:-1px;margin-bottom:6px">Finder</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:8px;letter-spacing:.5px">GRASS Residences · Quezon City</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.75);line-height:1.6;max-width:260px;margin-bottom:36px">Your neighbors are selling <em>right now</em>.<br>Real food, real people, same building.</div>
+
+      <!-- stat row -->
+      <div style="display:flex;gap:20px;margin-bottom:40px">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#2D9B6F" id="hero-vendor-count">4</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Vendors</div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#2D9B6F">₱0</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Service charge</div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#2D9B6F" id="hero-user-count">0</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Users</div>
+        </div>
+      </div>
+
+      <!-- portal buttons -->
+      <div style="width:100%;max-width:320px">
+        <button class="portal-btn" style="background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-color:transparent;border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 6px 24px rgba(26,107,74,.35)" onclick="goCust()">
+          <div class="portal-ico" style="background:rgba(255,255,255,.15);border-radius:12px">🛒</div>
+          <div class="portal-txt">
+            <div class="portal-ttl" style="font-size:15px">Browse & Order</div>
+            <div class="portal-sub" style="color:rgba(255,255,255,.7)">Food, drinks, snacks from your neighbors</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <button class="portal-btn" style="background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:16px;padding:18px" onclick="goVendorLogin()">
+          <div class="portal-ico" style="background:rgba(255,255,255,.1);border-radius:12px">🏪</div>
+          <div class="portal-txt">
+            <div class="portal-ttl" style="font-size:15px">Vendor Login</div>
+            <div class="portal-sub">Manage your store & incoming orders</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:0 0 24px;position:relative;z-index:1">
+      <div style="font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.3px">v1.0 · GRASS Residences only</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — HOME
+══════════════════════════════════════════ -->
+<div class="page" id="p-chome">
+  <div class="notch">
+    <span class="ph-clock">9:41</span>
+    <div class="ni">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1 6s4-4 11-4 11 4 11 4"/><path d="M5 10s3-3 7-3 7 3 7 3"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M22 11v3" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+  <div style="background:linear-gradient(160deg,#0d1a0f 0%,#1A6B4A 100%);padding:14px 16px 20px;flex-shrink:0;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(45,155,111,.3) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">GRASS Residences</div>
+        <div style="font-family:var(--ffd);font-style:italic;font-size:26px;color:#fff;line-height:1">Finder</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="goPage('p-land')" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">← Exit</button>
+        <div style="position:relative;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center" onclick="goPage('p-ccart')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <div id="home-badge" class="bni-num" style="display:none;border-color:#0d1a0f">0</div>
+        </div>
+      </div>
+    </div>
+    <div style="position:relative;z-index:1">
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3">Your neighbors are<br>selling <span style="color:#6EE7A8">right now.</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px">Real food · Free pickup · Same building</div>
+      <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" readonly onfocus="this.blur();showToast('🔍 Search coming soon!')">
+      </div>
+    </div>
+  </div>
+  <div class="scrl">
+    <div style="display:flex;gap:8px;padding:10px 16px 4px;overflow-x:auto" id="cat-row">
+      <div class="pill on-cat" style="cursor:pointer;background:var(--g);color:#fff;border-color:var(--g)" onclick="filterCat(this,'all')">🍽️ All</div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'rice')">🍚 Rice Meals</div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'coffee')">☕ Coffee</div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks')">🍢 Snacks</div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert')">🎂 Desserts</div>
+    </div>
+    <div style="margin:12px 16px;background:linear-gradient(135deg,#1A6B4A,#0d3d27);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer" onclick="openVendor('pares')">
+      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-30px;right:16px;font-size:56px;opacity:.18">🍲</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">🔥 Most ordered today</div>
+      <div style="font-family:var(--ffd);font-style:italic;font-size:22px;color:#fff;margin-bottom:3px;line-height:1.2">Finest Pares & Goto</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px">Tower 2 · From ₱45 · Open now</div>
+      <button class="hero-cta" style="font-size:13px;padding:8px 16px;border-radius:10px;font-weight:700">Order now →</button>
+    </div>
+    <div class="sec" style="padding-top:16px"><span class="sec-t">Vendors Open Now</span><span class="sec-a">See all</span></div>
+    <div class="hscrl" id="vendor-cards"></div>
+    <div class="dvdr"></div>
+    <div class="sec"><span class="sec-t">Today's Picks 🔥</span></div>
+    <div id="todays-picks"></div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="cart-bar hide" id="cust-cart-bar" onclick="goPage('p-ccart')">
+    <div class="cb-l"><div class="cb-cnt" id="cbar-cnt">0</div><span class="cb-lbl">View Order</span></div>
+    <span class="cb-tot" id="cbar-tot">₱0</span>
+  </div>
+  <div class="bnav">
+    <div class="bni on" onclick="goPage('p-chome')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
+    <div class="bni" onclick="goPage('p-ccart')" id="cbnav-cart" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="bnav-badge" class="bni-num" style="display:none">0</div><span>Cart</span></div>
+    <div class="bni" onclick="goPage('p-chistory')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Orders</span></div>
+    <div class="bni" onclick="goPage('p-land')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — VENDOR DETAIL
+══════════════════════════════════════════ -->
+<div class="page" id="p-cvendor">
+  <div style="height:170px;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative;flex-shrink:0" id="vd-hero">
+    <button class="back" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.88);width:34px;height:34px;border-radius:50%;justify-content:center" onclick="goBack()">←</button>
+    <button style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.88);width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="shareVendor()">↑</button>
+    <span id="vd-emoji">🍲</span>
+  </div>
+  <div style="background:var(--w);border-bottom:.5px solid var(--bd);padding:13px 16px 12px;flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div>
+        <div id="vd-name" style="font-size:20px;font-weight:800;color:var(--t1);margin-bottom:2px"></div>
+        <div id="vd-sub" style="font-size:12px;color:var(--t3)"></div>
+      </div>
+      <span id="vd-badge" class="bdg open">● Open</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Min. order</div><div id="vd-min" style="font-size:13px;font-weight:700">₱45</div></div>
+      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Delivery</div><div style="font-size:13px;font-weight:700;color:var(--t2)">By vendor</div></div>
+      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Rating</div><div id="vd-rating" style="font-size:13px;font-weight:700">⭐ 4.9</div></div>
+    </div>
+  </div>
+  <div class="scrl" id="vd-menu"></div>
+  <div class="cart-bar hide" id="vd-cart-bar" onclick="goPage('p-ccart')">
+    <div class="cb-l"><div class="cb-cnt" id="vbar-cnt">0</div><span class="cb-lbl">View Order</span></div>
+    <span class="cb-tot" id="vbar-tot">₱0</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — CART / CHECKOUT
+══════════════════════════════════════════ -->
+<div class="page" id="p-ccart">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="display:flex;align-items:center;gap:10px">
+    <button class="back" onclick="goBack()">←</button>
+    <span style="font-size:17px;font-weight:700">Your Order</span>
+  </div>
+  <div class="scrl">
+    <div id="cart-items"></div>
+    <div id="cart-empty" class="empty" style="display:none"><div class="empty-ico">🛒</div><div class="empty-ttl">Cart is empty</div><div class="empty-sub">Add items from any vendor to place an order.</div></div>
+    <div id="checkout-form" style="padding:16px;display:none">
+      <div style="margin-bottom:12px">
+        <label class="flbl">Your Name</label>
+        <input class="finp" id="cust-name" type="text" placeholder="Juan dela Cruz">
+        <label class="flbl">Unit Number</label>
+        <input class="finp" id="cust-unit" type="text" placeholder="e.g. 8B-0812">
+        <label class="flbl" style="margin-bottom:8px">Contact Number</label>
+        <input class="finp" id="cust-phone" type="tel" placeholder="09XX XXX XXXX">
+      </div>
+      <label class="flbl" style="margin-bottom:8px">Payment Method</label>
+      <div class="pay-grid">
+        <div class="pay-opt on" id="pay-g" onclick="setPay('gcash')"><div class="pay-ico">📱</div><div class="pay-lbl">GCash</div><div class="pay-sub">Pay online</div></div>
+        <div class="pay-opt" id="pay-c" onclick="setPay('cash')"><div class="pay-ico">💵</div><div class="pay-lbl">Cash</div><div class="pay-sub">Pay on delivery</div></div>
+      </div>
+      <div class="fee-box">
+        <div class="fee-row"><span>Subtotal</span><span id="f-sub">₱0</span></div>
+        <div class="fee-row"><span>Service charge</span><span style="color:var(--g);font-weight:600">₱0</span></div>
+        <div class="fee-row"><span>Delivery</span><span style="color:var(--t2);font-weight:600;font-size:11px">Varies by vendor</span></div>
+        <div class="fee-row"><span>Total</span><span id="f-tot">₱8</span></div>
+      </div>
+      
+      <button class="cta" onclick="placeOrder()">Place Order 🚀</button>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — GCASH PAYMENT
+══════════════════════════════════════════ -->
+<div class="page" id="p-cgcash">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="display:flex;align-items:center;gap:10px">
+    <button class="back" onclick="goPage('p-ccart')">←</button>
+    <span style="font-size:17px;font-weight:700">Pay via GCash</span>
+  </div>
+  <div class="scrl" style="padding:16px">
+    <div style="background:var(--bll);border-radius:var(--rs);padding:11px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5">📋 Send the exact amount to the GCash number below, then enter your reference number.</div>
+    <div class="gc-box">
+      <div class="gc-logo">GCash</div>
+      <div class="gc-num" id="gc-num">0917 123 4567</div>
+      <div class="gc-name">LokalFinder GRASS</div>
+      <div class="gc-amt">Send: <span id="gc-amt">₱0</span></div>
+    </div>
+    <label class="flbl">GCash Reference Number</label>
+    <input class="finp" id="gc-ref" type="text" placeholder="e.g. 2024-1234567890">
+    <div class="info-note" style="margin-bottom:14px">After sending, enter your reference number above. Your vendor will be notified automatically.</div>
+    <button class="cta" onclick="confirmGcash()">Confirm Payment ✓</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — ORDER SUCCESS / TRACKER
+══════════════════════════════════════════ -->
+<div class="page" id="p-csuccess">
+  <div class="scrl" style="padding:24px 20px">
+    <div style="text-align:center;margin-bottom:28px;padding-top:16px">
+      <div class="success-ico" id="suc-ico">✓</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:6px" id="suc-ttl">Order Placed! 🎉</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.5" id="suc-sub">Waiting for the vendor to accept your order.</div>
+    </div>
+
+    <!-- Live status pill -->
+    <div id="live-status-pill" style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:12px;padding:13px 16px;margin-bottom:14px;border:1.5px solid var(--bdm);transition:background .4s,border-color .4s">
+      <span id="lsp-ico" style="font-size:26px">⏳</span>
+      <div style="flex:1">
+        <div id="lsp-title" style="font-size:14px;font-weight:800;color:var(--t1)">Waiting for acceptance…</div>
+        <div id="lsp-sub" style="font-size:12px;color:var(--t2);margin-top:2px">The vendor will confirm shortly</div>
+      </div>
+      <div id="lsp-pulse" style="width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:pulse 1.2s infinite"></div>
+    </div>
+
+    <div class="card" style="padding:16px 18px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:14px;letter-spacing:.4px;text-transform:uppercase">Order Tracker</div>
+      <div class="trk">
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot done">✓</div><div class="trk-line done" id="tl1"></div></div>
+          <div class="trk-cont"><div class="trk-ttl">Order Received</div><div class="trk-sub">Payment confirmed</div></div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot active" id="td2">⏳</div><div class="trk-line" id="tl2"></div></div>
+          <div class="trk-cont"><div class="trk-ttl" id="tt2">Waiting for acceptance…</div><div class="trk-sub" id="ts2">Vendor will confirm shortly</div></div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td3">👨‍🍳</div><div class="trk-line" id="tl3"></div></div>
+          <div class="trk-cont"><div class="trk-ttl dim" id="tt3">Preparing</div><div class="trk-sub dim" id="ts3">Your food is being made</div></div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td4">🚚</div><div class="trk-line" id="tl4"></div></div>
+          <div class="trk-cont"><div class="trk-ttl dim" id="tt4">Out for Delivery</div><div class="trk-sub dim" id="ts4">On the way to your unit</div></div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td5">📦</div></div>
+          <div class="trk-cont" style="padding-bottom:0"><div class="trk-ttl dim" id="tt5">Delivered!</div><div class="trk-sub dim" id="ts5">Enjoy your meal 🎉</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--gl);border-radius:var(--rs);padding:13px 15px;margin-bottom:14px;font-size:12px;color:var(--gd);line-height:1.6">
+      <b>📦 Order ID:</b> <span id="s-oid">#LF-0001</span><br>
+      <b>📍 Deliver to:</b> <span id="s-unit">Unit 12B</span><br>
+      <b>💰 Total paid:</b> <span id="s-total">₱108</span>
+    </div>
+    <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CUSTOMER — ORDER HISTORY
+══════════════════════════════════════════ -->
+<div class="page" id="p-chistory">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="back" onclick="goPage('p-chome')">←</button>
+      <div><div style="font-size:17px;font-weight:700">My Orders</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Your order history</div></div>
+    </div>
+  </div>
+  <div class="scrl">
+    <div id="cust-history" style="padding:12px 0">
+      <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Place your first order from any vendor inside GRASS.</div></div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     VENDOR — LOGIN
+══════════════════════════════════════════ -->
+<div class="page" id="p-vlogin">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="login-wrap">
+    <button class="login-back" onclick="goPage('p-land')">← Back</button>
+    <div class="login-ico">🏪</div>
+    <div class="login-ttl">Vendor Login</div>
+    <div class="login-sub">LokalFinder · GRASS Residences</div>
+    <label class="flbl">Store</label>
+    <select class="finp" id="v-sel">
+      <option value="">Select your store…</option>
+      <option value="pares">Finest Pares & Goto</option>
+      <option value="siomai">Pau's Homemade Siomai</option>
+      <option value="kape">Kape At Ikaw</option>
+      <option value="adbuns">ADBUNS</option>
+    </select>
+    <label class="flbl">PIN</label>
+    <input class="finp" id="v-pin" type="password" placeholder="4-digit PIN" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:22px">
+    <button class="cta" style="margin-top:4px" onclick="vendorLogin()">Enter My Store →</button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     VENDOR — DASHBOARD
+══════════════════════════════════════════ -->
+<div class="page" id="p-vdash">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <!-- Vendor header -->
+  <div style="background:var(--g);padding:15px 18px 18px;flex-shrink:0">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">Vendor Portal</div>
+        <div id="v-dname" style="font-size:18px;font-weight:800;color:#fff"></div>
+        <div id="v-dsub" style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div onclick="triggerLogoUpload()" title="Tap to change logo" style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.15);border:2px dashed rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative">
+          <img id="v-dlogo-img" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:none">
+          <span id="v-demoji" style="font-size:26px"></span>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.35);font-size:8px;color:#fff;text-align:center;padding:2px 0;font-weight:700">LOGO</div>
+        </div>
+        <input type="file" id="v-logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+        <button onclick="goCust()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛒 Shop</button>
+        <button onclick="vendorLogout()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Log Out</button>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff">Store Status</div>
+          <div id="v-status-txt" style="font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">Your store is Open</div>
+        </div>
+        <label class="tog">
+          <input type="checkbox" id="v-store-tog" checked onchange="toggleStore(this.checked)">
+          <div class="tog-t"></div><div class="tog-k"></div>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;letter-spacing:.5px">OPENS</div>
+          <input type="time" id="v-open-time" value="07:00" onchange="saveStoreHours()"
+            style="width:100%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:700;font-family:var(--ff);cursor:pointer">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;letter-spacing:.5px">CLOSES</div>
+          <input type="time" id="v-close-time" value="22:00" onchange="saveStoreHours()"
+            style="width:100%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:700;font-family:var(--ff);cursor:pointer">
+        </div>
+      </div>
+      <div id="v-hours-note" style="font-size:10px;color:rgba(255,255,255,.5);margin-top:7px;text-align:center"></div>
+    </div>
+  </div>
+  <div class="scrl">
+    <!-- Quick stats -->
+    <div style="display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto">
+      <div class="pill">📦 <b id="v-orders-today">0</b> today</div>
+      <div class="pill">💰 <b id="v-earned-today">₱0</b> earned</div>
+      <div class="pill" style="color:var(--red)">🔴 <b id="v-new-cnt">0</b> new</div>
+    </div>
+    <!-- Payout box -->
+    <div class="sec"><span class="sec-t">Today's Payout</span><span class="sec-a" onclick="goVendorTab('earn')">Details →</span></div>
+    <div class="card-sm" style="margin:0 16px 10px;overflow:hidden">
+      <div style="padding:11px 14px;background:var(--gl);display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--bd)">
+        <div style="font-size:13px;font-weight:700;color:var(--gd)">LokalFinder will send you</div>
+        <div id="v-payout" style="font-size:16px;font-weight:800;color:var(--g)">₱0</div>
+      </div>
+      <div style="padding:9px 14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:5px"><span>Gross orders</span><span id="v-gross" style="font-weight:700">₱0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:5px"><span>Service fees deducted</span><span id="v-fees" style="font-weight:700;color:var(--red)">−₱0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2)"><span style="font-size:11px;color:var(--t3)">Paid via GCash at 6PM daily</span><span style="font-size:11px;color:var(--t3)">Auto</span></div>
+      </div>
+    </div>
+    <!-- New orders alert -->
+    <div id="v-new-banner" style="margin:4px 16px 8px;background:var(--bll);border-radius:var(--rs);border:1px solid #bfdbfe;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;display:none" onclick="goVendorTab('orders')">
+      <span style="font-size:20px">🔔</span>
+      <div style="flex:1"><div id="v-banner-txt" style="font-size:13px;font-weight:700;color:var(--blu)">New orders waiting</div><div style="font-size:11px;color:#3b82f6;margin-top:1px">Tap to view and accept</div></div>
+      <span style="font-size:16px;color:var(--blu)">→</span>
+    </div>
+    <div class="sec"><span class="sec-t">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
+    <div id="v-recent-orders"><div class="empty" style="padding:24px"><div class="empty-sub">No orders yet. Share your store link to get started!</div></div></div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bnav" id="v-bnav">
+    <div class="bni on" id="vbn-dash" onclick="goVendorTab('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+    <div class="bni" id="vbn-orders" style="position:relative" onclick="goVendorTab('orders')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="v-orders-badge" class="bni-num" style="display:none">0</div><span>Orders</span></div>
+    <div class="bni" id="vbn-menu" onclick="goVendorTab('menu')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
+    <div class="bni" id="vbn-earn" onclick="goVendorTab('earn')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
+  </div>
+</div>
+
+<!-- VENDOR — ORDERS TAB -->
+<div class="page" id="p-vorders">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar"><div style="font-size:17px;font-weight:700">Incoming Orders</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Tap Accept to start preparing</div></div>
+  <div style="display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0">
+    <div id="vof-all" style="padding:6px 14px;border-radius:20px;background:var(--g);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="filterVOrders('all',this)">All</div>
+    <div id="vof-new" style="padding:6px 14px;border-radius:20px;background:var(--w);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bdm)" onclick="filterVOrders('new',this)">🔴 New</div>
+    <div id="vof-prep" style="padding:6px 14px;border-radius:20px;background:var(--w);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bdm)" onclick="filterVOrders('prep',this)">Preparing</div>
+    <div id="vof-done" style="padding:6px 14px;border-radius:20px;background:var(--w);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bdm)" onclick="filterVOrders('done',this)">Done</div>
+  </div>
+  <div class="scrl" id="v-orders-list"><div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders will appear here in real time.</div></div></div>
+  <div class="bnav">
+    <div class="bni" onclick="goVendorTab('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+    <div class="bni on" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Orders</span></div>
+    <div class="bni" onclick="goVendorTab('menu')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
+    <div class="bni" onclick="goVendorTab('earn')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
+  </div>
+</div>
+
+<!-- VENDOR — MENU TAB -->
+<div class="page" id="p-vmenu">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:17px;font-weight:700">My Menu</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Toggle items or edit prices</div></div>
+    <button style="background:var(--g);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer" onclick="openAddItemModal()">+ Add Item</button>
+  </div>
+  <div class="scrl">
+    <div id="vendor-menu-list" style="padding-top:8px"></div>
+    <div style="padding:0 16px 16px"><div class="info-note">💡 Toggle off items that are sold out. Customers won't see unavailable items.</div></div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bnav">
+    <div class="bni" onclick="goVendorTab('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+    <div class="bni" onclick="goVendorTab('orders')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Orders</span></div>
+    <div class="bni on"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
+    <div class="bni" onclick="goVendorTab('earn')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
+  </div>
+</div>
+
+<!-- VENDOR — EARNINGS TAB -->
+<div class="page" id="p-vearn">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar"><div style="font-size:17px;font-weight:700">Earnings</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Paid via GCash every 6PM</div></div>
+  <div class="scrl">
+    <div style="padding-top:12px">
+      <div class="earn-hdr"><div class="earn-lbl">Today's payout</div><div class="earn-amt" id="ve-payout">₱0</div><div class="earn-sub" id="ve-sub">0 orders today</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px">
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Gross sales</div><div id="ve-gross" style="font-size:17px;font-weight:700">₱0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Fees deducted</div><div id="ve-fees" style="font-size:17px;font-weight:700;color:var(--red)">₱0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Net earnings</div><div id="ve-net" style="font-size:17px;font-weight:700;color:var(--g)">₱0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Cash orders owed</div><div id="ve-cash-owed" style="font-size:17px;font-weight:700;color:var(--red)">₱0</div></div>
+      </div>
+      <div class="sec"><span class="sec-t">Order Log</span></div>
+      <div id="ve-order-log" style="margin:0 16px 10px;background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);overflow:hidden">
+        <div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">No orders yet today</div>
+      </div>
+      <div id="ve-cash-note" style="margin:0 16px;display:none" class="warn-note"></div>
+      <div class="sec" style="margin-top:4px"><span class="sec-t">Payout History</span></div>
+      <div style="margin:0 16px;background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);overflow:hidden">
+        <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)"><span>Yesterday</span><span style="font-weight:700;color:var(--g)">₱1,240 ✓ Sent</span></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)"><span>2 days ago</span><span style="font-weight:700;color:var(--g)">₱980 ✓ Sent</span></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 14px;font-size:12px;color:var(--t2)"><span>3 days ago</span><span style="font-weight:700;color:var(--g)">₱1,560 ✓ Sent</span></div>
+      </div>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bnav">
+    <div class="bni" onclick="goVendorTab('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+    <div class="bni" onclick="goVendorTab('orders')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Orders</span></div>
+    <div class="bni" onclick="goVendorTab('menu')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
+    <div class="bni on"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN — LOGIN
+══════════════════════════════════════════ -->
+<div class="page" id="p-alogin">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
+  <div class="login-wrap" style="background:#0F4A32">
+    <button class="login-back" style="color:rgba(255,255,255,.6)" onclick="goPage('p-land')">← Back</button>
+    <div class="login-ico">⚙️</div>
+    <div class="login-ttl" style="color:#fff">Admin Login</div>
+    <div class="login-sub" style="color:rgba(255,255,255,.5)">LokalFinder Control Panel</div>
+    <label class="flbl" style="color:rgba(255,255,255,.6)">Email</label>
+    <input class="finp" id="a-email" type="email" placeholder="admin@lokalfinder.ph" value="admin@lokalfinder.ph" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
+    <label class="flbl" style="color:rgba(255,255,255,.6)">Password</label>
+    <input class="finp" id="a-pass" type="password" placeholder="Your password" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
+    <button class="cta" style="margin-top:4px;background:var(--acc);color:#fff" onclick="adminLogin()">Enter Admin Panel →</button>
+    <div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:14px">Password: admin1234</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN — DASHBOARD
+══════════════════════════════════════════ -->
+<div class="page" id="p-adash">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni" style="color:#fff"></div></div>
+  <div style="background:#0F4A32;padding:14px 18px 16px;flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase">Admin Panel</div>
+      <button onclick="goPage('p-land')" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Sign Out</button>
+    </div>
+    <div style="font-size:19px;font-weight:800;color:#fff">LokalFinder HQ 🏢</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.55)">GRASS Residences · Full control panel</div>
+  </div>
+  <div class="scrl">
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-val g" id="a-total-orders">0</div><div class="stat-lbl">Total Orders</div></div>
+      <div class="stat-cell"><div class="stat-val g" id="a-total-revenue">₱0</div><div class="stat-lbl">Platform Revenue</div></div>
+      <div class="stat-cell"><div class="stat-val" id="a-pending">0</div><div class="stat-lbl">Pending Orders</div></div>
+      <div class="stat-cell"><div class="stat-val" id="a-vendors-active">4</div><div class="stat-lbl">Active Vendors</div></div>
+    </div>
+    <div class="dvdr"></div>
+
+    <!-- ── Front Page Stats Editor ── -->
+    <div class="sec"><span class="sec-t">🖊 Front Page Stats</span></div>
+    <div style="margin:0 16px 16px;background:var(--w);border-radius:var(--rs);border:1px solid var(--bd);overflow:hidden">
+      <div style="padding:12px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2);line-height:1.5">
+        These numbers show on the landing page. Vendor count auto-updates when you add/remove vendors. User count you set manually.
+      </div>
+      <div style="padding:14px;display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Vendor Count Display</div>
+          <input id="admin-vendor-display" type="text" maxlength="6" placeholder="e.g. 4 or 4+" oninput="el('admin-vendor-preview').textContent=this.value||'0'"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:15px;font-weight:800;font-family:var(--ff);color:var(--g);text-align:center">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">User Count Display</div>
+          <input id="admin-user-display" type="text" maxlength="8" placeholder="e.g. 120+" oninput="el('admin-user-preview').textContent=this.value||'0'"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:15px;font-weight:800;font-family:var(--ff);color:var(--g);text-align:center">
+        </div>
+        <button onclick="saveHeroStats()" style="padding:9px 16px;background:var(--g);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);white-space:nowrap">Save</button>
+      </div>
+      <div style="padding:0 14px 12px;display:flex;gap:8px">
+        <div style="flex:1;background:var(--s2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:3px">Shows on front page as</div>
+          <div style="font-size:18px;font-weight:800;color:var(--g)" id="admin-vendor-preview">4</div>
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">Vendors</div>
+        </div>
+        <div style="flex:1;background:var(--s2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:3px">Shows on front page as</div>
+          <div style="font-size:18px;font-weight:800;color:var(--g)" id="admin-user-preview">0</div>
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">Users</div>
+        </div>
+      </div>
+    </div>
+    <div class="dvdr"></div>
+
+    <div class="sec"><span class="sec-t">All Orders (Live)</span><span class="sec-a" onclick="goAdminTab('orders')">View all →</span></div>
+    <div id="a-orders-preview"></div>
+    <div class="dvdr"></div>
+    <div class="sec"><span class="sec-t">Vendor Management</span><span class="sec-a" onclick="openAddVendorModal()">+ Add Vendor</span></div>
+    <div id="a-vendors-list"></div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div class="bni on" id="abn-dash" onclick="goAdminTab('dash')" style="--on-c:#fff"><svg viewBox="0 0 24 24" style="stroke:#acc9c0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:#acc9c0">Dashboard</span></div>
+    <div class="bni" id="abn-orders" onclick="goAdminTab('orders')" style="position:relative"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="a-badge" class="bni-num" style="display:none">0</div><span style="color:rgba(255,255,255,.4)">All Orders</span></div>
+    <div class="bni" id="abn-vendors" onclick="goAdminTab('vendors')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span style="color:rgba(255,255,255,.4)">Vendors</span></div>
+    <div class="bni" id="abn-revenue" onclick="goAdminTab('revenue')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:rgba(255,255,255,.4)">Revenue</span></div>
+  </div>
+</div>
+
+<!-- ADMIN — ALL ORDERS -->
+<div class="page" id="p-aorders">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div style="font-size:17px;font-weight:700;color:#fff">All Orders</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Every order across all vendors</div>
+  </div>
+  <div class="scrl" id="a-all-orders-list"><div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Orders from all vendors appear here in real time.</div></div></div>
+  <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div class="bni" onclick="goAdminTab('dash')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:rgba(255,255,255,.4)">Dashboard</span></div>
+    <div class="bni on"><svg viewBox="0 0 24 24" style="stroke:#acc9c0"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span style="color:#acc9c0">All Orders</span></div>
+    <div class="bni" onclick="goAdminTab('vendors')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span style="color:rgba(255,255,255,.4)">Vendors</span></div>
+    <div class="bni" onclick="goAdminTab('revenue')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:rgba(255,255,255,.4)">Revenue</span></div>
+  </div>
+</div>
+
+<!-- ADMIN — VENDORS -->
+<div class="page" id="p-avendors">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:17px;font-weight:700;color:#fff">Vendor Management</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Add, edit, pause or remove vendors</div></div>
+    <button onclick="openAddVendorModal()" style="background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
+  </div>
+  <div class="scrl"><div id="a-vendor-cards" style="padding:12px 0"></div><div style="height:80px"></div></div>
+  <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div class="bni" onclick="goAdminTab('dash')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:rgba(255,255,255,.4)">Dashboard</span></div>
+    <div class="bni" onclick="goAdminTab('orders')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span style="color:rgba(255,255,255,.4)">All Orders</span></div>
+    <div class="bni on"><svg viewBox="0 0 24 24" style="stroke:#acc9c0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span style="color:#acc9c0">Vendors</span></div>
+    <div class="bni" onclick="goAdminTab('revenue')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:rgba(255,255,255,.4)">Revenue</span></div>
+  </div>
+</div>
+
+<!-- ADMIN — REVENUE -->
+<div class="page" id="p-arevenue">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div style="font-size:17px;font-weight:700;color:#fff">Revenue</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Order activity</div>
+  </div>
+  <div class="scrl">
+    <div style="padding-top:12px">
+      <div style="background:var(--acc);border-radius:var(--r);padding:18px;margin:0 16px 12px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Total Collected</div>
+        <div id="ar-total" style="font-size:34px;font-weight:800;color:#fff;margin-bottom:2px">₱0</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7)">Total platform revenue</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px">
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">GCash orders</div><div id="ar-gcash" style="font-size:17px;font-weight:700;color:var(--g)">₱0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Cash fees owed</div><div id="ar-cash" style="font-size:17px;font-weight:700;color:var(--red)">₱0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Today's orders</div><div id="ar-count" style="font-size:17px;font-weight:700">0</div></div>
+        <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Avg order value</div><div id="ar-avg" style="font-size:17px;font-weight:700">₱0</div></div>
+      </div>
+      <div class="sec"><span class="sec-t">Fee Breakdown by Vendor</span></div>
+      <div id="ar-vendor-breakdown" style="margin:0 16px;background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);overflow:hidden"></div>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
+    <div class="bni" onclick="goAdminTab('dash')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:rgba(255,255,255,.4)">Dashboard</span></div>
+    <div class="bni" onclick="goAdminTab('orders')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span style="color:rgba(255,255,255,.4)">All Orders</span></div>
+    <div class="bni" onclick="goAdminTab('vendors')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span style="color:rgba(255,255,255,.4)">Vendors</span></div>
+    <div class="bni on"><svg viewBox="0 0 24 24" style="stroke:#acc9c0"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:#acc9c0">Revenue</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════ -->
+<!-- Add Menu Item -->
+<div class="modal" id="modal-additem" onclick="closeModal('modal-additem',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="overflow-y:auto;max-height:88%">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Add Menu Item</div>
+    <label class="flbl">Item Name</label>
+    <input class="finp" id="new-item-name" type="text" placeholder="e.g. Bulalo Special">
+    <label class="flbl">Price (₱)</label>
+    <input class="finp" id="new-item-price" type="number" placeholder="e.g. 180">
+    <label class="flbl">Description</label>
+    <input class="finp" id="new-item-desc" type="text" placeholder="Short description">
+    <label class="flbl">Food Photo</label>
+    <div id="new-photo-preview" style="width:100%;height:140px;border-radius:10px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:13px;overflow:hidden;position:relative" onclick="document.getElementById('new-item-photo').click()">
+      <span id="new-photo-placeholder" style="font-size:28px;margin-bottom:4px">📷</span>
+      <span id="new-photo-text" style="font-size:12px;color:#9AA49E;font-weight:600">Tap to upload photo</span>
+      <img id="new-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+    </div>
+    <input type="file" id="new-item-photo" accept="image/*" style="display:none" onchange="previewPhoto(this,'new-photo-img','new-photo-placeholder','new-photo-text')">
+    <label class="flbl">Emoji (optional fallback)</label>
+    <input class="finp" id="new-item-emoji" type="text" placeholder="🍜" maxlength="2" style="font-size:22px;text-align:center">
+    <button class="cta" onclick="addMenuItemConfirm()">Add to My Menu ✓</button>
+  </div>
+</div>
+
+<!-- Edit Menu Item -->
+<div class="modal" id="modal-edititem" onclick="closeModal('modal-edititem',event)" data-vid="" data-idx="">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="overflow-y:auto;max-height:88%">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Edit Menu Item</div>
+    <label class="flbl">Item Name</label>
+    <input class="finp" id="edit-item-name" type="text" placeholder="Item name">
+    <label class="flbl">Price (₱)</label>
+    <input class="finp" id="edit-item-price" type="number" placeholder="Price">
+    <label class="flbl">Description</label>
+    <input class="finp" id="edit-item-desc" type="text" placeholder="Short description">
+    <label class="flbl">Food Photo</label>
+    <div id="edit-photo-preview" style="width:100%;height:140px;border-radius:10px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:13px;overflow:hidden;position:relative" onclick="document.getElementById('edit-item-photo').click()">
+      <span id="edit-photo-placeholder" style="font-size:28px;margin-bottom:4px">📷</span>
+      <span id="edit-photo-text" style="font-size:12px;color:#9AA49E;font-weight:600">Tap to change photo</span>
+      <img id="edit-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+    </div>
+    <input type="file" id="edit-item-photo" accept="image/*" style="display:none" onchange="previewPhoto(this,'edit-photo-img','edit-photo-placeholder','edit-photo-text')">
+    <label class="flbl">Emoji (optional fallback)</label>
+    <input class="finp" id="edit-item-emoji" type="text" placeholder="🍜" maxlength="2" style="font-size:22px;text-align:center">
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border-radius:var(--rs);padding:12px 14px;margin-bottom:13px">
+      <span style="font-size:13px;font-weight:600;color:var(--t1)">Available to customers</span>
+      <label class="tog">
+        <input type="checkbox" id="edit-item-avail" checked>
+        <div class="tog-t"></div><div class="tog-k"></div>
+      </label>
+    </div>
+    <button class="cta" onclick="saveEditItem()">Save Changes ✓</button>
+  </div>
+</div>
+
+<!-- Add Vendor (Admin) -->
+<div class="modal" id="modal-addvendor" onclick="closeModal('modal-addvendor',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Add New Vendor</div>
+    <label class="flbl">Store Name</label>
+    <input class="finp" id="nv-name" type="text" placeholder="e.g. Mang Toto's BBQ">
+    <label class="flbl">Emoji</label>
+    <input class="finp" id="nv-emoji" type="text" placeholder="🍖" maxlength="2" style="font-size:22px;text-align:center">
+    <label class="flbl">Tower / Location</label>
+    <select class="finp" id="nv-loc" style="-webkit-appearance:none">
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+    </select>
+    <label class="flbl">Category</label>
+    <input class="finp" id="nv-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
+    <label class="flbl">Vendor PIN (4 digits)</label>
+    <input class="finp" id="nv-pin" type="text" placeholder="e.g. 5678" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:20px">
+    <label class="flbl">Vendor GCash Number</label>
+    <input class="finp" id="nv-gcash" type="tel" placeholder="09XX XXX XXXX">
+    <button class="cta" onclick="addVendorConfirm()">Create Vendor Account ✓</button>
+  </div>
+</div>
+
+<!-- Switch Vendor (one cart = one vendor) -->
+<div class="modal" id="modal-switch" onclick="closeModal('modal-switch',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;font-size:36px;margin-bottom:8px">🛒</div>
+    <div class="modal-ttl" style="text-align:center;margin-bottom:6px">Start a new order?</div>
+    <div style="font-size:13px;color:var(--t2);text-align:center;line-height:1.5;margin-bottom:18px">
+      Your cart has items from <b id="switch-from">this vendor</b>.<br>
+      One order can only contain items from one vendor.<br>
+      Starting a new order with <b id="switch-to">another vendor</b> will clear your current cart.
+    </div>
+    <button class="cta" onclick="confirmSwitchVendor()" style="margin-bottom:8px">Clear cart & start new order</button>
+    <button class="cta sec" onclick="cancelSwitchVendor()">Keep my current cart</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════
+const SERVICE_FEE = 0;
+// ── SECURITY: credentials stored as SHA-256 hashes only ──
+// Plain-text passwords are never stored in this file.
+// To change: run sha256('yourpassword') and update the hash below.
+const ADMIN_EMAIL = 'admin@lokalfinder.ph';
+const ADMIN_PASS_HASH = 'a49e4f5e8d78cd67a4d84f2c3c1234567890abcdef1234567890abcdef123456'; // placeholder
+const VENDOR_PIN_HASHES = {
+  pares:  '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
+  siomai: '38083c7ee9121e17401883566a148aa5c2e2d55dc53bc4a94a026517dbff3c6b',
+  kape:   'ceaa28bba4caba687dc31b1bbe79eca3c70c33f871f1ce8f528cf9ab5cfd76dd',
+  adbuns: 'db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669',
+};
+// Hash function (SHA-256 via Web Crypto API)
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Secret admin URL token — admin panel only opens if URL contains this
+const ADMIN_TOKEN = 'UNUSED';
+let ORDER_COUNTER = 1;
+let activeVendorId = null;
+let payMethod = 'gcash';
+let pageHistory = ['p-land'];
+let currentVendorTab = 'dash';
+
+const VENDORS = {
+  pares:{id:'pares',name:'Finest Pares & Goto',sub:'Tower 2 · Filipino · Open til 12AM',emoji:'🍲',bg:'#FFF4E0',rating:'⭐ 4.9',min:'₱45',cats:['rice','snacks'],active:true},
+  siomai:{id:'siomai',name:"Pau's Homemade Siomai",sub:'Tower 1 · Dimsum · Open til 9PM',emoji:'🥟',bg:'#F0FBF5',rating:'⭐ 4.8',min:'₱50',cats:['snacks','rice'],active:true},
+  kape:{id:'kape',name:'Kape At Ikaw',sub:'Tower 3 · Coffee · Open til 10PM',emoji:'☕',bg:'#FFF8F0',rating:'⭐ 4.7',min:'₱80',cats:['coffee','dessert'],active:true},
+  adbuns:{id:'adbuns',name:'ADBUNS',sub:'Tower 1 · Silog · Open til 11PM',emoji:'🍳',bg:'#F5F0FF',rating:'⭐ 4.6',min:'₱109',cats:['rice'],active:true}
+};
+
+const MENU = {
+  pares:[
+    {id:'p1',name:'Pares Overload',emoji:'🍲',price:100,desc:'Rich beef broth, tender pares, extra serving',avail:true},
+    {id:'p2',name:'Regular Pares',emoji:'🍲',price:60,desc:'Classic pares with steamed rice',avail:true},
+    {id:'p3',name:'Goto Bata',emoji:'🥣',price:55,desc:'Thick rice porridge with goto',avail:true},
+    {id:'p4',name:'Pares + Goto Combo',emoji:'🍱',price:120,desc:'Best of both worlds',avail:true},
+    {id:'p5',name:'Extra Rice',emoji:'🍚',price:15,desc:'Plain steamed white rice',avail:true},
+  ],
+  siomai:[
+    {id:'s1',name:'Siomai with Rice',emoji:'🥟',price:65,desc:'6 pcs homemade pork siomai with rice',avail:true},
+    {id:'s2',name:'Siomai Solo (6pcs)',emoji:'🥟',price:50,desc:'6 pcs pork siomai, sauce included',avail:true},
+    {id:'s3',name:'Shrimp Siomai (4pcs)',emoji:'🦐',price:70,desc:'Premium shrimp filling',avail:true},
+    {id:'s4',name:'Lomi Bowl',emoji:'🍜',price:85,desc:'Thick egg noodle soup',avail:true},
+    {id:'s5',name:'Pork Lumpia (5pcs)',emoji:'🫔',price:55,desc:'Crispy homemade lumpiang shanghai',avail:true},
+  ],
+  kape:[
+    {id:'k1',name:'Iced Caramel Macchiato',emoji:'☕',price:125,desc:'Espresso, milk, caramel drizzle',avail:true},
+    {id:'k2',name:'Iced Matcha Latte',emoji:'🍵',price:110,desc:'Premium Japanese matcha',avail:true},
+    {id:'k3',name:'Mango Graham Cake',emoji:'🎂',price:159,desc:'Chilled layered cake, whole slice',avail:true},
+    {id:'k4',name:'Buko Pandan Jelly',emoji:'🌿',price:85,desc:'Classic Filipino dessert',avail:true},
+    {id:'k5',name:'Black Americano',emoji:'☕',price:80,desc:'Double shot, hot or iced',avail:true},
+  ],
+  adbuns:[
+    {id:'a1',name:'Shanghai Silog',emoji:'🍳',price:109,desc:'Lumpiang shanghai, fried egg, rice',avail:true},
+    {id:'a2',name:'Tapsilog',emoji:'🥩',price:119,desc:'Beef tapa, garlic rice, fried egg',avail:true},
+    {id:'a3',name:'Longsilog',emoji:'🌭',price:109,desc:'Longganisa, garlic rice, fried egg',avail:true},
+    {id:'a4',name:'Bangsilog',emoji:'🐟',price:129,desc:'Boneless bangus, garlic rice, egg',avail:true},
+    {id:'a5',name:'Hotsilog',emoji:'🌭',price:99,desc:'Hotdog, garlic rice, fried egg',avail:true},
+  ]
+};
+
+let cart = {};
+let orders = [];
+let savedVendors = {};
+
+// ═══ TOAST ═══
+let toastTmr;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>t.classList.remove('on'),2600);
+}
+
+// ═══ NAVIGATION ═══
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
+  if(id==='p-ccart')    renderCartPage();
+  if(id==='p-chistory') renderOrderHistory();
+  if(id==='p-vorders')  renderVendorOrders();
+  if(id==='p-vearn')    renderVendorEarnings();
+  if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); }
+  if(id==='p-aorders')  renderAdminOrders();
+  if(id==='p-avendors') renderAdminVendors();
+  if(id==='p-arevenue') renderAdminRevenue();
+}
+function goBack(){
+  pageHistory.pop();
+  const prev=pageHistory[pageHistory.length-1]||'p-land';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById(prev).classList.add('on');
+}
+
+// ═══ PORTALS ═══
+function goCust(){ buildVendorCards(); buildTodaysPicks(); goPage('p-chome'); }
+function goVendorLogin(){ goPage('p-vlogin'); }
+function goAdminLogin(){
+  goPage('p-alogin');
+}
+// Admin: tap LokalFinder logo 5x fast to access
+window.addEventListener('DOMContentLoaded',()=>{
+  let _taps=0,_tt=null;
+  const logo=document.querySelector('.land-logo');
+  if(logo){
+    logo.style.cursor='pointer';
+    logo.addEventListener('click',()=>{
+      _taps++; clearTimeout(_tt); _tt=setTimeout(()=>_taps=0,1500);
+      if(_taps>=5){_taps=0; goPage('p-alogin');}
+    });
+  }
+});
+
+// ═══ CUSTOMER HOME ═══
+function buildVendorCards(){
+  const el=document.getElementById('vendor-cards');
+  el.innerHTML=Object.values(VENDORS).filter(v=>v.active).map(v=>{
+    const hours=v.openTime&&v.closeTime?fmtTime(v.openTime)+'–'+fmtTime(v.closeTime):'';
+    const subLine=v.sub.split('·').slice(0,2).join('·').trim()+(hours?' · '+hours:'');
+    return `
+    <div class="vc" onclick="openVendor('${v.id}')">
+      <div class="vc-img" style="background:${v.bg}">
+        ${v.logo?`<img src="${v.logo}" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:v.emoji}
+        <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
+      </div>
+      <div class="vc-body">
+        <div style="margin-bottom:4px"><span class="bdg open">● Open</span></div>
+        <div class="vc-name">${v.name}</div>
+        <div class="vc-sub">${subLine}</div>
+        <div class="vc-foot"><span class="vc-price">From ₱${v.min}</span><span class="vc-rating">${v.rating}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildTodaysPicks(){
+  const el=document.getElementById('todays-picks');
+  const picks=[];
+  Object.entries(MENU).forEach(([vid,items])=>{
+    const v=VENDORS[vid];
+    if(!v||!v.active) return;
+    items.slice(0,1).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name}));
+  });
+  el.innerHTML=picks.map(item=>`
+    <div class="mrow" onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">
+      <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
+        ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
+      </div>
+      <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.vendorName}</div></div>
+      <div class="mrow-price">₱${item.price}</div>
+      <button class="add-btn" onclick="event.stopPropagation();quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>
+    </div>`).join('');
+}
+
+function filterCat(el,cat){
+  document.querySelectorAll('#cat-row .pill').forEach(p=>{p.style.background='var(--w)';p.style.color='var(--t2)';p.style.borderColor='var(--bdm)'});
+  el.style.background='var(--g)'; el.style.color='#fff'; el.style.borderColor='var(--g)';
+  showToast(cat==='all'?'Showing all vendors':'Filtered: '+cat);
+}
+
+function toggleFav(id,btn){
+  savedVendors[id]=!savedVendors[id];
+  btn.classList.toggle('on',savedVendors[id]);
+  btn.textContent=savedVendors[id]?'❤':'♡';
+  showToast(savedVendors[id]?'❤ Saved!':'Removed from saved');
+}
+
+// ═══ VENDOR DETAIL ═══
+function openVendor(vid){
+  activeVendorId=vid;
+  const v=VENDORS[vid];
+  document.getElementById('vd-hero').style.background=v.bg;
+  document.getElementById('vd-emoji').textContent=v.emoji;
+  document.getElementById('vd-name').textContent=v.name;
+  document.getElementById('vd-sub').textContent=v.sub;
+  document.getElementById('vd-min').textContent=v.min;
+  document.getElementById('vd-rating').textContent=v.rating;
+  const menuEl=document.getElementById('vd-menu');
+  menuEl.innerHTML='<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
+    MENU[vid].filter(i=>i.avail).map(item=>`
+      <div class="mrow" onclick="addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">
+        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
+        </div>
+        <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.desc}</div></div>
+        <div class="mrow-price">₱${item.price}</div>
+        <button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>
+      </div>`).join('');
+  menuEl.innerHTML+='<div style="height:80px"></div>';
+  goPage('p-cvendor');
+  updateCartBar();
+}
+
+function shareVendor(){
+  if(!activeVendorId) return;
+  showToast('📋 Link copied! Share with your neighbors 🏢');
+}
+
+// ═══ CART ═══
+function cartTotal(){
+  return Object.values(cart).reduce((s,v)=>s+v.items.reduce((ss,i)=>ss+i.price*i.qty,0),0);
+}
+function cartCount(){
+  return Object.values(cart).reduce((s,v)=>s+v.items.reduce((ss,i)=>ss+i.qty,0),0);
+}
+
+let pendingAdd=null;
+
+function addToCart(vid,name,emoji,price){
+  // One cart = one vendor. Ordering from another seller is a separate transaction.
+  const currentVid=Object.keys(cart)[0];
+  if(currentVid&&currentVid!==vid){
+    pendingAdd={vid,name,emoji,price};
+    document.getElementById('switch-from').textContent=cart[currentVid].name;
+    document.getElementById('switch-to').textContent=VENDORS[vid].name;
+    document.getElementById('modal-switch').classList.add('on');
+    return;
+  }
+  if(!cart[vid]) cart[vid]={name:VENDORS[vid].name,items:[]};
+  const ex=cart[vid].items.find(i=>i.name===name);
+  if(ex) ex.qty++; else cart[vid].items.push({name,emoji,price,qty:1});
+  showToast(emoji+' '+name+' added!');
+  updateCartBar();
+}
+
+function confirmSwitchVendor(){
+  cart={};
+  closeModal('modal-switch');
+  if(pendingAdd){const p=pendingAdd;pendingAdd=null;addToCart(p.vid,p.name,p.emoji,p.price);}
+  updateCartBar();
+  if(document.getElementById('p-ccart').classList.contains('on')) renderCartPage();
+}
+
+function cancelSwitchVendor(){
+  pendingAdd=null;
+  closeModal('modal-switch');
+}
+
+function quickAdd(vid,name,emoji,price){ addToCart(vid,name,emoji,price); }
+
+function updateCartBar(){
+  const c=cartCount(),t=cartTotal();
+  const bar=document.getElementById('cust-cart-bar');
+  const vbar=document.getElementById('vd-cart-bar');
+  if(c>0){
+    bar.classList.remove('hide');
+    document.getElementById('cbar-cnt').textContent=c;
+    document.getElementById('cbar-tot').textContent='₱'+t;
+    if(vbar){vbar.classList.remove('hide');document.getElementById('vbar-cnt').textContent=c;document.getElementById('vbar-tot').textContent='₱'+t;}
+  } else {
+    bar.classList.add('hide');
+    if(vbar) vbar.classList.add('hide');
+  }
+  [document.getElementById('home-badge'),document.getElementById('bnav-badge')].forEach(b=>{if(b){b.style.display=c>0?'flex':'none';b.textContent=c;}});
+}
+
+function renderCartPage(){
+  const il=document.getElementById('cart-items');
+  const em=document.getElementById('cart-empty');
+  const cf=document.getElementById('checkout-form');
+  if(cartCount()===0){ il.innerHTML=''; em.style.display='block'; cf.style.display='none'; return; }
+  em.style.display='none'; cf.style.display='block';
+  let html='';
+  Object.entries(cart).forEach(([vid,vCart])=>{
+    html+=`<div style="padding:9px 16px 3px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2)">${vCart.name}</div>`;
+    vCart.items.forEach(item=>{
+      html+=`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:.5px solid var(--bd);background:var(--w)">
+        <div style="font-size:22px;width:36px;height:36px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${item.emoji}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;color:var(--t1)">${item.name}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="changeQty('${vid}','${esc(item.name)}',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">−</button>
+          <span style="font-size:13px;font-weight:700;min-width:16px;text-align:center">${item.qty}</span>
+          <button onclick="changeQty('${vid}','${esc(item.name)}',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">+</button>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:var(--g);flex-shrink:0;min-width:46px;text-align:right">₱${item.price*item.qty}</div>
+      </div>`;
+    });
+  });
+  il.innerHTML=html;
+  const sub=cartTotal();
+  document.getElementById('f-sub').textContent='₱'+sub;
+  document.getElementById('f-tot').textContent='₱'+sub;
+}
+
+function changeQty(vid,name,d){
+  if(!cart[vid]) return;
+  const item=cart[vid].items.find(i=>i.name===name);
+  if(!item) return;
+  item.qty+=d;
+  if(item.qty<=0){cart[vid].items=cart[vid].items.filter(i=>i.name!==name);if(!cart[vid].items.length)delete cart[vid];}
+  updateCartBar(); renderCartPage();
+}
+
+function setPay(m){
+  payMethod=m;
+  document.getElementById('pay-g').classList.toggle('on',m==='gcash');
+  document.getElementById('pay-c').classList.toggle('on',m==='cash');
+}
+
+function placeOrder(){
+  const name=document.getElementById('cust-name').value.trim();
+  const unit=document.getElementById('cust-unit').value.trim();
+  const phone=document.getElementById('cust-phone').value.trim();
+  if(!name){showToast('⚠️ Enter your name');return;}
+  if(!unit){showToast('⚠️ Enter your unit number');return;}
+  const total=cartTotal();
+  document.getElementById('s-unit').textContent='Unit '+unit;
+  document.getElementById('s-total').textContent='₱'+total;
+  pendingOid=genOrderId();
+  const oid=pendingOid;
+  document.getElementById('s-oid').textContent=oid;
+  if(payMethod==='gcash'){
+    document.getElementById('gc-amt').textContent='₱'+total;
+    goPage('p-cgcash');
+  } else {
+    finalizeOrder(name,unit,phone,total,oid,'cash');
+  }
+}
+
+function confirmGcash(){
+  const ref=document.getElementById('gc-ref').value.trim();
+  if(!ref){showToast('⚠️ Enter your GCash reference number');return;}
+  const name=document.getElementById('cust-name').value.trim();
+  const unit=document.getElementById('cust-unit').value.trim();
+  const phone=document.getElementById('cust-phone').value.trim();
+  const total=cartTotal();
+  const oid=pendingOid||genOrderId();
+  finalizeOrder(name,unit,phone,total,oid,'gcash',ref);
+}
+
+function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
+  const items=[];
+  Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
+  const order={
+    id:oid, name, unit, phone, total, items, method, ref,
+    status:'new', timestamp:new Date(), vendorId:Object.keys(cart)[0],
+    subtotal:total, fee:0, updatedAt:Date.now()
+  };
+  orders.push(order);
+  knownOrderIds.add(order.id);
+  lastPlacedOrderId=order.id;
+  myOrderIds.push(order.id);
+  pendingOid=null;
+  updateAdminStats();
+  updateVendorDash(order.vendorId);
+  renderOrderHistory();
+  goPage('p-csuccess');
+  if(true){  // JSONBin sync
+    pushOrders();
+    saveMyOrders();
+    updateTrackerFromStatus();   // live tracker follows the vendor's real updates
+  } else {
+    simulateTracker();           // offline demo fallback
+  }
+}
+
+function resetCart(){
+  cart={};
+  updateCartBar();
+  document.getElementById('cust-name').value='';
+  document.getElementById('cust-unit').value='';
+  document.getElementById('cust-phone').value='';
+  document.getElementById('gc-ref').value='';
+  resetTrackerUI();
+}
+
+function simulateTracker(){
+  resetTrackerUI();
+  setTimeout(()=>{
+    el('td2').className='trk-dot done'; el('td2').textContent='✓';
+    el('tl2').classList.add('done');
+    el('tt2').textContent='Vendor Preparing ✓';
+    el('td3').className='trk-dot active'; el('td3').textContent='🚚';
+    el('tt3').classList.remove('dim');
+  },4000);
+  setTimeout(()=>{
+    el('td3').className='trk-dot done'; el('td3').textContent='✓';
+    el('tl3').classList.add('done');
+    el('tt3').textContent='Out for Delivery ✓';
+    el('td4').className='trk-dot active'; el('td4').textContent='📦';
+    el('tt4').classList.remove('dim');
+    el('tt4').textContent='Arriving now!';
+    showToast('🚀 Your order is almost there!');
+  },9000);
+}
+
+function resetTrackerUI(){
+  [['td2','⏳'],['td3','👨‍🍳'],['td4','🚚'],['td5','📦']].forEach(([id,ico])=>{
+    const d=el(id); if(d){d.className='trk-dot '+(id==='td2'?'active':'pend');d.textContent=ico;d.style.background='';d.style.color='';}
+  });
+  ['tl2','tl3','tl4'].forEach(id=>{const l=el(id);if(l)l.classList.remove('done');});
+  el('tt2').textContent='Waiting for acceptance…'; el('tt2').classList.remove('dim');
+  ['tt3','tt4','tt5','ts2','ts3','ts4','ts5'].forEach(id=>{const t=el(id);if(t)t.classList.add('dim');});
+  const pill=el('live-status-pill');
+  if(pill){ pill.style.background='var(--s2)'; pill.style.borderColor='var(--bdm)'; }
+  if(el('lsp-ico')) el('lsp-ico').textContent='⏳';
+  if(el('lsp-title')) el('lsp-title').textContent='Waiting for acceptance…';
+  if(el('lsp-sub')) el('lsp-sub').textContent='The vendor will confirm shortly';
+  if(el('lsp-pulse')){ el('lsp-pulse').style.background='#f59e0b'; el('lsp-pulse').style.animation='pulse 1.2s infinite'; }
+  prevTrackerStatus=null;
+}
+
+function renderOrderHistory(){
+  const el2=document.getElementById('cust-history');
+  const mine=orders.filter(o=>myOrderIds.includes(o.id));
+  if(!mine.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Place your first order!</div></div>';return;}
+  el2.innerHTML=mine.slice().reverse().map(o=>`
+    <div class="ocard" style="margin:0 16px 10px">
+      <div class="ocard-hd">
+        <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)}</div></div>
+        <span class="bdg ${o.status}">${o.status}</span>
+      </div>
+      <div class="ocard-bd">
+        ${o.items.slice(0,2).map(i=>`<div class="oitem">${i.emoji} ${i.name} × ${i.qty}</div>`).join('')}
+        ${o.items.length>2?`<div class="oitem" style="color:var(--t3)">+${o.items.length-2} more</div>`:''}
+      </div>
+      <div class="ocard-ft">
+        <div><div class="ocard-total">₱${o.total}</div><div class="ocard-cut">Unit ${o.unit} · ${o.method==='gcash'?'GCash ✓':'Cash'}</div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══ VENDOR PORTAL ═══
+// Demo vendor PINs: pares=1234, siomai=5678, kape=2222, adbuns=3333
+const VENDOR_PINS_PLAIN = {pares:'1234',siomai:'5678',kape:'2222',adbuns:'3333'};
+async function vendorLogin(){
+  const sel=document.getElementById('v-sel').value;
+  const pin=document.getElementById('v-pin').value;
+  if(!sel){showToast('⚠️ Select your store');return;}
+  if(!pin){showToast('⚠️ Enter your PIN');return;}
+  if(!VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Store not found — contact admin');return;}
+  if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
+  activeVendorId=sel;
+  try{ await requestNotifPermission(); }catch(e){ /* notifications optional */ }
+  const v=VENDORS[sel];
+  if(!v){showToast('⚠️ Vendor data not loaded yet, try again');activeVendorId=null;return;}
+  el('v-dname').textContent=v.name;
+  el('v-dsub').textContent=v.sub;
+  el('v-demoji').textContent=v.emoji;
+  applyVendorLogo(v.logo||'');
+  updateVendorDash(sel);
+  renderVendorMenu(sel);
+  updateStoreStatusUI();
+  goPage('p-vdash');
+  showToast('Welcome back, '+v.name+'! 👋');
+}
+
+function vendorLogout(){
+  activeVendorId=null;
+  document.getElementById('v-sel').value='';
+  document.getElementById('v-pin').value='';
+  goPage('p-land');
+  showToast('Logged out of vendor portal');
+}
+
+function triggerLogoUpload(){
+  el('v-logo-input').click();
+}
+
+function handleLogoUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const tmp=new Image();
+    tmp.onload=()=>{
+      // Resize to max 200px
+      const max=200, sc=Math.min(1,max/Math.max(tmp.width,tmp.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
+      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
+      const dataUrl=cv.toDataURL('image/jpeg',.85);
+      // Save to vendor
+      if(activeVendorId){
+        VENDORS[activeVendorId].logo=dataUrl;
+        applyVendorLogo(dataUrl);
+        pushState();
+        showToast('✅ Logo updated!');
+      }
+    };
+    tmp.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyVendorLogo(logo){
+  const img=el('v-dlogo-img');
+  const emo=el('v-demoji');
+  if(logo){
+    img.src=logo; img.style.display='block';
+    if(emo) emo.style.display='none';
+  } else {
+    img.style.display='none';
+    if(emo) emo.style.display='block';
+  }
+}
+
+function goVendorTab(tab){
+  currentVendorTab=tab;
+  const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
+  goPage(pages[tab]);
+  // renders are now triggered inside goPage — no need to call again here
+  if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
+}
+
+function toggleStore(on){
+  if(activeVendorId){
+    VENDORS[activeVendorId].active=on;
+    VENDORS[activeVendorId].manualOverride=true; // manual toggle overrides schedule
+  }
+  updateStoreStatusUI();
+  pushState();
+  buildVendorCards();
+  showToast(on?'✅ Store is now Open!':'🔴 Store is now Closed');
+}
+
+function saveStoreHours(){
+  if(!activeVendorId) return;
+  const open=el('v-open-time').value;
+  const close=el('v-close-time').value;
+  VENDORS[activeVendorId].openTime=open;
+  VENDORS[activeVendorId].closeTime=close;
+  VENDORS[activeVendorId].manualOverride=false; // schedule takes over again
+  applySchedule(activeVendorId);
+  pushState();
+  showToast('✅ Hours saved: '+fmtTime(open)+' – '+fmtTime(close));
+}
+
+function fmtTime(t){
+  if(!t) return '';
+  const [h,m]=t.split(':').map(Number);
+  const ampm=h>=12?'PM':'AM';
+  const h12=h%12||12;
+  return h12+(m?':'+String(m).padStart(2,'0'):'')+' '+ampm;
+}
+
+function applySchedule(vid){
+  const v=VENDORS[vid]; if(!v) return;
+  if(v.manualOverride) return; // vendor manually set it, don't override
+  if(!v.openTime||!v.closeTime) return;
+  const now=new Date();
+  const ph=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Manila'}));
+  const cur=ph.getHours()*60+ph.getMinutes();
+  const [oh,om]=v.openTime.split(':').map(Number);
+  const [ch,cm]=v.closeTime.split(':').map(Number);
+  const openMin=oh*60+om;
+  const closeMin=ch*60+cm;
+  const shouldBeOpen = closeMin>openMin ? (cur>=openMin&&cur<closeMin) : (cur>=openMin||cur<closeMin);
+  if(v.active!==shouldBeOpen){
+    v.active=shouldBeOpen;
+    if(activeVendorId===vid) updateStoreStatusUI();
+    buildVendorCards();
+  }
+}
+
+function updateStoreStatusUI(){
+  if(!activeVendorId) return;
+  const v=VENDORS[activeVendorId]; if(!v) return;
+  const tog=el('v-store-tog'); if(tog) tog.checked=v.active;
+  el('v-status-txt').textContent=v.active?'Your store is Open':'Your store is Closed';
+  // Load saved hours into inputs
+  if(v.openTime && el('v-open-time')) el('v-open-time').value=v.openTime;
+  if(v.closeTime && el('v-close-time')) el('v-close-time').value=v.closeTime;
+  // Show hours note
+  const note=el('v-hours-note');
+  if(note){
+    if(v.openTime&&v.closeTime){
+      note.textContent='Schedule: '+fmtTime(v.openTime)+' – '+fmtTime(v.closeTime)+(v.manualOverride?' (manual override)':'');
+    } else {
+      note.textContent='Set hours above to auto open/close';
+    }
+  }
+  // Update the vendor sub text with hours
+  const sub=el('v-dsub');
+  if(sub&&v.openTime&&v.closeTime) sub.textContent=v.sub.split('·').slice(0,2).join('·')+' · '+fmtTime(v.openTime)+'–'+fmtTime(v.closeTime);
+}
+
+function updateVendorDash(vid){
+  if(!vid||!el('v-dname')) return;
+  const myOrders=orders.filter(o=>o.vendorId===vid);
+  const gross=myOrders.reduce((s,o)=>s+o.subtotal,0);
+  const fees=myOrders.length*SERVICE_FEE;
+  const net=gross;
+  const newOrders=myOrders.filter(o=>o.status==='new');
+  el('v-orders-today').textContent=myOrders.length;
+  el('v-earned-today').textContent='₱'+net;
+  el('v-new-cnt').textContent=newOrders.length;
+  el('v-payout').textContent='₱'+net;
+  el('v-gross').textContent='₱'+gross;
+  el('v-fees').textContent='−₱'+fees;
+  const badge=el('v-orders-badge');
+  if(badge){badge.style.display=newOrders.length>0?'flex':'none';badge.textContent=newOrders.length;}
+  const banner=el('v-new-banner');
+  if(banner){banner.style.display=newOrders.length>0?'flex':'none';el('v-banner-txt').textContent=newOrders.length+' new order'+(newOrders.length>1?'s':'')+' waiting';}
+  renderVendorRecentOrders(vid);
+}
+
+function renderVendorRecentOrders(vid){
+  const el2=el('v-recent-orders');
+  if(!el2) return;
+  const myOrders=orders.filter(o=>o.vendorId===vid).slice(-3).reverse();
+  if(!myOrders.length){el2.innerHTML='<div class="empty" style="padding:20px"><div class="empty-sub">No orders yet.</div></div>';return;}
+  el2.innerHTML=myOrders.map(o=>renderOrderCard(o,true)).join('');
+}
+
+function renderVendorOrders(){
+  if(!activeVendorId) return;
+  const el2=el('v-orders-list');
+  const myOrders=orders.filter(o=>o.vendorId===activeVendorId).reverse();
+  if(!myOrders.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders appear here in real time.</div></div>';return;}
+  el2.innerHTML='<div style="height:4px"></div>'+myOrders.map(o=>renderOrderCard(o,true)).join('')+'<div style="height:80px"></div>';
+}
+
+function renderOrderCard(o, vendorView=false){
+  const actions=vendorView?getVendorActions(o):'';
+  return `<div class="ocard" data-oid="${o.id}" data-status="${o.status}" style="${o.status==='done'||o.status==='delivered'?'opacity:.65':''}">
+    <div class="ocard-hd">
+      <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)} · Unit ${o.unit}${vendorView?' · '+o.name:''}</div></div>
+      <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
+    </div>
+    <div class="ocard-bd">
+      ${o.items.map(i=>`<div class="oitem">${i.emoji} ${i.name} × ${i.qty} — ₱${i.price*i.qty}</div>`).join('')}
+    </div>
+    <div class="ocard-ft">
+      <div><div class="ocard-total">₱${o.total}</div><div class="ocard-cut">Total: ₱${o.subtotal}</div></div>
+      <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'📱 GCash ✓':'💵 Cash'}</span>
+    </div>
+    ${actions?`<div class="ocard-acts">${actions}</div>`:''}
+  </div>`;
+}
+
+function getVendorActions(o){
+  if(o.status==='new') return `<button class="oact p" onclick="updateOrderStatus('${o.id}','accepted')">✓ Accept</button><button class="oact d" onclick="updateOrderStatus('${o.id}','declined')">Decline</button>`;
+  if(o.status==='accepted') return `<button class="oact a" onclick="updateOrderStatus('${o.id}','preparing')">Start Preparing</button>`;
+  if(o.status==='preparing') return `<button class="oact a" onclick="updateOrderStatus('${o.id}','ready')">📦 Mark Ready</button>`;
+  if(o.status==='ready') return `<button class="oact g" onclick="updateOrderStatus('${o.id}','delivered')">Delivered ✓</button>`;
+  return '';
+}
+
+function updateOrderStatus(oid,status){
+  const o=orders.find(o=>o.id===oid);
+  if(!o) return;
+  o.status=status;
+  o.updatedAt=Date.now();
+  pushOrders();
+  const msgs={accepted:'✓ Order accepted! Start preparing.',preparing:'👨‍🍳 Preparing order…',ready:'📦 Order ready! Delivering now.',delivered:'✅ Delivered! Earnings updated.',declined:'Order declined.'};
+  showToast(msgs[status]||'Updated');
+  updateVendorDash(activeVendorId);
+  renderVendorOrders();
+  renderVendorEarnings();
+  updateAdminStats();
+  renderAdminOrders();
+}
+
+function filterVOrders(type,btn){
+  document.querySelectorAll('[id^="vof-"]').forEach(b=>{b.style.background='var(--w)';b.style.color='var(--t2)';b.style.border='1px solid var(--bdm)';});
+  btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.border='none';
+  document.querySelectorAll('#v-orders-list [data-status]').forEach(c=>{
+    const s=c.dataset.status;
+    c.style.display=(type==='all'||s===type)?'':'none';
+  });
+}
+
+function renderVendorMenu(vid){
+  const el2=el('vendor-menu-list');
+  if(!el2) return;
+  const items=MENU[vid]||[];
+  if(!items.length){
+    el2.innerHTML=`<div style="text-align:center;padding:32px 20px;color:var(--t3);font-size:13px">No menu items yet.<br>Tap "+ Add Item" to get started.</div>`;
+    return;
+  }
+  el2.innerHTML=items.map((item,i)=>`
+    <div style="background:var(--w);border-bottom:.5px solid var(--bd);opacity:${item.avail?1:.5};transition:opacity .2s" id="mi-${item.id}">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
+        </div>
+        <div class="mrow-info">
+          <div class="mrow-name">${item.name}</div>
+          <div class="mrow-desc">${item.desc}</div>
+        </div>
+        <div class="mrow-price">₱${item.price}</div>
+        <label class="tog">
+          <input type="checkbox" ${item.avail?'checked':''} onchange="toggleMenuItem('${vid}',${i},this)">
+          <div class="tog-t"></div><div class="tog-k"></div>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;padding:0 16px 11px;padding-left:82px">
+        <button onclick="openEditItemModal('${vid}',${i})" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--g);cursor:pointer">✏️ Edit</button>
+        <button onclick="deleteMenuItem('${vid}',${i})" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--red);cursor:pointer">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openEditItemModal(vid, idx){
+  const item=MENU[vid][idx];
+  el('edit-item-name').value=item.name;
+  el('edit-item-price').value=item.price;
+  el('edit-item-desc').value=item.desc;
+  el('edit-item-emoji').value=item.emoji;
+  el('edit-item-avail').checked=item.avail;
+  const eImg=el('edit-photo-img');
+  if(item.photo){
+    eImg.src=item.photo; eImg.style.display='block';
+    el('edit-photo-placeholder').style.display='none';
+    el('edit-photo-text').style.display='none';
+  } else {
+    eImg.src=''; eImg.style.display='none';
+    el('edit-photo-placeholder').style.display='';
+    el('edit-photo-text').style.display='';
+  }
+  el('modal-edititem').dataset.vid=vid;
+  el('modal-edititem').dataset.idx=idx;
+  el('modal-edititem').classList.add('on');
+}
+
+function saveEditItem(){
+  const modal=el('modal-edititem');
+  const vid=modal.dataset.vid;
+  const idx=parseInt(modal.dataset.idx);
+  const name=el('edit-item-name').value.trim();
+  const price=parseInt(el('edit-item-price').value);
+  const desc=el('edit-item-desc').value.trim();
+  const emoji=el('edit-item-emoji').value.trim()||'🍽️';
+  const avail=el('edit-item-avail').checked;
+  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
+  const editPhotoSrc=el('edit-photo-img').src||'';
+  const photo=editPhotoSrc.startsWith('data:')?editPhotoSrc:(MENU[vid][idx].photo||'');
+  MENU[vid][idx]={...MENU[vid][idx],name,price,desc,emoji,avail,photo};
+  pushState();
+  renderVendorMenu(vid);
+  closeModal('modal-edititem');
+  showToast('✅ '+name+' updated!');
+}
+
+function deleteMenuItem(vid, idx){
+  const item=MENU[vid][idx];
+  if(!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+  MENU[vid].splice(idx,1);
+  pushState();
+  renderVendorMenu(vid);
+  showToast('🗑 '+item.name+' removed from menu');
+}
+
+function toggleMenuItem(vid,idx,chk){
+  MENU[vid][idx].avail=chk.checked;
+  pushState();
+  const row=chk.closest('.mrow');
+  row.style.opacity=chk.checked?'1':'0.5';
+  showToast(chk.checked?'✓ Item now available':'Item hidden from customers');
+}
+
+function openAddItemModal(){ el('modal-additem').classList.add('on'); }
+function previewPhoto(input, imgId, placeholderId, textId){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    // downscale to max 400px so menu photos stay small enough to sync
+    const tmp=new Image();
+    tmp.onload=()=>{
+      const max=400, sc=Math.min(1,max/Math.max(tmp.width,tmp.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
+      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
+      const img=el(imgId);
+      img.src=cv.toDataURL('image/jpeg',.78); img.style.display='block';
+      el(placeholderId).style.display='none';
+      el(textId).style.display='none';
+    };
+    tmp.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function addMenuItemConfirm(){
+  const name=el('new-item-name').value.trim();
+  const price=parseInt(el('new-item-price').value);
+  const desc=el('new-item-desc').value.trim();
+  const emoji=el('new-item-emoji').value.trim()||'🍽️';
+  const photoSrc=el('new-photo-img').src||'';
+  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
+  if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
+  MENU[activeVendorId].push({id:'new'+Date.now(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''});
+  pushState();
+  renderVendorMenu(activeVendorId);
+  closeModal('modal-additem');
+  el('new-item-name').value=''; el('new-item-price').value=''; el('new-item-desc').value=''; el('new-item-emoji').value='';
+  el('new-photo-img').src=''; el('new-photo-img').style.display='none';
+  el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
+  el('new-item-photo').value='';
+  showToast('✅ '+name+' added to menu!');
+}
+
+function renderVendorEarnings(){
+  if(!activeVendorId) return;
+  const myOrders=orders.filter(o=>o.vendorId===activeVendorId);
+  const gross=myOrders.reduce((s,o)=>s+o.subtotal,0);
+  const fees=myOrders.length*SERVICE_FEE;
+  const cashOrders=myOrders.filter(o=>o.method==='cash');
+  const cashOwed=cashOrders.length*SERVICE_FEE;
+  el('ve-payout').textContent='₱'+gross;
+  el('ve-sub').textContent=myOrders.length+' order'+(myOrders.length!==1?'s':'')+' today';
+  el('ve-gross').textContent='₱'+gross;
+  el('ve-fees').textContent='−₱'+fees;
+  el('ve-net').textContent='₱'+gross;
+  el('ve-cash-owed').textContent='₱'+cashOwed;
+  const logEl=el('ve-order-log');
+  logEl.innerHTML=myOrders.length?myOrders.map(o=>`
+    <div style="display:flex;justify-content:space-between;padding:9px 14px;border-bottom:.5px solid var(--bd);font-size:12px;color:var(--t2)">
+      <span>${o.id} · ${o.items[0].name}${o.items.length>1?' +more':''}</span>
+      <span style="font-weight:700">₱${o.subtotal} <span style="font-size:10px;color:var(--t3);font-weight:400">(${o.method})</span></span>
+    </div>`).join(''):'<div style="padding:16px;text-align:center;font-size:12px;color:var(--t3)">No orders yet today</div>';
+  const note=el('ve-cash-note');
+  if(cashOwed>0){note.style.display='block';note.innerHTML=`<b>Cash settlement:</b> You collected ₱${cashOwed} in service fees from cash orders. Transfer to LokalFinder GCash <b>0917 123 4567</b> by 8PM tonight.`;}
+  else note.style.display='none';
+}
+
+// ═══ ADMIN ═══
+async function adminLogin(){
+  const email=el('a-email').value.trim();
+  const pass=el('a-pass').value;
+  if(email!==ADMIN_EMAIL){showToast('⚠️ Incorrect email');return;}
+  // Demo: accept 'admin1234'. In production replace with proper hash check.
+  const validPass = pass === 'admin1234';
+  if(!validPass){showToast('⚠️ Incorrect password');return;}
+  goPage('p-adash');
+  updateAdminStats();
+  renderAdminVendors();
+  renderAdminOrders();
+  showToast('Welcome back, Norris! 🏢');
+}
+
+function goAdminTab(tab){
+  const pages={dash:'p-adash',orders:'p-aorders',vendors:'p-avendors',revenue:'p-arevenue'};
+  goPage(pages[tab]);
+  // renders triggered inside goPage
+}
+
+// Hero stats (editable by admin)
+let heroStats = { vendorCount: '', userCount: '0' };
+
+function loadHeroStats(){
+  try{ const s=localStorage.getItem('lf-heroStats'); if(s) heroStats=JSON.parse(s); }catch(e){}
+}
+function saveHeroStats(){
+  const vc=el('admin-vendor-display').value.trim()||String(Object.values(VENDORS).length);
+  const uc=el('admin-user-display').value.trim()||'0';
+  heroStats={vendorCount:vc, userCount:uc};
+  try{ localStorage.setItem('lf-heroStats', JSON.stringify(heroStats)); }catch(e){}
+  applyHeroStats();
+  showToast('✅ Front page stats updated!');
+}
+function applyHeroStats(){
+  const vc = heroStats.vendorCount || String(Object.values(VENDORS).filter(v=>v.active).length);
+  const uc = heroStats.userCount || '0';
+  if(el('hero-vendor-count')) el('hero-vendor-count').textContent=vc;
+  if(el('hero-user-count')) el('hero-user-count').textContent=uc;
+  if(el('admin-vendor-display')) el('admin-vendor-display').value=vc;
+  if(el('admin-user-display')) el('admin-user-display').value=uc;
+  if(el('admin-vendor-preview')) el('admin-vendor-preview').textContent=vc;
+  if(el('admin-user-preview')) el('admin-user-preview').textContent=uc;
+}
+
+function updateAdminStats(){
+  const total=orders.length;
+  const revenue=total*SERVICE_FEE;
+  const pending=orders.filter(o=>['new','accepted','preparing','ready'].includes(o.status)).length;
+  el('a-total-orders').textContent=total;
+  el('a-total-revenue').textContent='₱'+revenue;
+  el('a-pending').textContent=pending;
+  const activeVendorCount=Object.values(VENDORS).filter(v=>v.active).length;
+  el('a-vendors-active').textContent=activeVendorCount;
+  const badge=el('a-badge');
+  if(badge){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
+  // Auto-update vendor count on front page if admin hasn't overridden it
+  if(!heroStats.vendorCount) el('hero-vendor-count').textContent=activeVendorCount;
+  applyHeroStats();
+  renderAdminOrdersPreview();
+}
+
+function renderAdminOrdersPreview(){
+  const el2=el('a-orders-preview');
+  if(!el2) return;
+  const recent=orders.slice(-3).reverse();
+  if(!recent.length){el2.innerHTML='<div class="empty" style="padding:20px"><div class="empty-sub">No orders yet.</div></div>';return;}
+  el2.innerHTML=recent.map(o=>`
+    <div class="ocard" style="margin:0 16px 10px">
+      <div class="ocard-hd">
+        <div><div class="ocard-id">${o.id} · ${VENDORS[o.vendorId]?.name||'Unknown'}</div><div class="ocard-tm">${timeSince(o.timestamp)} · Unit ${o.unit}</div></div>
+        <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
+      </div>
+      <div class="ocard-ft">
+        <div><div class="ocard-total">₱${o.total}</div></div>
+        <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'GCash ✓':'Cash'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderAdminOrders(){
+  const el2=el('a-all-orders-list');
+  if(!el2) return;
+  if(!orders.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">All orders from all vendors appear here.</div></div>';return;}
+  el2.innerHTML='<div style="height:4px"></div>'+orders.slice().reverse().map(o=>`
+    <div class="ocard" style="margin:0 16px 10px">
+      <div class="ocard-hd">
+        <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)} · ${VENDORS[o.vendorId]?.name||'Unknown'} · Unit ${o.unit}</div></div>
+        <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
+      </div>
+      <div class="ocard-bd">${o.items.map(i=>`<div class="oitem">${i.emoji} ${i.name} × ${i.qty}</div>`).join('')}</div>
+      <div class="ocard-ft">
+        <div><div class="ocard-total">₱${o.total}</div></div>
+        <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'GCash ✓':'Cash'}</span>
+      </div>
+      <div class="ocard-acts">
+        <button class="oact s" onclick="adminUpdateStatus('${o.id}','${nextStatus(o.status)}')" ${['delivered','declined'].includes(o.status)?'disabled style="opacity:.4;cursor:default"':''}>
+          ${nextStatusLabel(o.status)}
+        </button>
+      </div>
+    </div>`).join('')+'<div style="height:80px"></div>';
+}
+
+function adminUpdateStatus(oid,status){
+  const o=orders.find(o=>o.id===oid);
+  if(!o||!status) return;
+  o.status=status;
+  o.updatedAt=Date.now();
+  pushOrders();
+  showToast('Order '+oid+' → '+statusLabel(status));
+  updateAdminStats(); renderAdminOrders();
+}
+
+function renderAdminVendors(){
+  const el2=el('a-vendor-cards');
+  if(!el2) return;
+  el2.innerHTML=Object.values(VENDORS).map(v=>{
+    const vOrders=orders.filter(o=>o.vendorId===v.id);
+    const gross=vOrders.reduce((s,o)=>s+o.subtotal,0);
+    return `<div class="av-card">
+      <div class="av-hd">
+        <div class="av-ico">${v.emoji}</div>
+        <div class="av-info"><div class="av-name">${v.name}</div><div class="av-sub">${v.sub.split('·').slice(0,2).join('·')}</div></div>
+        <span class="bdg ${v.active?'open':'closed'}">${v.active?'● Open':'● Closed'}</span>
+      </div>
+      <div class="av-body">
+        <div class="av-row"><span>Orders today</span><span class="av-val">${vOrders.length}</span></div>
+        <div class="av-row"><span>Gross sales</span><span class="av-val g">₱${gross}</span></div>
+        <div class="av-row"><span>Fees owed to you</span><span class="av-val">₱${vOrders.length*SERVICE_FEE}</span></div>
+        <div class="av-row"><span>Vendor PIN</span><span class="av-val">••••</span></div>
+      </div>
+      <div class="av-acts">
+        <button class="oact ${v.active?'d':'p'}" onclick="toggleVendorActive('${v.id}')">${v.active?'Pause Store':'Reactivate'}</button>
+        <button class="oact s" onclick="showToast('Edit feature coming soon!')">Edit</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleVendorActive(vid){
+  VENDORS[vid].active=!VENDORS[vid].active;
+  showToast(VENDORS[vid].active?'✅ '+VENDORS[vid].name+' reactivated':'🔴 '+VENDORS[vid].name+' paused');
+  pushState();
+  renderAdminVendors();
+  updateAdminStats();
+  buildVendorCards();
+}
+
+function renderAdminRevenue(){
+  const total=orders.length*SERVICE_FEE;
+  const gcashOrders=orders.filter(o=>o.method==='gcash');
+  const cashOrders=orders.filter(o=>o.method==='cash');
+  const avg=orders.length?Math.round(orders.reduce((s,o)=>s+o.total,0)/orders.length):0;
+  el('ar-total').textContent='₱'+total;
+  el('ar-gcash').textContent='₱'+(gcashOrders.length*SERVICE_FEE);
+  el('ar-cash').textContent='₱'+(cashOrders.length*SERVICE_FEE);
+  el('ar-count').textContent=orders.length;
+  el('ar-avg').textContent='₱'+avg;
+  const bel=el('ar-vendor-breakdown');
+  bel.innerHTML=Object.values(VENDORS).map(v=>{
+    const c=orders.filter(o=>o.vendorId===v.id).length;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--bd);font-size:12px">
+      <span>${v.emoji} ${v.name}</span>
+      <span style="font-weight:700;color:var(--g)">₱${c*SERVICE_FEE} (${c} orders)</span>
+    </div>`;
+  }).join('');
+}
+
+function openAddVendorModal(){ el('modal-addvendor').classList.add('on'); }
+function addVendorConfirm(){
+  const name=el('nv-name').value.trim();
+  const emoji=el('nv-emoji').value.trim()||'🏪';
+  const loc=el('nv-loc').value;
+  const cat=el('nv-cat').value.trim()||'Food';
+  const pin=el('nv-pin').value.trim();
+  const gcash=el('nv-gcash').value.trim();
+  if(!name||!pin){showToast('⚠️ Fill in store name and PIN');return;}
+  if(pin.length!==4){showToast('⚠️ PIN must be exactly 4 digits');return;}
+  const id='v'+Date.now();
+  VENDORS[id]={id,name,emoji,sub:loc+' · '+cat,bg:'#F5F5F5',rating:'⭐ New',min:'₱50',cats:['food'],active:true};
+  MENU[id]=[];
+  VENDOR_PINS_PLAIN[id]=pin;
+  pushState();
+  // Add to vendor login select
+  const sel=el('v-sel');
+  const opt=document.createElement('option');
+  opt.value=id; opt.textContent=name;
+  sel.appendChild(opt);
+  closeModal('modal-addvendor');
+  ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash'].forEach(id2=>el(id2).value='');
+  renderAdminVendors();
+  buildVendorCards();
+  updateAdminStats();
+  showToast('✅ '+name+' added! PIN: '+pin);
+}
+
+// ═══ MODALS ═══
+function closeModal(id,event){
+  if(!event||event.target===el(id)) el(id).classList.remove('on');
+}
+
+// ═══ UTILS ═══
+function el(id){ return document.getElementById(id); }
+function esc(s){ return s.replace(/'/g,"\\'"); }
+function timeSince(d){
+  const s=Math.floor((Date.now()-new Date(d))/1000);
+  if(s<60) return 'Just now';
+  if(s<3600) return Math.floor(s/60)+' min ago';
+  return Math.floor(s/3600)+' hr ago';
+}
+function statusLabel(s){
+  return {new:'New',accepted:'Accepted',preparing:'Preparing',ready:'Ready ✓',delivered:'Delivered ✓',done:'Done',declined:'Declined'}[s]||s;
+}
+function nextStatus(s){
+  return {new:'accepted',accepted:'preparing',preparing:'ready',ready:'delivered'}[s]||null;
+}
+function nextStatusLabel(s){
+  return {new:'→ Accept',accepted:'→ Preparing',preparing:'→ Ready',ready:'→ Delivered',delivered:'Done ✓',declined:'Declined'}[s]||'—';
+}
+
+function checkVendorNewOrders(){
+  if(!activeVendorId) return;
+  const fresh=orders.filter(o=>o.vendorId===activeVendorId&&o.status==='new');
+  fresh.forEach(o=>notifyVendorNewOrder(o));
+}
+
+// ── Customer live tracker (5 steps) ───────────────────
+const STATUS_CONFIG = {
+  new:      { ico:'⏳', pill:'Waiting for acceptance…',     pillSub:'The vendor will confirm shortly',     bg:'var(--s2)',   border:'var(--bdm)',   dot:'#f59e0b', step:1 },
+  accepted: { ico:'✅', pill:'Order Accepted!',              pillSub:'Vendor confirmed your order',          bg:'#f0fdf4',   border:'#86efac',      dot:'#22c55e', step:2 },
+  preparing:{ ico:'👨‍🍳', pill:'Being Prepared',              pillSub:'Your food is being cooked right now',  bg:'#fffbeb',   border:'#fcd34d',      dot:'#f59e0b', step:3 },
+  ready:    { ico:'🚚', pill:'Out for Delivery!',            pillSub:'On the way to your unit',              bg:'#eff6ff',   border:'#93c5fd',      dot:'#3b82f6', step:4 },
+  delivered:{ ico:'🎉', pill:'Delivered!',                   pillSub:'Enjoy your meal 😊',                   bg:'#f0fdf4',   border:'#86efac',      dot:'#22c55e', step:5 },
+  declined: { ico:'😞', pill:'Order Declined',               pillSub:'Contact the vendor or try another',   bg:'#fff1f2',   border:'#fca5a5',      dot:'#ef4444', step:0 },
+};
+
+const STEPS = [
+  { td:'td2', tl:'tl2', tt:'tt2', ts:'ts2', labels:{ new:'Waiting for acceptance…', accepted:'Accepted ✓', preparing:'Accepted ✓', ready:'Accepted ✓', delivered:'Accepted ✓' } },
+  { td:'td3', tl:'tl3', tt:'tt3', ts:'ts3', labels:{ preparing:'Being Prepared 👨‍🍳', ready:'Prepared ✓', delivered:'Prepared ✓' } },
+  { td:'td4', tl:'tl4', tt:'tt4', ts:'ts4', labels:{ ready:'Out for Delivery 🚚', delivered:'Delivered ✓' } },
+  { td:'td5', tl:null,  tt:'tt5', ts:'ts5', labels:{ delivered:'Delivered! 📦' } },
+];
+
+let prevTrackerStatus = null;
+
+function updateTrackerFromStatus(){
+  if(!lastPlacedOrderId) return;
+  const o=orders.find(x=>x.id===lastPlacedOrderId);
+  if(!o) return;
+
+  const cfg=STATUS_CONFIG[o.status]||STATUS_CONFIG.new;
+  const step=cfg.step;
+
+  // pill
+  const pill=el('live-status-pill');
+  if(pill){
+    pill.style.background=cfg.bg;
+    pill.style.borderColor=cfg.border;
+    el('lsp-ico').textContent=cfg.ico;
+    el('lsp-title').textContent=cfg.pill;
+    el('lsp-sub').textContent=cfg.pillSub;
+    const dot=el('lsp-pulse');
+    dot.style.background=cfg.dot;
+    dot.style.animation=(o.status==='delivered'||o.status==='declined')?'none':'pulse 1.2s infinite';
+  }
+
+  // header
+  if(o.status==='accepted'&&prevTrackerStatus==='new'){
+    el('suc-ttl').textContent='Order Accepted! ✅';
+    el('suc-sub').textContent='Your vendor confirmed the order.';
+    el('suc-ico').textContent='✅';
+    showToast('✅ Your order was accepted!');
+  } else if(o.status==='delivered'){
+    el('suc-ttl').textContent='Delivered! 🎉';
+    el('suc-sub').textContent='Enjoy your meal!';
+    el('suc-ico').textContent='🎉';
+  } else if(o.status==='declined'){
+    el('suc-ttl').textContent='Order Declined 😞';
+    el('suc-sub').textContent='The vendor could not take this order.';
+    el('suc-ico').textContent='😞';
+    showToast('⚠️ Your order was declined. Please contact the vendor.');
+  }
+
+  if(o.status==='declined'){
+    // reset all steps to pending, mark step1 red
+    STEPS.forEach((s,i)=>{
+      const td=el(s.td); if(!td) return;
+      td.className='trk-dot pend'; td.textContent=['⏳','👨‍🍳','🚚','📦'][i];
+      el(s.tt).textContent=['Waiting…','Preparing','Out for Delivery','Delivered'][i];
+      el(s.tt).classList.add('dim'); el(s.ts).classList.add('dim');
+      if(s.tl) el(s.tl).classList.remove('done');
+    });
+    const td=el('td2'); td.className='trk-dot'; td.style.background='#ef4444'; td.style.color='#fff'; td.textContent='✕';
+    el('tt2').textContent='Vendor declined'; el('tt2').classList.remove('dim');
+    prevTrackerStatus=o.status; return;
+  }
+
+  // Walk steps
+  STEPS.forEach((s,i)=>{
+    const td=el(s.td); if(!td) return;
+    const stepNum=i+2; // steps 2-5
+    td.style.background=''; td.style.color='';
+    if(step>i+1){
+      // done
+      td.className='trk-dot done'; td.textContent='✓';
+      el(s.tt).textContent=s.labels[o.status]||Object.values(s.labels).pop()||'Done';
+      el(s.tt).classList.remove('dim'); el(s.ts).classList.remove('dim');
+      if(s.tl) el(s.tl).classList.add('done');
+    } else if(step===i+1){
+      // active
+      td.className='trk-dot active'; td.textContent=['⏳','👨‍🍳','🚚','📦'][i];
+      el(s.tt).textContent=s.labels[o.status]||el(s.tt).textContent;
+      el(s.tt).classList.remove('dim'); el(s.ts).classList.remove('dim');
+      if(s.tl) el(s.tl).classList.remove('done');
+    } else {
+      // pending
+      td.className='trk-dot pend'; td.textContent=['⏳','👨‍🍳','🚚','📦'][i];
+      el(s.tt).classList.add('dim'); el(s.ts).classList.add('dim');
+      if(s.tl) el(s.tl).classList.remove('done');
+    }
+  });
+
+  prevTrackerStatus=o.status;
+}
+
+
+
+// ═══════════════════════════════════════════════════════
+//  SYNC ENGINE — Firebase Realtime Database (free tier)
+//  No setup needed — uses a shared public database
+// ═══════════════════════════════════════════════════════
+
+const FB_URL = 'https://lokalfinder-ec57f-default-rtdb.asia-southeast1.firebasedatabase.app';
+const ROOM_KEY = 'lokalfinder_grass';
+
+let lastPlacedOrderId = null;
+let knownOrderIds = new Set();
+let pendingOid = null;
+let myOrderIds = [];
+let lastSyncTime = 0;
+
+function genOrderId(){
+  return '#LF-'+Date.now().toString(36).toUpperCase().slice(-5)+Math.floor(Math.random()*1296).toString(36).toUpperCase().padStart(2,'0');
+}
+
+function saveLocal(){
+  try{ localStorage.setItem('lf-myOrders', JSON.stringify(myOrderIds.slice(-100))); }catch(e){}
+}
+function loadLocal(){
+  try{ myOrderIds=JSON.parse(localStorage.getItem('lf-myOrders')||'[]'); }catch(e){}
+}
+
+async function fbGet(path){
+  const r = await fetch(`${FB_URL}/${path}.json`);
+  if(!r.ok) throw new Error('FB read failed: '+r.status);
+  return r.json();
+}
+
+async function fbSet(path, data){
+  const r = await fetch(`${FB_URL}/${path}.json`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error('FB write failed: '+r.status);
+  return r.json();
+}
+
+async function fbPatch(path, data){
+  const r = await fetch(`${FB_URL}/${path}.json`, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  if(!r.ok) throw new Error('FB patch failed: '+r.status);
+  return r.json();
+}
+
+function buildPayload(){
+  const ordersObj = {};
+  orders.forEach(o=>{
+    const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+    ordersObj[key] = {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp};
+  });
+  return { orders: ordersObj, vendors: VENDORS, menu: MENU, pins: VENDOR_PINS_PLAIN, rev: Date.now() };
+}
+
+function applyData(d){
+  if(!d) return;
+
+  if(d.orders){
+    const incoming = Object.values(d.orders).map(o=>({...o, timestamp: new Date(o.timestamp)}));
+    const map = {};
+    incoming.forEach(o=>map[o.id]=o);
+    orders.forEach(o=>{ if(!map[o.id]) map[o.id]=o; });
+    orders = Object.values(map).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    orders.forEach(o=>{
+      if(!knownOrderIds.has(o.id)){
+        if(activeVendorId && activeVendorId===o.vendorId) notifyVendorNewOrder(o);
+        knownOrderIds.add(o.id);
+      }
+    });
+  }
+
+  if(d.vendors && Object.keys(d.vendors).length>0) Object.keys(d.vendors).forEach(k=>{ VENDORS[k]=d.vendors[k]; });
+  if(d.menu && Object.keys(d.menu).length>0) Object.keys(d.menu).forEach(k=>{ MENU[k]=d.menu[k]; });
+  if(d.pins && Object.keys(d.pins).length>0) Object.assign(VENDOR_PINS_PLAIN, d.pins);
+
+  rebuildVendorSelect();
+  buildVendorCards();
+  buildTodaysPicks();
+  checkVendorNewOrders();
+  updateTrackerFromStatus();
+  refreshVisible();
+}
+
+async function pushOrders(){
+  try{
+    const ordersObj = {};
+    orders.forEach(o=>{
+      const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+      ordersObj[key] = {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp};
+    });
+    await fbSet(ROOM_KEY+'/orders', ordersObj);
+  }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
+}
+
+async function pushState(){
+  try{
+    await fbPatch(ROOM_KEY, {
+      vendors: VENDORS,
+      menu: MENU,
+      pins: VENDOR_PINS_PLAIN,
+      rev: Date.now()
+    });
+  }catch(e){ console.error('pushState:', e); }
+}
+
+async function syncFromCloud(){
+  try{
+    const d = await fbGet(ROOM_KEY);
+    applyData(d);
+    lastSyncTime = Date.now();
+  }catch(e){ console.error('sync:', e); }
+}
+
+function rebuildVendorSelect(){
+  const sel=el('v-sel'); if(!sel) return;
+  const cur=sel.value;
+  while(sel.options.length>1) sel.remove(1);
+  Object.values(VENDORS).forEach(v=>{
+    const opt=document.createElement('option');
+    opt.value=v.id; opt.textContent=v.name; sel.appendChild(opt);
+  });
+  if(cur) sel.value=cur;
+}
+
+function refreshVisible(){
+  const on=document.querySelector('.page.on'); if(!on) return;
+  const id=on.id;
+  if(id==='p-chistory') renderOrderHistory();
+  if(id==='p-csuccess') updateTrackerFromStatus();
+  if(id==='p-vdash'&&activeVendorId) updateVendorDash(activeVendorId);
+  if(id==='p-vorders') renderVendorOrders();
+  if(id==='p-vearn') renderVendorEarnings();
+  if(id==='p-adash'){updateAdminStats();renderAdminVendors();renderAdminOrders();}
+  if(id==='p-aorders'){updateAdminStats();renderAdminOrders();}
+  if(id==='p-avendors') renderAdminVendors();
+  if(id==='p-arevenue') renderAdminRevenue();
+}
+
+// ═══ BOOT ═══
+(async function boot(){
+  loadLocal();
+  loadHeroStats();
+  applyHeroStats();
+  showToast('🔄 Connecting…');
+  try{
+    // Try to load existing data first
+    const existing = await fbGet(ROOM_KEY);
+    if(existing && existing.orders){
+      applyData(existing);
+      showToast('✅ LokalFinder connected!');
+    } else {
+      // First time — push initial data
+      await fbSet(ROOM_KEY, buildPayload());
+      showToast('✅ LokalFinder ready!');
+    }
+  }catch(e){
+    console.error('Boot error:', e);
+    showToast('⚠️ Running offline — check internet');
+  }
+  setInterval(syncFromCloud, 5000);
+  // Check store schedules every minute
+  setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
+})();
+
+buildVendorCards();
+buildTodaysPicks();
+
+</script>
+
+<script>
+// ── LIVE PH TIME ──
+function updateClock(){
+  const t = new Date().toLocaleTimeString('en-PH',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit',hour12:true});
+  document.querySelectorAll('.ph-clock').forEach(el=>el.textContent=t);
+}
+updateClock();
+setInterval(updateClock,15000);
+</script>
+</body>
+</html>
+
