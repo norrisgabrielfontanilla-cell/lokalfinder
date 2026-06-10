@@ -845,7 +845,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <label class="flbl" style="color:rgba(255,255,255,.6)">Password</label>
     <input class="finp" id="a-pass" type="password" placeholder="Your password" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
     <button class="cta" style="margin-top:4px;background:var(--acc);color:#fff" onclick="adminLogin()">Enter Admin Panel →</button>
-    <div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:14px">Password: admin1234</div>
+    
   </div>
 </div>
 
@@ -910,6 +910,34 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <div class="dvdr"></div>
     <div class="sec"><span class="sec-t">Vendor Management</span><span class="sec-a" onclick="openAddVendorModal()">+ Add Vendor</span></div>
     <div id="a-vendors-list"></div>
+    <div class="dvdr"></div>
+    <!-- ── Admin Settings ── -->
+    <div class="sec"><span class="sec-t">⚙️ Admin Settings</span></div>
+    <div style="margin:0 16px 16px;background:var(--w);border-radius:var(--rs);border:1px solid var(--bd);overflow:hidden">
+      <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Admin Email</div>
+          <input id="settings-email" type="email" placeholder="admin@lokalfinder.ph"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:14px;font-family:var(--ff);box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Current Password</div>
+          <input id="settings-old-pass" type="password" placeholder="Enter current password"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:14px;font-family:var(--ff);box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">New Password</div>
+          <input id="settings-new-pass" type="password" placeholder="Enter new password (min 6 chars)"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:14px;font-family:var(--ff);box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">Confirm New Password</div>
+          <input id="settings-confirm-pass" type="password" placeholder="Repeat new password"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bdm);font-size:14px;font-family:var(--ff);box-sizing:border-box">
+        </div>
+        <button onclick="saveAdminSettings()" style="padding:11px;background:var(--g);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save Changes</button>
+      </div>
+    </div>
     <div style="height:80px"></div>
   </div>
   <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
@@ -2060,14 +2088,46 @@ async function adminLogin(){
   const email=el('a-email').value.trim();
   const pass=el('a-pass').value;
   if(email!==ADMIN_EMAIL){showToast('⚠️ Incorrect email');return;}
-  // Demo: accept 'admin1234'. In production replace with proper hash check.
-  const validPass = pass === 'admin1234';
+  const savedPass = localStorage.getItem('lf-adminPass')||'admin1234';
+  const savedEmail = localStorage.getItem('lf-adminEmail')||'admin@lokalfinder.ph';
+  if(email!==savedEmail){showToast('⚠️ Incorrect email');return;}
+  const validPass = pass === savedPass;
   if(!validPass){showToast('⚠️ Incorrect password');return;}
   goPage('p-adash');
   updateAdminStats();
   renderAdminVendors();
   renderAdminOrders();
+  loadAdminSettingsForm();
   showToast('Welcome back, Norris! 🏢');
+}
+
+function saveAdminSettings(){
+  const email = el('settings-email').value.trim();
+  const oldPass = el('settings-old-pass').value;
+  const newPass = el('settings-new-pass').value;
+  const confirmPass = el('settings-confirm-pass').value;
+
+  const currentPass = localStorage.getItem('lf-adminPass')||'admin1234';
+
+  if(!email){ showToast('⚠️ Email cannot be empty'); return; }
+  if(oldPass !== currentPass){ showToast('⚠️ Current password is incorrect'); return; }
+  if(newPass && newPass.length < 6){ showToast('⚠️ New password must be at least 6 characters'); return; }
+  if(newPass && newPass !== confirmPass){ showToast('⚠️ Passwords do not match'); return; }
+
+  localStorage.setItem('lf-adminEmail', email);
+  if(newPass) localStorage.setItem('lf-adminPass', newPass);
+
+  // Clear fields
+  el('settings-old-pass').value='';
+  el('settings-new-pass').value='';
+  el('settings-confirm-pass').value='';
+
+  showToast('✅ Admin credentials updated!');
+}
+
+function loadAdminSettingsForm(){
+  const email = localStorage.getItem('lf-adminEmail')||'admin@lokalfinder.ph';
+  if(el('settings-email')) el('settings-email').value = email;
 }
 
 function goAdminTab(tab){
@@ -2279,20 +2339,16 @@ function addVendorConfirm(){
   if(!name||!pin){showToast('⚠️ Fill in store name and PIN');return;}
   if(pin.length!==4){showToast('⚠️ PIN must be exactly 4 digits');return;}
   const id='v'+Date.now();
-  VENDORS[id]={id,name,emoji,sub:loc+' · '+cat,bg:'#F5F5F5',rating:'⭐ New',min:50,cats:['food'],active:true,gcash};
+  VENDORS[id]={id,name,emoji,sub:(loc||'GRASS Residences')+' · '+(cat||'Food'),bg:'#F5F5F5',rating:'⭐ New',min:50,cats:['food'],active:true,gcash};
   MENU[id]=[];
   VENDOR_PINS_PLAIN[id]=pin;
 
-  // Push each piece separately to Firebase to ensure it lands
-  Promise.all([
-    fbSet(ROOM_KEY+'/vendors/'+id, VENDORS[id]),
-    fbSet(ROOM_KEY+'/menu/'+id, []),
-    fbSet(ROOM_KEY+'/pins/'+id, pin)
-  ]).then(()=>{
+  // Write the FULL vendors, menu and pins objects so sync can't overwrite us
+  showToast('⏳ Saving '+name+'…');
+  pushState().then(()=>{
     showToast('✅ '+name+' added & synced!');
   }).catch(()=>{
-    showToast('✅ '+name+' added locally — will sync shortly');
-    pushState(); // fallback
+    showToast('⚠️ Saved locally — check connection');
   });
 
   // Update UI immediately
@@ -2535,6 +2591,7 @@ let knownOrderIds = new Set();
 let pendingOid = null;
 let myOrderIds = [];
 let lastSyncTime = 0;
+let syncPausedUntil = 0;
 
 function genOrderId(){
   return '#LF-'+Date.now().toString(36).toUpperCase().slice(-5)+Math.floor(Math.random()*1296).toString(36).toUpperCase().padStart(2,'0');
@@ -2632,6 +2689,7 @@ async function pushOrders(){
 
 async function pushState(){
   try{
+    syncPausedUntil = Date.now() + 3000; // pause sync while we write
     await fbSet(ROOM_KEY+'/vendors', VENDORS);
     await fbSet(ROOM_KEY+'/menu', MENU);
     await fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN);
@@ -2640,6 +2698,7 @@ async function pushState(){
 }
 
 async function syncFromCloud(){
+  if(Date.now() < syncPausedUntil) return; // don't overwrite during writes
   try{
     const d = await fbGet(ROOM_KEY);
     applyData(d);
