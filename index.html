@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>LokalFinder — GRASS Residences</title>
+<meta name="theme-color" content="#1A6B4A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LokalFinder">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;LokalFinder&quot;,&quot;short_name&quot;:&quot;LokalFinder&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231A6B4A&quot;,&quot;theme_color&quot;:&quot;%231A6B4A&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231A6B4A'/><text y='140' x='30' font-size='120'>🏘️</text></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@1,600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
@@ -711,7 +717,13 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 <!-- VENDOR — ORDERS TAB -->
 <div class="page" id="p-vorders">
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
-  <div class="topbar"><div style="font-size:17px;font-weight:700">Incoming Orders</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Tap Accept to start preparing</div></div>
+  <div class="topbar">
+    <div>
+      <div style="font-size:17px;font-weight:700">Incoming Orders</div>
+      <div style="font-size:12px;color:var(--t3);margin-top:1px">Tap Accept to start preparing</div>
+    </div>
+    <button onclick="confirmClearOrderHistory()" style="background:var(--s2);border:1px solid var(--bdm);color:var(--red);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">🗑 Clear Done</button>
+  </div>
   <div style="display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0">
     <div id="vof-all" style="padding:6px 14px;border-radius:20px;background:var(--g);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="filterVOrders('all',this)">All</div>
     <div id="vof-new" style="padding:6px 14px;border-radius:20px;background:var(--w);color:var(--t2);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bdm)" onclick="filterVOrders('new',this)">🔴 New</div>
@@ -1541,11 +1553,23 @@ function applyVendorLogo(logo){
   }
 }
 
+function confirmClearOrderHistory(){
+  const done=orders.filter(o=>o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined'));
+  if(!done.length){showToast('No completed orders to clear');return;}
+  if(!confirm(`Clear ${done.length} completed order${done.length>1?'s':''}? This cannot be undone.`)) return;
+  // Remove delivered/declined orders for this vendor
+  orders=orders.filter(o=>!(o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined')));
+  pushOrders();
+  renderVendorOrders();
+  updateVendorDash(activeVendorId);
+  showToast('✅ Completed orders cleared');
+}
+
+
 function goVendorTab(tab){
   currentVendorTab=tab;
   const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
   goPage(pages[tab]);
-  // renders are now triggered inside goPage — no need to call again here
   if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
 }
 
@@ -1628,14 +1652,16 @@ function updateVendorDash(vid){
   const fees=myOrders.length*SERVICE_FEE;
   const net=gross;
   const newOrders=myOrders.filter(o=>o.status==='new');
+  const pendingOrders=myOrders.filter(o=>['new','accepted','preparing','ready'].includes(o.status));
   el('v-orders-today').textContent=myOrders.length;
   el('v-earned-today').textContent='₱'+net;
   el('v-new-cnt').textContent=newOrders.length;
   el('v-payout').textContent='₱'+net;
   el('v-gross').textContent='₱'+gross;
   el('v-fees').textContent='−₱'+fees;
+  // Badge shows ALL pending (new+accepted+preparing+ready) not just new
   const badge=el('v-orders-badge');
-  if(badge){badge.style.display=newOrders.length>0?'flex':'none';badge.textContent=newOrders.length;}
+  if(badge){badge.style.display=pendingOrders.length>0?'flex':'none';badge.textContent=pendingOrders.length;}
   const banner=el('v-new-banner');
   if(banner){banner.style.display=newOrders.length>0?'flex':'none';el('v-banner-txt').textContent=newOrders.length+' new order'+(newOrders.length>1?'s':'')+' waiting';}
   renderVendorRecentOrders(vid);
@@ -2089,6 +2115,98 @@ function checkVendorNewOrders(){
   fresh.forEach(o=>notifyVendorNewOrder(o));
 }
 
+// ── Vendor Notifications ──────────────────────────────
+let notifGranted = false;
+let vendorNotifOrders = new Set();
+
+async function requestNotifPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='granted'){ notifGranted=true; return; }
+  if(Notification.permission!=='denied'){
+    const p = await Notification.requestPermission();
+    notifGranted = (p==='granted');
+  }
+}
+
+function playPing(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880,ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+.15);
+    gain.gain.setValueAtTime(.5,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+.45);
+  }catch(e){}
+}
+
+function notifyVendorNewOrder(o){
+  if(vendorNotifOrders.has(o.id)) return;
+  vendorNotifOrders.add(o.id);
+  playPing();
+  // In-app banner
+  updateVendorDash(activeVendorId);
+  // Browser notification (works when app is open or in background on Android)
+  if(notifGranted && 'serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(reg=>{
+      reg.showNotification('🔔 New Order — LokalFinder',{
+        body:`${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`,
+        icon:'/icon.png',
+        badge:'/icon.png',
+        tag:o.id,
+        requireInteraction:true,
+        data:{ orderId:o.id }
+      });
+    }).catch(()=>{
+      // Fallback to basic notification
+      if(notifGranted) new Notification('🔔 New Order — LokalFinder',{
+        body:`${o.name} · Unit ${o.unit} · ₱${o.total}`,
+        tag:o.id
+      });
+    });
+  } else if(notifGranted){
+    new Notification('🔔 New Order — LokalFinder',{
+      body:`${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`,
+      tag:o.id,
+      requireInteraction:true
+    });
+  }
+}
+
+// Register service worker for background notifications
+async function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    // Inline service worker as a blob so we don't need a separate file
+    const swCode = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type:'window'}).then(cs => {
+    if(cs.length) return cs[0].focus();
+    return clients.openWindow('/');
+  }));
+});
+self.addEventListener('push', e => {
+  const d = e.data ? e.data.json() : {};
+  e.waitUntil(self.registration.showNotification(d.title||'LokalFinder', {
+    body: d.body||'New order!',
+    icon: '/icon.png',
+    requireInteraction: true
+  }));
+});`;
+    const blob = new Blob([swCode], {type:'application/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    const reg = await navigator.serviceWorker.register(swUrl, {scope:'/'});
+    console.log('SW registered:', reg.scope);
+  }catch(e){ console.log('SW registration failed:', e); }
+}
+
+
+
 // ── Customer live tracker (5 steps) ───────────────────
 const STATUS_CONFIG = {
   new:      { ico:'⏳', pill:'Waiting for acceptance…',     pillSub:'The vendor will confirm shortly',     bg:'var(--s2)',   border:'var(--bdm)',   dot:'#f59e0b', step:1 },
@@ -2339,6 +2457,7 @@ function refreshVisible(){
   loadLocal();
   loadHeroStats();
   applyHeroStats();
+  registerServiceWorker();
   showToast('🔄 Connecting…');
   try{
     // Try to load existing data first
