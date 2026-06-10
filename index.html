@@ -717,12 +717,12 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 <!-- VENDOR — ORDERS TAB -->
 <div class="page" id="p-vorders">
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
-  <div class="topbar">
+  <div class="topbar" style="display:flex;align-items:center;justify-content:space-between">
     <div>
       <div style="font-size:17px;font-weight:700">Incoming Orders</div>
       <div style="font-size:12px;color:var(--t3);margin-top:1px">Tap Accept to start preparing</div>
     </div>
-    <button onclick="confirmClearOrderHistory()" style="background:var(--s2);border:1px solid var(--bdm);color:var(--red);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">🗑 Clear Done</button>
+    <button onclick="confirmClearOrderHistory()" style="background:var(--s2);border:1px solid var(--bdm);color:var(--red);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff);flex-shrink:0">🗑 Clear Done</button>
   </div>
   <div style="display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0">
     <div id="vof-all" style="padding:6px 14px;border-radius:20px;background:var(--g);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="filterVOrders('all',this)">All</div>
@@ -1491,8 +1491,19 @@ async function vendorLogin(){
   if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
   activeVendorId=sel;
   try{ await requestNotifPermission(); }catch(e){ /* notifications optional */ }
+  // Ensure vendor data exists — Firebase may not have synced yet
+  if(!VENDORS[sel]){
+    // Rebuild from hardcoded defaults
+    const defaults={
+      pares:{id:'pares',name:'Finest Pares & Goto',emoji:'🍲',sub:'Tower 2 · Filipino',bg:'#FFF4E0',rating:'⭐ 4.9',min:45,cats:['rice'],active:true},
+      siomai:{id:'siomai',name:"Pau's Homemade Siomai",emoji:'🥟',sub:'Tower 1 · Dimsum',bg:'#F0FBF5',rating:'⭐ 4.8',min:50,cats:['snacks'],active:true},
+      kape:{id:'kape',name:'Kape At Ikaw',emoji:'☕',sub:'Tower 3 · Coffee',bg:'#FFF8F0',rating:'⭐ 4.7',min:80,cats:['coffee'],active:true},
+      adbuns:{id:'adbuns',name:'ADBUNS',emoji:'🍳',sub:'Tower 1 · Silog',bg:'#F5F0FF',rating:'⭐ 4.6',min:109,cats:['rice'],active:true}
+    };
+    if(defaults[sel]) VENDORS[sel]=defaults[sel];
+  }
   const v=VENDORS[sel];
-  if(!v){showToast('⚠️ Vendor data not loaded yet, try again');activeVendorId=null;return;}
+  if(!v){showToast('⚠️ Vendor not found — contact admin');activeVendorId=null;return;}
   el('v-dname').textContent=v.name;
   el('v-dsub').textContent=v.sub;
   el('v-demoji').textContent=v.emoji;
@@ -2179,9 +2190,9 @@ function notifyVendorNewOrder(o){
 async function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;
   try{
-    // Inline service worker as a blob so we don't need a separate file
+    // Write SW to a blob and register — works on HTTPS hosts like Netlify
     const swCode = `
-self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('notificationclick', e => {
   e.notification.close();
@@ -2189,20 +2200,14 @@ self.addEventListener('notificationclick', e => {
     if(cs.length) return cs[0].focus();
     return clients.openWindow('/');
   }));
-});
-self.addEventListener('push', e => {
-  const d = e.data ? e.data.json() : {};
-  e.waitUntil(self.registration.showNotification(d.title||'LokalFinder', {
-    body: d.body||'New order!',
-    icon: '/icon.png',
-    requireInteraction: true
-  }));
 });`;
     const blob = new Blob([swCode], {type:'application/javascript'});
     const swUrl = URL.createObjectURL(blob);
-    const reg = await navigator.serviceWorker.register(swUrl, {scope:'/'});
-    console.log('SW registered:', reg.scope);
-  }catch(e){ console.log('SW registration failed:', e); }
+    await navigator.serviceWorker.register(swUrl);
+  }catch(e){
+    // SW failed silently — notifications still work when app is open
+    console.log('SW not available:', e.message);
+  }
 }
 
 
