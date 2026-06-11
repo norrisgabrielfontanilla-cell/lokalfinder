@@ -732,10 +732,10 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       </div>
     </div>
     <!-- New orders alert -->
-    <div id="v-new-banner" style="margin:4px 16px 8px;background:var(--bll);border-radius:var(--rs);border:1px solid #bfdbfe;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;display:none" onclick="goVendorTab('orders')">
-      <span style="font-size:20px">🔔</span>
-      <div style="flex:1"><div id="v-banner-txt" style="font-size:13px;font-weight:700;color:var(--blu)">New orders waiting</div><div style="font-size:11px;color:#3b82f6;margin-top:1px">Tap to view and accept</div></div>
-      <span style="font-size:16px;color:var(--blu)">→</span>
+    <div id="v-new-banner" style="margin:4px 16px 8px;background:#dc2626;border-radius:var(--rs);padding:14px;display:none;align-items:center;gap:10px;cursor:pointer" onclick="goVendorTab('orders')">
+      <div style="font-size:28px">🔔</div>
+      <div style="flex:1"><div id="v-banner-txt" style="font-size:15px;font-weight:800;color:#fff">New orders waiting!</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Tap here to view and accept</div></div>
+      <div id="v-banner-count" style="background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:4px 12px;font-size:16px;font-weight:800">0</div>
     </div>
     <div class="sec"><span class="sec-t">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
     <div id="v-recent-orders"><div class="empty" style="padding:24px"><div class="empty-sub">No orders yet. Share your store link to get started!</div></div></div>
@@ -1763,6 +1763,15 @@ async function vendorLogin(){
   renderVendorMenu(sel);
   updateStoreStatusUI();
   renderVendorPayments();
+  // Force immediate sync to get latest orders from Firebase
+  syncFromCloud();
+  // Immediately notify about any unaccepted orders waiting
+  const pendingOrders = orders.filter(o=>o.vendorId===sel && o.status==='new');
+  if(pendingOrders.length){
+    showToast('🔔 You have '+pendingOrders.length+' new order'+(pendingOrders.length>1?'s':'')+' waiting!');
+    playPing();
+    pendingOrders.forEach(o=>vendorNotifOrders.add(o.id)); // mark as notified
+  }
   goPage('p-vdash');
   refreshBadge();
   showToast('Welcome back, '+v.name+'! 👋');
@@ -2320,7 +2329,11 @@ function goVendorTab(tab){
   const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
   goPage(pages[tab]);
   if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
-  if(tab==='orders') refreshBadge();
+  if(tab==='orders'){
+    // Force immediate Firebase sync so vendor sees latest orders right away
+    syncFromCloud();
+    refreshBadge();
+  }
 }
 
 function toggleStore(on){
@@ -2414,7 +2427,12 @@ function updateVendorDash(vid){
   const badge=el('v-orders-badge');
   if(badge){badge.style.display=pendingOrders.length>0?'flex':'none';badge.textContent=pendingOrders.length;}
   const banner=el('v-new-banner');
-  if(banner){banner.style.display=newOrders.length>0?'flex':'none';el('v-banner-txt').textContent=newOrders.length+' new order'+(newOrders.length>1?'s':'')+' waiting';}
+  if(banner){
+    banner.style.display=newOrders.length>0?'flex':'none';
+    el('v-banner-txt').textContent=newOrders.length+' new order'+(newOrders.length>1?'s':'')+' waiting!';
+    const bc=el('v-banner-count');
+    if(bc) bc.textContent=newOrders.length;
+  }
   renderVendorRecentOrders(vid);
 }
 
@@ -2429,8 +2447,11 @@ function renderVendorRecentOrders(vid){
 function renderVendorOrders(){
   if(!activeVendorId) return;
   const el2=el('v-orders-list');
-  const myOrders=orders.filter(o=>o.vendorId===activeVendorId).reverse();
-  if(!myOrders.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders appear here in real time.</div></div>';return;}
+  const myOrders=orders.filter(o=>o.vendorId===activeVendorId).slice().reverse();
+  if(!myOrders.length){
+    el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders will appear here. Make sure your store is open!</div></div>';
+    return;
+  }
   el2.innerHTML='<div style="height:4px"></div>'+myOrders.map(o=>renderOrderCard(o,true)).join('')+'<div style="height:80px"></div>';
 }
 
@@ -3074,26 +3095,13 @@ function notifyVendorNewOrder(o){
 
 // Register service worker for background notifications
 async function registerServiceWorker(){
-  if(!('serviceWorker' in navigator)) return;
+  // Service worker via blob not supported on all hosts
+  // Notifications work via Notification API when app is open
   try{
-    // Write SW to a blob and register — works on HTTPS hosts like Netlify
-    const swCode = `
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(clients.matchAll({type:'window'}).then(cs => {
-    if(cs.length) return cs[0].focus();
-    return clients.openWindow('/');
-  }));
-});`;
-    const blob = new Blob([swCode], {type:'application/javascript'});
-    const swUrl = URL.createObjectURL(blob);
-    await navigator.serviceWorker.register(swUrl);
-  }catch(e){
-    // SW failed silently — notifications still work when app is open
-    console.log('SW not available:', e.message);
-  }
+    if('Notification' in window && Notification.permission !== 'denied'){
+      // Permission will be requested on vendor login
+    }
+  }catch(e){}
 }
 
 
@@ -3283,7 +3291,10 @@ function applyData(d){
     orders = Object.values(map).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     orders.forEach(o=>{
       if(!knownOrderIds.has(o.id)){
-        if(activeVendorId && activeVendorId===o.vendorId) notifyVendorNewOrder(o);
+        // Only notify for NEW (unaccepted) orders that belong to this vendor
+        if(activeVendorId && activeVendorId===o.vendorId && o.status==='new'){
+          notifyVendorNewOrder(o);
+        }
         knownOrderIds.add(o.id);
       }
     });
@@ -3374,21 +3385,34 @@ function refreshVisible(){
   applyHeroStats(true);
   registerServiceWorker();
   showToast('🔄 Connecting…');
-  try{
-    // Try to load existing data first
-    const existing = await fbGet(ROOM_KEY);
-    if(existing && existing.orders){
-      applyData(existing);
-      showToast('✅ LokalFinder connected!');
-    } else {
-      // First time — push initial data
-      await fbSet(ROOM_KEY, buildPayload());
-      showToast('✅ LokalFinder ready!');
+  // Boot with retry — sometimes Firebase needs a moment on first load
+  let bootAttempts = 0;
+  async function tryBoot(){
+    bootAttempts++;
+    try{
+      const existing = await fbGet(ROOM_KEY);
+      if(existing && existing.orders){
+        applyData(existing);
+        showToast('✅ LokalFinder connected!');
+      } else if(existing) {
+        applyData(existing);
+        showToast('✅ LokalFinder ready!');
+      } else {
+        // First time setup
+        await fbSet(ROOM_KEY, buildPayload());
+        showToast('✅ LokalFinder ready!');
+      }
+    }catch(e){
+      console.error('Boot attempt '+bootAttempts+':', e.message);
+      if(bootAttempts < 3){
+        showToast('🔄 Connecting… (attempt '+bootAttempts+')');
+        setTimeout(tryBoot, 2000);
+      } else {
+        showToast('⚠️ Could not connect. Check your internet and refresh.');
+      }
     }
-  }catch(e){
-    console.error('Boot error:', e);
-    showToast('⚠️ Running offline — check internet');
   }
+  await tryBoot();
   setInterval(syncFromCloud, 3000);
   setInterval(syncChats, 3000);
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
