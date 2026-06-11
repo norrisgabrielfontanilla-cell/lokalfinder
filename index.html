@@ -3143,16 +3143,16 @@ function updateTrackerFromStatus(){
   }
 
   // header
-  if(o.status==='accepted'&&prevTrackerStatus==='new'){
+  if(o.status==='accepted' && prevTrackerStatus==='new'){
     el('suc-ttl').textContent='Order Accepted! ✅';
     el('suc-sub').textContent='Your vendor confirmed the order.';
     el('suc-ico').textContent='✅';
     showToast('✅ Your order was accepted!');
-  } else if(o.status==='delivered'){
+  } else if(o.status==='delivered' && prevTrackerStatus!=='delivered'){
     el('suc-ttl').textContent='Delivered! 🎉';
     el('suc-sub').textContent='Enjoy your meal!';
     el('suc-ico').textContent='🎉';
-  } else if(o.status==='declined'){
+  } else if(o.status==='declined' && prevTrackerStatus!=='declined'){
     el('suc-ttl').textContent='Order Declined 😞';
     el('suc-sub').textContent='The vendor could not take this order.';
     el('suc-ico').textContent='😞';
