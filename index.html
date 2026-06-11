@@ -9,7 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LokalFinder">
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;LokalFinder&quot;,&quot;short_name&quot;:&quot;LokalFinder&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231A6B4A&quot;,&quot;theme_color&quot;:&quot;%231A6B4A&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231A6B4A'/><text y='140' x='30' font-size='120'>🏘️</text></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+<link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;LokalFinder&quot;,&quot;short_name&quot;:&quot;LokalFinder&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231A6B4A&quot;,&quot;theme_color&quot;:&quot;%231A6B4A&quot;,&quot;orientation&quot;:&quot;portrait&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231A6B4A'/><path d='M96 42C67 42 44 65 44 94c0 19 10 36 26 46l-5 20h62l-5-20c16-10 26-27 26-46 0-29-23-52-52-52z' fill='white' opacity='.2'/><path d='M70 78h52M70 96h52M70 114h32' stroke='white' stroke-width='6' stroke-linecap='round'/><circle cx='96' cy='58' r='9' fill='white'/></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;,&quot;purpose&quot;:&quot;any maskable&quot;}]}">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231A6B4A'/><path d='M90 40C63 40 41 62 41 89c0 18 10 34 24 43l-4 18h58l-4-18c14-9 24-25 24-43 0-27-22-49-49-49z' fill='white' opacity='.2'/><path d='M65 72h50M65 89h50M65 106h30' stroke='white' stroke-width='5' stroke-linecap='round'/><circle cx='90' cy='55' r='8' fill='white'/></svg>"><rect width='192' height='192' rx='40' fill='%231A6B4A'/><text y='140' x='30' font-size='120'>🏘️</text></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@1,600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
@@ -405,14 +406,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks')">🍢 Snacks</div>
       <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert')">🎂 Desserts</div>
     </div>
-    <div style="margin:12px 16px;background:linear-gradient(135deg,#1A6B4A,#0d3d27);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer" onclick="openVendor('pares')">
-      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%"></div>
-      <div style="position:absolute;bottom:-30px;right:16px;font-size:56px;opacity:.18">🍲</div>
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">🔥 Most ordered today</div>
-      <div style="font-family:var(--ffd);font-style:italic;font-size:22px;color:#fff;margin-bottom:3px;line-height:1.2">Finest Pares & Goto</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px">Tower 2 · From ₱45 · Open now</div>
-      <button class="hero-cta" style="font-size:13px;padding:8px 16px;border-radius:10px;font-weight:700">Order now →</button>
-    </div>
+    <div id="featured-banner" style="margin:12px 16px"></div>
     <div class="sec" style="padding-top:16px"><span class="sec-t">Vendors Open Now</span><span class="sec-a">See all</span></div>
     <div class="hscrl" id="vendor-cards"></div>
     <div class="dvdr"></div>
@@ -431,7 +425,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <div class="bni on" onclick="goPage('p-chome')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
     <div class="bni" onclick="goPage('p-ccart')" id="cbnav-cart" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="bnav-badge" class="bni-num" style="display:none">0</div><span>Cart</span></div>
     <div class="bni" onclick="goPage('p-chistory')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Orders</span></div>
-    <div class="bni" onclick="goPage('p-land')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></div>
+    <div class="bni" style="position:relative" onclick="openNotifPanel('customer')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div id="cust-notif-badge" class="bni-num" style="display:none">0</div><span>Alerts</span></div>
   </div>
 </div>
 
@@ -511,17 +505,20 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
   <div class="topbar" style="display:flex;align-items:center;gap:10px">
     <button class="back" onclick="goPage('p-ccart')">←</button>
-    <span style="font-size:17px;font-weight:700">Pay via GCash</span>
+    <span style="font-size:17px;font-weight:700">Payment Details</span>
   </div>
   <div class="scrl" style="padding:16px">
-    <div style="background:var(--bll);border-radius:var(--rs);padding:11px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5">📋 Send the exact amount to the GCash number below, then enter your reference number.</div>
-    <div class="gc-box">
-      <div class="gc-logo">GCash</div>
-      <div class="gc-num" id="gc-num">0917 123 4567</div>
-      <div class="gc-name">LokalFinder GRASS</div>
-      <div class="gc-amt">Send: <span id="gc-amt">₱0</span></div>
+    <div style="background:var(--bll);border-radius:var(--rs);padding:11px 13px;margin-bottom:16px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5">📋 Send the exact amount to one of the accounts below, then enter your reference number.</div>
+
+    <!-- Dynamic wallet list -->
+    <div id="payment-wallets" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+
+    <div style="background:var(--s2);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;text-align:center">
+      <div style="font-size:12px;color:var(--t3);margin-bottom:4px">Amount to send</div>
+      <div style="font-size:28px;font-weight:800;color:var(--g)">₱<span id="gc-amt">0</span></div>
     </div>
-    <label class="flbl">GCash Reference Number</label>
+
+    <label class="flbl">Reference / Transaction Number</label>
     <input class="finp" id="gc-ref" type="text" placeholder="e.g. 2024-1234567890">
     <div class="info-note" style="margin-bottom:14px">After sending, enter your reference number above. Your vendor will be notified automatically.</div>
     <button class="cta" onclick="confirmGcash()">Confirm Payment ✓</button>
@@ -705,6 +702,13 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
           onchange="saveVendorContact()">
         <button onclick="saveVendorContact()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
       </div>
+
+      <!-- Payment accounts -->
+      <div style="margin-top:12px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:8px">💳 PAYMENT ACCOUNTS</div>
+        <div id="v-payments-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+        <button onclick="openAddPaymentModal()" style="width:100%;background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.3);color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">+ Add Payment Account</button>
+      </div>
     </div>
   </div>
   <div class="scrl">
@@ -742,6 +746,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <div class="bni" id="vbn-orders" style="position:relative" onclick="goVendorTab('orders')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="v-orders-badge" class="bni-num" style="display:none">0</div><span>Orders</span></div>
     <div class="bni" id="vbn-menu" onclick="goVendorTab('menu')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
     <div class="bni" id="vbn-earn" onclick="goVendorTab('earn')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
+    <div class="bni" style="position:relative" onclick="openNotifPanel('vendor')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div id="vend-notif-badge" class="bni-num" style="display:none">0</div><span>Alerts</span></div>
   </div>
 </div>
 
@@ -1096,6 +1101,61 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
   </div>
 </div>
 
+<!-- Add Payment Account Modal -->
+<div class="modal" id="modal-addpayment" onclick="closeModal('modal-addpayment',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Add Payment Account</div>
+    <label class="flbl">Wallet / Bank</label>
+    <select class="finp" id="pay-type">
+      <option value="GCash">GCash</option>
+      <option value="Maya">Maya (PayMaya)</option>
+      <option value="BDO">BDO</option>
+      <option value="BPI">BPI</option>
+      <option value="UnionBank">UnionBank</option>
+      <option value="Metrobank">Metrobank</option>
+      <option value="Landbank">Landbank</option>
+      <option value="Seabank">SeaBank</option>
+      <option value="GoTyme">GoTyme</option>
+      <option value="Cash">Cash on Delivery</option>
+      <option value="Other">Other</option>
+    </select>
+    <label class="flbl">Account Number / Mobile Number</label>
+    <input class="finp" id="pay-number" type="text" placeholder="e.g. 09XX XXX XXXX or account number">
+    <label class="flbl">Account Name</label>
+    <input class="finp" id="pay-accname" type="text" placeholder="Full name on account">
+    <button class="cta" onclick="addPaymentAccount()" style="margin-bottom:8px">Add Account ✓</button>
+    <button class="cta sec" onclick="closeModal('modal-addpayment')">Cancel</button>
+  </div>
+</div>
+
+<!-- Edit Vendor Modal -->
+<div class="modal" id="modal-editvendor" onclick="closeModal('modal-editvendor',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Edit Vendor</div>
+    <input type="hidden" id="ev-id">
+    <label class="flbl">Store Name</label>
+    <input class="finp" id="ev-name" type="text" placeholder="Store name">
+    <label class="flbl">Emoji</label>
+    <input class="finp" id="ev-emoji" type="text" maxlength="2" style="font-size:22px;text-align:center">
+    <label class="flbl">Tower / Location</label>
+    <select class="finp" id="ev-loc" style="-webkit-appearance:none">
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+    </select>
+    <label class="flbl">Category</label>
+    <input class="finp" id="ev-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
+    <label class="flbl">GCash Number</label>
+    <input class="finp" id="ev-gcash" type="tel" placeholder="09XX XXX XXXX">
+    <label class="flbl">PIN (4 digits)</label>
+    <input class="finp" id="ev-pin" type="text" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:20px">
+    <label class="flbl">Minimum Order (₱)</label>
+    <input class="finp" id="ev-min" type="number" placeholder="e.g. 50">
+    <button class="cta" onclick="saveEditVendor()" style="margin-bottom:8px">Save Changes ✓</button>
+    <button class="cta sec" onclick="closeModal('modal-editvendor')">Cancel</button>
+  </div>
+</div>
+
 <!-- Switch Vendor (one cart = one vendor) -->
 <div class="modal" id="modal-switch" onclick="closeModal('modal-switch',event)">
   <div class="modal-sheet" onclick="event.stopPropagation()">
@@ -1113,6 +1173,15 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 </div>
 
 <div id="toast"></div>
+
+<!-- ── FLOATING NOTIFICATION PANEL ── -->
+<div id="notif-panel" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--w);border-top:1px solid var(--bd);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.12);z-index:9998;flex-direction:column;max-height:75vh">
+  <div style="padding:12px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;gap:10px">
+    <div style="flex:1;font-size:15px;font-weight:700;color:var(--t1)" id="notif-panel-title">🔔 Notifications</div>
+    <button onclick="closeNotifPanel()" style="background:var(--s2);border:none;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>
+  </div>
+  <div id="notif-list" style="flex:1;overflow-y:auto;max-height:60vh"></div>
+</div>
 
 <!-- ── FLOATING CHAT PANEL ── -->
 <div id="chat-panel" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--w);border-top:1px solid var(--bd);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.12);z-index:9999;flex-direction:column;max-height:75vh">
@@ -1157,7 +1226,6 @@ async function sha256(str){
 }
 // Secret admin URL token — admin panel only opens if URL contains this
 const ADMIN_TOKEN = 'UNUSED';
-let ORDER_COUNTER = 1;
 let activeVendorId = null;
 let payMethod = 'gcash';
 let pageHistory = ['p-land'];
@@ -1236,7 +1304,7 @@ function goBack(){
 }
 
 // ═══ PORTALS ═══
-function goCust(){ buildVendorCards(); buildTodaysPicks(); goPage('p-chome'); }
+function goCust(){ buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); goPage('p-chome'); }
 function goVendorLogin(){ goPage('p-vlogin'); }
 function goAdminLogin(){
   goPage('p-alogin');
@@ -1255,12 +1323,58 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 // ═══ CUSTOMER HOME ═══
-function buildVendorCards(){
+function buildFeaturedBanner(){
+  const banner = el('featured-banner'); if(!banner) return;
+
+  // Priority 1: admin-marked featured vendor that is active
+  let featured = Object.values(VENDORS).find(v=>v.featured && v.active);
+
+  // Priority 2: vendor with most orders today that is active
+  if(!featured){
+    const today = new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'});
+    const counts = {};
+    orders.forEach(o=>{
+      const d = new Date(o.timestamp).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'});
+      if(d===today && VENDORS[o.vendorId]?.active){
+        counts[o.vendorId]=(counts[o.vendorId]||0)+1;
+      }
+    });
+    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    if(top) featured = VENDORS[top[0]];
+  }
+
+  // Hide banner if no active vendor to show
+  if(!featured){ banner.innerHTML=''; return; }
+
+  const label = featured.featured ? '⭐ Best Seller' : '🔥 Most Ordered Today';
+  const sub = featured.sub.split('·').slice(0,2).join('·').trim()+' · From ₱'+featured.min;
+
+  banner.innerHTML=`
+    <div style="background:linear-gradient(135deg,#1A6B4A,#0d3d27);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer" onclick="openVendor('${featured.id}')">
+      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-30px;right:16px;font-size:56px;opacity:.18">${featured.emoji}</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">${label}</div>
+      <div style="font-family:var(--ffd);font-style:italic;font-size:22px;color:#fff;margin-bottom:3px;line-height:1.2">${featured.name}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px">${sub}</div>
+      <button class="hero-cta" style="font-size:13px;padding:8px 16px;border-radius:10px;font-weight:700">Order now →</button>
+    </div>`;
+}
+
+function buildVendorCards(force=false){
   const el=document.getElementById('vendor-cards');
-  const vh=Object.values(VENDORS).map(v=>v.id+v.active+v.name+(v.logo?'1':'0')).join(',');
-  if(vh===_vendorHash&&el.children.length>0) return;
+  const vh=Object.values(VENDORS).map(v=>v.id+v.active+v.name+(v.logo?'1':'0')).join(',')+activeCatFilter;
+  if(!force && vh===_vendorHash&&el.children.length>0) return;
   _vendorHash=vh;
-  el.innerHTML=Object.values(VENDORS).filter(v=>v.active).map(v=>{
+  const filtered = Object.values(VENDORS).filter(v=>{
+    if(!v.active) return false;
+    if(activeCatFilter==='all') return true;
+    return (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()));
+  });
+    if(!filtered.length){
+    el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🍽️</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No vendors in this category yet</div></div>';
+    return;
+  }
+  el.innerHTML=filtered.map(v=>{
     const hours=v.openTime&&v.closeTime?fmtTime(v.openTime)+'–'+fmtTime(v.closeTime):'';
     const subLine=v.sub.split('·').slice(0,2).join('·').trim()+(hours?' · '+hours:'');
     return `
@@ -1270,7 +1384,7 @@ function buildVendorCards(){
         <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
       </div>
       <div class="vc-body">
-        <div style="margin-bottom:4px"><span class="bdg open">● Open</span></div>
+        <div style="margin-bottom:4px"><span class="bdg open">● Open</span>${v.featured?'<span class="bdg" style="background:#FEF9C3;color:#854d0e;margin-left:4px">⭐ Best Seller</span>':''}</div>
         <div class="vc-name">${v.name}</div>
         <div class="vc-sub">${subLine}</div>
         <div class="vc-foot"><span class="vc-price">From ₱${v.min}</span><span class="vc-rating">${v.rating}</span></div>
@@ -1288,6 +1402,7 @@ function buildTodaysPicks(force=false){
   Object.entries(MENU).forEach(([vid,items])=>{
     const v=VENDORS[vid];
     if(!v||!v.active) return;
+    if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) return;
     items.filter(i=>i.avail).slice(0,2).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}));
   });
 
@@ -1330,10 +1445,13 @@ function buildTodaysPicks(force=false){
     </div>`;
 }
 
-function filterCat(el,cat){
+let activeCatFilter = 'all';
+function filterCat(btn,cat){
+  activeCatFilter = cat;
   document.querySelectorAll('#cat-row .pill').forEach(p=>{p.style.background='var(--w)';p.style.color='var(--t2)';p.style.borderColor='var(--bdm)'});
-  el.style.background='var(--g)'; el.style.color='#fff'; el.style.borderColor='var(--g)';
-  showToast(cat==='all'?'Showing all vendors':'Filtered: '+cat);
+  btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.borderColor='var(--g)';
+  buildVendorCards(true);
+  buildTodaysPicks(true);
 }
 
 function toggleFav(id,btn){
@@ -1476,6 +1594,7 @@ function setPay(m){
 }
 
 function placeOrder(){
+  if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
   const phone=document.getElementById('cust-phone').value.trim();
@@ -1489,6 +1608,8 @@ function placeOrder(){
   document.getElementById('s-oid').textContent=oid;
   if(payMethod==='gcash'){
     document.getElementById('gc-amt').textContent='₱'+total;
+    const vid = Object.keys(cart)[0];
+    loadPaymentWallets(vid);
     goPage('p-cgcash');
   } else {
     finalizeOrder(name,unit,phone,total,oid,'cash');
@@ -1506,7 +1627,7 @@ function confirmGcash(){
   finalizeOrder(name,unit,phone,total,oid,'gcash',ref);
 }
 
-function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
+async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
   const order={
@@ -1520,18 +1641,24 @@ function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   myOrderIds.push(order.id);
   pendingOid=null;
   saveLocal();
+  // Navigate immediately so user sees success screen
   updateAdminStats();
   updateVendorDash(order.vendorId);
   renderOrderHistory();
   goPage('p-csuccess');
   loadCustomerVendorContact(order.id);
   renderChat(order.id);
-  if(true){  // JSONBin sync
-    pushOrders();
-    saveMyOrders();
-    updateTrackerFromStatus();   // live tracker follows the vendor's real updates
-  } else {
-    simulateTracker();           // offline demo fallback
+  updateTrackerFromStatus();
+  // Push to Firebase and notify vendor — awaited so it definitely lands
+  try{
+    await pushOrders();
+    await notifOnStatusChange(order, 'new');
+    refreshBadge();
+    showToast('✅ Order sent to vendor!');
+  }catch(e){
+    console.error('Order push failed:', e);
+    showToast('⚠️ Order saved, retrying sync…');
+    setTimeout(()=>pushOrders(), 3000);
   }
 }
 
@@ -1613,6 +1740,8 @@ async function vendorLogin(){
   if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
   activeVendorId=sel;
   try{ await requestNotifPermission(); }catch(e){ /* notifications optional */ }
+  // Request badge permission
+  try{ if('setAppBadge' in navigator) await navigator.setAppBadge(0); }catch(e){}
   // Ensure vendor data exists — Firebase may not have synced yet
   if(!VENDORS[sel]){
     // Rebuild from hardcoded defaults
@@ -1633,7 +1762,9 @@ async function vendorLogin(){
   updateVendorDash(sel);
   renderVendorMenu(sel);
   updateStoreStatusUI();
+  renderVendorPayments();
   goPage('p-vdash');
+  refreshBadge();
   showToast('Welcome back, '+v.name+'! 👋');
 }
 
@@ -1641,6 +1772,7 @@ function vendorLogout(){
   activeVendorId=null;
   document.getElementById('v-sel').value='';
   document.getElementById('v-pin').value='';
+  updateAppBadge(0);
   goPage('p-land');
   showToast('Logged out of vendor portal');
 }
@@ -1757,6 +1889,7 @@ async function sendChatFromPanel(){
   chatCache[oid].push(msg);
   lastKnownMsgCount[oid] = chatCache[oid].length;
   renderChatPanel();
+  refreshBadge();
 
   try{
     await fbSet(ROOM_KEY+'/chats/'+oid.replace(/[^a-zA-Z0-9]/g,'_'), chatCache[oid]);
@@ -1889,11 +2022,305 @@ async function customerCancelOrder(){
   el('cancel-order-wrap').style.display='none';
 }
 
+// ── FEATURED / BEST SELLER ──────────────────────────
+function toggleFeatured(vid, on){
+  // Turn off featured for all others first
+  Object.values(VENDORS).forEach(v=>v.featured=false);
+  VENDORS[vid].featured = on;
+  pushState();
+  buildVendorCards(true);
+  buildFeaturedBanner();
+  showToast(on ? '⭐ '+VENDORS[vid].name+' marked as Best Seller!' : VENDORS[vid].name+' removed from Best Seller');
+}
+
+function openEditVendorModal(vid){
+  const v = VENDORS[vid]; if(!v) return;
+  el('ev-id').value = vid;
+  el('ev-name').value = v.name||'';
+  el('ev-emoji').value = v.emoji||'';
+  el('ev-cat').value = (v.cats||[]).join(', ');
+  el('ev-gcash').value = v.gcash||'';
+  el('ev-pin').value = VENDOR_PINS_PLAIN[vid]||'';
+  el('ev-min').value = v.min||50;
+  // Set location
+  const locSel = el('ev-loc');
+  const subLoc = (v.sub||'').split('·')[0].trim();
+  for(let i=0;i<locSel.options.length;i++){
+    if(locSel.options[i].value===subLoc){ locSel.selectedIndex=i; break; }
+  }
+  el('modal-editvendor').classList.add('on');
+}
+
+async function saveEditVendor(){
+  const vid = el('ev-id').value;
+  if(!vid||!VENDORS[vid]){ showToast('⚠️ Vendor not found'); return; }
+  const name = el('ev-name').value.trim();
+  const emoji = el('ev-emoji').value.trim();
+  const loc = el('ev-loc').value;
+  const cat = el('ev-cat').value.trim();
+  const gcash = el('ev-gcash').value.trim();
+  const pin = el('ev-pin').value.trim();
+  const min = parseInt(el('ev-min').value)||50;
+  if(!name){ showToast('⚠️ Store name is required'); return; }
+  if(pin && (pin.length!==4||!/^\d+$/.test(pin))){ showToast('⚠️ PIN must be exactly 4 digits'); return; }
+
+  // Update vendor
+  VENDORS[vid].name = name;
+  VENDORS[vid].emoji = emoji||VENDORS[vid].emoji;
+  VENDORS[vid].sub = loc+' · '+(cat||'Food');
+  VENDORS[vid].cats = cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean);
+  VENDORS[vid].gcash = gcash;
+  VENDORS[vid].min = min;
+  if(pin) VENDOR_PINS_PLAIN[vid] = pin;
+
+  await pushState();
+  closeModal('modal-editvendor');
+  renderAdminVendors();
+  buildVendorCards(true);
+  buildFeaturedBanner();
+  showToast('✅ '+name+' updated!');
+}
+
+function showAdminEditPin(vid){
+  openEditVendorModal(vid);
+}
+
+// ── NOTIFICATIONS SYSTEM ─────────────────────────────
+// Stored at Firebase: /notifs/{userId}/{notifId}
+// userId = lastPlacedOrderId prefix for customers, vendorId for vendors
+
+let notifList = []; // local cache
+
+async function pushNotif(userId, title, body, type='info'){
+  const notif = { id: Date.now()+'', title, body, type, ts: Date.now(), read: false };
+  try{
+    await fbSet(ROOM_KEY+'/notifs/'+userId+'/'+notif.id, notif);
+  }catch(e){ console.error('pushNotif:', e); }
+}
+
+async function loadNotifs(userId){
+  try{
+    const data = await fbGet(ROOM_KEY+'/notifs/'+userId);
+    if(data && typeof data==='object'){
+      notifList = Object.values(data).sort((a,b)=>b.ts-a.ts).slice(0,50);
+    } else {
+      notifList = [];
+    }
+    renderNotifPanel();
+    updateNotifBadge();
+  }catch(e){ notifList=[]; }
+}
+
+async function markNotifsRead(userId){
+  notifList.forEach(n=>n.read=true);
+  updateNotifBadge();
+  // Mark read in Firebase
+  try{
+    const updates = {};
+    notifList.forEach(n=>{ updates[n.id]={...n,read:true}; });
+    await fbSet(ROOM_KEY+'/notifs/'+userId, updates);
+  }catch(e){}
+}
+
+function updateNotifBadge(){
+  const unread = notifList.filter(n=>!n.read).length;
+  // Customer badge
+  const cb = el('cust-notif-badge');
+  if(cb){ cb.style.display=unread>0?'flex':'none'; cb.textContent=unread>9?'9+':unread; }
+  // Vendor badge
+  const vb = el('vend-notif-badge');
+  if(vb){ vb.style.display=unread>0?'flex':'none'; vb.textContent=unread>9?'9+':unread; }
+}
+
+function renderNotifPanel(){
+  const box = el('notif-list'); if(!box) return;
+  if(!notifList.length){
+    box.innerHTML='<div style="padding:40px 20px;text-align:center"><div style="font-size:40px;margin-bottom:12px">🔔</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No notifications yet</div><div style="font-size:12px;color:var(--t3);margin-top:4px">Order updates will appear here</div></div>';
+    return;
+  }
+  const icons={info:'ℹ️',success:'✅',warning:'⚠️',order:'🛒',status:'📦'};
+  box.innerHTML=notifList.map(n=>`
+    <div style="padding:14px 16px;border-bottom:.5px solid var(--bd);background:${n.read?'var(--w)':'var(--gl)'};display:flex;gap:12px;align-items:flex-start">
+      <div style="font-size:24px;flex-shrink:0;margin-top:2px">${icons[n.type]||'🔔'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${n.title}</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:3px;line-height:1.4">${n.body}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:5px">${timeSince(new Date(n.ts))}</div>
+      </div>
+      ${!n.read?'<div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:6px"></div>':''}
+    </div>`).join('');
+}
+
+// Send notifications on order status change
+async function notifOnStatusChange(order, newStatus){
+  const v = VENDORS[order.vendorId];
+  const custId = 'cust_'+order.id;
+  const vendId = order.vendorId;
+  const statusMsgs = {
+    accepted:  { title:'Order Accepted! ✅', body:`${v?.name||'Vendor'} confirmed your order ${order.id}. They're getting started!`, type:'success' },
+    preparing: { title:'Being Prepared 👨‍🍳', body:`Your order from ${v?.name||'Vendor'} is being cooked right now.`, type:'status' },
+    ready:     { title:'Out for Delivery 🚚', body:`Your order ${order.id} is on its way to Unit ${order.unit}!`, type:'status' },
+    delivered: { title:'Delivered! 🎉', body:`Your order from ${v?.name||'Vendor'} has been delivered. Enjoy your meal!`, type:'success' },
+    declined:  { title:'Order Declined 😞', body:`Your order ${order.id} was declined by ${v?.name||'vendor'}. Please try another seller.`, type:'warning' },
+  };
+  if(statusMsgs[newStatus]){
+    const m = statusMsgs[newStatus];
+    await pushNotif(custId, m.title, m.body, m.type);
+  }
+  // Notify vendor of new order
+  if(newStatus==='new'){
+    await pushNotif(vendId, '🛒 New Order!', `${order.name} · Unit ${order.unit} · ₱${order.total} · ${order.method==='gcash'?'GCash':'Cash'}`, 'order');
+  }
+}
+
+// ── APP BADGE API ─────────────────────────────────────
+async function updateAppBadge(count){
+  try{
+    if('setAppBadge' in navigator){
+      if(count > 0){
+        await navigator.setAppBadge(count);
+      } else {
+        await navigator.clearAppBadge();
+      }
+    }
+  }catch(e){ /* Badge API not supported */ }
+}
+
+function calcBadgeCount(){
+  let count = 0;
+  // Vendor: unaccepted orders + unread chats
+  if(activeVendorId){
+    count += orders.filter(o=>o.vendorId===activeVendorId && o.status==='new').length;
+    // Add unread chat count
+    Object.keys(chatCache).forEach(oid=>{
+      const o = orders.find(x=>x.id===oid);
+      if(o && o.vendorId===activeVendorId){
+        const msgs = chatCache[oid]||[];
+        const unread = msgs.filter(m=>m.from==='customer' && m.ts > (lastKnownMsgCount[oid]||0)).length;
+        count += unread;
+      }
+    });
+  }
+  // Customer: unread status updates
+  if(lastPlacedOrderId){
+    const unread = notifList.filter(n=>!n.read).length;
+    count += unread;
+  }
+  return count;
+}
+
+function refreshBadge(){
+  const count = calcBadgeCount();
+  updateAppBadge(count);
+  // Also update the in-app badge numbers
+  updateNotifBadge();
+}
+
+function openNotifPanel(role){
+  const userId = role==='customer' ? 'cust_'+lastPlacedOrderId : activeVendorId;
+  if(!userId){ showToast('No active session'); return; }
+  el('notif-panel').style.display='flex';
+  el('notif-panel-title').textContent = role==='customer' ? '🔔 My Notifications' : '🔔 Order Alerts';
+  loadNotifs(userId);
+  markNotifsRead(userId);
+  updateAppBadge(0);
+}
+function closeNotifPanel(){ el('notif-panel').style.display='none'; refreshBadge(); }
+
+// ── PAYMENT ACCOUNTS ─────────────────────────────────
+const WALLET_COLORS = {
+  GCash:'#0070f3', Maya:'#00a651', BDO:'#d4000a', BPI:'#c00000',
+  UnionBank:'#e87722', Metrobank:'#003087', Landbank:'#006400',
+  Seabank:'#1a1a2e', GoTyme:'#ff6b35', Cash:'#2d9b6f', Other:'#6b7280'
+};
+const WALLET_ICONS = {
+  GCash:'💙', Maya:'💚', BDO:'🏦', BPI:'🏛️', UnionBank:'🧡',
+  Metrobank:'🏢', Landbank:'🌾', Seabank:'🌊', GoTyme:'🟠', Cash:'💵', Other:'💳'
+};
+
+function openAddPaymentModal(){ el('modal-addpayment').classList.add('on'); }
+
+function addPaymentAccount(){
+  if(!activeVendorId) return;
+  const type = el('pay-type').value;
+  const number = el('pay-number').value.trim();
+  const accname = el('pay-accname').value.trim();
+  if(!number){ showToast('⚠️ Enter account number'); return; }
+  if(!accname){ showToast('⚠️ Enter account name'); return; }
+  if(!VENDORS[activeVendorId].payments) VENDORS[activeVendorId].payments=[];
+  VENDORS[activeVendorId].payments.push({type, number, accname, id: Date.now()});
+  pushState();
+  closeModal('modal-addpayment');
+  el('pay-number').value=''; el('pay-accname').value='';
+  renderVendorPayments();
+  showToast('✅ '+type+' account added!');
+}
+
+function removePaymentAccount(idx){
+  if(!activeVendorId) return;
+  if(!confirm('Remove this payment account?')) return;
+  VENDORS[activeVendorId].payments.splice(idx,1);
+  pushState();
+  renderVendorPayments();
+  showToast('Payment account removed');
+}
+
+function renderVendorPayments(){
+  if(!activeVendorId) return;
+  const list = el('v-payments-list'); if(!list) return;
+  const payments = VENDORS[activeVendorId].payments||[];
+  if(!payments.length){
+    list.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center;padding:4px 0">No payment accounts yet</div>';
+    return;
+  }
+  list.innerHTML = payments.map((p,i)=>`
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${WALLET_ICONS[p.type]||'💳'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:#fff">${p.type}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.65)">${p.number} · ${p.accname}</div>
+      </div>
+      <button onclick="removePaymentAccount(${i})" style="background:rgba(255,0,0,.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+
+function loadPaymentWallets(vid){
+  const box = el('payment-wallets'); if(!box) return;
+  const v = VENDORS[vid]; if(!v) return;
+  const payments = v.payments||[];
+
+  // Also include legacy gcash if set
+  const allPayments = [...payments];
+  if(v.gcash && !allPayments.find(p=>p.type==='GCash')){
+    allPayments.unshift({type:'GCash', number:v.gcash, accname:v.name});
+  }
+
+  if(!allPayments.length){
+    box.innerHTML=`<div style="background:#fef2f2;border-radius:var(--rs);border:1px solid #fecaca;padding:14px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:4px">⚠️ No payment accounts set up</div>
+      <div style="font-size:12px;color:#ef4444">Contact the vendor directly to arrange payment.</div>
+    </div>`;
+    return;
+  }
+
+  box.innerHTML = allPayments.map(p=>`
+    <div style="background:var(--w);border:1.5px solid var(--bd);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:10px;background:${WALLET_COLORS[p.type]||'#6b7280'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${WALLET_ICONS[p.type]||'💳'}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">${p.type}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--g);margin:2px 0;letter-spacing:.5px">${p.number}</div>
+        <div style="font-size:12px;color:var(--t3)">${p.accname}</div>
+      </div>
+    </div>`).join('');
+}
+
+
 function goVendorTab(tab){
   currentVendorTab=tab;
   const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
   goPage(pages[tab]);
   if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
+  if(tab==='orders') refreshBadge();
 }
 
 function toggleStore(on){
@@ -2040,12 +2467,14 @@ function getVendorActions(o){
   return '';
 }
 
-function updateOrderStatus(oid,status){
+async function updateOrderStatus(oid,status){
   const o=orders.find(o=>o.id===oid);
   if(!o) return;
   o.status=status;
   o.updatedAt=Date.now();
-  pushOrders();
+  await pushOrders();
+  await notifOnStatusChange(o, status);
+  refreshBadge();
   const msgs={accepted:'✓ Order accepted! Start preparing.',preparing:'👨‍🍳 Preparing order…',ready:'📦 Order ready! Delivering now.',delivered:'✅ Delivered! Earnings updated.',declined:'Order declined.'};
   showToast(msgs[status]||'Updated');
   updateVendorDash(activeVendorId);
@@ -2321,11 +2750,13 @@ let heroStats = { vendorCount: '', userCount: '0' };
 function loadHeroStats(){
   try{ const s=localStorage.getItem('lf-heroStats'); if(s) heroStats=JSON.parse(s); }catch(e){}
 }
-function saveHeroStats(){
+async function saveHeroStats(){
   const vc=el('admin-vendor-display').value.trim()||String(Object.values(VENDORS).length);
   const uc=el('admin-user-display').value.trim()||'0';
   heroStats={vendorCount:vc, userCount:uc};
   try{ localStorage.setItem('lf-heroStats', JSON.stringify(heroStats)); }catch(e){}
+  // Sync to Firebase so ALL devices show the same count
+  try{ await fbSet(ROOM_KEY+'/heroStats', heroStats); }catch(e){}
   applyHeroStats(true);
   showToast('✅ Front page stats updated!');
 }
@@ -2446,12 +2877,13 @@ function renderAdminOrders(){
   }).join('')+'<div style="height:80px"></div>';
 }
 
-function adminUpdateStatus(oid,status){
+async function adminUpdateStatus(oid,status){
   const o=orders.find(o=>o.id===oid);
   if(!o||!status) return;
   o.status=status;
   o.updatedAt=Date.now();
-  pushOrders();
+  await pushOrders();
+  await notifOnStatusChange(o, status);
   showToast('Order '+oid+' → '+statusLabel(status));
   updateAdminStats(); renderAdminOrders();
 }
@@ -2473,10 +2905,16 @@ function renderAdminVendors(){
         <div class="av-row"><span>Gross sales</span><span class="av-val g">₱${gross}</span></div>
         <div class="av-row"><span>Fees owed to you</span><span class="av-val">₱${vOrders.length*SERVICE_FEE}</span></div>
         <div class="av-row"><span>Vendor PIN</span><span class="av-val">••••</span></div>
+        <div class="av-row"><span>Featured / Best Seller</span>
+          <label class="tog" style="transform:scale(.8);transform-origin:right">
+            <input type="checkbox" ${v.featured?'checked':''} onchange="toggleFeatured('${v.id}',this.checked)">
+            <div class="tog-t"></div><div class="tog-k"></div>
+          </label>
+        </div>
       </div>
       <div class="av-acts">
         <button class="oact ${v.active?'d':'p'}" onclick="toggleVendorActive('${v.id}')">${v.active?'Pause Store':'Reactivate'}</button>
-        <button class="oact s" onclick="showToast('Edit feature coming soon!')">Edit</button>
+        <button class="oact s" onclick="openEditVendorModal('${v.id}')">✏️ Edit</button>
       </div>
     </div>`;
   }).join('');
@@ -2858,11 +3296,19 @@ function applyData(d){
   rebuildVendorSelect();
   buildVendorCards();
   buildTodaysPicks();
+  buildFeaturedBanner();
   checkVendorNewOrders();
   updateTrackerFromStatus();
   loadAllChats();
   if(lastPlacedOrderId) loadCustomerVendorContact(lastPlacedOrderId);
   syncChats();
+  refreshBadge();
+  // Sync hero stats from Firebase
+  if(d.heroStats){
+    heroStats=d.heroStats;
+    try{ localStorage.setItem('lf-heroStats',JSON.stringify(heroStats)); }catch(e){}
+    applyHeroStats();
+  }
   refreshVisible();
 }
 
@@ -2879,7 +3325,7 @@ async function pushOrders(){
 
 async function pushState(){
   try{
-    syncPausedUntil = Date.now() + 3000; // pause sync while we write
+    syncPausedUntil = Date.now() + 1500; // pause sync while we write
     await fbSet(ROOM_KEY+'/vendors', VENDORS);
     await fbSet(ROOM_KEY+'/menu', MENU);
     await fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN);
@@ -2943,9 +3389,14 @@ function refreshVisible(){
     console.error('Boot error:', e);
     showToast('⚠️ Running offline — check internet');
   }
-  setInterval(syncFromCloud, 5000);
+  setInterval(syncFromCloud, 3000);
   setInterval(syncChats, 3000);
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
+  setInterval(refreshBadge, 5000);
+  setInterval(()=>{
+    if(lastPlacedOrderId) loadNotifs('cust_'+lastPlacedOrderId);
+    if(activeVendorId) loadNotifs(activeVendorId);
+  }, 15000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
 })();
 
