@@ -1655,6 +1655,8 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
     await notifOnStatusChange(order, 'new');
     refreshBadge();
     showToast('✅ Order sent to vendor!');
+    // Immediately poll so vendor sees it right away
+    setTimeout(syncFromCloud, 500);
   }catch(e){
     console.error('Order push failed:', e);
     showToast('⚠️ Order saved, retrying sync…');
@@ -3311,6 +3313,8 @@ function applyData(d){
   checkVendorNewOrders();
   updateTrackerFromStatus();
   loadAllChats();
+  // Force vendor dashboard update so banner shows immediately
+  if(activeVendorId) updateVendorDash(activeVendorId);
   if(lastPlacedOrderId) loadCustomerVendorContact(lastPlacedOrderId);
   syncChats();
   refreshBadge();
@@ -3420,7 +3424,7 @@ function refreshVisible(){
   setInterval(()=>{
     if(lastPlacedOrderId) loadNotifs('cust_'+lastPlacedOrderId);
     if(activeVendorId) loadNotifs(activeVendorId);
-  }, 15000);
+  }, 5000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
 })();
 
