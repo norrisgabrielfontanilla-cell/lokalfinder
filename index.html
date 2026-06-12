@@ -737,8 +737,9 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <div style="flex:1"><div id="v-banner-txt" style="font-size:15px;font-weight:800;color:#fff">New orders waiting!</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Tap here to view and accept</div></div>
       <div id="v-banner-count" style="background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:4px 12px;font-size:16px;font-weight:800">0</div>
     </div>
+    <div id="v-status-box" style="margin:0 16px 8px;padding:10px 12px;background:#1e293b;border-radius:8px;font-family:monospace;font-size:11px;color:#7dd3fc;line-height:1.6"></div>
     <div style="margin:0 16px 8px;display:flex;gap:8px">
-      <button onclick="toggleDebug()" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">🔍 Sync Status</button>
+      <button onclick="toggleDebug()" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">🔍 Full Log</button>
       <button onclick="syncFromCloud();showToast('🔄 Syncing now…')" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">🔄 Sync Now</button>
     </div>
     <div class="sec"><span class="sec-t">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
@@ -1607,6 +1608,7 @@ function setPay(m){
 }
 
 function placeOrder(){
+  dbg('placeOrder CALLED, payMethod='+payMethod+', cart vendors='+Object.keys(cart).join(','));
   if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
@@ -1641,6 +1643,7 @@ function confirmGcash(){
 }
 
 async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
+  dbg('🆕 finalizeOrder CALLED: oid='+oid+' method='+method+' vendor='+Object.keys(cart)[0]);
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
   const order={
@@ -2243,6 +2246,19 @@ function dbg(msg){
   debugLog = debugLog.slice(0,30);
   const el2 = document.getElementById('debug-log');
   if(el2) el2.innerHTML = debugLog.map(l=>`<div style="padding:4px 0;border-bottom:1px solid #333">${l}</div>`).join('');
+}
+function updateStatusBox(){
+  const box = document.getElementById('v-status-box');
+  if(!box) return;
+  const myOrders = activeVendorId ? orders.filter(o=>o.vendorId===activeVendorId) : [];
+  const allVendorIds = [...new Set(orders.map(o=>o.vendorId))];
+  box.innerHTML = `
+    <div><b>My Vendor ID:</b> ${activeVendorId||'none'}</div>
+    <div><b>Total orders in Firebase:</b> ${orders.length}</div>
+    <div><b>My orders:</b> ${myOrders.length}</div>
+    <div><b>All vendor IDs in orders:</b> ${allVendorIds.join(', ')||'none'}</div>
+    <div><b>Last sync:</b> ${lastSyncTime?new Date(lastSyncTime).toLocaleTimeString():'never'}</div>
+  `;
 }
 function toggleDebug(){
   const p = document.getElementById('debug-panel');
@@ -3363,6 +3379,7 @@ function applyData(d){
     applyHeroStats();
   }
   refreshVisible();
+  updateStatusBox();
 }
 
 async function pushOrders(oid=null){
