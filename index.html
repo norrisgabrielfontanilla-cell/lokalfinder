@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LokalFinder">
-<link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;LokalFinder&quot;,&quot;short_name&quot;:&quot;LokalFinder&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231A6B4A&quot;,&quot;theme_color&quot;:&quot;%231A6B4A&quot;,&quot;orientation&quot;:&quot;portrait&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231A6B4A'/><path d='M96 42C67 42 44 65 44 94c0 19 10 36 26 46l-5 20h62l-5-20c16-10 26-27 26-46 0-29-23-52-52-52z' fill='white' opacity='.2'/><path d='M70 78h52M70 96h52M70 114h32' stroke='white' stroke-width='6' stroke-linecap='round'/><circle cx='96' cy='58' r='9' fill='white'/></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;,&quot;purpose&quot;:&quot;any maskable&quot;}]}">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231A6B4A'/><path d='M90 40C63 40 41 62 41 89c0 18 10 34 24 43l-4 18h58l-4-18c14-9 24-25 24-43 0-27-22-49-49-49z' fill='white' opacity='.2'/><path d='M65 72h50M65 89h50M65 106h30' stroke='white' stroke-width='5' stroke-linecap='round'/><circle cx='90' cy='55' r='8' fill='white'/></svg>"><rect width='192' height='192' rx='40' fill='%231A6B4A'/><text y='140' x='30' font-size='120'>🏘️</text></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A6B4A'/%3E%3Ctext y='68' x='50' font-size='55' text-anchor='middle'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231A6B4A'/%3E%3Ctext y='122' x='90' font-size='100' text-anchor='middle'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@1,600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
@@ -301,7 +301,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <!-- hero content -->
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px 24px;text-align:center;position:relative;z-index:1">
       <!-- logo mark -->
-      <div style="width:72px;height:72px;background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 8px 32px rgba(26,107,74,.4)" onclick="window._dbgTaps=(window._dbgTaps||0)+1; if(window._dbgTaps>=7){window._dbgTaps=0; toggleDebug();} clearTimeout(window._dbgTimer); window._dbgTimer=setTimeout(()=>window._dbgTaps=0,2000);">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 8px 32px rgba(26,107,74,.4)">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
       <div class="land-logo" style="font-size:42px;letter-spacing:-1px;margin-bottom:6px">Finder</div>
@@ -594,7 +594,6 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     </button>
 
     <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
-    <div id="order-debug-box" style="margin-top:10px;padding:10px;background:#1e293b;border-radius:8px;font-family:monospace;font-size:11px;color:#7dd3fc;white-space:pre-wrap;word-break:break-all"></div>
     <div id="cancel-order-wrap" style="margin-top:10px;display:none">
       <button onclick="customerCancelOrder()" style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--red);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--ff)">Cancel Order</button>
       <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px">You can only cancel while waiting for acceptance</div>
@@ -737,13 +736,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <div style="font-size:28px">🔔</div>
       <div style="flex:1"><div id="v-banner-txt" style="font-size:15px;font-weight:800;color:#fff">New orders waiting!</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Tap here to view and accept</div></div>
       <div id="v-banner-count" style="background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:4px 12px;font-size:16px;font-weight:800">0</div>
-    </div>
-    <div id="v-status-box" style="margin:0 16px 8px;padding:10px 12px;background:#1e293b;border-radius:8px;font-family:monospace;font-size:11px;color:#7dd3fc;line-height:1.6"></div>
-    <div style="margin:0 16px 8px;display:flex;gap:8px">
-      <button onclick="toggleDebug()" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">🔍 Full Log</button>
-      <button onclick="syncFromCloud();showToast('🔄 Syncing now…')" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--bdm);border-radius:8px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">🔄 Sync Now</button>
-    </div>
-    <div class="sec"><span class="sec-t">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
+    </div>    <div class="sec"><span class="sec-t">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
     <div id="v-recent-orders"><div class="empty" style="padding:24px"><div class="empty-sub">No orders yet. Share your store link to get started!</div></div></div>
     <div style="height:80px"></div>
   </div>
@@ -1178,15 +1171,6 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
   </div>
 </div>
 
-<!-- ── DEBUG PANEL ── -->
-<div id="debug-panel" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:99999;flex-direction:column;color:#0f0;font-family:monospace;font-size:11px">
-  <div style="padding:12px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;background:#111">
-    <b style="color:#fff">🐛 Debug Console</b>
-    <button onclick="toggleDebug()" style="background:#333;color:#fff;border:none;padding:6px 14px;border-radius:6px">Close</button>
-  </div>
-  <div id="debug-log" style="flex:1;overflow-y:auto;padding:10px"></div>
-</div>
-
 <div id="toast"></div>
 
 <!-- ── FLOATING NOTIFICATION PANEL ── -->
@@ -1609,7 +1593,6 @@ function setPay(m){
 }
 
 function placeOrder(){
-  dbg('placeOrder CALLED, payMethod='+payMethod+', cart vendors='+Object.keys(cart).join(','));
   if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
@@ -1644,8 +1627,6 @@ function confirmGcash(){
 }
 
 async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
-  window._lastOrderDebug = '🆕 finalizeOrder CALLED: oid='+oid+' method='+method+' vendor='+Object.keys(cart)[0]+' time='+new Date().toLocaleTimeString();
-  dbg(window._lastOrderDebug);
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
   const order={
@@ -1667,19 +1648,15 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   loadCustomerVendorContact(order.id);
   renderChat(order.id);
   updateTrackerFromStatus();
-  const dbgBox = document.getElementById('order-debug-box');
-  if(dbgBox) dbgBox.textContent = 'Order ID: '+order.id+'\\nVendor: '+order.vendorId+'\\nPushing to Firebase...';
   // Push to Firebase and notify vendor — awaited so it definitely lands
   try{
     await pushOrders(order.id);
-    if(dbgBox) dbgBox.textContent += '\\n✅ Push SUCCESS';
     await notifOnStatusChange(order, 'new');
     refreshBadge();
     showToast('✅ Order sent to vendor!');
     // Immediately poll so vendor sees it right away
     setTimeout(syncFromCloud, 500);
   }catch(e){
-    if(dbgBox) dbgBox.textContent += '\\n❌ Push FAILED: '+e.message;
     console.error('Order push failed:', e);
     showToast('⚠️ Order saved, retrying sync…');
     setTimeout(()=>pushOrders(order.id), 3000);
@@ -2245,31 +2222,6 @@ function calcBadgeCount(){
   return count;
 }
 
-// ── DEBUG PANEL ────────────────────────────────────
-let debugLog = [];
-function dbg(msg){
-  debugLog.unshift('['+new Date().toLocaleTimeString()+'] '+msg);
-  debugLog = debugLog.slice(0,30);
-  const el2 = document.getElementById('debug-log');
-  if(el2) el2.innerHTML = debugLog.map(l=>`<div style="padding:4px 0;border-bottom:1px solid #333">${l}</div>`).join('');
-}
-function updateStatusBox(){
-  const box = document.getElementById('v-status-box');
-  if(!box) return;
-  const myOrders = activeVendorId ? orders.filter(o=>o.vendorId===activeVendorId) : [];
-  const allVendorIds = [...new Set(orders.map(o=>o.vendorId))];
-  box.innerHTML = `
-    <div><b>My Vendor ID:</b> ${activeVendorId||'none'}</div>
-    <div><b>Total orders in Firebase:</b> ${orders.length}</div>
-    <div><b>My orders:</b> ${myOrders.length}</div>
-    <div><b>All vendor IDs in orders:</b> ${allVendorIds.join(', ')||'none'}</div>
-    <div><b>Last sync:</b> ${lastSyncTime?new Date(lastSyncTime).toLocaleTimeString():'never'}</div>
-  `;
-}
-function toggleDebug(){
-  const p = document.getElementById('debug-panel');
-  if(p) p.style.display = p.style.display==='none' ? 'flex' : 'none';
-}
 
 function refreshBadge(){
   const count = calcBadgeCount();
@@ -2501,7 +2453,6 @@ function renderVendorOrders(){
   if(!activeVendorId) return;
   const el2=el('v-orders-list');
   const myOrders=orders.filter(o=>o.vendorId===activeVendorId).slice().reverse();
-  dbg('renderVendorOrders: activeVendorId='+activeVendorId+', total orders='+orders.length+', my orders='+myOrders.length+', all vendorIds='+orders.map(o=>o.vendorId).join(','));
   if(!myOrders.length){
     el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders will appear here. Make sure your store is open!</div></div>';
     return;
@@ -3305,14 +3256,24 @@ async function fbGet(path){
   return r.json();
 }
 
-async function fbSet(path, data){
-  const r = await fetch(`${FB_URL}/${path}.json`, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(data)
-  });
-  if(!r.ok) throw new Error('FB write failed: '+r.status);
-  return r.json();
+async function fbSet(path, data, timeoutMs=8000){
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>controller.abort(), timeoutMs);
+  try{
+    const r = await fetch(`${FB_URL}/${path}.json`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if(!r.ok) throw new Error('FB write failed: '+r.status);
+    return r.json();
+  }catch(e){
+    clearTimeout(timeout);
+    if(e.name==='AbortError') throw new Error('FB write timeout after '+timeoutMs+'ms');
+    throw e;
+  }
 }
 
 async function fbDelete(path){
@@ -3345,12 +3306,10 @@ function applyData(d){
 
   if(d.orders){
     const incoming = Object.values(d.orders).map(o=>({...o, timestamp: new Date(o.timestamp)}));
-    dbg('applyData: '+incoming.length+' incoming orders, ids: '+incoming.map(o=>o.id).join(','));
     const map = {};
     incoming.forEach(o=>map[o.id]=o);
     orders.forEach(o=>{ if(!map[o.id]) map[o.id]=o; });
     orders = Object.values(map).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-    dbg('applyData: merged total = '+orders.length+' orders');
     orders.forEach(o=>{
       if(!knownOrderIds.has(o.id)){
         // Only notify for NEW (unaccepted) orders that belong to this vendor
@@ -3385,26 +3344,22 @@ function applyData(d){
     applyHeroStats();
   }
   refreshVisible();
-  updateStatusBox();
 }
 
 async function pushOrders(oid=null){
   try{
     if(oid){
       const o = orders.find(x=>x.id===oid);
-      if(!o){ dbg('pushOrders: order '+oid+' not found locally!'); return; }
+      if(!o){ return; }
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-      dbg('pushOrders: writing '+key+' status='+o.status+' vendor='+o.vendorId);
       await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
-      dbg('pushOrders: ✅ write OK for '+key);
       return;
     }
     for(const o of orders){
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
       await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
     }
-    dbg('pushOrders: pushed all '+orders.length+' orders');
-  }catch(e){ dbg('pushOrders ERROR: '+e.message); console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
+  }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
 }
 
 async function pushState(){
@@ -3422,12 +3377,9 @@ async function syncFromCloud(){
   try{
     const d = await fbGet(ROOM_KEY);
     const orderCount = d && d.orders ? Object.keys(d.orders).length : 0;
-    dbg('sync: received '+orderCount+' orders from Firebase (local had '+orders.length+')');
     applyData(d);
-    dbg('sync: after apply, local has '+orders.length+' orders');
     lastSyncTime = Date.now();
   }catch(e){
-    dbg('sync ERROR: '+e.message);
     if(Date.now() - (window._lastSyncErrLog||0) > 30000){
       console.warn('sync: connection issue, retrying automatically');
       window._lastSyncErrLog = Date.now();
@@ -3471,10 +3423,8 @@ function refreshVisible(){
   let bootAttempts = 0;
   async function tryBoot(){
     bootAttempts++;
-    dbg('Boot attempt '+bootAttempts+' starting...');
     try{
       const existing = await fbGet(ROOM_KEY);
-      dbg('Boot: fbGet returned, has orders='+!!(existing&&existing.orders)+', order count='+(existing&&existing.orders?Object.keys(existing.orders).length:0));
       if(existing && existing.orders){
         applyData(existing);
         showToast('✅ LokalFinder connected!');
