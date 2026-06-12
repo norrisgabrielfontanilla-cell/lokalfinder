@@ -301,7 +301,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <!-- hero content -->
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px 24px;text-align:center;position:relative;z-index:1">
       <!-- logo mark -->
-      <div style="width:72px;height:72px;background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 8px 32px rgba(26,107,74,.4)">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#2D9B6F,#1A6B4A);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 8px 32px rgba(26,107,74,.4)" onclick="window._dbgTaps=(window._dbgTaps||0)+1; if(window._dbgTaps>=7){window._dbgTaps=0; toggleDebug();} clearTimeout(window._dbgTimer); window._dbgTimer=setTimeout(()=>window._dbgTaps=0,2000);">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       </div>
       <div class="land-logo" style="font-size:42px;letter-spacing:-1px;margin-bottom:6px">Finder</div>
@@ -1170,6 +1170,15 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <button class="cta" onclick="confirmSwitchVendor()" style="margin-bottom:8px">Clear cart & start new order</button>
     <button class="cta sec" onclick="cancelSwitchVendor()">Keep my current cart</button>
   </div>
+</div>
+
+<!-- ── DEBUG PANEL ── -->
+<div id="debug-panel" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:99999;flex-direction:column;color:#0f0;font-family:monospace;font-size:11px">
+  <div style="padding:12px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;background:#111">
+    <b style="color:#fff">🐛 Debug Console</b>
+    <button onclick="toggleDebug()" style="background:#333;color:#fff;border:none;padding:6px 14px;border-radius:6px">Close</button>
+  </div>
+  <div id="debug-log" style="flex:1;overflow-y:auto;padding:10px"></div>
 </div>
 
 <div id="toast"></div>
@@ -2223,6 +2232,19 @@ function calcBadgeCount(){
   return count;
 }
 
+// ── DEBUG PANEL ────────────────────────────────────
+let debugLog = [];
+function dbg(msg){
+  debugLog.unshift('['+new Date().toLocaleTimeString()+'] '+msg);
+  debugLog = debugLog.slice(0,30);
+  const el2 = document.getElementById('debug-log');
+  if(el2) el2.innerHTML = debugLog.map(l=>`<div style="padding:4px 0;border-bottom:1px solid #333">${l}</div>`).join('');
+}
+function toggleDebug(){
+  const p = document.getElementById('debug-panel');
+  if(p) p.style.display = p.style.display==='none' ? 'flex' : 'none';
+}
+
 function refreshBadge(){
   const count = calcBadgeCount();
   updateAppBadge(count);
@@ -2458,8 +2480,6 @@ function renderVendorOrders(){
     return;
   }
   el2.innerHTML='<div style="height:4px"></div>'+myOrders.map(o=>renderOrderCard(o,true)).join('')+'<div style="height:80px"></div>';
-  // Re-apply any active filter (filter state survives re-renders)
-  if(currentVOrderFilter && currentVOrderFilter!=='all') applyVOrderFilter();
 }
 
 function renderOrderCard(o, vendorView=false){
@@ -2512,33 +2532,13 @@ async function updateOrderStatus(oid,status){
   renderAdminOrders();
 }
 
-let currentVOrderFilter = 'all';
-
 function filterVOrders(type,btn){
-  currentVOrderFilter = type;
   document.querySelectorAll('[id^="vof-"]').forEach(b=>{b.style.background='var(--w)';b.style.color='var(--t2)';b.style.border='1px solid var(--bdm)';});
   btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.border='none';
-  applyVOrderFilter();
-}
-
-function applyVOrderFilter(){
-  const type = currentVOrderFilter;
   document.querySelectorAll('#v-orders-list [data-status]').forEach(c=>{
     const s=c.dataset.status;
-    let show = false;
-    if(type==='all') show=true;
-    else if(type==='new') show=(s==='new');
-    else if(type==='prep') show=(s==='accepted'||s==='preparing'||s==='ready');
-    else if(type==='done') show=(s==='delivered'||s==='declined');
-    c.style.display=show?'':'none';
+    c.style.display=(type==='all'||s===type)?'':'none';
   });
-  // Restore active button highlight
-  const btnMap = {all:'vof-all',new:'vof-new',prep:'vof-prep',done:'vof-done'};
-  const activeId = btnMap[type];
-  if(activeId){
-    const activeBtn = document.getElementById(activeId);
-    if(activeBtn){ activeBtn.style.background='var(--g)'; activeBtn.style.color='#fff'; activeBtn.style.border='none'; }
-  }
 }
 
 function renderVendorMenu(vid){
@@ -3318,10 +3318,12 @@ function applyData(d){
 
   if(d.orders){
     const incoming = Object.values(d.orders).map(o=>({...o, timestamp: new Date(o.timestamp)}));
+    dbg('applyData: '+incoming.length+' incoming orders, ids: '+incoming.map(o=>o.id).join(','));
     const map = {};
     incoming.forEach(o=>map[o.id]=o);
     orders.forEach(o=>{ if(!map[o.id]) map[o.id]=o; });
     orders = Object.values(map).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    dbg('applyData: merged total = '+orders.length+' orders');
     orders.forEach(o=>{
       if(!knownOrderIds.has(o.id)){
         // Only notify for NEW (unaccepted) orders that belong to this vendor
@@ -3360,20 +3362,21 @@ function applyData(d){
 
 async function pushOrders(oid=null){
   try{
-    // If oid is specified, push ONLY that order (safe - won't overwrite others)
     if(oid){
       const o = orders.find(x=>x.id===oid);
-      if(!o) return;
+      if(!o){ dbg('pushOrders: order '+oid+' not found locally!'); return; }
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+      dbg('pushOrders: writing '+key+' status='+o.status+' vendor='+o.vendorId);
       await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+      dbg('pushOrders: ✅ write OK for '+key);
       return;
     }
-    // No oid specified — push ALL local orders individually (still safe, never overwrites the collection)
     for(const o of orders){
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
       await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
     }
-  }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
+    dbg('pushOrders: pushed all '+orders.length+' orders');
+  }catch(e){ dbg('pushOrders ERROR: '+e.message); console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
 }
 
 async function pushState(){
@@ -3387,13 +3390,16 @@ async function pushState(){
 }
 
 async function syncFromCloud(){
-  if(Date.now() < syncPausedUntil) return; // don't overwrite during writes
+  if(Date.now() < syncPausedUntil){ return; }
   try{
     const d = await fbGet(ROOM_KEY);
+    const orderCount = d && d.orders ? Object.keys(d.orders).length : 0;
+    dbg('sync: received '+orderCount+' orders from Firebase (local had '+orders.length+')');
     applyData(d);
+    dbg('sync: after apply, local has '+orders.length+' orders');
     lastSyncTime = Date.now();
   }catch(e){
-    // Only log occasionally to avoid console spam on flaky connections
+    dbg('sync ERROR: '+e.message);
     if(Date.now() - (window._lastSyncErrLog||0) > 30000){
       console.warn('sync: connection issue, retrying automatically');
       window._lastSyncErrLog = Date.now();
@@ -3437,8 +3443,10 @@ function refreshVisible(){
   let bootAttempts = 0;
   async function tryBoot(){
     bootAttempts++;
+    dbg('Boot attempt '+bootAttempts+' starting...');
     try{
       const existing = await fbGet(ROOM_KEY);
+      dbg('Boot: fbGet returned, has orders='+!!(existing&&existing.orders)+', order count='+(existing&&existing.orders?Object.keys(existing.orders).length:0));
       if(existing && existing.orders){
         applyData(existing);
         showToast('✅ LokalFinder connected!');
