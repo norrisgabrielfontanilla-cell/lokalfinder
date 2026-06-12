@@ -2458,6 +2458,8 @@ function renderVendorOrders(){
     return;
   }
   el2.innerHTML='<div style="height:4px"></div>'+myOrders.map(o=>renderOrderCard(o,true)).join('')+'<div style="height:80px"></div>';
+  // Re-apply any active filter (filter state survives re-renders)
+  if(currentVOrderFilter && currentVOrderFilter!=='all') applyVOrderFilter();
 }
 
 function renderOrderCard(o, vendorView=false){
@@ -2510,13 +2512,33 @@ async function updateOrderStatus(oid,status){
   renderAdminOrders();
 }
 
+let currentVOrderFilter = 'all';
+
 function filterVOrders(type,btn){
+  currentVOrderFilter = type;
   document.querySelectorAll('[id^="vof-"]').forEach(b=>{b.style.background='var(--w)';b.style.color='var(--t2)';b.style.border='1px solid var(--bdm)';});
   btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.border='none';
+  applyVOrderFilter();
+}
+
+function applyVOrderFilter(){
+  const type = currentVOrderFilter;
   document.querySelectorAll('#v-orders-list [data-status]').forEach(c=>{
     const s=c.dataset.status;
-    c.style.display=(type==='all'||s===type)?'':'none';
+    let show = false;
+    if(type==='all') show=true;
+    else if(type==='new') show=(s==='new');
+    else if(type==='prep') show=(s==='accepted'||s==='preparing'||s==='ready');
+    else if(type==='done') show=(s==='delivered'||s==='declined');
+    c.style.display=show?'':'none';
   });
+  // Restore active button highlight
+  const btnMap = {all:'vof-all',new:'vof-new',prep:'vof-prep',done:'vof-done'};
+  const activeId = btnMap[type];
+  if(activeId){
+    const activeBtn = document.getElementById(activeId);
+    if(activeBtn){ activeBtn.style.background='var(--g)'; activeBtn.style.color='#fff'; activeBtn.style.border='none'; }
+  }
 }
 
 function renderVendorMenu(vid){
