@@ -2479,6 +2479,7 @@ function renderVendorOrders(){
   if(!activeVendorId) return;
   const el2=el('v-orders-list');
   const myOrders=orders.filter(o=>o.vendorId===activeVendorId).slice().reverse();
+  dbg('renderVendorOrders: activeVendorId='+activeVendorId+', total orders='+orders.length+', my orders='+myOrders.length+', all vendorIds='+orders.map(o=>o.vendorId).join(','));
   if(!myOrders.length){
     el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders will appear here. Make sure your store is open!</div></div>';
     return;
