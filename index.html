@@ -1651,7 +1651,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   updateTrackerFromStatus();
   // Push to Firebase and notify vendor — awaited so it definitely lands
   try{
-    await pushOrders();
+    await pushOrders(order.id);
     await notifOnStatusChange(order, 'new');
     refreshBadge();
     showToast('✅ Order sent to vendor!');
@@ -1660,7 +1660,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   }catch(e){
     console.error('Order push failed:', e);
     showToast('⚠️ Order saved, retrying sync…');
-    setTimeout(()=>pushOrders(), 3000);
+    setTimeout(()=>pushOrders(order.id), 3000);
   }
 }
 
@@ -1829,13 +1829,16 @@ function applyVendorLogo(logo){
   }
 }
 
-function confirmClearOrderHistory(){
+async function confirmClearOrderHistory(){
   const done=orders.filter(o=>o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined'));
   if(!done.length){showToast('No completed orders to clear');return;}
   if(!confirm(`Clear ${done.length} completed order${done.length>1?'s':''}? This cannot be undone.`)) return;
-  // Remove delivered/declined orders for this vendor
+  // Remove delivered/declined orders for this vendor — delete each from Firebase individually
+  for(const o of done){
+    const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+    try{ await fbDelete(ROOM_KEY+'/orders/'+key); }catch(e){ console.error('delete order:',e); }
+  }
   orders=orders.filter(o=>!(o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined')));
-  pushOrders();
   renderVendorOrders();
   updateVendorDash(activeVendorId);
   showToast('✅ Completed orders cleared');
@@ -2027,7 +2030,7 @@ async function customerCancelOrder(){
   if(!confirm('Cancel this order?')) return;
   o.status='declined';
   o.updatedAt=Date.now();
-  await pushOrders();
+  await pushOrders(o.id);
   updateTrackerFromStatus();
   showToast('✅ Order cancelled');
   el('cancel-order-wrap').style.display='none';
@@ -2495,7 +2498,7 @@ async function updateOrderStatus(oid,status){
   if(!o) return;
   o.status=status;
   o.updatedAt=Date.now();
-  await pushOrders();
+  await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   refreshBadge();
   const msgs={accepted:'✓ Order accepted! Start preparing.',preparing:'👨‍🍳 Preparing order…',ready:'📦 Order ready! Delivering now.',delivered:'✅ Delivered! Earnings updated.',declined:'Order declined.'};
@@ -2905,7 +2908,7 @@ async function adminUpdateStatus(oid,status){
   if(!o||!status) return;
   o.status=status;
   o.updatedAt=Date.now();
-  await pushOrders();
+  await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   showToast('Order '+oid+' → '+statusLabel(status));
   updateAdminStats(); renderAdminOrders();
@@ -3263,6 +3266,12 @@ async function fbSet(path, data){
   return r.json();
 }
 
+async function fbDelete(path){
+  const r = await fetch(`${FB_URL}/${path}.json`, { method: 'DELETE' });
+  if(!r.ok) throw new Error('FB delete failed: '+r.status);
+  return r.json();
+}
+
 async function fbPatch(path, data){
   const r = await fetch(`${FB_URL}/${path}.json`, {
     method: 'PATCH',
@@ -3327,14 +3336,21 @@ function applyData(d){
   refreshVisible();
 }
 
-async function pushOrders(){
+async function pushOrders(oid=null){
   try{
-    const ordersObj = {};
-    orders.forEach(o=>{
+    // If oid is specified, push ONLY that order (safe - won't overwrite others)
+    if(oid){
+      const o = orders.find(x=>x.id===oid);
+      if(!o) return;
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-      ordersObj[key] = {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp};
-    });
-    await fbSet(ROOM_KEY+'/orders', ordersObj);
+      await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+      return;
+    }
+    // No oid specified — push ALL local orders individually (still safe, never overwrites the collection)
+    for(const o of orders){
+      const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+      await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+    }
   }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
 }
 
@@ -3354,7 +3370,13 @@ async function syncFromCloud(){
     const d = await fbGet(ROOM_KEY);
     applyData(d);
     lastSyncTime = Date.now();
-  }catch(e){ console.error('sync:', e); }
+  }catch(e){
+    // Only log occasionally to avoid console spam on flaky connections
+    if(Date.now() - (window._lastSyncErrLog||0) > 30000){
+      console.warn('sync: connection issue, retrying automatically');
+      window._lastSyncErrLog = Date.now();
+    }
+  }
 }
 
 function rebuildVendorSelect(){
@@ -3389,7 +3411,7 @@ function refreshVisible(){
   applyHeroStats(true);
   registerServiceWorker();
   showToast('🔄 Connecting…');
-  // Boot with retry — sometimes Firebase needs a moment on first load
+  // Boot with retry — Firebase free tier can have a slow cold start
   let bootAttempts = 0;
   async function tryBoot(){
     bootAttempts++;
@@ -3407,12 +3429,13 @@ function refreshVisible(){
         showToast('✅ LokalFinder ready!');
       }
     }catch(e){
-      console.error('Boot attempt '+bootAttempts+':', e.message);
-      if(bootAttempts < 3){
-        showToast('🔄 Connecting… (attempt '+bootAttempts+')');
-        setTimeout(tryBoot, 2000);
+      if(bootAttempts < 5){
+        setTimeout(tryBoot, 1500);
       } else {
-        showToast('⚠️ Could not connect. Check your internet and refresh.');
+        console.warn('LokalFinder: connection delayed, will keep retrying in background');
+        showToast('⚠️ Slow connection — retrying…');
+        // Keep retrying silently in background every 5s
+        setInterval(()=>{ if(orders.length===0) tryBoot(); }, 5000);
       }
     }
   }
