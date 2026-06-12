@@ -594,6 +594,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     </button>
 
     <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
+    <div id="order-debug-box" style="margin-top:10px;padding:10px;background:#1e293b;border-radius:8px;font-family:monospace;font-size:11px;color:#7dd3fc;white-space:pre-wrap;word-break:break-all"></div>
     <div id="cancel-order-wrap" style="margin-top:10px;display:none">
       <button onclick="customerCancelOrder()" style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--red);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--ff)">Cancel Order</button>
       <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px">You can only cancel while waiting for acceptance</div>
@@ -1643,7 +1644,8 @@ function confirmGcash(){
 }
 
 async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
-  dbg('🆕 finalizeOrder CALLED: oid='+oid+' method='+method+' vendor='+Object.keys(cart)[0]);
+  window._lastOrderDebug = '🆕 finalizeOrder CALLED: oid='+oid+' method='+method+' vendor='+Object.keys(cart)[0]+' time='+new Date().toLocaleTimeString();
+  dbg(window._lastOrderDebug);
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
   const order={
@@ -1665,15 +1667,19 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   loadCustomerVendorContact(order.id);
   renderChat(order.id);
   updateTrackerFromStatus();
+  const dbgBox = document.getElementById('order-debug-box');
+  if(dbgBox) dbgBox.textContent = 'Order ID: '+order.id+'\\nVendor: '+order.vendorId+'\\nPushing to Firebase...';
   // Push to Firebase and notify vendor — awaited so it definitely lands
   try{
     await pushOrders(order.id);
+    if(dbgBox) dbgBox.textContent += '\\n✅ Push SUCCESS';
     await notifOnStatusChange(order, 'new');
     refreshBadge();
     showToast('✅ Order sent to vendor!');
     // Immediately poll so vendor sees it right away
     setTimeout(syncFromCloud, 500);
   }catch(e){
+    if(dbgBox) dbgBox.textContent += '\\n❌ Push FAILED: '+e.message;
     console.error('Order push failed:', e);
     showToast('⚠️ Order saved, retrying sync…');
     setTimeout(()=>pushOrders(order.id), 3000);
