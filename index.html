@@ -1646,7 +1646,6 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
   renderOrderHistory();
   goPage('p-csuccess');
   loadCustomerVendorContact(order.id);
-  renderChat(order.id);
   updateTrackerFromStatus();
   // Push to Firebase and notify vendor — awaited so it definitely lands
   try{
@@ -3350,7 +3349,7 @@ async function pushOrders(oid=null){
   try{
     if(oid){
       const o = orders.find(x=>x.id===oid);
-      if(!o){ return; }
+      if(!o) return;
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
       await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
       return;
