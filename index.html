@@ -1713,9 +1713,9 @@ function renderOrderHistory(){
   const mine=orders.filter(o=>myOrderIds.includes(o.id));
   if(!mine.length){el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Place your first order!</div></div>';return;}
   el2.innerHTML=mine.slice().reverse().map(o=>`
-    <div class="ocard" style="margin:0 16px 10px">
+    <div class="ocard" style="margin:0 16px 10px;cursor:pointer" onclick="openMyOrder('${o.id}')">
       <div class="ocard-hd">
-        <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)}</div></div>
+        <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${formatOrderTime(o.timestamp)}</div></div>
         <span class="bdg ${o.status}">${o.status}</span>
       </div>
       <div class="ocard-bd">
@@ -1724,8 +1724,19 @@ function renderOrderHistory(){
       </div>
       <div class="ocard-ft">
         <div><div class="ocard-total">₱${o.total}</div><div class="ocard-cut">Unit ${o.unit} · ${o.method==='gcash'?'GCash ✓':'Cash'}</div></div>
+        <div style="font-size:12px;color:var(--g);font-weight:700">View & Chat →</div>
       </div>
     </div>`).join('');
+}
+function openMyOrder(oid){
+  const o = orders.find(x=>x.id===oid);
+  if(!o){ showToast('Order not found'); return; }
+  lastPlacedOrderId = oid;
+  saveLocal();
+  goPage('p-csuccess');
+  loadCustomerVendorContact(oid);
+  updateTrackerFromStatus();
+  refreshBadge();
 }
 
 // ═══ VENDOR PORTAL ═══
@@ -2469,7 +2480,7 @@ function renderOrderCard(o, vendorView=false){
     </div>`;
   return `<div class="ocard" data-oid="${o.id}" data-status="${o.status}" style="${o.status==='done'||o.status==='delivered'?'opacity:.65':''}">
     <div class="ocard-hd">
-      <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${timeSince(o.timestamp)} · Unit ${o.unit}${vendorView?' · '+o.name:''}</div></div>
+      <div><div class="ocard-id">${o.id}</div><div class="ocard-tm">${formatOrderTime(o.timestamp)} · Unit ${o.unit}${vendorView?' · '+o.name:''}</div></div>
       <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
     </div>
     <div class="ocard-bd">
@@ -2825,7 +2836,7 @@ function renderAdminOrdersPreview(){
   el2.innerHTML=recent.map(o=>`
     <div class="ocard" style="margin:0 16px 10px">
       <div class="ocard-hd">
-        <div><div class="ocard-id">${o.id} · ${VENDORS[o.vendorId]?.name||'Unknown'}</div><div class="ocard-tm">${timeSince(o.timestamp)} · Unit ${o.unit}</div></div>
+        <div><div class="ocard-id">${o.id} · ${VENDORS[o.vendorId]?.name||'Unknown'}</div><div class="ocard-tm">${formatOrderTime(o.timestamp)} · Unit ${o.unit}</div></div>
         <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
       </div>
       <div class="ocard-ft">
@@ -2879,11 +2890,11 @@ function renderAdminOrders(){
     const contact = v?.contact;
     return `
     <div class="ocard" style="margin:0 16px 10px;${followUp?'border:1.5px solid #ef4444;':''}">
-      ${followUp?`<div style="background:#fef2f2;padding:7px 14px;font-size:11px;font-weight:700;color:#ef4444;border-bottom:1px solid #fecaca">🚨 Needs follow-up — ${o.status==='new'?'Not accepted yet':'Order may be stuck'} · ${timeSince(o.timestamp)}</div>`:''}
+      ${followUp?`<div style="background:#fef2f2;padding:7px 14px;font-size:11px;font-weight:700;color:#ef4444;border-bottom:1px solid #fecaca">🚨 Needs follow-up — ${o.status==='new'?'Not accepted yet':'Order may be stuck'} · ${formatOrderTime(o.timestamp)}</div>`:''}
       <div class="ocard-hd">
         <div>
           <div class="ocard-id">${o.id}</div>
-          <div class="ocard-tm">${timeSince(o.timestamp)} · ${v?.name||'Unknown'} · Unit ${o.unit} · ${o.name}</div>
+          <div class="ocard-tm">${formatOrderTime(o.timestamp)} · ${v?.name||'Unknown'} · Unit ${o.unit} · ${o.name}</div>
         </div>
         <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
       </div>
@@ -3020,6 +3031,10 @@ function timeSince(d){
   if(s<60) return 'Just now';
   if(s<3600) return Math.floor(s/60)+' min ago';
   return Math.floor(s/3600)+' hr ago';
+}
+function formatOrderTime(d){
+  const clock = new Date(d).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Manila'});
+  return timeSince(d)+' · '+clock;
 }
 function statusLabel(s){
   return {new:'New',accepted:'Accepted',preparing:'Preparing',ready:'Ready ✓',delivered:'Delivered ✓',done:'Done',declined:'Declined'}[s]||s;
@@ -3447,6 +3462,22 @@ function refreshVisible(){
     }
   }
   await tryBoot();
+  // Restore customer's order tracker if they have a recent order and aren't in vendor/admin mode
+  try{
+    if(lastPlacedOrderId && !activeVendorId){
+      const myOrder = orders.find(o=>o.id===lastPlacedOrderId);
+      if(myOrder){
+        // Only auto-jump if the order is still active (not an old completed one)
+        const ageHours = (Date.now() - new Date(myOrder.timestamp)) / 3600000;
+        const isActive = !['delivered','declined'].includes(myOrder.status);
+        if(isActive || ageHours < 12){
+          goPage('p-csuccess');
+          loadCustomerVendorContact(myOrder.id);
+          updateTrackerFromStatus();
+        }
+      }
+    }
+  }catch(e){ console.warn('order restore skipped:', e); }
   setInterval(syncFromCloud, 3000);
   setInterval(syncChats, 3000);
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
