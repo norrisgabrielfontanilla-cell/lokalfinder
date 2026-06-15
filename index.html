@@ -275,6 +275,57 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 .av-val.g{color:var(--g)}
 .av-acts{display:flex;gap:8px;padding:10px 14px;border-top:.5px solid var(--bd)}
 
+/* ═══ NEW FEATURES (v13) — additive, namespaced .lfn-* ═══ */
+.lfn-feed-wrap{padding:0 0 90px;background:var(--s2)}
+.lfn-feed-hd{padding:16px 18px 8px;display:flex;align-items:baseline;justify-content:space-between}
+.lfn-feed-ttl{font-family:var(--ffd);font-style:italic;font-size:24px;color:var(--t1);line-height:1}
+.lfn-feed-sub{font-size:12px;color:var(--t3);margin-top:4px}
+.lfn-post{margin:0 16px 18px;background:#fff;border-radius:20px;overflow:hidden;border:1px solid var(--bd);box-shadow:var(--sh);animation:lfn-rise .35s ease}
+.lfn-post-photo{height:230px;position:relative;display:flex;align-items:flex-end;padding:14px;background-size:cover;background-position:center}
+.lfn-post-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
+.lfn-post-vendor{position:relative;z-index:1;display:flex;align-items:center;gap:10px;cursor:pointer}
+.lfn-post-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,.95);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.lfn-post-vname{color:#fff;font-weight:800;font-size:15px;text-shadow:0 1px 4px rgba(0,0,0,.5);line-height:1.15}
+.lfn-post-vmeta{color:rgba(255,255,255,.88);font-size:11px;text-shadow:0 1px 4px rgba(0,0,0,.5);margin-top:1px}
+.lfn-post-caption{padding:12px 14px 4px;font-size:14px;color:var(--t1);line-height:1.45}
+.lfn-post-items{padding:6px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.lfn-post-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--s2)}
+.lfn-post-item-emoji{font-size:22px;width:34px;text-align:center}
+.lfn-post-item-info{flex:1;min-width:0}
+.lfn-post-item-name{font-size:13.5px;font-weight:700;color:var(--t1);line-height:1.2}
+.lfn-post-item-price{font-size:12.5px;color:var(--t2);margin-top:1px}
+.lfn-post-add{background:#F4A623;color:#0F4A32;border:none;border-radius:10px;padding:8px 14px;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--ff);box-shadow:0 2px 6px rgba(244,166,35,.35)}
+.lfn-post-add:active{transform:scale(.96)}
+.lfn-post-delete{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;width:32px;height:32px;border-radius:99px;font-size:20px;line-height:1;cursor:pointer;backdrop-filter:blur(6px);z-index:2;display:flex;align-items:center;justify-content:center;padding:0}
+.lfn-post-delete:active{background:rgba(0,0,0,.8)}
+.lfn-empty{padding:60px 32px;text-align:center}
+.lfn-empty-ico{font-size:48px;margin-bottom:14px}
+.lfn-empty-ttl{font-family:var(--ffd);font-style:italic;font-size:22px;color:var(--t1);margin-bottom:6px}
+.lfn-empty-sub{font-size:13.5px;color:var(--t2);line-height:1.5}
+.lfn-star{font-size:18px;color:#F4A623;cursor:pointer;line-height:1}
+.lfn-star.off{color:var(--s3)}
+.lfn-star-row{display:flex;gap:4px}
+.lfn-review-card{padding:12px 0;border-bottom:1px solid var(--bd)}
+.lfn-review-card:last-child{border-bottom:none}
+.lfn-review-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.lfn-review-who{font-size:13px;font-weight:700;color:var(--t1)}
+.lfn-review-when{font-size:11px;color:var(--t3)}
+.lfn-review-text{font-size:13px;color:var(--t2);line-height:1.45;margin-top:4px}
+.lfn-tab-btn{flex:1;padding:10px 8px;background:transparent;border:none;font-family:var(--ff);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent}
+.lfn-tab-btn.on{color:var(--g);border-bottom-color:var(--g)}
+.lfn-compose-bg{height:120px;border-radius:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:12px;font-weight:600;background-size:cover;background-position:center;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.lfn-compose-pick{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--s2);margin-bottom:6px;cursor:pointer;border:1.5px solid transparent;transition:all .15s}
+.lfn-compose-pick.on{background:var(--gl);border-color:var(--g)}
+.lfn-compose-pick-check{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--bdm);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff}
+.lfn-compose-pick.on .lfn-compose-pick-check{background:var(--g);border-color:var(--g);color:#fff}
+.lfn-bg-swatch{width:34px;height:34px;border-radius:10px;cursor:pointer;border:2px solid transparent;background-size:cover}
+.lfn-bg-swatch.on{border-color:var(--g);box-shadow:0 0 0 2px #fff inset}
+.lfn-bnav-feed{flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);text-decoration:none}
+.lfn-bnav-feed.on{color:var(--g)}
+.lfn-bnav-feed svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lfn-bnav-feed span{font-size:10px;font-weight:600;margin-top:2px}
+@keyframes lfn-rise{from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none}}
+
 /* ═══ MISC ═══ */
 .dvdr{height:6px;background:var(--s3);flex-shrink:0}
 .pill{display:inline-flex;align-items:center;gap:5px;background:var(--w);border:.5px solid var(--bd);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:600;color:var(--t2)}
@@ -423,6 +474,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
   </div>
   <div class="bnav">
     <div class="bni on" onclick="goPage('p-chome')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
+    <div class="lfn-bnav-feed" onclick="LFN.openFeed()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Feed</span></div>
     <div class="bni" onclick="goPage('p-ccart')" id="cbnav-cart" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="bnav-badge" class="bni-num" style="display:none">0</div><span>Cart</span></div>
     <div class="bni" onclick="goPage('p-chistory')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Orders</span></div>
     <div class="bni" style="position:relative" onclick="openNotifPanel('customer')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div id="cust-notif-badge" class="bni-num" style="display:none">0</div><span>Alerts</span></div>
@@ -744,6 +796,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <div class="bni on" id="vbn-dash" onclick="goVendorTab('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
     <div class="bni" id="vbn-orders" style="position:relative" onclick="goVendorTab('orders')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="v-orders-badge" class="bni-num" style="display:none">0</div><span>Orders</span></div>
     <div class="bni" id="vbn-menu" onclick="goVendorTab('menu')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span>My Menu</span></div>
+    <div class="bni" id="vbn-posts" onclick="LFN.openComposer()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Post</span></div>
     <div class="bni" id="vbn-earn" onclick="goVendorTab('earn')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Earnings</span></div>
     <div class="bni" style="position:relative" onclick="openNotifPanel('vendor')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div id="vend-notif-badge" class="bni-num" style="display:none">0</div><span>Alerts</span></div>
   </div>
@@ -865,6 +918,8 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
       <div class="stat-cell"><div class="stat-val g" id="a-total-revenue">₱0</div><div class="stat-lbl">Platform Revenue</div></div>
       <div class="stat-cell"><div class="stat-val" id="a-pending">0</div><div class="stat-lbl">Pending Orders</div></div>
       <div class="stat-cell"><div class="stat-val" id="a-vendors-active">4</div><div class="stat-lbl">Active Vendors</div></div>
+      <div class="stat-cell"><div class="stat-val g" id="lfn-a-repeat">0</div><div class="stat-lbl">Repeat Buyers</div></div>
+      <div class="stat-cell"><div class="stat-val g" id="lfn-a-posts">0</div><div class="stat-lbl">Live Posts</div></div>
     </div>
     <div class="dvdr"></div>
 
@@ -1200,6 +1255,79 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <button onclick="sendChatFromPanel()" style="width:38px;height:38px;border-radius:50%;background:var(--g);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>
   </div>
 </div>
+<!-- ═══════════════════════════════════════════
+     NEW (v13) — DISCOVERY FEED PAGE
+═══════════════════════════════════════════ -->
+<div class="page" id="p-cfeed">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div style="background:linear-gradient(160deg,#0d1a0f 0%,#1A6B4A 100%);padding:14px 18px 16px;flex-shrink:0;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(45,155,111,.3) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">Discover · Today</div>
+        <div style="font-family:var(--ffd);font-style:italic;font-size:24px;color:#fff;line-height:1">What's cooking</div>
+      </div>
+      <button onclick="goPage('p-chome')" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">Home</button>
+    </div>
+  </div>
+  <div class="scrl">
+    <div id="lfn-feed-list" class="lfn-feed-wrap"></div>
+  </div>
+  <div class="cart-bar hide" id="lfn-feed-cart-bar" onclick="goPage('p-ccart')">
+    <div class="cb-l"><div class="cb-cnt" id="lfn-fbar-cnt">0</div><span class="cb-lbl">View Order</span></div>
+    <span class="cb-tot" id="lfn-fbar-tot">₱0</span>
+  </div>
+  <div class="bnav">
+    <div class="bni" onclick="goPage('p-chome')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
+    <div class="lfn-bnav-feed on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Feed</span></div>
+    <div class="bni" onclick="goPage('p-ccart')" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="lfn-feed-cart-badge" class="bni-num" style="display:none">0</div><span>Cart</span></div>
+    <div class="bni" onclick="goPage('p-chistory')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Orders</span></div>
+  </div>
+</div>
+
+<!-- NEW: post composer modal -->
+<div class="modal" id="lfn-modal-compose" onclick="closeModal('lfn-modal-compose',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Post for today</div>
+
+    <label class="flbl">Photo</label>
+    <div id="lfn-compose-photo-preview" style="width:100%;height:180px;border-radius:12px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:14px;overflow:hidden;position:relative" onclick="document.getElementById('lfn-compose-photo-input').click()">
+      <span id="lfn-compose-photo-placeholder" style="font-size:36px;margin-bottom:6px">📸</span>
+      <span id="lfn-compose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo</span>
+      <span style="font-size:11px;color:#9AA49E;margin-top:4px">Show real food. Photos beat menus.</span>
+      <img id="lfn-compose-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+      <button id="lfn-compose-photo-clear" type="button" onclick="event.stopPropagation();LFN.clearPhoto()" style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <input type="file" id="lfn-compose-photo-input" accept="image/*" style="display:none" onchange="LFN.handlePhoto(this)">
+
+    <label class="flbl">Caption</label>
+    <input class="finp" id="lfn-compose-caption" type="text" placeholder="Fresh today — limited servings!" style="margin-bottom:14px">
+
+    <label class="flbl">Pick items from your menu</label>
+    <div id="lfn-compose-items" style="margin-bottom:14px"></div>
+
+    <button class="cta" onclick="LFN.publishPost()">Publish to feed ✓</button>
+    <button class="cta sec" onclick="closeModal('lfn-modal-compose')" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
+<!-- NEW: review modal -->
+<div class="modal" id="lfn-modal-review" onclick="closeModal('lfn-modal-review',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl" id="lfn-review-title">Rate your order</div>
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:13px;color:var(--t2);margin-bottom:10px">How was it?</div>
+      <div class="lfn-star-row" id="lfn-review-stars" style="justify-content:center;font-size:36px"></div>
+    </div>
+    <label class="flbl">Tell your neighbors (optional)</label>
+    <textarea class="finp" id="lfn-review-text" rows="3" placeholder="Sarap! Ordering again." style="resize:none;font-family:var(--ff);margin-bottom:14px"></textarea>
+    <button class="cta" onclick="LFN.submitReview()">Post review ⭐</button>
+    <button class="cta sec" onclick="closeModal('lfn-modal-review')" style="margin-top:8px">Skip</button>
+  </div>
+</div>
+
 </div><!-- /app -->
 
 <script>
@@ -3489,6 +3617,454 @@ function refreshVisible(){
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
 })();
 
+/* ═══════════════════════════════════════════════════════════════════
+   LFN — NEW FEATURES MODULE (v13)
+   Self-contained. Reads VENDORS, MENU, orders, addToCart, goPage, el.
+   Writes to Firebase nodes: posts/, reviews/ (separate from orders/).
+   Nothing existing is overwritten.
+═══════════════════════════════════════════════════════════════════ */
+window.LFN = (function(){
+  const POSTS_NODE = ROOM_KEY + '/posts';
+  const REVIEWS_NODE = ROOM_KEY + '/reviews';
+
+  // Fallback gradients for posts without a photo (e.g. older posts from v13)
+  const FALLBACK_BGS = [
+    'linear-gradient(135deg,#FF6B6B,#C9356E)',
+    'linear-gradient(135deg,#FFB347,#FF7A45)',
+    'linear-gradient(135deg,#43C6AC,#10806A)',
+    'linear-gradient(135deg,#F9D423,#E08D1B)',
+    'linear-gradient(135deg,#7F7FD5,#5757a8)',
+  ];
+  function fallbackBgFor(id){
+    const h = String(id||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0);
+    return FALLBACK_BGS[h % FALLBACK_BGS.length];
+  }
+
+  let posts = [];          // {id, vendorId, caption, items[{name,emoji,price}], photo, bg, createdAt}
+  let reviews = [];        // {id, vendorId, orderId, buyerName, rating, text, createdAt}
+  let composeState = { photo: '', picks: [], caption: '' };
+  let reviewState = { vendorId: null, orderId: null, rating: 5 };
+
+  // ---------- helpers ----------
+  const lfnUid = () => 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const timeAgo = (t) => {
+    const s = Math.floor((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  };
+  const escHTML = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // ---------- Firebase sync (parallel, isolated) ----------
+  async function syncFromFB(){
+    try {
+      const [postsData, reviewsData] = await Promise.all([
+        fbGet(POSTS_NODE).catch(()=>null),
+        fbGet(REVIEWS_NODE).catch(()=>null),
+      ]);
+      posts = postsData ? Object.values(postsData) : [];
+      reviews = reviewsData ? Object.values(reviewsData) : [];
+      renderFeedIfVisible();
+      renderReviewsIfVisible();
+      updateAdminExtras();
+    } catch(e){ /* silent — don't disrupt main sync */ }
+  }
+  async function pushPost(p){
+    try { await fbSet(POSTS_NODE + '/' + p.id, p); }
+    catch(e){ showToast('⚠️ Post saved locally, sync failed'); }
+  }
+  async function pushReview(r){
+    try { await fbSet(REVIEWS_NODE + '/' + r.id, r); }
+    catch(e){ showToast('⚠️ Review saved locally, sync failed'); }
+  }
+
+  // ---------- FEED (customer side) ----------
+  function openFeed(){
+    goPage('p-cfeed');
+    renderFeed();
+    syncFromFB();
+  }
+  function renderFeedIfVisible(){
+    const cur = document.querySelector('.page.on');
+    if(cur && cur.id === 'p-cfeed') renderFeed();
+  }
+  function renderFeed(){
+    const list = el('lfn-feed-list');
+    if(!list) return;
+    const sorted = [...posts].sort((a,b)=>b.createdAt-a.createdAt).filter(p=>VENDORS[p.vendorId]);
+    if(sorted.length === 0){
+      list.innerHTML = `
+        <div class="lfn-empty">
+          <div class="lfn-empty-ico">📭</div>
+          <div class="lfn-empty-ttl">The feed is quiet.</div>
+          <div class="lfn-empty-sub">When a neighbor posts what they're cooking today, it'll show up here. Vendors — tap the Post tab in your dashboard to share what's fresh.</div>
+        </div>`;
+      return;
+    }
+    list.innerHTML = sorted.map(p => {
+      const v = VENDORS[p.vendorId];
+      const rev = reviews.filter(r=>r.vendorId===p.vendorId);
+      const avg = rev.length ? (rev.reduce((s,r)=>s+r.rating,0)/rev.length).toFixed(1) : null;
+      // photo wins; older posts may only have a gradient bg; otherwise generate one
+      const bgStyle = p.photo
+        ? `background:url('${p.photo}') center/cover`
+        : `background:${p.bg || fallbackBgFor(p.id)}`;
+      const isMine = activeVendorId && activeVendorId === p.vendorId;
+      return `
+        <div class="lfn-post">
+          <div class="lfn-post-photo" style="${bgStyle}">
+            <div class="lfn-post-vendor" onclick="openVendor('${p.vendorId}')">
+              <div class="lfn-post-avatar">${v.emoji}</div>
+              <div>
+                <div class="lfn-post-vname">${escHTML(v.name)}</div>
+                <div class="lfn-post-vmeta">${escHTML(v.sub.split('·')[0].trim())} · ${timeAgo(p.createdAt)}${avg?` · ⭐ ${avg}`:''}</div>
+              </div>
+            </div>
+            ${isMine ? `<button class="lfn-post-delete" onclick="event.stopPropagation();LFN.deletePost('${p.id}')" title="Delete post">×</button>` : ''}
+          </div>
+          ${p.caption ? `<div class="lfn-post-caption">${escHTML(p.caption)}</div>` : ''}
+          <div class="lfn-post-items">
+            ${p.items.map(it => `
+              <div class="lfn-post-item">
+                <div class="lfn-post-item-emoji">${it.emoji||'🍽️'}</div>
+                <div class="lfn-post-item-info">
+                  <div class="lfn-post-item-name">${escHTML(it.name)}</div>
+                  <div class="lfn-post-item-price">₱${it.price}</div>
+                </div>
+                <button class="lfn-post-add" onclick="LFN.addFromFeed('${p.vendorId}','${escHTML(it.name).replace(/'/g,"\\'")}','${it.emoji||'🍽️'}',${it.price})">Add</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }).join('') + '<div style="height:20px"></div>';
+    updateFeedCartBar();
+  }
+  function addFromFeed(vid, name, emoji, price){
+    addToCart(vid, name, emoji, price);
+    updateFeedCartBar();
+  }
+  function updateFeedCartBar(){
+    const cnt = cartCount();
+    const tot = cartTotal();
+    const bar = el('lfn-feed-cart-bar');
+    const badge = el('lfn-feed-cart-badge');
+    if(bar){
+      if(cnt > 0){ bar.classList.remove('hide'); el('lfn-fbar-cnt').textContent = cnt; el('lfn-fbar-tot').textContent = '₱'+tot; }
+      else bar.classList.add('hide');
+    }
+    if(badge){
+      if(cnt > 0){ badge.style.display='flex'; badge.textContent=cnt; }
+      else badge.style.display='none';
+    }
+  }
+
+  // ---------- POST COMPOSER (vendor side) ----------
+  function openComposer(){
+    if(!activeVendorId){ showToast('Log in as vendor first'); return; }
+    composeState = { photo: '', picks: [], caption: '' };
+    el('lfn-compose-caption').value = '';
+    clearPhoto();
+    renderComposerItems();
+    el('lfn-modal-compose').classList.add('on');
+  }
+
+  function handlePhoto(input){
+    const file = input && input.files && input.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo'); return; }
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const tmp = new Image();
+      tmp.onload = ()=>{
+        // Downscale to max 720px wide so post photos sync fast
+        const max = 720;
+        const sc = Math.min(1, max/Math.max(tmp.width, tmp.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(tmp.width*sc);
+        cv.height = Math.round(tmp.height*sc);
+        cv.getContext('2d').drawImage(tmp, 0, 0, cv.width, cv.height);
+        const dataUrl = cv.toDataURL('image/jpeg', 0.78);
+        composeState.photo = dataUrl;
+        const img = el('lfn-compose-photo-img');
+        img.src = dataUrl;
+        img.style.display = 'block';
+        el('lfn-compose-photo-placeholder').style.display = 'none';
+        el('lfn-compose-photo-text').style.display = 'none';
+        el('lfn-compose-photo-clear').style.display = 'flex';
+      };
+      tmp.onerror = ()=>showToast('⚠️ Couldn\'t read that image');
+      tmp.src = e.target.result;
+    };
+    reader.onerror = ()=>showToast('⚠️ Couldn\'t read that file');
+    reader.readAsDataURL(file);
+    // reset input so the same photo can be picked again later
+    input.value = '';
+  }
+
+  function clearPhoto(){
+    composeState.photo = '';
+    const img = el('lfn-compose-photo-img');
+    if(img){ img.src = ''; img.style.display = 'none'; }
+    const ph = el('lfn-compose-photo-placeholder');
+    const tx = el('lfn-compose-photo-text');
+    const cl = el('lfn-compose-photo-clear');
+    if(ph) ph.style.display = 'block';
+    if(tx) tx.style.display = 'block';
+    if(cl) cl.style.display = 'none';
+  }
+
+  function renderComposerItems(){
+    const w = el('lfn-compose-items');
+    if(!w || !activeVendorId) return;
+    const menu = MENU[activeVendorId] || [];
+    if(menu.length === 0){
+      w.innerHTML = '<div style="color:var(--t3);font-size:13px;padding:10px;text-align:center">Add items to your menu first.</div>';
+      return;
+    }
+    w.innerHTML = menu.map((it,i)=>{
+      const on = composeState.picks.some(p=>p.id===it.id);
+      return `
+        <div class="lfn-compose-pick ${on?'on':''}" onclick="LFN.togglePick(${i})">
+          <div class="lfn-compose-pick-check">${on?'✓':''}</div>
+          <div style="font-size:22px;width:30px;text-align:center">${it.emoji||'🍽️'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700;color:var(--t1)">${escHTML(it.name)}</div>
+            <div style="font-size:12px;color:var(--t2)">₱${it.price}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  function togglePick(idx){
+    const menu = MENU[activeVendorId] || [];
+    const it = menu[idx]; if(!it) return;
+    const existing = composeState.picks.findIndex(p=>p.id===it.id);
+    if(existing>=0) composeState.picks.splice(existing,1);
+    else composeState.picks.push({ id:it.id, name:it.name, emoji:it.emoji, price:it.price });
+    renderComposerItems();
+  }
+  async function publishPost(){
+    if(!activeVendorId){ showToast('Log in as vendor first'); return; }
+    const caption = el('lfn-compose-caption').value.trim();
+    if(composeState.picks.length === 0){ showToast('Pick at least one item'); return; }
+    const post = {
+      id: lfnUid(),
+      vendorId: activeVendorId,
+      caption: caption,
+      items: composeState.picks.map(p=>({name:p.name, emoji:p.emoji, price:p.price})),
+      photo: composeState.photo || '',
+      bg: composeState.photo ? '' : fallbackBgFor(lfnUid()),
+      createdAt: Date.now(),
+    };
+    posts.push(post);
+    await pushPost(post);
+    closeModal('lfn-modal-compose');
+    showToast('✅ Posted to feed!');
+  }
+
+  async function deletePost(postId){
+    if(!confirm('Delete this post? Customers won\'t see it anymore.')) return;
+    const p = posts.find(x=>x.id===postId);
+    if(!p){ showToast('Post not found'); return; }
+    if(p.vendorId !== activeVendorId){ showToast('⚠️ You can only delete your own posts'); return; }
+    // Remove locally
+    posts = posts.filter(x=>x.id!==postId);
+    // Remove from Firebase
+    try {
+      await fbDelete(POSTS_NODE + '/' + postId);
+      showToast('🗑️ Post deleted');
+    } catch(e){
+      showToast('⚠️ Delete failed, will retry on next sync');
+    }
+    renderFeedIfVisible();
+  }
+
+  // ---------- REVIEWS ----------
+  function canReview(order){
+    if(!order) return false;
+    if(order.status !== 'delivered' && order.status !== 'completed') return false;
+    if(reviews.some(r => r.orderId === order.id)) return false;
+    return true;
+  }
+  function openReviewModal(orderId){
+    const o = orders.find(x=>x.id===orderId);
+    if(!o){ showToast('Order not found'); return; }
+    if(!canReview(o)){ showToast('You can review once the order is delivered'); return; }
+    reviewState = { vendorId: o.vendorId, orderId: o.id, rating: 5 };
+    el('lfn-review-title').textContent = 'Rate ' + (VENDORS[o.vendorId]?.name || 'this order');
+    el('lfn-review-text').value = '';
+    renderStars();
+    el('lfn-modal-review').classList.add('on');
+  }
+  function setStars(n){ reviewState.rating = n; renderStars(); }
+  function renderStars(){
+    const w = el('lfn-review-stars');
+    if(!w) return;
+    w.innerHTML = [1,2,3,4,5].map(n => `<span class="lfn-star ${n<=reviewState.rating?'':'off'}" onclick="LFN.setStars(${n})">★</span>`).join('');
+  }
+  async function submitReview(){
+    const text = el('lfn-review-text').value.trim();
+    const o = orders.find(x=>x.id===reviewState.orderId);
+    const r = {
+      id: 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      vendorId: reviewState.vendorId,
+      orderId: reviewState.orderId,
+      buyerName: o?.name || 'Neighbor',
+      rating: reviewState.rating,
+      text: text,
+      createdAt: Date.now(),
+    };
+    reviews.push(r);
+    await pushReview(r);
+    closeModal('lfn-modal-review');
+    showToast('⭐ Thanks for the review!');
+    renderReviewsIfVisible();
+  }
+  function renderReviewsIfVisible(){
+    const cur = document.querySelector('.page.on');
+    if(cur && cur.id === 'p-cvendor') injectReviewsIntoVendorPage();
+    if(cur && cur.id === 'p-csuccess') injectReviewPromptIntoSuccess();
+    if(cur && cur.id === 'p-chistory') injectReviewBadgesIntoHistory();
+  }
+  function injectReviewsIntoVendorPage(){
+    if(!activeVendorId) return;
+    const menuEl = el('vd-menu');
+    if(!menuEl) return;
+    // Remove old injection if exists
+    const existing = document.getElementById('lfn-vendor-reviews');
+    if(existing) existing.remove();
+
+    const vRevs = reviews.filter(r=>r.vendorId===activeVendorId).sort((a,b)=>b.createdAt-a.createdAt);
+    const avg = vRevs.length ? (vRevs.reduce((s,r)=>s+r.rating,0)/vRevs.length).toFixed(1) : null;
+    const section = document.createElement('div');
+    section.id = 'lfn-vendor-reviews';
+    section.style.cssText = 'padding:10px 16px 24px';
+    section.innerHTML = `
+      <div style="padding:6px 0 8px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;align-items:baseline">
+        <span>Reviews from neighbors</span>
+        ${avg?`<span style="color:#F4A623;font-weight:800">⭐ ${avg} <span style="color:var(--t3);font-weight:600">(${vRevs.length})</span></span>`:''}
+      </div>
+      ${vRevs.length===0 ? `<div style="color:var(--t3);font-size:13px;padding:8px 0">No reviews yet. Be the first after your order arrives.</div>` :
+        vRevs.slice(0,10).map(r=>`
+          <div class="lfn-review-card">
+            <div class="lfn-review-hd">
+              <span class="lfn-review-who">${escHTML(r.buyerName)} · <span style="color:#F4A623">${'★'.repeat(r.rating)}</span><span style="color:var(--s3)">${'★'.repeat(5-r.rating)}</span></span>
+              <span class="lfn-review-when">${timeAgo(r.createdAt)}</span>
+            </div>
+            ${r.text ? `<div class="lfn-review-text">${escHTML(r.text)}</div>` : ''}
+          </div>`).join('')
+      }
+    `;
+    // insert before the trailing spacer in menu
+    menuEl.appendChild(section);
+  }
+  function injectReviewPromptIntoSuccess(){
+    if(!lastPlacedOrderId) return;
+    const o = orders.find(x=>x.id===lastPlacedOrderId);
+    if(!o || !canReview(o)) {
+      const existing = document.getElementById('lfn-success-review');
+      if(existing) existing.remove();
+      return;
+    }
+    if(document.getElementById('lfn-success-review')) return;
+    const successPage = el('p-csuccess');
+    const scrl = successPage?.querySelector('.scrl');
+    if(!scrl) return;
+    const box = document.createElement('div');
+    box.id = 'lfn-success-review';
+    box.style.cssText = 'margin:14px 16px;background:#FEF3DC;border:1.5px solid #F4A623;border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer';
+    box.onclick = ()=>openReviewModal(o.id);
+    box.innerHTML = `
+      <div style="font-size:30px">⭐</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800;color:#7A4E0A">Rate ${escHTML(VENDORS[o.vendorId]?.name||'this order')}</div>
+        <div style="font-size:12px;color:#7A4E0A;opacity:.75;margin-top:2px">Help your neighbors find the good stuff</div>
+      </div>
+      <div style="font-size:18px;color:#7A4E0A">›</div>`;
+    scrl.appendChild(box);
+  }
+  function injectReviewBadgesIntoHistory(){
+    // Add a small "Rate" button to delivered/completed orders without reviews
+    setTimeout(()=>{
+      document.querySelectorAll('#cust-history .ocard').forEach(card=>{
+        if(card.querySelector('.lfn-rate-btn')) return;
+        const status = card.querySelector('.bdg')?.textContent?.trim();
+        if(status !== 'delivered' && status !== 'completed') return;
+        const idText = card.querySelector('.ocard-id')?.textContent?.trim();
+        if(!idText) return;
+        const oid = idText.split(' ')[0];
+        const o = orders.find(x=>x.id===oid);
+        if(!o || !canReview(o)) return;
+        const ft = card.querySelector('.ocard-ft > div:last-child');
+        if(!ft) return;
+        const btn = document.createElement('button');
+        btn.className = 'lfn-rate-btn';
+        btn.style.cssText = 'background:#F4A623;color:#0F4A32;border:none;border-radius:8px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;font-family:var(--ff);margin-left:8px';
+        btn.textContent = '⭐ Rate';
+        btn.onclick = (e)=>{ e.stopPropagation(); openReviewModal(oid); };
+        ft.appendChild(btn);
+      });
+    }, 50);
+  }
+
+  // ---------- ADMIN EXTRAS ----------
+  function updateAdminExtras(){
+    const repeatEl = el('lfn-a-repeat');
+    const postsEl = el('lfn-a-posts');
+    if(!repeatEl && !postsEl) return;
+    const counts = {};
+    orders.forEach(o => {
+      const key = (o.unit||'') + '|' + (o.phone||'');
+      if(!key.trim()||key==='|') return;
+      counts[key] = (counts[key]||0) + 1;
+    });
+    const repeats = Object.values(counts).filter(n=>n>1).length;
+    if(repeatEl) repeatEl.textContent = repeats;
+    // Posts in last 24h
+    const cutoff = Date.now() - 86400000;
+    const live = posts.filter(p=>p.createdAt > cutoff).length;
+    if(postsEl) postsEl.textContent = live;
+  }
+
+  // ---------- hook into page changes ----------
+  // Wrap goPage to refresh new-feature UI when navigating
+  const _origGoPage = window.goPage;
+  window.goPage = function(id){
+    _origGoPage(id);
+    if(id === 'p-cfeed') { renderFeed(); }
+    if(id === 'p-cvendor') { setTimeout(injectReviewsIntoVendorPage, 30); }
+    if(id === 'p-csuccess') { setTimeout(injectReviewPromptIntoSuccess, 30); }
+    if(id === 'p-chistory') { setTimeout(injectReviewBadgesIntoHistory, 60); }
+    if(id === 'p-adash') { updateAdminExtras(); }
+  };
+
+  // Hook into existing cart updates so the feed cart bar stays in sync
+  const _origUpdateCartBar = window.updateCartBar;
+  window.updateCartBar = function(){
+    _origUpdateCartBar();
+    updateFeedCartBar();
+  };
+
+  // Hook into existing admin stats refresh
+  const _origUpdateAdminStats = window.updateAdminStats;
+  window.updateAdminStats = function(){
+    _origUpdateAdminStats();
+    updateAdminExtras();
+  };
+
+  // Initial sync + poll every 8s (cheap — separate paths from main sync)
+  setTimeout(syncFromFB, 1500);
+  setInterval(syncFromFB, 8000);
+
+  return {
+    openFeed, openComposer, togglePick, publishPost,
+    handlePhoto, clearPhoto, deletePost,
+    addFromFeed, openReviewModal, setStars, submitReview,
+    syncFromFB,
+  };
+})();
+
+// Trailing init (restored from original)
 buildVendorCards();
 buildTodaysPicks();
 
