@@ -1141,10 +1141,16 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <input class="finp" id="nv-name" type="text" placeholder="e.g. Mang Toto's BBQ">
     <label class="flbl">Emoji</label>
     <input class="finp" id="nv-emoji" type="text" placeholder="🍖" maxlength="2" style="font-size:22px;text-align:center">
-    <label class="flbl">Tower / Location</label>
-    <select class="finp" id="nv-loc" style="-webkit-appearance:none">
-      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
-    </select>
+    <label class="flbl">Location</label>
+    <input class="finp" id="nv-loc" type="text" list="loc-suggestions" placeholder="e.g. Tower 2, Ground Floor, or 'Brgy. Commonwealth'">
+    <datalist id="loc-suggestions">
+      <option value="Tower 1"></option>
+      <option value="Tower 2"></option>
+      <option value="Tower 3"></option>
+      <option value="Tower 4"></option>
+      <option value="Ground Floor"></option>
+      <option value="Nearby (outside GRASS)"></option>
+    </datalist>
     <label class="flbl">Category</label>
     <input class="finp" id="nv-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
     <label class="flbl">Vendor PIN (4 digits)</label>
@@ -1193,10 +1199,8 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <input class="finp" id="ev-name" type="text" placeholder="Store name">
     <label class="flbl">Emoji</label>
     <input class="finp" id="ev-emoji" type="text" maxlength="2" style="font-size:22px;text-align:center">
-    <label class="flbl">Tower / Location</label>
-    <select class="finp" id="ev-loc" style="-webkit-appearance:none">
-      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
-    </select>
+    <label class="flbl">Location</label>
+    <input class="finp" id="ev-loc" type="text" list="loc-suggestions" placeholder="e.g. Tower 2, Ground Floor, or 'Brgy. Commonwealth'">
     <label class="flbl">Category</label>
     <input class="finp" id="ev-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
     <label class="flbl">GCash Number</label>
@@ -2193,12 +2197,9 @@ function openEditVendorModal(vid){
   el('ev-gcash').value = v.gcash||'';
   el('ev-pin').value = VENDOR_PINS_PLAIN[vid]||'';
   el('ev-min').value = v.min||50;
-  // Set location
-  const locSel = el('ev-loc');
+  // Set location (free text now — just fill in whatever was saved)
   const subLoc = (v.sub||'').split('·')[0].trim();
-  for(let i=0;i<locSel.options.length;i++){
-    if(locSel.options[i].value===subLoc){ locSel.selectedIndex=i; break; }
-  }
+  el('ev-loc').value = subLoc;
   el('modal-editvendor').classList.add('on');
 }
 
@@ -3117,7 +3118,7 @@ function openAddVendorModal(){ el('modal-addvendor').classList.add('on'); }
 function addVendorConfirm(){
   const name=el('nv-name').value.trim();
   const emoji=el('nv-emoji').value.trim()||'🏪';
-  const loc=el('nv-loc').value;
+  const loc=el('nv-loc').value.trim();
   const cat=el('nv-cat').value.trim()||'Food';
   const pin=el('nv-pin').value.trim();
   const gcash=el('nv-gcash').value.trim();
@@ -3131,7 +3132,7 @@ function addVendorConfirm(){
   // Update UI immediately — vendor shows up right away, no waiting
   rebuildVendorSelect();
   closeModal('modal-addvendor');
-  ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash'].forEach(id2=>el(id2).value='');
+  ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash','nv-loc'].forEach(id2=>el(id2).value='');
   renderAdminVendors();
   buildVendorCards();
   buildTodaysPicks();
