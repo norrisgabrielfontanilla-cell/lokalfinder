@@ -94,7 +94,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 /* ═══ VENDOR CARD ═══ */
 .vc{min-width:162px;background:var(--w);border-radius:var(--r);border:.5px solid var(--bd);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .12s}
 .vc:active{transform:scale(.97)}
-.vc-img{height:102px;display:flex;align-items:center;justify-content:center;font-size:42px;position:relative}
+.vc-img{height:128px;display:flex;align-items:center;justify-content:center;font-size:54px;position:relative}
 .vc-fav{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.88);border:none;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);transition:color .15s}
 .vc-fav.on{color:var(--red)}
 .vc-body{padding:10px 12px 12px}
@@ -220,6 +220,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
 @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 @keyframes ripple{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@keyframes lbfade{from{opacity:0}to{opacity:1}}
 
 /* ═══ BACK BUTTON ═══ */
 .back{background:none;border:none;cursor:pointer;font-size:20px;color:var(--t1);padding:0;line-height:1;display:flex;align-items:center}
@@ -485,7 +486,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
      CUSTOMER — VENDOR DETAIL
 ══════════════════════════════════════════ -->
 <div class="page" id="p-cvendor">
-  <div style="height:170px;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative;flex-shrink:0" id="vd-hero">
+  <div style="height:200px;display:flex;align-items:center;justify-content:center;font-size:92px;position:relative;flex-shrink:0" id="vd-hero">
     <button class="back" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.88);width:34px;height:34px;border-radius:50%;justify-content:center" onclick="goBack()">←</button>
     <button style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.88);width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="shareVendor()">↑</button>
     <span id="vd-emoji">🍲</span>
@@ -1085,8 +1086,7 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <label class="flbl">Item Name</label>
     <input class="finp" id="new-item-name" type="text" placeholder="e.g. Bulalo Special">
     <label class="flbl">Price (₱)</label>
-    <input class="finp" id="new-item-price" type="text" inputmode="text" placeholder="e.g. 180  or  Small-75 Large-120">
-    <div style="font-size:11px;color:#888;margin:-6px 0 10px 2px">One price (180) or multiple sizes: "Small-75 Large-120"</div>
+    <input class="finp" id="new-item-price" type="number" placeholder="e.g. 180">
     <label class="flbl">Description</label>
     <input class="finp" id="new-item-desc" type="text" placeholder="Short description">
     <label class="flbl">Food Photo</label>
@@ -1142,16 +1142,10 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <input class="finp" id="nv-name" type="text" placeholder="e.g. Mang Toto's BBQ">
     <label class="flbl">Emoji</label>
     <input class="finp" id="nv-emoji" type="text" placeholder="🍖" maxlength="2" style="font-size:22px;text-align:center">
-    <label class="flbl">Location</label>
-    <input class="finp" id="nv-loc" type="text" list="loc-suggestions" placeholder="e.g. Tower 2, Ground Floor, or 'Brgy. Commonwealth'">
-    <datalist id="loc-suggestions">
-      <option value="Tower 1"></option>
-      <option value="Tower 2"></option>
-      <option value="Tower 3"></option>
-      <option value="Tower 4"></option>
-      <option value="Ground Floor"></option>
-      <option value="Nearby (outside GRASS)"></option>
-    </datalist>
+    <label class="flbl">Tower / Location</label>
+    <select class="finp" id="nv-loc" style="-webkit-appearance:none">
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+    </select>
     <label class="flbl">Category</label>
     <input class="finp" id="nv-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
     <label class="flbl">Vendor PIN (4 digits)</label>
@@ -1200,8 +1194,10 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <input class="finp" id="ev-name" type="text" placeholder="Store name">
     <label class="flbl">Emoji</label>
     <input class="finp" id="ev-emoji" type="text" maxlength="2" style="font-size:22px;text-align:center">
-    <label class="flbl">Location</label>
-    <input class="finp" id="ev-loc" type="text" list="loc-suggestions" placeholder="e.g. Tower 2, Ground Floor, or 'Brgy. Commonwealth'">
+    <label class="flbl">Tower / Location</label>
+    <select class="finp" id="ev-loc" style="-webkit-appearance:none">
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+    </select>
     <label class="flbl">Category</label>
     <input class="finp" id="ev-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
     <label class="flbl">GCash Number</label>
@@ -1240,6 +1236,13 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <button onclick="closeNotifPanel()" style="background:var(--s2);border:none;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>
   </div>
   <div id="notif-list" style="flex:1;overflow-y:auto;max-height:60vh"></div>
+</div>
+
+<!-- ── IMAGE LIGHTBOX (tap a menu photo to view full size) ── -->
+<div id="img-lightbox" onclick="closeImgLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;align-items:center;justify-content:center;padding:20px;animation:lbfade .2s ease">
+  <button onclick="event.stopPropagation();closeImgLightbox()" style="position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)">✕</button>
+  <img id="img-lightbox-img" src="" alt="" style="max-width:100%;max-height:80vh;border-radius:16px;object-fit:contain;box-shadow:0 12px 48px rgba(0,0,0,.5)">
+  <div id="img-lightbox-cap" style="position:absolute;bottom:32px;left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:600;padding:0 24px;text-shadow:0 1px 4px rgba(0,0,0,.6)"></div>
 </div>
 
 <!-- ── FLOATING CHAT PANEL ── -->
@@ -1416,6 +1419,7 @@ function showToast(msg){
 
 // ═══ NAVIGATION ═══
 function goPage(id){
+  var _lb=document.getElementById('img-lightbox'); if(_lb && _lb.style.display!=='none') _lb.style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
@@ -1512,7 +1516,7 @@ function buildVendorCards(force=false){
     return `
     <div class="vc" onclick="openVendor('${v.id}')">
       <div class="vc-img" style="background:${v.bg}">
-        ${v.logo?`<img src="${v.logo}" style="width:56px;height:56px;border-radius:12px;object-fit:cover">`:v.emoji}
+        ${v.logo?`<img src="${v.logo}" style="width:84px;height:84px;border-radius:16px;object-fit:cover">`:v.emoji}
         <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
       </div>
       <div class="vc-body">
@@ -1598,7 +1602,12 @@ function openVendor(vid){
   activeVendorId=vid;
   const v=VENDORS[vid];
   document.getElementById('vd-hero').style.background=v.bg;
-  document.getElementById('vd-emoji').textContent=v.emoji;
+  const emojiEl=document.getElementById('vd-emoji');
+  if(v.logo){
+    emojiEl.innerHTML=`<img src="${v.logo}" style="width:132px;height:132px;border-radius:24px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.22)">`;
+  } else {
+    emojiEl.textContent=v.emoji;
+  }
   document.getElementById('vd-name').textContent=v.name;
   document.getElementById('vd-sub').textContent=v.sub;
   document.getElementById('vd-min').textContent=v.min;
@@ -1607,8 +1616,8 @@ function openVendor(vid){
   menuEl.innerHTML='<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
     MENU[vid].filter(i=>i.avail).map(item=>`
       <div class="mrow" onclick="addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">
-        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
-          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
+        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;cursor:zoom-in;position:relative':''}" ${item.photo?`onclick="event.stopPropagation();openImgLightbox('${item.photo}','${esc(item.name)}')"`:''}>
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
         </div>
         <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.desc}</div></div>
         <div class="mrow-price">₱${item.price}</div>
@@ -2198,9 +2207,12 @@ function openEditVendorModal(vid){
   el('ev-gcash').value = v.gcash||'';
   el('ev-pin').value = VENDOR_PINS_PLAIN[vid]||'';
   el('ev-min').value = v.min||50;
-  // Set location (free text now — just fill in whatever was saved)
+  // Set location
+  const locSel = el('ev-loc');
   const subLoc = (v.sub||'').split('·')[0].trim();
-  el('ev-loc').value = subLoc;
+  for(let i=0;i<locSel.options.length;i++){
+    if(locSel.options[i].value===subLoc){ locSel.selectedIndex=i; break; }
+  }
   el('modal-editvendor').classList.add('on');
 }
 
@@ -2262,6 +2274,44 @@ async function loadNotifs(userId){
     renderNotifPanel();
     updateNotifBadge();
   }catch(e){ notifList=[]; }
+}
+
+// PRIVACY: load notifications for EVERY order this device placed, merged together.
+// A customer can only ever see alerts tied to their own order IDs — never anyone else's.
+async function loadCustomerNotifs(){
+  const ids = Array.from(new Set(myOrderIds||[]));
+  if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
+  if(!ids.length){ notifList=[]; renderNotifPanel(); updateNotifBadge(); return; }
+  const merged = {};
+  for(const oid of ids){
+    try{
+      const data = await fbGet(ROOM_KEY+'/notifs/cust_'+oid);
+      if(data && typeof data==='object'){
+        Object.values(data).forEach(n=>{ if(n && n.id) merged[n.id]=n; });
+      }
+    }catch(e){ /* skip this order, keep going */ }
+  }
+  notifList = Object.values(merged).sort((a,b)=>b.ts-a.ts).slice(0,50);
+  renderNotifPanel();
+  updateNotifBadge();
+}
+
+// PRIVACY: mark read across all of the customer's own orders.
+async function markCustomerNotifsRead(){
+  const ids = Array.from(new Set(myOrderIds||[]));
+  if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
+  notifList.forEach(n=>n.read=true);
+  updateNotifBadge();
+  for(const oid of ids){
+    try{
+      const data = await fbGet(ROOM_KEY+'/notifs/cust_'+oid);
+      if(data && typeof data==='object'){
+        const updates = {};
+        Object.values(data).forEach(n=>{ if(n&&n.id) updates[n.id]={...n,read:true}; });
+        if(Object.keys(updates).length) await fbSet(ROOM_KEY+'/notifs/cust_'+oid, updates);
+      }
+    }catch(e){}
+  }
 }
 
 async function markNotifsRead(userId){
@@ -2371,10 +2421,26 @@ function refreshBadge(){
 }
 
 function openNotifPanel(role){
-  const userId = role==='customer' ? 'cust_'+lastPlacedOrderId : activeVendorId;
+  if(role==='customer'){
+    const hasOrders = (myOrderIds && myOrderIds.length) || lastPlacedOrderId;
+    if(!hasOrders){
+      el('notif-panel').style.display='flex';
+      el('notif-panel-title').textContent='🔔 My Notifications';
+      notifList=[]; renderNotifPanel();
+      return;
+    }
+    el('notif-panel').style.display='flex';
+    el('notif-panel-title').textContent='🔔 My Notifications';
+    loadCustomerNotifs();
+    markCustomerNotifsRead();
+    updateAppBadge(0);
+    return;
+  }
+  // Vendor
+  const userId = activeVendorId;
   if(!userId){ showToast('No active session'); return; }
   el('notif-panel').style.display='flex';
-  el('notif-panel-title').textContent = role==='customer' ? '🔔 My Notifications' : '🔔 Order Alerts';
+  el('notif-panel-title').textContent='🔔 Order Alerts';
   loadNotifs(userId);
   markNotifsRead(userId);
   updateAppBadge(0);
@@ -2773,52 +2839,13 @@ function previewPhoto(input, imgId, placeholderId, textId){
 
 function addMenuItemConfirm(){
   const name=el('new-item-name').value.trim();
-  const rawPrice=el('new-item-price').value.trim();
+  const price=parseInt(el('new-item-price').value);
   const desc=el('new-item-desc').value.trim();
   const emoji=el('new-item-emoji').value.trim()||'🍽️';
   const photoSrc=el('new-photo-img').src||'';
-
-  if(!name){showToast('⚠️ Fill in the item name');return;}
-  if(!rawPrice){showToast('⚠️ Fill in the price');return;}
-
-  // Parse the price field. Supports:
-  //   "75"                       -> single item ₱75
-  //   "Small-75 Large-120"       -> two items: (Small) ₱75, (Large) ₱120
-  //   "Small 75, Large 120"      -> same
-  //   "75/120" or "75 120"       -> Option 1 ₱75, Option 2 ₱120
-  const variants = parsePriceVariants(rawPrice);
-
-  if(variants.length===0){
-    showToast('⚠️ Couldn\'t read the price — type a number like 75, or "Small-75 Large-120"');
-    return;
-  }
-
+  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
   if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
-
-  if(variants.length===1){
-    // Single price — normal item
-    MENU[activeVendorId].push({
-      id:'new'+Date.now(),
-      name, emoji, price:variants[0].price,
-      desc:desc||'New item', avail:true,
-      photo:photoSrc.startsWith('data:')?photoSrc:''
-    });
-  }else{
-    // Multiple sizes — create one clean item per size so ordering/cart math stays simple
-    variants.forEach((v,i)=>{
-      const sizeLabel = v.label ? ` (${v.label})` : ` (Option ${i+1})`;
-      MENU[activeVendorId].push({
-        id:'new'+Date.now()+'_'+i,
-        name:name+sizeLabel,
-        emoji,
-        price:v.price,
-        desc:desc||'New item',
-        avail:true,
-        photo:photoSrc.startsWith('data:')?photoSrc:''
-      });
-    });
-  }
-
+  MENU[activeVendorId].push({id:'new'+Date.now(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''});
   pushState();
   renderVendorMenu(activeVendorId);
   closeModal('modal-additem');
@@ -2826,48 +2853,7 @@ function addMenuItemConfirm(){
   el('new-photo-img').src=''; el('new-photo-img').style.display='none';
   el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
   el('new-item-photo').value='';
-  if(variants.length===1){
-    showToast('✅ '+name+' added to menu!');
-  }else{
-    showToast('✅ '+name+' added with '+variants.length+' sizes!');
-  }
-}
-
-// Reads a price string and returns [{label, price}, ...]
-function parsePriceVariants(raw){
-  if(!raw) return [];
-  const out=[];
-  // Find every "word(s)-number" or "word(s) number" pattern, also bare numbers
-  // Examples matched: "Small-75", "Large 120", "75"
-  // Strategy: split on commas/slashes first, then parse each chunk
-  const chunks = raw.split(/[,/]|(?:\s{2,})/).map(s=>s.trim()).filter(Boolean);
-  const pieces = chunks.length>1 ? chunks : [raw];
-
-  pieces.forEach(piece=>{
-    // Match "label digits" possibly repeated within one piece, e.g. "Small-75 Large-120"
-    const re=/([A-Za-z][A-Za-z\s]*?)?[\s\-:]*?(\d{1,5})/g;
-    let m, found=false;
-    while((m=re.exec(piece))!==null){
-      const label=(m[1]||'').trim();
-      const price=parseInt(m[2],10);
-      if(!isNaN(price) && price>0){
-        out.push({label:label.replace(/[-:]+$/,'').trim(), price});
-        found=true;
-      }
-    }
-    if(!found){
-      const n=parseInt(piece.replace(/[^0-9]/g,''),10);
-      if(!isNaN(n)&&n>0) out.push({label:'', price:n});
-    }
-  });
-
-  // De-duplicate identical label+price
-  const seen=new Set();
-  return out.filter(v=>{
-    const k=v.label+'|'+v.price;
-    if(seen.has(k)) return false;
-    seen.add(k); return true;
-  });
+  showToast('✅ '+name+' added to menu!');
 }
 
 function renderVendorEarnings(){
@@ -3161,6 +3147,7 @@ function renderAdminVendors(){
       <div class="av-acts">
         <button class="oact ${v.active?'d':'p'}" onclick="toggleVendorActive('${v.id}')">${v.active?'Pause Store':'Reactivate'}</button>
         <button class="oact s" onclick="openEditVendorModal('${v.id}')">✏️ Edit</button>
+        <button class="oact d" onclick="deleteVendor('${v.id}')">🗑️ Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -3173,6 +3160,47 @@ function toggleVendorActive(vid){
   renderAdminVendors();
   updateAdminStats();
   buildVendorCards();
+}
+
+async function deleteVendor(vid){
+  const v = VENDORS[vid];
+  if(!v) return;
+  const activeOrders = orders.filter(o=>o.vendorId===vid && !['delivered','declined'].includes(o.status));
+  let msg = 'Permanently delete "'+v.name+'"?\n\nThis removes the store, its menu and PIN for everyone. This cannot be undone.';
+  if(activeOrders.length){
+    msg = '⚠️ "'+v.name+'" still has '+activeOrders.length+' active order'+(activeOrders.length>1?'s':'')+'.\n\nDelete anyway? Past orders stay in records, but the store, menu and PIN will be removed for everyone. This cannot be undone.';
+  }
+  if(!confirm(msg)) return;
+
+  // Remove locally
+  delete VENDORS[vid];
+  delete MENU[vid];
+  delete VENDOR_PINS_PLAIN[vid];
+  if(activeVendorId===vid) activeVendorId=null;
+
+  // Update UI immediately
+  rebuildVendorSelect();
+  renderAdminVendors();
+  buildVendorCards();
+  buildTodaysPicks();
+  buildFeaturedBanner();
+  updateAdminStats();
+  showToast('🗑️ '+v.name+' deleted');
+
+  // Sync to Firebase: overwrite vendor/menu/pin nodes AND write a tombstone
+  try{
+    syncPausedUntil = Date.now() + 1500;
+    await Promise.all([
+      fbSet(ROOM_KEY+'/vendors', VENDORS),
+      fbSet(ROOM_KEY+'/menu', MENU),
+      fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN),
+      fbSet(ROOM_KEY+'/deletedVendors/'+vid, {id:vid, ts:Date.now()}),
+      fbSet(ROOM_KEY+'/rev', Date.now()),
+    ]);
+  }catch(e){
+    console.error('deleteVendor sync:', e);
+    showToast('⚠️ Deleted on screen but sync failed — check connection');
+  }
 }
 
 function renderAdminRevenue(){
@@ -3199,7 +3227,7 @@ function openAddVendorModal(){ el('modal-addvendor').classList.add('on'); }
 function addVendorConfirm(){
   const name=el('nv-name').value.trim();
   const emoji=el('nv-emoji').value.trim()||'🏪';
-  const loc=el('nv-loc').value.trim();
+  const loc=el('nv-loc').value;
   const cat=el('nv-cat').value.trim()||'Food';
   const pin=el('nv-pin').value.trim();
   const gcash=el('nv-gcash').value.trim();
@@ -3213,7 +3241,7 @@ function addVendorConfirm(){
   // Update UI immediately — vendor shows up right away, no waiting
   rebuildVendorSelect();
   closeModal('modal-addvendor');
-  ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash','nv-loc'].forEach(id2=>el(id2).value='');
+  ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash'].forEach(id2=>el(id2).value='');
   renderAdminVendors();
   buildVendorCards();
   buildTodaysPicks();
@@ -3233,6 +3261,21 @@ function closeModal(id,event){
 
 // ═══ UTILS ═══
 function el(id){ return document.getElementById(id); }
+
+// ── IMAGE LIGHTBOX ──
+function openImgLightbox(src, caption){
+  if(!src) return;
+  const lb=el('img-lightbox'); const img=el('img-lightbox-img'); const cap=el('img-lightbox-cap');
+  if(!lb||!img) return;
+  img.src=src;
+  if(cap) cap.textContent=caption||'';
+  lb.style.display='flex';
+}
+function closeImgLightbox(){
+  const lb=el('img-lightbox'); if(lb) lb.style.display='none';
+  const img=el('img-lightbox-img'); if(img) img.src='';
+}
+
 function esc(s){ return s.replace(/'/g,"\\'"); }
 function timeSince(d){
   const s=Math.floor((Date.now()-new Date(d))/1000);
@@ -3547,6 +3590,17 @@ function applyData(d){
   if(d.menu && Object.keys(d.menu).length>0) Object.keys(d.menu).forEach(k=>{ MENU[k]=d.menu[k]; });
   if(d.pins && Object.keys(d.pins).length>0) Object.assign(VENDOR_PINS_PLAIN, d.pins);
 
+  // Honor deleted-vendor tombstones so a delete on one device removes the vendor everywhere
+  // and a re-sync never resurrects it.
+  if(d.deletedVendors && typeof d.deletedVendors==='object'){
+    Object.keys(d.deletedVendors).forEach(k=>{
+      delete VENDORS[k];
+      delete MENU[k];
+      delete VENDOR_PINS_PLAIN[k];
+      if(activeVendorId===k) activeVendorId=null;
+    });
+  }
+
   rebuildVendorSelect();
   buildVendorCards();
   buildTodaysPicks();
@@ -3694,7 +3748,7 @@ function refreshVisible(){
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
   setInterval(refreshBadge, 5000);
   setInterval(()=>{
-    if(lastPlacedOrderId) loadNotifs('cust_'+lastPlacedOrderId);
+    if(!activeVendorId) loadCustomerNotifs();
     if(activeVendorId) loadNotifs(activeVendorId);
   }, 5000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncFromCloud(); });
