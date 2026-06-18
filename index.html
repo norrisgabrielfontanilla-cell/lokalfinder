@@ -1085,7 +1085,8 @@ body{font-family:var(--ff);background:#0e1a12;min-height:100vh;display:flex;alig
     <label class="flbl">Item Name</label>
     <input class="finp" id="new-item-name" type="text" placeholder="e.g. Bulalo Special">
     <label class="flbl">Price (₱)</label>
-    <input class="finp" id="new-item-price" type="number" placeholder="e.g. 180">
+    <input class="finp" id="new-item-price" type="text" inputmode="text" placeholder="e.g. 180  or  Small-75 Large-120">
+    <div style="font-size:11px;color:#888;margin:-6px 0 10px 2px">One price (180) or multiple sizes: "Small-75 Large-120"</div>
     <label class="flbl">Description</label>
     <input class="finp" id="new-item-desc" type="text" placeholder="Short description">
     <label class="flbl">Food Photo</label>
@@ -2772,13 +2773,52 @@ function previewPhoto(input, imgId, placeholderId, textId){
 
 function addMenuItemConfirm(){
   const name=el('new-item-name').value.trim();
-  const price=parseInt(el('new-item-price').value);
+  const rawPrice=el('new-item-price').value.trim();
   const desc=el('new-item-desc').value.trim();
   const emoji=el('new-item-emoji').value.trim()||'🍽️';
   const photoSrc=el('new-photo-img').src||'';
-  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
+
+  if(!name){showToast('⚠️ Fill in the item name');return;}
+  if(!rawPrice){showToast('⚠️ Fill in the price');return;}
+
+  // Parse the price field. Supports:
+  //   "75"                       -> single item ₱75
+  //   "Small-75 Large-120"       -> two items: (Small) ₱75, (Large) ₱120
+  //   "Small 75, Large 120"      -> same
+  //   "75/120" or "75 120"       -> Option 1 ₱75, Option 2 ₱120
+  const variants = parsePriceVariants(rawPrice);
+
+  if(variants.length===0){
+    showToast('⚠️ Couldn\'t read the price — type a number like 75, or "Small-75 Large-120"');
+    return;
+  }
+
   if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
-  MENU[activeVendorId].push({id:'new'+Date.now(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''});
+
+  if(variants.length===1){
+    // Single price — normal item
+    MENU[activeVendorId].push({
+      id:'new'+Date.now(),
+      name, emoji, price:variants[0].price,
+      desc:desc||'New item', avail:true,
+      photo:photoSrc.startsWith('data:')?photoSrc:''
+    });
+  }else{
+    // Multiple sizes — create one clean item per size so ordering/cart math stays simple
+    variants.forEach((v,i)=>{
+      const sizeLabel = v.label ? ` (${v.label})` : ` (Option ${i+1})`;
+      MENU[activeVendorId].push({
+        id:'new'+Date.now()+'_'+i,
+        name:name+sizeLabel,
+        emoji,
+        price:v.price,
+        desc:desc||'New item',
+        avail:true,
+        photo:photoSrc.startsWith('data:')?photoSrc:''
+      });
+    });
+  }
+
   pushState();
   renderVendorMenu(activeVendorId);
   closeModal('modal-additem');
@@ -2786,7 +2826,48 @@ function addMenuItemConfirm(){
   el('new-photo-img').src=''; el('new-photo-img').style.display='none';
   el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
   el('new-item-photo').value='';
-  showToast('✅ '+name+' added to menu!');
+  if(variants.length===1){
+    showToast('✅ '+name+' added to menu!');
+  }else{
+    showToast('✅ '+name+' added with '+variants.length+' sizes!');
+  }
+}
+
+// Reads a price string and returns [{label, price}, ...]
+function parsePriceVariants(raw){
+  if(!raw) return [];
+  const out=[];
+  // Find every "word(s)-number" or "word(s) number" pattern, also bare numbers
+  // Examples matched: "Small-75", "Large 120", "75"
+  // Strategy: split on commas/slashes first, then parse each chunk
+  const chunks = raw.split(/[,/]|(?:\s{2,})/).map(s=>s.trim()).filter(Boolean);
+  const pieces = chunks.length>1 ? chunks : [raw];
+
+  pieces.forEach(piece=>{
+    // Match "label digits" possibly repeated within one piece, e.g. "Small-75 Large-120"
+    const re=/([A-Za-z][A-Za-z\s]*?)?[\s\-:]*?(\d{1,5})/g;
+    let m, found=false;
+    while((m=re.exec(piece))!==null){
+      const label=(m[1]||'').trim();
+      const price=parseInt(m[2],10);
+      if(!isNaN(price) && price>0){
+        out.push({label:label.replace(/[-:]+$/,'').trim(), price});
+        found=true;
+      }
+    }
+    if(!found){
+      const n=parseInt(piece.replace(/[^0-9]/g,''),10);
+      if(!isNaN(n)&&n>0) out.push({label:'', price:n});
+    }
+  });
+
+  // De-duplicate identical label+price
+  const seen=new Set();
+  return out.filter(v=>{
+    const k=v.label+'|'+v.price;
+    if(seen.has(k)) return false;
+    seen.add(k); return true;
+  });
 }
 
 function renderVendorEarnings(){
