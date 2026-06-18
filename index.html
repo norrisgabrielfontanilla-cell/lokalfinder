@@ -3128,15 +3128,7 @@ function addVendorConfirm(){
   MENU[id]=[];
   VENDOR_PINS_PLAIN[id]=pin;
 
-  // Write the FULL vendors, menu and pins objects so sync can't overwrite us
-  showToast('⏳ Saving '+name+'…');
-  pushState().then(()=>{
-    showToast('✅ '+name+' added & synced!');
-  }).catch(()=>{
-    showToast('⚠️ Saved locally — check connection');
-  });
-
-  // Update UI immediately
+  // Update UI immediately — vendor shows up right away, no waiting
   rebuildVendorSelect();
   closeModal('modal-addvendor');
   ['nv-name','nv-emoji','nv-cat','nv-pin','nv-gcash'].forEach(id2=>el(id2).value='');
@@ -3144,6 +3136,12 @@ function addVendorConfirm(){
   buildVendorCards();
   buildTodaysPicks();
   updateAdminStats();
+  showToast('✅ '+name+' added!');
+
+  // Sync to Firebase in the background — doesn't block the screen
+  pushState().catch(()=>{
+    showToast('⚠️ '+name+' saved on screen but sync failed — check connection');
+  });
 }
 
 // ═══ MODALS ═══
@@ -3507,10 +3505,13 @@ async function pushOrders(oid=null){
 async function pushState(){
   try{
     syncPausedUntil = Date.now() + 1500; // pause sync while we write
-    await fbSet(ROOM_KEY+'/vendors', VENDORS);
-    await fbSet(ROOM_KEY+'/menu', MENU);
-    await fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN);
-    await fbSet(ROOM_KEY+'/rev', Date.now());
+    // Write all nodes in parallel — one round-trip instead of four (much faster on slow connections)
+    await Promise.all([
+      fbSet(ROOM_KEY+'/vendors', VENDORS),
+      fbSet(ROOM_KEY+'/menu', MENU),
+      fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN),
+      fbSet(ROOM_KEY+'/rev', Date.now()),
+    ]);
   }catch(e){ console.error('pushState:', e); }
 }
 
