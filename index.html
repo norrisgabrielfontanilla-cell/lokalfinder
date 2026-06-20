@@ -2124,10 +2124,27 @@ function renderChatPanel(){
 
 async function syncChats(){
   const orderIds = new Set();
-  if(lastPlacedOrderId) orderIds.add(lastPlacedOrderId);
+
+  // CUSTOMER: sync ALL orders placed on this device, not just the last one
+  if(!activeVendorId){
+    const ids = Array.from(new Set(myOrderIds||[]));
+    if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
+    ids.forEach(id=>orderIds.add(id));
+  }
+
+  // VENDOR: sync ALL orders for this vendor from Firebase orders array
+  // (not just local cache — avoids missing new orders on slow WiFi)
   if(activeVendorId){
-    orders.filter(o=>o.vendorId===activeVendorId&&!['delivered','declined'].includes(o.status))
+    orders.filter(o=>o.vendorId===activeVendorId)
       .forEach(o=>orderIds.add(o.id));
+    // Also fetch fresh orders from Firebase to catch any not yet in local cache
+    try{
+      const fbOrders = await fbGet(ROOM_KEY+'/orders');
+      if(fbOrders && Array.isArray(fbOrders)){
+        fbOrders.filter(o=>o && o.vendorId===activeVendorId && !['delivered','declined'].includes(o.status))
+          .forEach(o=>orderIds.add(o.id));
+      }
+    }catch(e){ /* use local orders if Firebase fails */ }
   }
 
   for(const oid of orderIds){
@@ -2146,12 +2163,12 @@ async function syncChats(){
           // New message arrived — show badge and ping
           const newMsgs = msgs.slice(prevCount);
           // Determine who we are for this order
-          const myRole = lastPlacedOrderId===oid ? 'customer' : (activeVendorId ? 'vendor' : null);
+          const myRole = (myOrderIds||[]).includes(oid)||lastPlacedOrderId===oid ? 'customer' : (activeVendorId ? 'vendor' : null);
           const hasIncoming = myRole && newMsgs.some(m=>m.from!==myRole);
           if(hasIncoming){
             playPing();
             // Show unread badge on customer button
-            if(lastPlacedOrderId===oid){
+            if((myOrderIds||[]).includes(oid)||lastPlacedOrderId===oid){
               const unread = msgs.length - (lastKnownMsgCount[oid]||0);
               const badge = el('chat-unread-badge');
               if(badge){ badge.style.display='inline'; badge.textContent=unread; }
@@ -2164,7 +2181,7 @@ async function syncChats(){
           }
         }
       }
-    }catch(e){ /* no chat yet */ }
+    }catch(e){ /* no chat yet for this order */ }
   }
 }
 
