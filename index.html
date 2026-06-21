@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4293,6 +4294,182 @@ function updateClock(){
 }
 updateClock();
 setInterval(updateClock,15000);
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LIVE STATUS BANNER  (Option 2 — append-only, non-invasive)
+     Reads existing globals (orders, myOrderIds, activeVendorId,
+     VENDORS) and pops a persistent banner on status changes.
+     Removing this whole <script> + the banner styles restores
+     the app to its exact previous state.
+═══════════════════════════════════════════════════════════ -->
+<style>
+#lf-banner-stack{
+  position:fixed; left:0; right:0; bottom:0; z-index:99999;
+  display:flex; flex-direction:column; gap:8px;
+  padding:0 12px max(14px,env(safe-area-inset-bottom));
+  pointer-events:none;
+  max-width:430px; margin:0 auto;
+}
+.lf-banner{
+  pointer-events:auto;
+  background:#fff; border-radius:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.10);
+  border:1px solid rgba(0,0,0,.06);
+  padding:13px 14px; display:flex; align-items:flex-start; gap:11px;
+  transform:translateY(140%); opacity:0;
+  transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s;
+  border-left:4px solid var(--g,#1A6B4A);
+}
+.lf-banner.show{ transform:translateY(0); opacity:1; }
+.lf-banner.success{ border-left-color:#22c55e; }
+.lf-banner.status{  border-left-color:#3b82f6; }
+.lf-banner.warning{ border-left-color:#ef4444; }
+.lf-banner.order{   border-left-color:#F4A623; }
+.lf-banner-ico{ font-size:24px; line-height:1; flex-shrink:0; margin-top:1px; }
+.lf-banner-body{ flex:1; min-width:0; }
+.lf-banner-ttl{ font-size:13.5px; font-weight:800; color:#0D1510; margin-bottom:2px; }
+.lf-banner-msg{ font-size:12px; color:#3D4A44; line-height:1.4; }
+.lf-banner-acts{ display:flex; gap:7px; margin-top:9px; }
+.lf-banner-btn{
+  font-family:inherit; font-size:11.5px; font-weight:800; cursor:pointer;
+  border:none; border-radius:8px; padding:7px 13px;
+}
+.lf-banner-btn.view{ background:var(--g,#1A6B4A); color:#fff; }
+.lf-banner-btn.close{ background:#ECEEE9; color:#3D4A44; }
+.lf-banner-x{
+  position:absolute; top:8px; right:10px; cursor:pointer;
+  font-size:16px; color:#8A9890; line-height:1; padding:2px;
+}
+</style>
+<div id="lf-banner-stack"></div>
+
+<script>
+(function(){
+  // ---- guard: only run once ----
+  if(window.__lfBannerInit) return;
+  window.__lfBannerInit = true;
+
+  // ---- per-order last-seen status (so we only fire on CHANGE) ----
+  var lastSeen = {};            // { orderId: status }
+  var seenNewForVendor = {};    // { orderId: true } so a seller's "new" only fires once
+  var primed = false;           // first pass just records, doesn't fire
+
+  function el(id){ return document.getElementById(id); }
+
+  // ---- customer-facing messages (mirror of notifOnStatusChange) ----
+  function custMsg(o){
+    var v = (typeof VENDORS!=='undefined' && VENDORS[o.vendorId]) ? VENDORS[o.vendorId] : null;
+    var vn = (v && v.name) ? v.name : 'Vendor';
+    var map = {
+      accepted:  { ico:'✅', cls:'success', ttl:'Order Accepted!',     msg:vn+' confirmed your order '+o.id+'. They\u2019re getting started!' },
+      preparing: { ico:'👨‍🍳', cls:'status',  ttl:'Being Prepared',       msg:'Your order from '+vn+' is being cooked right now.' },
+      ready:     { ico:'🚚', cls:'status',  ttl:'Out for Delivery',     msg:'Order '+o.id+' is on its way to Unit '+(o.unit||'')+'!' },
+      delivered: { ico:'🎉', cls:'success', ttl:'Delivered!',           msg:'Your order from '+vn+' has been delivered. Enjoy your meal!' },
+      declined:  { ico:'😞', cls:'warning', ttl:'Order Declined',       msg:'Order '+o.id+' was declined by '+vn+'. Please try another seller.' }
+    };
+    return map[o.status] || null;
+  }
+
+  // ---- build + show a persistent banner ----
+  function showBanner(opts){
+    var stack = el('lf-banner-stack'); if(!stack) return;
+    var b = document.createElement('div');
+    b.className = 'lf-banner ' + (opts.cls||'');
+    b.style.position = 'relative';
+    var actsHTML = '';
+    if(opts.onView){
+      actsHTML = '<div class="lf-banner-acts">'
+        + '<button class="lf-banner-btn view">'+(opts.viewLabel||'View')+'</button>'
+        + '<button class="lf-banner-btn close">Dismiss</button>'
+        + '</div>';
+    }
+    b.innerHTML =
+      '<div class="lf-banner-ico">'+(opts.ico||'🔔')+'</div>'
+      + '<div class="lf-banner-body">'
+      +   '<div class="lf-banner-ttl"></div>'
+      +   '<div class="lf-banner-msg"></div>'
+      +   actsHTML
+      + '</div>'
+      + '<div class="lf-banner-x">✕</div>';
+    // safe text injection (no HTML from order data)
+    b.querySelector('.lf-banner-ttl').textContent = opts.ttl||'';
+    b.querySelector('.lf-banner-msg').textContent = opts.msg||'';
+
+    function remove(){
+      b.classList.remove('show');
+      setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 320);
+    }
+    b.querySelector('.lf-banner-x').onclick = remove;
+    var closeBtn = b.querySelector('.lf-banner-btn.close');
+    if(closeBtn) closeBtn.onclick = remove;
+    var viewBtn = b.querySelector('.lf-banner-btn.view');
+    if(viewBtn) viewBtn.onclick = function(){ try{ opts.onView(); }catch(e){} remove(); };
+
+    stack.appendChild(b);
+    // limit stack to 3 newest
+    while(stack.children.length > 3){ stack.removeChild(stack.firstChild); }
+    requestAnimationFrame(function(){ b.classList.add('show'); });
+
+    // auto-dismiss after 30s as a safety net (still "persistent" enough to act on)
+    setTimeout(remove, 30000);
+  }
+
+  // ---- the watcher: compares each relevant order's status to last seen ----
+  function tick(){
+    if(typeof orders === 'undefined' || !Array.isArray(orders)) return;
+
+    var isVendor = (typeof activeVendorId !== 'undefined' && activeVendorId);
+    var myIds = (typeof myOrderIds !== 'undefined' && Array.isArray(myOrderIds)) ? myOrderIds : [];
+
+    orders.forEach(function(o){
+      if(!o || !o.id) return;
+
+      // ===== SELLER: new order arrived for my store =====
+      if(isVendor && o.vendorId === activeVendorId){
+        if(o.status === 'new' && !seenNewForVendor[o.id]){
+          seenNewForVendor[o.id] = true;
+          if(primed){
+            showBanner({
+              ico:'🛒', cls:'order',
+              ttl:'New Order — Unit '+(o.unit||'?'),
+              msg:(o.name||'Customer')+' · Unit '+(o.unit||'')+' · ₱'+(o.total||0)
+                  +' · '+((o.method==='gcash')?'GCash':'Cash'),
+              viewLabel:'View Order',
+              onView:function(){ if(typeof goPage==='function') goPage('p-vorders'); }
+            });
+          }
+        }
+      }
+
+      // ===== CUSTOMER: status change on one of my own orders =====
+      if(myIds.indexOf(o.id) !== -1){
+        var prev = lastSeen[o.id];
+        if(prev !== undefined && prev !== o.status){
+          var m = custMsg(o);
+          if(m && primed){
+            showBanner({
+              ico:m.ico, cls:m.cls, ttl:m.ttl, msg:m.msg,
+              viewLabel:'View Order',
+              onView:function(){
+                try{ if(typeof lastPlacedOrderId!=='undefined'){ window.lastPlacedOrderId = o.id; } }catch(e){}
+                if(typeof goPage==='function') goPage('p-csuccess');
+                if(typeof updateTrackerFromStatus==='function'){ try{ updateTrackerFromStatus(); }catch(e){} }
+              }
+            });
+          }
+        }
+        lastSeen[o.id] = o.status;
+      }
+    });
+
+    primed = true; // after first full pass, future changes will fire
+  }
+
+  // run shortly after load, then on the same cadence as the app's sync
+  setTimeout(tick, 2000);
+  setInterval(tick, 3000);
+})();
 </script>
 </body>
 </html>
