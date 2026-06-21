@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1452,6 +1451,12 @@ function showToast(msg){
 
 // ═══ NAVIGATION ═══
 function goPage(id){
+  // ROLE GUARD: internal vendor pages require a logged-in vendor.
+  // (p-vlogin is intentionally allowed so vendors can reach the login screen.)
+  var _vendorOnly = {'p-vdash':1,'p-vorders':1,'p-vmenu':1,'p-vearn':1};
+  if(_vendorOnly[id] && !activeVendorId){
+    id = 'p-land';
+  }
   var _lb=document.getElementById('img-lightbox'); if(_lb && _lb.style.display!=='none') _lb.style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
@@ -1473,7 +1478,7 @@ function goBack(){
 }
 
 // ═══ PORTALS ═══
-function goCust(){ buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); goPage('p-chome'); }
+function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); goPage('p-chome'); }
 function goVendorLogin(){ goPage('p-vlogin'); }
 function goAdminLogin(){
   goPage('p-alogin');
@@ -3497,7 +3502,8 @@ function updateTrackerFromStatus(){
     dot.style.animation=(o.status==='delivered'||o.status==='declined')?'none':'pulse 1.2s infinite';
   }
 
-  // header
+  // header — always reflect the CURRENT order's status (prevents stale
+  // "Declined"/"Delivered" titles leaking onto a fresh order).
   if(o.status==='accepted' && prevTrackerStatus==='new'){
     el('suc-ttl').textContent='Order Accepted! ✅';
     el('suc-sub').textContent='Your vendor confirmed the order.';
@@ -3512,6 +3518,30 @@ function updateTrackerFromStatus(){
     el('suc-sub').textContent='The vendor could not take this order.';
     el('suc-ico').textContent='😞';
     showToast('⚠️ Your order was declined. Please contact the vendor.');
+  } else if(o.status==='new'){
+    el('suc-ttl').textContent='Order Placed! 🎉';
+    el('suc-sub').textContent='Waiting for the vendor to accept your order.';
+    el('suc-ico').textContent='✓';
+  } else if(o.status==='accepted'){
+    el('suc-ttl').textContent='Order Accepted! ✅';
+    el('suc-sub').textContent='Your vendor confirmed the order.';
+    el('suc-ico').textContent='✅';
+  } else if(o.status==='preparing'){
+    el('suc-ttl').textContent='Being Prepared 👨‍🍳';
+    el('suc-sub').textContent='Your food is being made right now.';
+    el('suc-ico').textContent='👨‍🍳';
+  } else if(o.status==='ready'){
+    el('suc-ttl').textContent='Out for Delivery 🚚';
+    el('suc-sub').textContent='On the way to your unit.';
+    el('suc-ico').textContent='🚚';
+  } else if(o.status==='delivered'){
+    el('suc-ttl').textContent='Delivered! 🎉';
+    el('suc-sub').textContent='Enjoy your meal!';
+    el('suc-ico').textContent='🎉';
+  } else if(o.status==='declined'){
+    el('suc-ttl').textContent='Order Declined 😞';
+    el('suc-sub').textContent='The vendor could not take this order.';
+    el('suc-ico').textContent='😞';
   }
 
   if(o.status==='declined'){
@@ -4415,18 +4445,32 @@ setInterval(updateClock,15000);
     setTimeout(remove, 30000);
   }
 
+  // ---- which page is currently visible? ----
+  function currentPageId(){
+    var p = document.querySelector('.page.on');
+    return p ? p.id : '';
+  }
+  // The user is acting as a SELLER only when actually viewing a vendor page.
+  function onVendorPage(){
+    var id = currentPageId();
+    return id.indexOf('p-v') === 0; // p-vdash, p-vorders, p-vmenu, p-vearn, p-vlogin
+  }
+
   // ---- the watcher: compares each relevant order's status to last seen ----
   function tick(){
     if(typeof orders === 'undefined' || !Array.isArray(orders)) return;
 
-    var isVendor = (typeof activeVendorId !== 'undefined' && activeVendorId);
     var myIds = (typeof myOrderIds !== 'undefined' && Array.isArray(myOrderIds)) ? myOrderIds : [];
+    // Seller alerts require BOTH a logged-in vendor AND actually being on a vendor screen.
+    var actingAsVendor = (typeof activeVendorId !== 'undefined' && activeVendorId) && onVendorPage();
 
     orders.forEach(function(o){
       if(!o || !o.id) return;
 
       // ===== SELLER: new order arrived for my store =====
-      if(isVendor && o.vendorId === activeVendorId){
+      // Never fire for an order this same device placed (you ordering from your own store).
+      var iPlacedIt = (myIds.indexOf(o.id) !== -1);
+      if(actingAsVendor && o.vendorId === activeVendorId && !iPlacedIt){
         if(o.status === 'new' && !seenNewForVendor[o.id]){
           seenNewForVendor[o.id] = true;
           if(primed){
@@ -4443,7 +4487,7 @@ setInterval(updateClock,15000);
       }
 
       // ===== CUSTOMER: status change on one of my own orders =====
-      if(myIds.indexOf(o.id) !== -1){
+      if(iPlacedIt){
         var prev = lastSeen[o.id];
         if(prev !== undefined && prev !== o.status){
           var m = custMsg(o);
