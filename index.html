@@ -3555,6 +3555,7 @@ function updateTrackerFromStatus(){
     });
     const td=el('td2'); td.className='trk-dot'; td.style.background='#ef4444'; td.style.color='#fff'; td.textContent='✕';
     el('tt2').textContent='Vendor declined'; el('tt2').classList.remove('dim');
+    if(el('ts2')){ el('ts2').textContent='Contact the vendor or try another'; el('ts2').classList.remove('dim'); }
     prevTrackerStatus=o.status; return;
   }
 
@@ -3836,22 +3837,18 @@ function refreshVisible(){
     }
   }
   await tryBoot();
-  // Restore customer's order tracker if they have a recent order and aren't in vendor/admin mode
+  // Option A: do NOT auto-open any past order tracker on launch.
+  // The app always starts on the landing/home page. Customers can reach
+  // any order via "My Orders". We still load vendor contact data in the
+  // background so the tracker is ready if they open it manually.
   try{
     if(lastPlacedOrderId && !activeVendorId){
       const myOrder = orders.find(o=>o.id===lastPlacedOrderId);
       if(myOrder){
-        // Only auto-jump if the order is still active (not an old completed one)
-        const ageHours = (Date.now() - new Date(myOrder.timestamp)) / 3600000;
-        const isActive = !['delivered','declined'].includes(myOrder.status);
-        if(isActive || ageHours < 12){
-          goPage('p-csuccess');
-          loadCustomerVendorContact(myOrder.id);
-          updateTrackerFromStatus();
-        }
+        loadCustomerVendorContact(myOrder.id);
       }
     }
-  }catch(e){ console.warn('order restore skipped:', e); }
+  }catch(e){ console.warn('order preload skipped:', e); }
   setInterval(syncFromCloud, 3000);
   setInterval(syncChats, 3000);
   setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
