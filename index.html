@@ -809,8 +809,229 @@ select option { color: var(--t1); background: var(--w); }
 
 /* --- Modal overlay on light: soft dark --- */
 .modal { background: rgba(13,43,26,.45) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   CUSTOMER HOME — "ALIVE" ANIMATION LAYER (visual only, no JS/HTML changes)
+═══════════════════════════════════════════════════════════════════════ */
+
+/* Header gradient shine sweep */
+#p-chome > div[style*="linear-gradient(160deg"]{position:relative}
+#p-chome > div[style*="linear-gradient(160deg"]::after{
+  content:"";position:absolute;top:-40%;left:-30%;width:80%;height:180%;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.10) 48%,rgba(255,255,255,.16) 52%,transparent 70%);
+  transform:translateX(-120%) skewX(-12deg);pointer-events:none;
+  animation:lfShine 6s ease-in-out infinite;animation-delay:1.5s}
+@keyframes lfShine{0%{transform:translateX(-120%) skewX(-12deg)}16%,100%{transform:translateX(220%) skewX(-12deg)}}
+
+/* "right now" live pulse */
+#p-chome span[style*="#6EE7A8"]{display:inline-block;animation:lfLivePulse 2.4s ease-in-out infinite}
+@keyframes lfLivePulse{0%,100%{opacity:1;text-shadow:0 0 0 rgba(110,231,168,0)}50%{opacity:.92;text-shadow:0 0 14px rgba(110,231,168,.55)}}
+
+/* Search bar invite glow */
+#p-chome div[style*="backdrop-filter:blur(8px)"]{animation:lfSearchBreathe 4s ease-in-out infinite;transition:transform .2s}
+#p-chome div[style*="backdrop-filter:blur(8px)"]:active{transform:scale(.985)}
+@keyframes lfSearchBreathe{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 0 3px rgba(255,255,255,.06)}}
+
+/* Category pills: spring-in stagger + lively press */
+#cat-row .pill{animation:lfPillIn .5s cubic-bezier(.34,1.56,.64,1) both;transition:transform .16s,box-shadow .2s}
+#cat-row .pill:nth-child(1){animation-delay:.04s}
+#cat-row .pill:nth-child(2){animation-delay:.10s}
+#cat-row .pill:nth-child(3){animation-delay:.16s}
+#cat-row .pill:nth-child(4){animation-delay:.22s}
+#cat-row .pill:nth-child(5){animation-delay:.28s}
+#cat-row .pill:active{transform:scale(.92)}
+#cat-row .pill.on-cat{box-shadow:0 4px 14px rgba(26,107,74,.35);animation:lfPillIn .5s cubic-bezier(.34,1.56,.64,1) both,lfActiveGlow 2.6s ease-in-out infinite .5s}
+@keyframes lfPillIn{from{opacity:0;transform:translateY(10px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes lfActiveGlow{0%,100%{box-shadow:0 4px 14px rgba(26,107,74,.30)}50%{box-shadow:0 6px 22px rgba(26,107,74,.5)}}
+
+/* Section headers: slide in + nudge */
+.sec{align-items:baseline}
+.sec-t{display:inline-block;animation:lfSlideIn .5s cubic-bezier(.22,.61,.36,1) both}
+@keyframes lfSlideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+.sec-a{cursor:pointer;transition:transform .2s;display:inline-block}
+.sec-a:active{transform:scale(.9)}
+
+/* Vendor cards: staggered entrance, hover lift, shine sweep */
+#vendor-cards .vc{animation:lfCardRise .55s cubic-bezier(.22,.61,.36,1) both;transition:transform .25s cubic-bezier(.22,.61,.36,1),box-shadow .25s !important}
+#vendor-cards .vc:nth-child(1){animation-delay:.08s}
+#vendor-cards .vc:nth-child(2){animation-delay:.18s}
+#vendor-cards .vc:nth-child(3){animation-delay:.28s}
+#vendor-cards .vc:nth-child(4){animation-delay:.38s}
+#vendor-cards .vc:nth-child(5){animation-delay:.48s}
+@keyframes lfCardRise{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1;transform:none}}
+#vendor-cards .vc:hover{transform:translateY(-6px) !important;box-shadow:0 16px 36px rgba(26,107,74,.18) !important}
+#vendor-cards .vc:active{transform:scale(.97) !important}
+
+/* Card image shine sweep */
+.vc-img{position:relative;overflow:hidden}
+.vc-img::before{
+  content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,.45),transparent);
+  transform:skewX(-18deg);pointer-events:none;z-index:2;
+  animation:lfCardShine 4.5s ease-in-out infinite}
+#vendor-cards .vc:nth-child(2) .vc-img::before{animation-delay:1.2s}
+#vendor-cards .vc:nth-child(3) .vc-img::before{animation-delay:2.4s}
+@keyframes lfCardShine{0%{left:-60%}22%,100%{left:130%}}
+
+/* Open badge live heartbeat dot */
+.bdg.open{position:relative}
+.bdg.open::after{content:"";position:absolute;left:9px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 0 rgba(22,163,74,.6);animation:lfHeartbeat 1.8s ease-out infinite;pointer-events:none}
+@keyframes lfHeartbeat{0%{box-shadow:0 0 0 0 rgba(22,163,74,.55)}70%{box-shadow:0 0 0 7px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+
+/* Favorite heart pop + saved wiggle */
+.vc-fav{transition:transform .18s cubic-bezier(.34,1.6,.64,1)}
+.vc-fav:active{transform:scale(.7)}
+.vc-fav.on{animation:lfHeartBeat2 1.4s ease-in-out infinite}
+@keyframes lfHeartBeat2{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.15)}}
+
+/* Best seller badge shimmer */
+.vc-body .bdg[style*="FEF9C3"]{animation:lfBadgePulse 2.5s ease-in-out infinite}
+@keyframes lfBadgePulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+
+/* Today's Picks rows: staggered slide + warm hover */
+#todays-picks .mrow{animation:lfRowIn .5s cubic-bezier(.22,.61,.36,1) both;transition:background .18s,transform .15s,box-shadow .2s;border-left:3px solid transparent}
+#todays-picks .mrow:nth-child(1){animation-delay:.1s}
+#todays-picks .mrow:nth-child(2){animation-delay:.18s}
+#todays-picks .mrow:nth-child(3){animation-delay:.26s}
+#todays-picks .mrow:nth-child(4){animation-delay:.34s}
+#todays-picks .mrow:nth-child(5){animation-delay:.42s}
+#todays-picks .mrow:nth-child(6){animation-delay:.50s}
+@keyframes lfRowIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+#todays-picks .mrow:hover{background:#F0F7F3 !important;border-left-color:var(--g);transform:translateX(2px)}
+#todays-picks .mrow:active{transform:scale(.99)}
+#todays-picks .mrow-ico{transition:transform .3s cubic-bezier(.22,.61,.36,1);overflow:hidden}
+#todays-picks .mrow:hover .mrow-ico{transform:scale(1.06) rotate(-2deg)}
+
+/* Add button invite ring + bounce */
+.add-btn{position:relative;transition:transform .16s cubic-bezier(.34,1.6,.64,1),box-shadow .2s}
+.add-btn::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 0 rgba(26,107,74,.5);animation:lfAddRing 2.4s ease-out infinite;pointer-events:none}
+.add-btn:hover{transform:scale(1.1);box-shadow:0 6px 18px rgba(26,107,74,.4)}
+.add-btn:active{transform:scale(.82)}
+@keyframes lfAddRing{0%{box-shadow:0 0 0 0 rgba(26,107,74,.45)}70%{box-shadow:0 0 0 10px rgba(26,107,74,0)}100%{box-shadow:0 0 0 0 rgba(26,107,74,0)}}
+
+/* Cart bar living glow + slide-up */
+.cart-bar:not(.hide){animation:lfCartUp .4s cubic-bezier(.34,1.3,.64,1) both,lfCartGlow 2.8s ease-in-out infinite .4s}
+@keyframes lfCartUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes lfCartGlow{0%,100%{box-shadow:var(--shg)}50%{box-shadow:0 8px 30px rgba(26,107,74,.5),0 2px 10px rgba(26,107,74,.3)}}
+.cart-bar .cb-cnt{animation:lfCountPop .3s cubic-bezier(.34,1.7,.64,1)}
+@keyframes lfCountPop{from{transform:scale(0)}to{transform:scale(1)}}
+
+/* Bottom nav active icon gentle lift */
+.bnav .bni.on svg{animation:lfNavBob 2.6s ease-in-out infinite}
+@keyframes lfNavBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
+/* Skeleton shimmer while vendor cards load */
+#vendor-cards:empty::before{
+  content:"";display:block;min-width:172px;height:230px;border-radius:var(--r);
+  background:linear-gradient(100deg,#eef5f0 30%,#f7fbf9 50%,#eef5f0 70%);
+  background-size:200% 100%;animation:lfSkeleton 1.3s ease-in-out infinite;margin-left:16px}
+@keyframes lfSkeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ════════════════════════════════════════════════════════════════════
+   OVERHAUL v2 — hero strip, food tags, grid, qty steppers, search
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ---- Food tags (colored labels) ---- */
+.ff-tag{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:800;
+  padding:3px 7px;border-radius:7px;letter-spacing:.3px;line-height:1;white-space:nowrap}
+.ff-tag.best{background:#FEF3C7;color:#92400E}
+.ff-tag.new{background:#DBEAFE;color:#1e40af}
+.ff-tag.spicy{background:#FEE2E2;color:#b91c1c}
+.ff-tag.low{background:#FEE4D4;color:#9a3412}
+
+/* ---- HERO STRIP (trending / deal of day) ---- */
+.ff-hero{margin:12px 16px 4px;border-radius:20px;overflow:hidden;position:relative;
+  cursor:pointer;min-height:128px;display:flex;align-items:stretch;
+  background:linear-gradient(120deg,#1A6B4A,#0F4A32);
+  box-shadow:0 10px 28px rgba(26,107,74,.30);transition:transform .2s,box-shadow .2s;
+  animation:lfHeroIn .55s cubic-bezier(.22,.61,.36,1) both}
+@keyframes lfHeroIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.ff-hero:active{transform:scale(.98)}
+.ff-hero::before{content:"";position:absolute;top:-30%;right:-5%;width:160px;height:160px;
+  background:radial-gradient(circle,rgba(245,200,66,.22),transparent 70%);border-radius:50%;pointer-events:none}
+.ff-hero::after{content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,.14),transparent);
+  transform:skewX(-18deg);pointer-events:none;animation:lfCardShine 5s ease-in-out infinite 1s}
+.ff-hero-txt{flex:1;padding:18px 16px;position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center}
+.ff-hero-kick{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  color:#F5C842;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.ff-hero-ttl{font-size:21px;font-weight:800;color:#fff;line-height:1.15;letter-spacing:-.4px}
+.ff-hero-sub{font-size:12px;color:rgba(255,255,255,.78);margin-top:4px}
+.ff-hero-cta{margin-top:11px;align-self:flex-start;background:#fff;color:#0F4A32;font-size:12px;
+  font-weight:800;padding:8px 15px;border-radius:10px;display:inline-flex;align-items:center;gap:5px}
+.ff-hero-art{width:120px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08)}
+.ff-hero-art .em{font-size:56px;animation:lfFloat 3.2s ease-in-out infinite}
+@keyframes lfFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
+.ff-hero-badge{position:absolute;top:10px;right:10px;background:#F5C842;color:#5a3a00;
+  font-size:10px;font-weight:800;padding:4px 9px;border-radius:20px;z-index:3;
+  animation:lfBadgePulse 2s ease-in-out infinite}
+
+/* ---- 2-COLUMN FOOD GRID (Today's Picks) ---- */
+.ff-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 16px 16px}
+.ff-fc{background:#fff;border:1px solid var(--bd);border-radius:18px;overflow:hidden;cursor:pointer;
+  position:relative;transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s;
+  animation:lfCardRise .5s cubic-bezier(.22,.61,.36,1) both}
+.ff-fc:nth-child(odd){animation-delay:.06s}.ff-fc:nth-child(even){animation-delay:.13s}
+.ff-fc:nth-child(n+3){animation-delay:.2s}.ff-fc:nth-child(n+5){animation-delay:.3s}
+.ff-fc:active{transform:scale(.97)}
+.ff-fc:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(26,107,74,.15)}
+.ff-fc-img{height:100px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ff-fc-img img{width:100%;height:100%;object-fit:cover}
+.ff-fc-img .em{font-size:44px}
+.ff-fc-img::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,.10));pointer-events:none}
+.ff-fc-tag{position:absolute;top:8px;left:8px;z-index:2}
+.ff-fc-body{padding:9px 11px 11px}
+.ff-fc-name{font-size:13px;font-weight:800;color:var(--t1);line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+.ff-fc-vendor{font-size:10.5px;color:var(--t3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ff-fc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.ff-fc-price{font-size:15px;font-weight:800;color:var(--g)}
+
+/* ---- QUANTITY STEPPER (replaces + once item in cart) ---- */
+.ff-add{width:34px;height:34px;background:var(--g);color:#fff;border:none;border-radius:50%;
+  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  position:relative;transition:transform .16s cubic-bezier(.34,1.6,.64,1)}
+.ff-add::after{content:"";position:absolute;inset:0;border-radius:50%;
+  box-shadow:0 0 0 0 rgba(26,107,74,.5);animation:lfAddRing 2.4s ease-out infinite;pointer-events:none}
+.ff-add:active{transform:scale(.82)}
+.ff-step{display:inline-flex;align-items:center;gap:0;background:var(--g);border-radius:18px;
+  overflow:hidden;flex-shrink:0;animation:lfStepIn .25s cubic-bezier(.34,1.5,.64,1)}
+@keyframes lfStepIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.ff-step button{width:30px;height:34px;background:none;border:none;color:#fff;font-size:18px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.ff-step button:active{background:rgba(0,0,0,.15)}
+.ff-step .q{min-width:22px;text-align:center;color:#fff;font-size:14px;font-weight:800}
+
+/* ---- LIVE SEARCH ---- */
+#ff-search-input{cursor:text !important}
+.ff-search-results{padding:8px 16px 4px}
+.ff-sr-head{font-size:11px;font-weight:800;color:var(--t3);text-transform:uppercase;
+  letter-spacing:.8px;padding:10px 0 6px}
+.ff-sr-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:.5px solid var(--bd);cursor:pointer}
+.ff-sr-row:active{opacity:.6}
+.ff-sr-ic{width:46px;height:46px;border-radius:12px;background:var(--s2);display:flex;
+  align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden}
+.ff-sr-ic img{width:100%;height:100%;object-fit:cover}
+.ff-sr-info{flex:1;min-width:0}
+.ff-sr-name{font-size:13px;font-weight:700;color:var(--t1)}
+.ff-sr-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.ff-sr-price{font-size:13px;font-weight:800;color:var(--g);flex-shrink:0}
+.ff-empty{padding:40px 20px;text-align:center;color:var(--t3)}
+.ff-empty .em{font-size:40px;display:block;margin-bottom:10px}
+
 @media(prefers-reduced-motion:reduce){
-  .lf2-mark-wrap,.lf2-bell-dot,.lf2-ava-ring,.lf2-card{animation:none}
+  .ff-hero,.ff-hero::after,.ff-hero-art .em,.ff-hero-badge,
+  .ff-fc,.ff-add::after,.ff-step{animation:none !important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .lf2-mark-wrap,.lf2-bell-dot,.lf2-ava-ring,.lf2-card,
+  #p-chome > div[style*="linear-gradient(160deg"]::after,
+  #cat-row .pill,#vendor-cards .vc,.vc-img::before,.bdg.open::after,
+  .vc-fav.on,#todays-picks .mrow,.add-btn::after,.cart-bar:not(.hide),
+  .bnav .bni.on svg,#p-chome span[style*="#6EE7A8"],
+  #p-chome div[style*="backdrop-filter:blur(8px)"]{animation:none !important}
 }
 </style>
 </head>
@@ -1353,7 +1574,8 @@ select option { color: var(--t1); background: var(--w); }
       <div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px">Real food · Free pickup · Same building</div>
       <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" readonly onfocus="this.blur();showToast('🔍 Search coming soon!')">
+        <input id="ff-search-input" style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" oninput="ffSearch(this.value)">
+        <span id="ff-search-clear" style="display:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:16px;line-height:1" onclick="ffClearSearch()">✕</span>
       </div>
     </div>
   </div>
@@ -1365,6 +1587,11 @@ select option { color: var(--t1); background: var(--w); }
       <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks')">🍢 Snacks</div>
       <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert')">🎂 Desserts</div>
     </div>
+    <!-- SEARCH RESULTS (shown only while typing) -->
+    <div id="ff-search-wrap" style="display:none"></div>
+    <!-- NORMAL HOME CONTENT (hidden while searching) -->
+    <div id="ff-home-content">
+    <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
     <div class="sec" style="padding-top:16px"><span class="sec-t">Vendors Open Now</span><span class="sec-a">See all</span></div>
     <div class="hscrl" id="vendor-cards"></div>
@@ -1374,6 +1601,7 @@ select option { color: var(--t1); background: var(--w); }
       <div style="font-size:13px;color:var(--t2);margin-top:4px">Fresh from your neighbors. Order now before it sells out! 👀</div>
     </div>
     <div id="todays-picks"></div>
+    </div>
     <div style="height:80px"></div>
   </div>
   <div class="cart-bar hide" id="cust-cart-bar" onclick="goPage('p-ccart')">
@@ -2282,31 +2510,31 @@ const VENDORS = {
 
 const MENU = {
   pares:[
-    {id:'p1',name:'Pares Overload',emoji:'🍲',price:100,desc:'Rich beef broth, tender pares, extra serving',avail:true},
+    {id:'p1',name:'Pares Overload',emoji:'🍲',price:100,desc:'Rich beef broth, tender pares, extra serving',avail:true,tag:'best'},
     {id:'p2',name:'Regular Pares',emoji:'🍲',price:60,desc:'Classic pares with steamed rice',avail:true},
-    {id:'p3',name:'Goto Bata',emoji:'🥣',price:55,desc:'Thick rice porridge with goto',avail:true},
+    {id:'p3',name:'Goto Bata',emoji:'🥣',price:55,desc:'Thick rice porridge with goto',avail:true,tag:'low'},
     {id:'p4',name:'Pares + Goto Combo',emoji:'🍱',price:120,desc:'Best of both worlds',avail:true},
     {id:'p5',name:'Extra Rice',emoji:'🍚',price:15,desc:'Plain steamed white rice',avail:true},
   ],
   siomai:[
-    {id:'s1',name:'Siomai with Rice',emoji:'🥟',price:65,desc:'6 pcs homemade pork siomai with rice',avail:true},
+    {id:'s1',name:'Siomai with Rice',emoji:'🥟',price:65,desc:'6 pcs homemade pork siomai with rice',avail:true,tag:'best'},
     {id:'s2',name:'Siomai Solo (6pcs)',emoji:'🥟',price:50,desc:'6 pcs pork siomai, sauce included',avail:true},
-    {id:'s3',name:'Shrimp Siomai (4pcs)',emoji:'🦐',price:70,desc:'Premium shrimp filling',avail:true},
+    {id:'s3',name:'Shrimp Siomai (4pcs)',emoji:'🦐',price:70,desc:'Premium shrimp filling',avail:true,tag:'new'},
     {id:'s4',name:'Lomi Bowl',emoji:'🍜',price:85,desc:'Thick egg noodle soup',avail:true},
     {id:'s5',name:'Pork Lumpia (5pcs)',emoji:'🫔',price:55,desc:'Crispy homemade lumpiang shanghai',avail:true},
   ],
   kape:[
     {id:'k1',name:'Iced Caramel Macchiato',emoji:'☕',price:125,desc:'Espresso, milk, caramel drizzle',avail:true},
-    {id:'k2',name:'Iced Matcha Latte',emoji:'🍵',price:110,desc:'Premium Japanese matcha',avail:true},
-    {id:'k3',name:'Mango Graham Cake',emoji:'🎂',price:159,desc:'Chilled layered cake, whole slice',avail:true},
+    {id:'k2',name:'Iced Matcha Latte',emoji:'🍵',price:110,desc:'Premium Japanese matcha',avail:true,tag:'new'},
+    {id:'k3',name:'Mango Graham Cake',emoji:'🎂',price:159,desc:'Chilled layered cake, whole slice',avail:true,tag:'best'},
     {id:'k4',name:'Buko Pandan Jelly',emoji:'🌿',price:85,desc:'Classic Filipino dessert',avail:true},
     {id:'k5',name:'Black Americano',emoji:'☕',price:80,desc:'Double shot, hot or iced',avail:true},
   ],
   adbuns:[
     {id:'a1',name:'Shanghai Silog',emoji:'🍳',price:109,desc:'Lumpiang shanghai, fried egg, rice',avail:true},
-    {id:'a2',name:'Tapsilog',emoji:'🥩',price:119,desc:'Beef tapa, garlic rice, fried egg',avail:true},
+    {id:'a2',name:'Tapsilog',emoji:'🥩',price:119,desc:'Beef tapa, garlic rice, fried egg',avail:true,tag:'best'},
     {id:'a3',name:'Longsilog',emoji:'🌭',price:109,desc:'Longganisa, garlic rice, fried egg',avail:true},
-    {id:'a4',name:'Bangsilog',emoji:'🐟',price:129,desc:'Boneless bangus, garlic rice, egg',avail:true},
+    {id:'a4',name:'Bangsilog',emoji:'🐟',price:129,desc:'Boneless bangus, garlic rice, egg',avail:true,tag:'low'},
     {id:'a5',name:'Hotsilog',emoji:'🌭',price:99,desc:'Hotdog, garlic rice, fried egg',avail:true},
   ]
 };
@@ -2353,7 +2581,7 @@ function goBack(){
 }
 
 // ═══ PORTALS ═══
-function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); goPage('p-chome'); }
+function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); buildHeroStrip(); goPage('p-chome'); }
 function goVendorLogin(){ goPage('p-vlogin'); }
 function goAdminLogin(){
   goPage('p-alogin');
@@ -2444,6 +2672,8 @@ function buildVendorCards(force=false){
 
 let _picksBuilt = false;
 let _picksHash = '';
+let _picksOrder = [];
+let activeCatFilter = 'all';
 let _vendorHash = '';
 function buildTodaysPicks(force=false){
   const container=document.getElementById('todays-picks');
@@ -2455,52 +2685,204 @@ function buildTodaysPicks(force=false){
     items.filter(i=>i.avail).slice(0,2).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}));
   });
 
-  // Only rebuild if menu actually changed — prevents flicker on every sync
-  const hash = picks.map(p=>p.id+p.price+p.avail).join(',');
+  const hash = picks.map(p=>p.id+p.price+p.avail+(ffQtyOf(p.vendorId,p.name))).join(',');
   if(!force && _picksBuilt && hash===_picksHash) return;
+  const firstBuild = !_picksBuilt;
   _picksHash = hash;
   _picksBuilt = true;
 
   if(!picks.length){
-    container.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--t3)">No items available right now</div>';
+    container.innerHTML='<div class="ff-empty"><span class="em">🍽️</span>No items available right now</div>';
     return;
   }
 
-  // Shuffle only once (on first build)
-  const shuffled = _picksBuilt && hash===_picksHash ? picks : picks.sort(()=>Math.random()-.5);
+  if(firstBuild){ _picksOrder = picks.sort(()=>Math.random()-.5).map(p=>p.id); }
+  const ordered = _picksOrder.length ? picks.slice().sort((a,b)=>_picksOrder.indexOf(a.id)-_picksOrder.indexOf(b.id)) : picks;
 
-  container.innerHTML=`
-    <div style="padding:4px 16px 16px;display:flex;flex-direction:column">
-      ${shuffled.map(item=>`
-        <div onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})"
-          style="background:var(--w);border-bottom:.5px solid var(--bd);cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 0">
-          <!-- Square thumbnail -->
-          <div style="width:80px;height:80px;border-radius:12px;background:var(--s2);overflow:hidden;flex-shrink:0">
-            ${item.photo
-              ? `<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover">`
-              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px">${item.emoji}</div>`
-            }
-          </div>
-          <!-- Info -->
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700;color:var(--t1);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name}</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:2px">${item.vendorEmoji} ${item.vendorName}</div>
-            <div style="font-size:13px;font-weight:700;color:var(--g);margin-top:3px">₱${item.price}</div>
-          </div>
-          <!-- Add button -->
-          <button onclick="event.stopPropagation();quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})"
-            style="width:34px;height:34px;background:var(--g);color:#fff;border:none;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
-        </div>`).join('')}
+  container.innerHTML = `<div class="ff-grid">${ordered.map(item=>ffFoodCard(item)).join('')}</div>`;
+}
+
+const FF_TAGS = { best:{l:'⭐ Bestseller',c:'best'}, new:{l:'✨ New',c:'new'}, spicy:{l:'🌶️ Spicy',c:'spicy'}, low:{l:'🔥 Almost gone',c:'low'} };
+
+function ffFoodCard(item){
+  const tag = item.tag && FF_TAGS[item.tag] ? `<span class="ff-fc-tag"><span class="ff-tag ${FF_TAGS[item.tag].c}">${FF_TAGS[item.tag].l}</span></span>` : '';
+  const img = item.photo
+    ? `<img src="${item.photo}" alt="">`
+    : `<span class="em">${ffDishArt(item)}</span>`;
+  const bg = ffDishBg(item);
+  return `
+    <div class="ff-fc" onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">
+      <div class="ff-fc-img" style="background:${bg}">${img}${tag}</div>
+      <div class="ff-fc-body">
+        <div class="ff-fc-name">${item.name}</div>
+        <div class="ff-fc-vendor">${item.vendorEmoji} ${item.vendorName}</div>
+        <div class="ff-fc-foot">
+          <span class="ff-fc-price">₱${item.price}</span>
+          <span id="ffctl-${item.vendorId}-${ffKey(item.name)}" onclick="event.stopPropagation()">${ffStepperHTML(item.vendorId,item.name,item.emoji,item.price)}</span>
+        </div>
+      </div>
     </div>`;
 }
 
-let activeCatFilter = 'all';
+// Warm gradient backgrounds keyed off emoji so cards look varied + appetizing
+function ffDishBg(item){
+  const e=item.emoji||'';
+  if(/☕|🍵/.test(e)) return 'linear-gradient(160deg,#EADBC8,#D9BBA0)';
+  if(/🎂|🍰|🌿/.test(e)) return 'linear-gradient(160deg,#FBE3EC,#F6C6D8)';
+  if(/🥟|🦐|🫔/.test(e)) return 'linear-gradient(160deg,#FDF0D5,#F5D9A0)';
+  if(/🥩|🌭|🐟/.test(e)) return 'linear-gradient(160deg,#F6E0D2,#E8B79A)';
+  if(/🍜|🥣/.test(e)) return 'linear-gradient(160deg,#FBE5C8,#F0C97D)';
+  return 'linear-gradient(160deg,#FFE9C7,#FFD89E)';
+}
+// Bigger emoji as stylized art fallback (Option A) when no photo
+function ffDishArt(item){ return item.emoji||'🍽️'; }
+
+// ─── Quantity helpers (read existing cart; never alter cart shape) ───
+function ffKey(name){ return (name||'').replace(/[^a-zA-Z0-9]/g,''); }
+function ffQtyOf(vid,name){
+  if(!cart[vid]) return 0;
+  const it=cart[vid].items.find(i=>i.name===name);
+  return it?it.qty:0;
+}
+function ffStepperHTML(vid,name,emoji,price){
+  const q=ffQtyOf(vid,name);
+  if(q>0){
+    return `<span class="ff-step">
+      <button onclick="ffDec('${vid}','${esc(name)}')">−</button>
+      <span class="q">${q}</span>
+      <button onclick="ffInc('${vid}','${esc(name)}','${emoji}',${price})">+</button>
+    </span>`;
+  }
+  return `<button class="ff-add" onclick="quickAdd('${vid}','${esc(name)}','${emoji}',${price})">+</button>`;
+}
+function ffRefreshStepper(vid,name,emoji,price){
+  const holder=document.getElementById('ffctl-'+vid+'-'+ffKey(name));
+  if(holder) holder.innerHTML=ffStepperHTML(vid,name,emoji,price);
+  // also refresh search-result steppers if present
+  const sh=document.getElementById('ffsr-'+vid+'-'+ffKey(name));
+  if(sh) sh.innerHTML=ffStepperHTML(vid,name,emoji,price);
+}
+function ffInc(vid,name,emoji,price){
+  addToCart(vid,name,emoji,price);   // reuses existing cart logic + vendor-switch guard
+  ffRefreshStepper(vid,name,emoji,price);
+}
+function ffDec(vid,name){
+  if(!cart[vid]) return;
+  const it=cart[vid].items.find(i=>i.name===name);
+  if(!it) return;
+  const emoji=it.emoji, price=it.price;
+  it.qty--;
+  if(it.qty<=0){
+    cart[vid].items=cart[vid].items.filter(i=>i.name!==name);
+    if(cart[vid].items.length===0) delete cart[vid];
+  }
+  updateCartBar();
+  ffRefreshStepper(vid,name,emoji,price);
+  showToast('🗑️ '+name+' removed');
+}
+
+// ─── HERO STRIP: trending deal of the day ───
+function buildHeroStrip(){
+  const host=document.getElementById('ff-hero-strip'); if(!host) return;
+  // pick a bestseller from an active vendor matching current filter
+  let pick=null;
+  for(const [vid,items] of Object.entries(MENU)){
+    const v=VENDORS[vid]; if(!v||!v.active) continue;
+    if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) continue;
+    const best=items.find(i=>i.avail&&i.tag==='best');
+    if(best){ pick={...best,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}; break; }
+  }
+  if(!pick){ host.innerHTML=''; return; }
+  host.innerHTML=`
+    <div class="ff-hero" onclick="quickAdd('${pick.vendorId}','${esc(pick.name)}','${pick.emoji}',${pick.price})">
+      <div class="ff-hero-txt">
+        <div class="ff-hero-kick">🔥 Trending now</div>
+        <div class="ff-hero-ttl">${pick.name}</div>
+        <div class="ff-hero-sub">${pick.vendorEmoji} ${pick.vendorName} · ₱${pick.price}</div>
+        <span class="ff-hero-cta">Order now →</span>
+      </div>
+      <div class="ff-hero-art">
+        ${pick.photo?`<img src="${pick.photo}" style="width:100%;height:100%;object-fit:cover">`:`<span class="em">${pick.emoji}</span>`}
+        <span class="ff-hero-badge">Hot 🔥</span>
+      </div>
+    </div>`;
+}
+
+// ─── LIVE SEARCH ───
+let _ffSearchActive=false;
+function ffSearch(q){
+  q=(q||'').trim().toLowerCase();
+  const clr=document.getElementById('ff-search-clear');
+  const wrap=document.getElementById('ff-search-wrap');
+  const home=document.getElementById('ff-home-content');
+  if(clr) clr.style.display=q?'inline':'none';
+  if(!q){ _ffSearchActive=false; wrap.style.display='none'; home.style.display=''; wrap.innerHTML=''; return; }
+  _ffSearchActive=true; wrap.style.display=''; home.style.display='none';
+
+  // match vendors
+  const vMatches=Object.values(VENDORS).filter(v=>v.active && (v.name.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)));
+  // match dishes
+  const dMatches=[];
+  Object.entries(MENU).forEach(([vid,items])=>{
+    const v=VENDORS[vid]; if(!v||!v.active) return;
+    items.filter(i=>i.avail).forEach(i=>{
+      if(i.name.toLowerCase().includes(q)||(i.desc||'').toLowerCase().includes(q))
+        dMatches.push({...i,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji});
+    });
+  });
+
+  if(!vMatches.length && !dMatches.length){
+    wrap.innerHTML=`<div class="ff-empty"><span class="em">🔍</span>No results for “${esc(q)}”.<br>Try another dish or vendor.</div>`;
+    return;
+  }
+
+  let html='<div class="ff-search-results">';
+  if(vMatches.length){
+    html+='<div class="ff-sr-head">Vendors</div>';
+    html+=vMatches.map(v=>`
+      <div class="ff-sr-row" onclick="openVendor('${v.id}')">
+        <div class="ff-sr-ic">${v.logo?`<img src="${v.logo}">`:v.emoji}</div>
+        <div class="ff-sr-info"><div class="ff-sr-name">${v.name}</div><div class="ff-sr-sub">${(v.sub||'').split('·').slice(0,2).join('·')}</div></div>
+        <span class="ff-sr-price">From ${v.min}</span>
+      </div>`).join('');
+  }
+  if(dMatches.length){
+    html+='<div class="ff-sr-head">Dishes</div>';
+    html+=dMatches.map(i=>`
+      <div class="ff-sr-row" onclick="openVendor('${i.vendorId}')">
+        <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
+        <div class="ff-sr-info"><div class="ff-sr-name">${i.name}</div><div class="ff-sr-sub">${i.vendorEmoji} ${i.vendorName}</div></div>
+        <span id="ffsr-${i.vendorId}-${ffKey(i.name)}" onclick="event.stopPropagation()">${ffStepperHTML(i.vendorId,i.name,i.emoji,i.price)}</span>
+      </div>`).join('');
+  }
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+function ffClearSearch(){
+  const inp=document.getElementById('ff-search-input');
+  if(inp) inp.value='';
+  ffSearch('');
+}
+function ffSyncSteppers(){
+  document.querySelectorAll('[id^="ffctl-"],[id^="ffsr-"]').forEach(holder=>{
+    const m=holder.id.match(/^(?:ffctl|ffsr)-(.+?)-(.+)$/);
+    if(!m) return;
+    const vid=m[1];
+    // find the menu item by key match within this vendor
+    const items=MENU[vid]||[];
+    const item=items.find(i=>ffKey(i.name)===m[2]);
+    if(!item) return;
+    holder.innerHTML=ffStepperHTML(vid,item.name,item.emoji,item.price);
+  });
+}
+
 function filterCat(btn,cat){
   activeCatFilter = cat;
   document.querySelectorAll('#cat-row .pill').forEach(p=>{p.style.background='var(--w)';p.style.color='var(--t2)';p.style.borderColor='var(--bdm)'});
   btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.borderColor='var(--g)';
   buildVendorCards(true);
   buildTodaysPicks(true);
+  buildHeroStrip();
 }
 
 function toggleFav(id,btn){
@@ -2602,6 +2984,7 @@ function updateCartBar(){
     if(vbar) vbar.classList.add('hide');
   }
   [document.getElementById('home-badge'),document.getElementById('bnav-badge')].forEach(b=>{if(b){b.style.display=c>0?'flex':'none';b.textContent=c;}});
+  if(typeof ffSyncSteppers==='function') ffSyncSteppers();
 }
 
 function renderCartPage(){
@@ -4605,10 +4988,28 @@ function applyData(d){
     if(activeVendorId===k) activeVendorId=null;
   });
 
+  // ── ANTI-FLICKER GUARD ──────────────────────────────────────────────
+  // Only touch the DOM when something actually changed since last sync.
+  // Without this, the timers below rebuild the page every 3s, causing the
+  // whole app to visibly "refresh / move" on its own and feel laggy.
+  const _sig = JSON.stringify({
+    o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)),
+    m: Object.entries(MENU).map(([k,it])=>k+':'+it.map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
+    h: d.heroStats ? JSON.stringify(d.heroStats) : ''
+  });
+  if(_sig === window._lastApplySig){
+    // Data identical to last sync — keep tracker live but skip all rebuilds.
+    return;
+  }
+  window._lastApplySig = _sig;
+  // ────────────────────────────────────────────────────────────────────
+
   rebuildVendorSelect();
   buildVendorCards();
   buildTodaysPicks();
   buildFeaturedBanner();
+  if(typeof buildHeroStrip==='function') buildHeroStrip();
   checkVendorNewOrders();
   updateTrackerFromStatus();
   loadAllChats();
