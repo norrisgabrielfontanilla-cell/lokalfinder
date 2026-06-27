@@ -106,6 +106,10 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .vc{min-width:172px;background:var(--w);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s;border:.5px solid var(--bd)}
 .vc:hover{transform:translateY(-3px);box-shadow:var(--shm)}
 .vc:active{transform:scale(.96);box-shadow:var(--shm)}
+.vc-closed{opacity:.55;filter:grayscale(.35)}
+.vc-closed:hover{transform:none;box-shadow:var(--sh)}
+.vc-closed:active{transform:scale(.98)}
+.vc-closed .vc-img::after{background:linear-gradient(to bottom,rgba(0,0,0,.18) 0%,rgba(0,0,0,.32) 100%)}
 .vc-img{height:132px;display:flex;align-items:center;justify-content:center;font-size:54px;position:relative;background:linear-gradient(160deg,var(--gl),#fff)}
 .vc-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,.14) 100%);pointer-events:none}
 .vc-fav{position:absolute;top:9px;right:9px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border:none;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);transition:color .15s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.14);z-index:1}
@@ -550,7 +554,7 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .lf2-banner-art svg{width:100%;height:100%}
 
 /* BOTTOM NAV */
-.lf2-nav{display:flex;padding:10px 4px max(16px,env(safe-area-inset-bottom));background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bd);z-index:10;flex-shrink:0;box-shadow:0 -2px 12px rgba(26,107,74,.10)}
+.lf2-nav{display:flex;padding:10px 4px max(16px,env(safe-area-inset-bottom));background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bd);z-index:10;flex-shrink:0;box-shadow:0 -2px 12px rgba(26,107,74,.10);position:sticky;bottom:0}
 .lf2-ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative;padding:4px 0;transition:transform .14s;-webkit-tap-highlight-color:transparent}
 .lf2-ni:active{transform:scale(.88)}
 .lf2-ni svg{width:24px;height:24px;stroke:#6B8F7A;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
@@ -998,6 +1002,16 @@ select option { color: var(--t1); background: var(--w); }
 .ff-step{display:inline-flex;align-items:center;gap:0;background:var(--g);border-radius:18px;
   overflow:hidden;flex-shrink:0;animation:lfStepIn .25s cubic-bezier(.34,1.5,.64,1)}
 @keyframes lfStepIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes heroGradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes heroTextPulse{0%,100%{opacity:.72}50%{opacity:1}}
+@keyframes heroPillPop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+.hero-anim-bg{background:linear-gradient(160deg,#0d1a0f 0%,#1A6B4A 50%,#0d2415 100%);background-size:200% 200%;animation:heroGradientShift 9s ease-in-out infinite}
+.hero-pulse{animation:heroTextPulse 2.4s ease-in-out infinite}
+.hero-live-badge{background:rgba(244,63,94,.92);padding:3px 8px;border-radius:6px;font-size:9px;font-weight:800;white-space:nowrap;letter-spacing:.3px}
+#search-container{transition:border-color .2s,background .2s}
+#search-container.focused{border-color:rgba(110,231,168,.6) !important;background:rgba(255,255,255,.18) !important}
+.cat-pop{animation:heroPillPop .3s ease-out}
+@media(prefers-reduced-motion:reduce){.hero-anim-bg,.hero-pulse,.cat-pop{animation:none !important}}
 .ff-step button{width:30px;height:34px;background:none;border:none;color:#fff;font-size:18px;
   cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
 .ff-step button:active{background:rgba(0,0,0,.15)}
@@ -1554,11 +1568,11 @@ select option { color: var(--t1); background: var(--w); }
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M22 11v3" stroke-width="2.5" stroke-linecap="round"/></svg>
     </div>
   </div>
-  <div style="background:linear-gradient(160deg,#0d1a0f 0%,#1A6B4A 100%);padding:14px 16px 20px;flex-shrink:0;position:relative;overflow:hidden">
+  <div class="hero-anim-bg" style="padding:14px 16px 20px;flex-shrink:0;position:relative;overflow:hidden">
     <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(45,155,111,.3) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1">
       <div>
-        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">GRASS Residences</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:7px">GRASS Residences <span id="vendor-live-badge" class="hero-live-badge">● 0 live</span></div>
         <div style="font-family:var(--ffd);font-style:italic;font-size:26px;color:#fff;line-height:1">Finder</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
@@ -1570,22 +1584,23 @@ select option { color: var(--t1); background: var(--w); }
       </div>
     </div>
     <div style="position:relative;z-index:1">
-      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3">Your neighbors are<br>selling <span style="color:#6EE7A8">right now.</span></div>
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3">Your neighbors are<br>selling <span class="hero-pulse" style="color:#6EE7A8">right now.</span></div>
       <div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px">Real food · Free pickup · Same building</div>
-      <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12)">
+      <div id="search-container" style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="ff-search-input" style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" oninput="ffSearch(this.value)">
+        <input id="ff-search-input" style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" oninput="ffSearch(this.value)" onfocus="heroSearchFocus(true)" onblur="heroSearchFocus(false)">
         <span id="ff-search-clear" style="display:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:16px;line-height:1" onclick="ffClearSearch()">✕</span>
       </div>
+      <div id="search-suggestions" style="display:none;font-size:11px;color:rgba(255,255,255,.6);padding:8px 2px 0">Popular: <span id="suggestion-text" style="color:rgba(110,231,168,.9);font-weight:700">Pares</span></div>
     </div>
   </div>
   <div class="scrl">
     <div style="display:flex;gap:8px;padding:10px 16px 4px;overflow-x:auto" id="cat-row">
-      <div class="pill on-cat" style="cursor:pointer;background:var(--g);color:#fff;border-color:var(--g)" onclick="filterCat(this,'all')">🍽️ All</div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'rice')">🍚 Rice Meals</div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'coffee')">☕ Coffee</div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks')">🍢 Snacks</div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert')">🎂 Desserts</div>
+      <div class="pill on-cat" style="cursor:pointer;background:var(--g);color:#fff;border-color:var(--g)" onclick="filterCat(this,'all');heroPillPop(this)">🍽️ All<span class="cat-count" data-cat="all"></span></div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'rice');heroPillPop(this)">🍚 Rice Meals<span class="cat-count" data-cat="rice"></span></div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'coffee');heroPillPop(this)">☕ Coffee<span class="cat-count" data-cat="coffee"></span></div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks');heroPillPop(this)">🍢 Snacks<span class="cat-count" data-cat="snacks"></span></div>
+      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert');heroPillPop(this)">🎂 Desserts<span class="cat-count" data-cat="dessert"></span></div>
     </div>
     <!-- SEARCH RESULTS (shown only while typing) -->
     <div id="ff-search-wrap" style="display:none"></div>
@@ -2581,7 +2596,50 @@ function goBack(){
 }
 
 // ═══ PORTALS ═══
-function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); buildHeroStrip(); goPage('p-chome'); }
+function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); buildFeaturedBanner(); buildHeroStrip(); updateVendorLiveBadge(); updateCategoryCounts(); startSuggestionRotation(); goPage('p-chome'); }
+
+// ── HERO ENHANCEMENTS ──────────────────────────────
+function updateVendorLiveBadge(){
+  const count=Object.values(VENDORS).filter(v=>v.active).length;
+  const b=document.getElementById('vendor-live-badge');
+  if(b) b.textContent='● '+count+' live';
+}
+function updateCategoryCounts(){
+  const catFor=cat=>{
+    if(cat==='all') return Object.entries(MENU).reduce((s,[vid,items])=>s+((VENDORS[vid]&&VENDORS[vid].active)?items.filter(i=>i.avail).length:0),0);
+    return Object.entries(VENDORS).reduce((s,[vid,v])=>{
+      if(!v.active) return s;
+      if(!(v.cats||[]).some(c=>c.toLowerCase().includes(cat.toLowerCase()))) return s;
+      return s+((MENU[vid]||[]).filter(i=>i.avail).length);
+    },0);
+  };
+  document.querySelectorAll('.cat-count').forEach(el=>{
+    const n=catFor(el.getAttribute('data-cat'));
+    el.textContent=n>0?(' · '+n):'';
+  });
+}
+function heroPillPop(elm){
+  if(!elm) return;
+  elm.classList.remove('cat-pop'); void elm.offsetWidth; elm.classList.add('cat-pop');
+}
+function heroSearchFocus(on){
+  const c=document.getElementById('search-container');
+  const s=document.getElementById('search-suggestions');
+  if(c) c.classList.toggle('focused',on);
+  if(s){ if(on){ s.style.display='block'; } else { setTimeout(()=>{ s.style.display='none'; },200); } }
+}
+const _heroSuggestions=['Pares','Coffee','Siomai','Rice Meals','Snacks','Desserts'];
+let _suggIdx=0, _suggTimer=null;
+function startSuggestionRotation(){
+  if(_suggTimer) return; // start once
+  _suggTimer=setInterval(()=>{
+    const el=document.getElementById('suggestion-text');
+    if(!el) return;
+    _suggIdx=(_suggIdx+1)%_heroSuggestions.length;
+    el.textContent=_heroSuggestions[_suggIdx];
+  },3000);
+}
+
 function goVendorLogin(){ goPage('p-vlogin'); }
 function goAdminLogin(){
   goPage('p-alogin');
@@ -2598,6 +2656,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     });
   }
 });
+
 
 // ═══ CUSTOMER HOME ═══
 function buildFeaturedBanner(){
@@ -2642,32 +2701,43 @@ function buildVendorCards(force=false){
   const vh=Object.values(VENDORS).map(v=>v.id+v.active+v.name+(v.logo?'1':'0')).join(',')+activeCatFilter;
   if(!force && vh===_vendorHash&&el.children.length>0) return;
   _vendorHash=vh;
-  const filtered = Object.values(VENDORS).filter(v=>{
-    if(!v.active) return false;
-    if(activeCatFilter==='all') return true;
-    return (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()));
-  });
-    if(!filtered.length){
+  // Category filter (applies to both open and closed)
+  const inCat = v => activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()));
+  const openVendors = Object.values(VENDORS).filter(v=>v.active && inCat(v));
+  const closedVendors = Object.values(VENDORS).filter(v=>!v.active && inCat(v));
+  if(!openVendors.length && !closedVendors.length){
     el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🍽️</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No vendors in this category yet</div></div>';
+    updateVendorLiveBadge(); updateCategoryCounts();
     return;
   }
-  el.innerHTML=filtered.map(v=>{
+  const cardHTML = (v, isClosed) => {
     const hours=v.openTime&&v.closeTime?fmtTime(v.openTime)+'–'+fmtTime(v.closeTime):'';
     const subLine=v.sub.split('·').slice(0,2).join('·').trim()+(hours?' · '+hours:'');
+    const opensTxt = v.openTime?('Opens '+fmtTime(v.openTime)):'Currently closed';
+    const clickAttr = isClosed
+      ? `onclick="showClosedVendorToast('${esc(v.name)}','${v.openTime||''}')"`
+      : `onclick="openVendor('${v.id}')"`;
     return `
-    <div class="vc" onclick="openVendor('${v.id}')">
+    <div class="vc${isClosed?' vc-closed':''}" ${clickAttr}>
       <div class="vc-img" style="background:${v.bg}">
         ${v.logo?`<img src="${v.logo}" style="width:84px;height:84px;border-radius:16px;object-fit:cover">`:v.emoji}
         <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
       </div>
       <div class="vc-body">
-        <div style="margin-bottom:4px"><span class="bdg open">● Open</span>${v.featured?'<span class="bdg" style="background:#FEF9C3;color:#854d0e;margin-left:4px">⭐ Best Seller</span>':''}</div>
+        <div style="margin-bottom:4px"><span class="bdg ${isClosed?'closed':'open'}">● ${isClosed?'Closed':'Open'}</span>${(!isClosed&&v.featured)?'<span class="bdg" style="background:#FEF9C3;color:#854d0e;margin-left:4px">⭐ Best Seller</span>':''}</div>
         <div class="vc-name">${v.name}</div>
-        <div class="vc-sub">${subLine}</div>
+        <div class="vc-sub">${isClosed?opensTxt:subLine}</div>
         <div class="vc-foot"><span class="vc-price">From ₱${v.min}</span><span class="vc-rating">${v.rating}</span></div>
       </div>
     </div>`;
-  }).join('');
+  };
+  el.innerHTML = openVendors.map(v=>cardHTML(v,false)).join('') + closedVendors.map(v=>cardHTML(v,true)).join('');
+  updateVendorLiveBadge(); updateCategoryCounts();
+}
+
+function showClosedVendorToast(name, openTime){
+  const opens = openTime ? (' · Opens '+fmtTime(openTime)) : '';
+  showToast('🔴 '+name+' is closed'+opens);
 }
 
 let _picksBuilt = false;
@@ -2894,6 +2964,20 @@ function toggleFav(id,btn){
 
 // ═══ VENDOR DETAIL ═══
 function openVendor(vid){
+  // Safety: never open a closed store
+  if(VENDORS[vid] && !VENDORS[vid].active){
+    showClosedVendorToast(VENDORS[vid].name, VENDORS[vid].openTime||'');
+    return;
+  }
+  // Guard: if cart has items from a different vendor, warn before browsing
+  const currentVid=Object.keys(cart)[0];
+  if(currentVid && currentVid!==vid && cart[currentVid] && cart[currentVid].items.length>0){
+    pendingAdd={vid:null,browseVid:vid};
+    document.getElementById('switch-from').textContent=cart[currentVid].name;
+    document.getElementById('switch-to').textContent=(VENDORS[vid]&&VENDORS[vid].name)||'another vendor';
+    document.getElementById('modal-switch').classList.add('on');
+    return;
+  }
   activeVendorId=vid;
   const v=VENDORS[vid];
   document.getElementById('vd-hero').style.background=v.bg;
@@ -2958,7 +3042,17 @@ function addToCart(vid,name,emoji,price){
 function confirmSwitchVendor(){
   cart={};
   closeModal('modal-switch');
-  if(pendingAdd){const p=pendingAdd;pendingAdd=null;addToCart(p.vid,p.name,p.emoji,p.price);}
+  if(pendingAdd){
+    const p=pendingAdd;
+    pendingAdd=null;
+    if(p.vid===null && p.browseVid){
+      // User was just browsing a different vendor — open it now that cart is cleared
+      openVendor(p.browseVid);
+    } else {
+      // User tapped Add on an item from a different vendor
+      addToCart(p.vid,p.name,p.emoji,p.price);
+    }
+  }
   updateCartBar();
   if(document.getElementById('p-ccart').classList.contains('on')) renderCartPage();
 }
