@@ -3348,10 +3348,22 @@ async function vendorLogin(){
   if(!pin){showToast('⚠️ Enter your PIN');return;}
   if(!VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Store not found — contact admin');return;}
   if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
+  // Request notification permission NOW — must happen as direct result of user tap
+  if('Notification' in window && Notification.permission !== 'granted'){
+    try{
+      showToast('🔔 Requesting notification permission…');
+      const p = await Notification.requestPermission();
+      notifGranted = (p === 'granted');
+      showToast(notifGranted ? '✅ Notifications allowed!' : '⚠️ Notifications blocked — push won\'t work');
+    }catch(e){ console.warn('notif permission error:', e); }
+  } else if('Notification' in window && Notification.permission === 'granted'){
+    notifGranted = true;
+  }
   activeVendorId=sel;
-  try{ await requestNotifPermission(); }catch(e){ /* notifications optional */ }
+  // Persist vendor session so app reopens to dashboard
+  try{ localStorage.setItem('lf-vendorId', sel); localStorage.setItem('lf-vendorPin', pin); }catch(e){}
   // Save this device's FCM token so the vendor receives orders even when logged out / app closed
-  try{ await fcmSaveVendorToken(sel); }catch(e){ /* push optional */ }
+  try{ await fcmSaveVendorToken(sel); }catch(e){ showToast('⚠️ FCM save error: '+(e&&e.message||e)); }
   // Request badge permission
   try{ if('setAppBadge' in navigator) await navigator.setAppBadge(0); }catch(e){}
   // Ensure vendor data exists — Firebase may not have synced yet
@@ -3391,6 +3403,7 @@ async function vendorLogin(){
 
 function vendorLogout(){
   activeVendorId=null;
+  try{ localStorage.removeItem('lf-vendorId'); localStorage.removeItem('lf-vendorPin'); }catch(e){}
   document.getElementById('v-sel').value='';
   document.getElementById('v-pin').value='';
   updateAppBadge(0);
@@ -4885,12 +4898,10 @@ function _fcmInit(){
   try{
     if(_fcmMessaging) return true;
     if(typeof firebase === 'undefined' || !firebase.messaging) return false;
-    if(!firebase.apps || !firebase.apps.length){
-      _fcmApp = firebase.initializeApp(FCM_CONFIG);
-    } else {
-      _fcmApp = firebase.app();
-    }
-    _fcmMessaging = firebase.messaging();
+    // Always use a named app 'lf-fcm' so we never conflict with any other firebase instance
+    try{ _fcmApp = firebase.app('lf-fcm'); }
+    catch(e){ _fcmApp = firebase.initializeApp(FCM_CONFIG, 'lf-fcm'); }
+    _fcmMessaging = firebase.messaging(_fcmApp);
     return true;
   }catch(e){ console.warn('FCM init failed:', e); return false; }
 }
@@ -4919,19 +4930,22 @@ async function fcmGetToken(){
 // Save a vendor's token (persists across logout — keyed by token so dupes overwrite)
 async function fcmSaveVendorToken(vendorId){
   try{
-    // Ensure notification permission is granted first
-    if('Notification' in window && Notification.permission !== 'granted'){
-      const p = await Notification.requestPermission();
-      notifGranted = (p === 'granted');
-    } else if('Notification' in window && Notification.permission === 'granted'){
-      notifGranted = true;
+    showToast('📡 FCM: perm='+('Notification' in window ? Notification.permission : 'N/A'));
+    if(!('Notification' in window) || Notification.permission !== 'granted'){
+      showToast('⚠️ FCM: notifications not granted — skipping token save');
+      return;
     }
+    showToast('📡 FCM: getting token…');
     const token = await fcmGetToken();
-    if(!token || !vendorId){ try{showToast('⚠️ Save skipped (no token or vendor) perm:'+('Notification' in window ? Notification.permission : 'N/A'));}catch(e){} return; }
+    if(!token || !vendorId){
+      showToast('⚠️ FCM: no token (vendor='+vendorId+') — check console');
+      return;
+    }
+    showToast('📡 FCM: saving token to Firebase…');
     const key = token.replace(/[^a-zA-Z0-9_-]/g,'').slice(-120);
     await fbSet(ROOM_KEY+'/fcmTokens/vendors/'+vendorId+'/'+key, token);
-    try{showToast('✅ Push enabled for '+vendorId);}catch(e){}
-  }catch(e){ try{showToast('⚠️ Save failed: '+(e&&e.message||e));}catch(_){} console.warn('fcmSaveVendorToken failed:', e); }
+    showToast('✅ Push enabled for '+vendorId);
+  }catch(e){ showToast('⚠️ FCM save failed: '+(e&&e.message||e)); console.warn('fcmSaveVendorToken failed:', e); }
 }
 
 // Get the current customer token (used when placing an order)
@@ -4960,18 +4974,17 @@ function notifyVendorNewOrder(o){
   // In-app banner
   updateVendorDash(activeVendorId);
   // Browser notification (works when app is open or in background on Android)
+  const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A6B4A'/%3E%3Ctext y='68' x='50' font-size='55' text-anchor='middle'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E";
   if(notifGranted && 'serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(reg=>{
       reg.showNotification('🔔 New Order — LokalFinder',{
         body:`${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`,
-        icon:'/icon.png',
-        badge:'/icon.png',
+        icon: iconUrl,
         tag:o.id,
         requireInteraction:true,
         data:{ orderId:o.id }
       });
     }).catch(()=>{
-      // Fallback to basic notification
       if(notifGranted) new Notification('🔔 New Order — LokalFinder',{
         body:`${o.name} · Unit ${o.unit} · ₱${o.total}`,
         tag:o.id
@@ -4986,15 +4999,14 @@ function notifyVendorNewOrder(o){
   }
 }
 
-// Register service worker for background notifications
+// Register service worker for background notifications — runs on every boot
 async function registerServiceWorker(){
-  // Service worker via blob not supported on all hosts
-  // Notifications work via Notification API when app is open
   try{
-    if('Notification' in window && Notification.permission !== 'denied'){
-      // Permission will be requested on vendor login
-    }
-  }catch(e){}
+    if(!('serviceWorker' in navigator)) return;
+    // Register the FCM service worker at boot so it's ready before vendor login
+    const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    console.log('SW registered, scope:', reg.scope);
+  }catch(e){ console.warn('SW registration failed:', e); }
 }
 
 
@@ -5414,6 +5426,52 @@ function refreshVisible(){
     }
   }
   await tryBoot();
+  // Restore vendor session if they were logged in before closing the app
+  try{
+    const savedVendorId = localStorage.getItem('lf-vendorId');
+    const savedVendorPin = localStorage.getItem('lf-vendorPin');
+    if(savedVendorId && savedVendorPin){
+      const pinOk = VENDOR_PINS_PLAIN[savedVendorId] && savedVendorPin === VENDOR_PINS_PLAIN[savedVendorId];
+      if(pinOk){
+        activeVendorId = savedVendorId;
+        function _doVendorRestore(vid, vendor){
+          el('v-dname').textContent = vendor.name;
+          el('v-dsub').textContent = vendor.sub;
+          el('v-demoji').textContent = vendor.emoji;
+          applyVendorLogo(vendor.logo||'');
+          updateVendorDash(vid);
+          renderVendorMenu(vid);
+          updateStoreStatusUI();
+          renderVendorPayments();
+          goPage('p-vdash');
+          refreshBadge();
+          showToast('Welcome back, '+vendor.name+'! 👋');
+          // Re-save FCM token silently (token may have rotated since last login)
+          setTimeout(()=>{ try{ fcmSaveVendorToken(vid); }catch(e){} }, 2000);
+        }
+        const v = VENDORS[savedVendorId];
+        if(v){
+          _doVendorRestore(savedVendorId, v);
+        } else {
+          // Vendor data not in local cache yet — wait one sync cycle and retry
+          setTimeout(()=>{
+            const v2 = VENDORS[savedVendorId];
+            if(v2 && activeVendorId === savedVendorId){
+              _doVendorRestore(savedVendorId, v2);
+            } else {
+              activeVendorId = null;
+              localStorage.removeItem('lf-vendorId');
+              localStorage.removeItem('lf-vendorPin');
+            }
+          }, 3500);
+        }
+      } else {
+        // PIN mismatch or vendor removed — clear saved session
+        localStorage.removeItem('lf-vendorId');
+        localStorage.removeItem('lf-vendorPin');
+      }
+    }
+  }catch(e){ console.warn('vendor session restore failed:', e); }
   // Option A: do NOT auto-open any past order tracker on launch.
   // The app always starts on the landing/home page. Customers can reach
   // any order via "My Orders". We still load vendor contact data in the
@@ -6103,7 +6161,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 25; // ← bump this each release (and version.json)
+  const APP_VERSION = 26; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
