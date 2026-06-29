@@ -1651,7 +1651,7 @@ select option { color: var(--t1); background: var(--w); }
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Min. order</div><div id="vd-min" style="font-size:13px;font-weight:700">₱45</div></div>
-      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Delivery</div><div style="font-size:13px;font-weight:700;color:var(--t2)">By vendor</div></div>
+      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Delivery</div><div id="vd-delivery" style="font-size:13px;font-weight:700;color:var(--t2)">By vendor</div></div>
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Rating</div><div id="vd-rating" style="font-size:13px;font-weight:700">⭐ 4.9</div></div>
     </div>
   </div>
@@ -1691,7 +1691,7 @@ select option { color: var(--t1); background: var(--w); }
       <div class="fee-box">
         <div class="fee-row"><span>Subtotal</span><span id="f-sub">₱0</span></div>
         <div class="fee-row"><span>Service charge</span><span style="color:var(--g);font-weight:600">₱0</span></div>
-        <div class="fee-row"><span>Delivery</span><span style="color:var(--t2);font-weight:600;font-size:11px">Varies by vendor</span></div>
+        <div class="fee-row" id="f-delivery-row"><span>Delivery</span><span id="f-delivery" style="color:var(--t2);font-weight:600;font-size:11px">Varies by vendor</span></div>
         <div class="fee-row"><span>Total</span><span id="f-tot">₱8</span></div>
       </div>
       
@@ -1904,6 +1904,22 @@ select option { color: var(--t1); background: var(--w); }
           style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:600;font-family:var(--ff)"
           onchange="saveVendorContact()">
         <button onclick="saveVendorContact()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
+      </div>
+
+      <!-- Delivery fee -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:6px">🚚 DELIVERY FEE</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.9);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="v-pickup-only" onchange="saveDeliveryFee()" style="cursor:pointer">
+            Pickup only
+          </label>
+          <input type="number" id="v-delivery-fee" placeholder="0" min="0" max="999" inputmode="numeric"
+            style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:600;font-family:var(--ff)"
+            onchange="saveDeliveryFee()">
+          <button onclick="saveDeliveryFee()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
+        </div>
+        <div id="v-delivery-note" style="font-size:10px;color:rgba(255,255,255,.5);margin-top:5px">Set ₱0 for free delivery. Tick "Pickup only" if you don't deliver.</div>
       </div>
 
       <!-- Payment accounts -->
@@ -2991,6 +3007,24 @@ function openVendor(vid){
   document.getElementById('vd-sub').textContent=v.sub;
   document.getElementById('vd-min').textContent=v.min;
   document.getElementById('vd-rating').textContent=v.rating;
+  // Delivery fee display
+  const vdDel = document.getElementById('vd-delivery');
+  if(vdDel){
+    const mode = v.deliveryMode || (typeof v.deliveryFee === 'number' ? (v.deliveryFee===0?'free':'paid') : '');
+    if(mode === 'pickup'){
+      vdDel.textContent = 'Pickup only';
+      vdDel.style.color = 'var(--t2)';
+    } else if(mode === 'paid' && typeof v.deliveryFee === 'number' && v.deliveryFee > 0){
+      vdDel.textContent = '₱' + v.deliveryFee;
+      vdDel.style.color = 'var(--t1)';
+    } else if(mode === 'free' || (typeof v.deliveryFee === 'number' && v.deliveryFee === 0)){
+      vdDel.textContent = 'Free';
+      vdDel.style.color = 'var(--g)';
+    } else {
+      vdDel.textContent = 'By vendor';
+      vdDel.style.color = 'var(--t2)';
+    }
+  }
   const menuEl=document.getElementById('vd-menu');
   menuEl.innerHTML='<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
     MENU[vid].filter(i=>i.avail).map(item=>`
@@ -3105,8 +3139,25 @@ function renderCartPage(){
   });
   il.innerHTML=html;
   const sub=cartTotal();
+  const df = getCartDeliveryFee();
+  const vid = Object.keys(cart)[0];
+  const v = vid ? VENDORS[vid] : null;
+  const dEl = document.getElementById('f-delivery');
+  if(dEl && v){
+    const mode = v.deliveryMode || (typeof v.deliveryFee === 'number' ? (v.deliveryFee===0?'free':'paid') : '');
+    if(mode === 'pickup'){
+      dEl.textContent = 'Pickup only';
+      dEl.style.color = 'var(--t2)'; dEl.style.fontSize=''; dEl.style.fontWeight='600';
+    } else if(df > 0){
+      dEl.textContent = '₱' + df;
+      dEl.style.color = ''; dEl.style.fontSize=''; dEl.style.fontWeight='';
+    } else {
+      dEl.textContent = 'Free';
+      dEl.style.color = 'var(--g)'; dEl.style.fontSize=''; dEl.style.fontWeight='700';
+    }
+  }
   document.getElementById('f-sub').textContent='₱'+sub;
-  document.getElementById('f-tot').textContent='₱'+sub;
+  document.getElementById('f-tot').textContent='₱'+(sub + df);
 }
 
 function changeQty(vid,name,d){
@@ -3131,7 +3182,9 @@ function placeOrder(){
   const phone=document.getElementById('cust-phone').value.trim();
   if(!name){showToast('⚠️ Enter your name');return;}
   if(!unit){showToast('⚠️ Enter your unit number');return;}
-  const total=cartTotal();
+  const sub=cartTotal();
+  const df=getCartDeliveryFee();
+  const total=sub+df;
   document.getElementById('s-unit').textContent='Unit '+unit;
   document.getElementById('s-total').textContent='₱'+total;
   pendingOid=genOrderId();
@@ -3143,7 +3196,7 @@ function placeOrder(){
     loadPaymentWallets(vid);
     goPage('p-cgcash');
   } else {
-    finalizeOrder(name,unit,phone,total,oid,'cash');
+    finalizeOrder(name,unit,phone,total,oid,'cash',null,sub,df);
   }
 }
 
@@ -3153,18 +3206,24 @@ function confirmGcash(){
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
   const phone=document.getElementById('cust-phone').value.trim();
-  const total=cartTotal();
+  const sub=cartTotal();
+  const df=getCartDeliveryFee();
+  const total=sub+df;
   const oid=pendingOid||genOrderId();
-  finalizeOrder(name,unit,phone,total,oid,'gcash',ref);
+  finalizeOrder(name,unit,phone,total,oid,'gcash',ref,sub,df);
 }
 
-async function finalizeOrder(name,unit,phone,total,oid,method,ref=''){
+async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deliveryFee){
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
+  // Backward-compatible defaults: if caller didn't pass subAmt/deliveryFee, derive them so
+  // existing logic that expected subtotal===total still behaves identically.
+  if(typeof subAmt !== 'number') subAmt = total;
+  if(typeof deliveryFee !== 'number') deliveryFee = 0;
   const order={
-    id:oid, name, unit, phone, total, items, method, ref,
+    id:oid, name, unit, phone, total, items, method, ref:ref||'',
     status:'new', timestamp:new Date(), vendorId:Object.keys(cart)[0],
-    subtotal:total, fee:0, updatedAt:Date.now()
+    subtotal:subAmt, deliveryFee:deliveryFee, fee:0, updatedAt:Date.now()
   };
   orders.push(order);
   knownOrderIds.add(order.id);
@@ -3556,6 +3615,35 @@ function saveVendorContact(){
   VENDORS[activeVendorId].contact=num;
   pushState();
   showToast('✅ Contact number saved!');
+}
+
+function saveDeliveryFee(){
+  if(!activeVendorId) return;
+  const v = VENDORS[activeVendorId]; if(!v) return;
+  const pickupOnly = el('v-pickup-only') && el('v-pickup-only').checked;
+  const raw = el('v-delivery-fee') ? el('v-delivery-fee').value.trim() : '';
+  if(pickupOnly){
+    v.deliveryMode = 'pickup';
+    v.deliveryFee = null;
+    if(el('v-delivery-fee')) el('v-delivery-fee').disabled = true;
+  } else {
+    const num = Math.max(0, Math.min(999, parseInt(raw||'0',10) || 0));
+    v.deliveryFee = num;
+    v.deliveryMode = num === 0 ? 'free' : 'paid';
+    if(el('v-delivery-fee')){ el('v-delivery-fee').disabled = false; el('v-delivery-fee').value = num; }
+  }
+  pushState();
+  // Refresh cart-page display in case customer is mid-checkout
+  if(typeof renderCartPage === 'function' && document.getElementById('p-ccart') && document.getElementById('p-ccart').classList.contains('on')) renderCartPage();
+  showToast('✅ Delivery fee saved!');
+}
+
+// Returns delivery fee for the cart's active vendor (0 if free, 0 if pickup-only)
+function getCartDeliveryFee(){
+  const vid = Object.keys(cart)[0]; if(!vid) return 0;
+  const v = VENDORS[vid]; if(!v) return 0;
+  if(v.deliveryMode === 'pickup') return 0;
+  return Math.max(0, parseInt(v.deliveryFee || 0, 10) || 0);
 }
 
 function loadCustomerVendorContact(oid){
@@ -4014,6 +4102,19 @@ function updateStoreStatusUI(){
   if(v.openTime && el('v-open-time')) el('v-open-time').value=v.openTime;
   if(v.closeTime && el('v-close-time')) el('v-close-time').value=v.closeTime;
   if(v.contact && el('v-contact-input')) el('v-contact-input').value=v.contact;
+  // Load saved delivery fee
+  if(el('v-pickup-only') && el('v-delivery-fee')){
+    const mode = v.deliveryMode || (typeof v.deliveryFee === 'number' ? (v.deliveryFee===0?'free':'paid') : '');
+    if(mode === 'pickup'){
+      el('v-pickup-only').checked = true;
+      el('v-delivery-fee').value = '';
+      el('v-delivery-fee').disabled = true;
+    } else {
+      el('v-pickup-only').checked = false;
+      el('v-delivery-fee').disabled = false;
+      el('v-delivery-fee').value = (typeof v.deliveryFee === 'number') ? v.deliveryFee : '';
+    }
+  }
   // Show hours note
   const note=el('v-hours-note');
   if(note){
