@@ -1873,6 +1873,7 @@ select option { color: var(--t1); background: var(--w); }
         </div>
         <input type="file" id="v-logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
         <button onclick="goCust()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛒 Shop</button>
+        <button onclick="testVendorPush()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🔔 Test Push</button>
         <button onclick="vendorLogout()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Log Out</button>
       </div>
     </div>
@@ -4004,6 +4005,28 @@ function removePaymentAccount(idx){
   showToast('Payment account removed');
 }
 
+// Test FCM push — manually trigger a notification to this vendor
+async function testVendorPush(){
+  if(!activeVendorId){ showToast('⚠️ Not logged in as vendor'); return; }
+  try{
+    showToast('📤 Sending test notification…');
+    const testOrder = {
+      id: 'TEST_'+Date.now(),
+      name: 'Test Order',
+      unit: 'Test Unit',
+      total: 123,
+      method: 'cash',
+      status: 'new'
+    };
+    // Manually call the notification handler as if an order came in
+    notifyVendorNewOrder(testOrder);
+    showToast('✅ Test notification sent (check browser + system notifications)');
+  }catch(e){
+    showToast('⚠️ Test failed: '+e.message);
+    console.error('testVendorPush error:', e);
+  }
+}
+
 function renderVendorPayments(){
   if(!activeVendorId) return;
   const list = el('v-payments-list'); if(!list) return;
@@ -4909,43 +4932,68 @@ function _fcmInit(){
 // Returns the device's FCM token (or null). Registers the SW used for push.
 async function fcmGetToken(){
   try{
-    if(!('serviceWorker' in navigator)){ try{showToast('⚠️ No service worker support');}catch(e){} return null; }
-    if(!('Notification' in window) || Notification.permission !== 'granted'){ try{showToast('⚠️ Notification permission: '+Notification.permission);}catch(e){} return null; }
-    if(!_fcmInit()){ try{showToast('⚠️ FCM SDK not loaded');}catch(e){} return null; }
-    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ try{showToast('⚠️ VAPID key missing');}catch(e){} return null; }
-    // Use a RELATIVE path so it works on GitHub Pages subpath deploys.
+    console.log('[FCM.getToken] Starting...');
+    if(!('serviceWorker' in navigator)){ console.log('[FCM] No SW support'); try{showToast('⚠️ No service worker support');}catch(e){} return null; }
+    console.log('[FCM.getToken] SW supported');
+    const perm = 'Notification' in window ? Notification.permission : 'N/A';
+    console.log('[FCM.getToken] Notification permission:', perm);
+    if(!('Notification' in window) || Notification.permission !== 'granted'){ try{showToast('⚠️ Notification permission: '+perm);}catch(e){} return null; }
+    console.log('[FCM.getToken] Permission granted, initializing FCM...');
+    if(!_fcmInit()){ console.log('[FCM] Init failed'); try{showToast('⚠️ FCM SDK not loaded');}catch(e){} return null; }
+    console.log('[FCM.getToken] FCM initialized');
+    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ console.log('[FCM] VAPID key invalid'); try{showToast('⚠️ VAPID key missing');}catch(e){} return null; }
+    console.log('[FCM.getToken] VAPID key valid, registering SW...');
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    console.log('[FCM.getToken] SW registered, scope:', reg.scope);
     try{showToast('✅ SW registered');}catch(e){}
+    console.log('[FCM.getToken] Calling _fcmMessaging.getToken()...');
     const token = await _fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
     });
+    console.log('[FCM.getToken] Token result:', token ? 'GOT ('+token.slice(0,30)+'...)' : 'NULL');
     _fcmToken = token || null;
     if(_fcmToken){ try{showToast('✅ Got FCM token');}catch(e){} }
     else { try{showToast('⚠️ Token came back empty');}catch(e){} }
     return _fcmToken;
-  }catch(e){ try{showToast('⚠️ FCM error: '+(e&&e.message||e));}catch(_){} console.warn('fcmGetToken failed:', e); return null; }
+  }catch(e){ 
+    console.error('[FCM.getToken] Error:', e, e.stack);
+    try{showToast('⚠️ FCM error: '+(e&&e.message||e));}catch(_){} 
+    return null; 
+  }
 }
 
 // Save a vendor's token (persists across logout — keyed by token so dupes overwrite)
 async function fcmSaveVendorToken(vendorId){
   try{
+    console.log('[FCM] Starting token save for vendor:', vendorId);
     showToast('📡 FCM: perm='+('Notification' in window ? Notification.permission : 'N/A'));
     if(!('Notification' in window) || Notification.permission !== 'granted'){
+      console.log('[FCM] Notification permission not granted, skipping token save');
       showToast('⚠️ FCM: notifications not granted — skipping token save');
       return;
     }
+    console.log('[FCM] Notification permission is granted, getting token...');
     showToast('📡 FCM: getting token…');
     const token = await fcmGetToken();
+    console.log('[FCM] Token result:', token ? 'GOT TOKEN ('+token.length+' chars)' : 'NULL/EMPTY');
     if(!token || !vendorId){
+      console.log('[FCM] Token save skipped: token='+token+', vendorId='+vendorId);
       showToast('⚠️ FCM: no token (vendor='+vendorId+') — check console');
       return;
     }
+    console.log('[FCM] Saving token to Firebase...');
     showToast('📡 FCM: saving token to Firebase…');
     const key = token.replace(/[^a-zA-Z0-9_-]/g,'').slice(-120);
-    await fbSet(ROOM_KEY+'/fcmTokens/vendors/'+vendorId+'/'+key, token);
+    const path = ROOM_KEY+'/fcmTokens/vendors/'+vendorId+'/'+key;
+    console.log('[FCM] Firebase path:', path);
+    await fbSet(path, token);
+    console.log('[FCM] ✅ Token saved successfully');
     showToast('✅ Push enabled for '+vendorId);
-  }catch(e){ showToast('⚠️ FCM save failed: '+(e&&e.message||e)); console.warn('fcmSaveVendorToken failed:', e); }
+  }catch(e){ 
+    console.error('[FCM] Save failed:', e);
+    showToast('⚠️ FCM save failed: '+(e&&e.message||e)); 
+  }
 }
 
 // Get the current customer token (used when placing an order)
@@ -6161,7 +6209,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 26; // ← bump this each release (and version.json)
+  const APP_VERSION = 27; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
