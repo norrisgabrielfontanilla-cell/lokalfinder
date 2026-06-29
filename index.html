@@ -6081,6 +6081,74 @@ setInterval(updateClock,15000);
   setInterval(tick, 3000);
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     AUTO-UPDATE CHECKER (fully self-contained, additive only).
+     Reads /version.json from the site. If its "v" is higher than
+     APP_VERSION below, shows a one-tap "Update available" banner that
+     force-reloads past the cache. If anything fails, it does nothing.
+     To ship an update: bump APP_VERSION here AND the number in version.json.
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  const APP_VERSION = 23; // ← bump this each release (and version.json)
+
+  function showUpdateBanner(){
+    if(document.getElementById('lf-update-banner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'lf-update-banner';
+    bar.style.cssText =
+      'position:fixed;left:0;right:0;top:0;z-index:2147483647;'+
+      'background:#1A6B4A;color:#fff;font-family:system-ui,-apple-system,sans-serif;'+
+      'padding:12px 16px;display:flex;align-items:center;justify-content:space-between;'+
+      'gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.25);'+
+      'font-size:14px;line-height:1.3';
+    const msg = document.createElement('span');
+    msg.textContent = '🎉 A new version of FINDER is available';
+    const btn = document.createElement('button');
+    btn.textContent = 'Update';
+    btn.style.cssText =
+      'background:#fff;color:#1A6B4A;border:none;border-radius:8px;'+
+      'padding:8px 18px;font-weight:700;font-size:14px;cursor:pointer;'+
+      'flex-shrink:0;font-family:inherit';
+    btn.onclick = async function(){
+      btn.textContent = 'Updating…';
+      try{
+        if('serviceWorker' in navigator){
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for(const r of regs){ try{ await r.update(); }catch(e){} }
+        }
+        if(window.caches && caches.keys){
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k=>caches.delete(k)));
+        }
+      }catch(e){}
+      // Cache-busting reload
+      const u = new URL(window.location.href);
+      u.searchParams.set('_v', Date.now());
+      window.location.replace(u.toString());
+    };
+    bar.appendChild(msg);
+    bar.appendChild(btn);
+    document.body.appendChild(bar);
+  }
+
+  async function checkVersion(){
+    try{
+      const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
+      if(!r.ok) return;
+      const data = await r.json();
+      if(data && typeof data.v === 'number' && data.v > APP_VERSION){
+        showUpdateBanner();
+      }
+    }catch(e){ /* offline or missing file — do nothing */ }
+  }
+
+  // Check shortly after load, then every 5 minutes while the app stays open.
+  setTimeout(checkVersion, 4000);
+  setInterval(checkVersion, 5 * 60 * 1000);
+})();
+</script>
 </body>
 </html>
 
