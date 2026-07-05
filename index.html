@@ -1047,6 +1047,29 @@ select option { color: var(--t1); background: var(--w); }
   .bnav .bni.on svg,#p-chome span[style*="#6EE7A8"],
   #p-chome div[style*="backdrop-filter:blur(8px)"]{animation:none !important}
 }
+
+/* ═══ v28 additive: lively hero (floating food + community pulse) ═══ */
+.lf-float-layer{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.lf-float{
+  position:absolute;bottom:-34px;font-size:21px;opacity:0;
+  animation-name:lfFloatUp;animation-iteration-count:infinite;animation-timing-function:linear;
+  filter:saturate(1.1);
+}
+@keyframes lfFloatUp{
+  0%{transform:translateY(0) rotate(-8deg) scale(.85);opacity:0}
+  8%{opacity:.16}
+  50%{opacity:.13;transform:translateY(-90px) rotate(7deg) scale(1)}
+  92%{opacity:.05}
+  100%{transform:translateY(-190px) rotate(-6deg) scale(1.08);opacity:0}
+}
+@keyframes lfPulseDot{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.45);opacity:.55}
+}
+@media(prefers-reduced-motion:reduce){
+  .lf-float{animation:none !important;display:none}
+  #lf-pulse span{animation:none !important}
+}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1573,6 +1596,15 @@ select option { color: var(--t1); background: var(--w); }
   </div>
   <div class="hero-anim-bg" style="padding:14px 16px 20px;flex-shrink:0;position:relative;overflow:hidden">
     <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(45,155,111,.3) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
+    <!-- Floating food emojis (additive v28 — decorative, no interaction) -->
+    <div class="lf-float-layer" aria-hidden="true">
+      <span class="lf-float" style="left:6%;animation-delay:0s;animation-duration:11s">🍜</span>
+      <span class="lf-float" style="left:22%;animation-delay:2.5s;animation-duration:13s">🍢</span>
+      <span class="lf-float" style="left:41%;animation-delay:5s;animation-duration:10s">☕</span>
+      <span class="lf-float" style="left:60%;animation-delay:1.2s;animation-duration:14s">🍚</span>
+      <span class="lf-float" style="left:76%;animation-delay:3.8s;animation-duration:12s">🥟</span>
+      <span class="lf-float" style="left:89%;animation-delay:6.4s;animation-duration:11.5s">🍰</span>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1">
       <div>
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:7px">GRASS Residences <span id="vendor-live-badge" class="hero-live-badge">● 0 live</span></div>
@@ -1595,6 +1627,11 @@ select option { color: var(--t1); background: var(--w); }
         <span id="ff-search-clear" style="display:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:16px;line-height:1" onclick="ffClearSearch()">✕</span>
       </div>
       <div id="search-suggestions" style="display:none;font-size:11px;color:rgba(255,255,255,.6);padding:8px 2px 0">Popular: <span id="suggestion-text" style="color:rgba(110,231,168,.9);font-weight:700">Pares</span></div>
+      <!-- Community pulse ticker (additive v28) -->
+      <div id="lf-pulse" style="margin-top:11px;display:flex;align-items:center;gap:7px;overflow:hidden">
+        <span style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#6EE7A8;box-shadow:0 0 8px #6EE7A8;animation:lfPulseDot 1.6s ease-in-out infinite"></span>
+        <div id="lf-pulse-txt" style="font-size:11.5px;color:rgba(255,255,255,.75);font-weight:600;white-space:nowrap;transition:opacity .45s ease">👋 Welcome, neighbor! Checking what's cooking…</div>
+      </div>
     </div>
   </div>
   <div class="scrl">
@@ -1611,7 +1648,7 @@ select option { color: var(--t1); background: var(--w); }
     <div id="ff-home-content">
     <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
-    <div class="sec" style="padding-top:16px"><span class="sec-t">Vendors Open Now</span><span class="sec-a">See all</span></div>
+    <div class="sec" style="padding-top:16px"><span class="sec-t">🏪 Your Neighborhood Kitchens</span><span class="sec-a">See all</span></div>
     <div class="hscrl" id="vendor-cards"></div>
     <div class="dvdr"></div>
     <div style="padding:16px 16px 4px">
@@ -1656,6 +1693,14 @@ select option { color: var(--t1); background: var(--w); }
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Min. order</div><div id="vd-min" style="font-size:13px;font-weight:700">₱45</div></div>
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Delivery</div><div id="vd-delivery" style="font-size:13px;font-weight:700;color:var(--t2)">By vendor</div></div>
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Rating</div><div id="vd-rating" style="font-size:13px;font-weight:700">⭐ 4.9</div></div>
+    </div>
+    <!-- Store info from vendor (additive v28 — hidden unless vendor wrote one) -->
+    <div id="vd-desc-card" style="display:none;margin-top:10px;background:linear-gradient(135deg,var(--gl),var(--s2));border:1px solid var(--bd);border-radius:10px;padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:13px">📌</span>
+        <span style="font-size:11px;font-weight:800;color:var(--gd);letter-spacing:.4px;text-transform:uppercase">Store Info</span>
+      </div>
+      <div id="vd-desc-text" style="font-size:12.5px;color:var(--t2);line-height:1.5;white-space:pre-wrap;word-break:break-word"></div>
     </div>
   </div>
   <div class="scrl" id="vd-menu"></div>
@@ -1924,6 +1969,18 @@ select option { color: var(--t1); background: var(--w); }
           <button onclick="saveDeliveryFee()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
         </div>
         <div id="v-delivery-note" style="font-size:10px;color:rgba(255,255,255,.5);margin-top:5px">Set ₱0 for free delivery. Tick "Pickup only" if you don't deliver.</div>
+      </div>
+
+      <!-- Store info / description (additive v28) -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:6px">📝 STORE INFO <span style="font-weight:600;text-transform:none;letter-spacing:0;color:rgba(255,255,255,.4)">— shown to customers</span></div>
+        <textarea id="v-store-desc" maxlength="300" rows="3" placeholder="e.g. GCash only 💙 · Delivery ₱20 within Tower 1-2, ₱30 for Tower 3-5 · Pre-order before 10AM for lunch"
+          style="width:100%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;font-weight:500;font-family:var(--ff);resize:none;line-height:1.45"
+          oninput="if(el('v-desc-count'))el('v-desc-count').textContent=(300-this.value.length)+' left'"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <div id="v-desc-count" style="font-size:10px;color:rgba(255,255,255,.45)">300 left</div>
+          <button onclick="saveStoreDesc()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save Info</button>
+        </div>
       </div>
 
       <!-- Payment accounts -->
@@ -3029,6 +3086,16 @@ function openVendor(vid){
       vdDel.style.color = 'var(--t2)';
     }
   }
+  // Store info card (additive v28 — shows only if vendor wrote a description)
+  try{
+    const descCard = document.getElementById('vd-desc-card');
+    const descText = document.getElementById('vd-desc-text');
+    if(descCard && descText){
+      const d = (v.desc||'').trim();
+      if(d){ descText.textContent = d; descCard.style.display = 'block'; }
+      else { descCard.style.display = 'none'; descText.textContent = ''; }
+    }
+  }catch(e){}
   const menuEl=document.getElementById('vd-menu');
   menuEl.innerHTML='<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
     MENU[vid].filter(i=>i.avail).map(item=>`
@@ -3641,6 +3708,16 @@ function saveVendorContact(){
   showToast('✅ Contact number saved!');
 }
 
+// Store description — vendor-written details customers see (payment rules, delivery rates, etc.)
+function saveStoreDesc(){
+  if(!activeVendorId) return;
+  const ta = el('v-store-desc'); if(!ta) return;
+  const txt = ta.value.trim().slice(0,300);
+  VENDORS[activeVendorId].desc = txt;
+  pushState();
+  showToast(txt ? '✅ Store info saved! Customers can now see it.' : '✅ Store info cleared');
+}
+
 function saveDeliveryFee(){
   if(!activeVendorId) return;
   const v = VENDORS[activeVendorId]; if(!v) return;
@@ -4173,6 +4250,15 @@ function updateStoreStatusUI(){
   // Update the vendor sub text with hours
   const sub=el('v-dsub');
   if(sub&&v.openTime&&v.closeTime) sub.textContent=v.sub.split('·').slice(0,2).join('·')+' · '+fmtTime(v.openTime)+'–'+fmtTime(v.closeTime);
+  // Populate store description editor (additive v28 — only fills if empty/not focused so typing is never clobbered)
+  try{
+    const ta = el('v-store-desc');
+    if(ta && document.activeElement !== ta){
+      ta.value = v.desc || '';
+      const cnt = el('v-desc-count');
+      if(cnt) cnt.textContent = (300 - ta.value.length) + ' left';
+    }
+  }catch(e){}
 }
 
 function updateVendorDash(vid){
@@ -6007,6 +6093,78 @@ setInterval(updateClock,15000);
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
+     COMMUNITY PULSE TICKER  (v28 additive — read-only, self-contained)
+     Reads VENDORS/MENU globals to rotate lively community messages
+     in the browse hero. Removing this whole <script> restores the
+     app exactly. Never writes to any shared state.
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  var idx = 0;
+  function counts(){
+    var vOpen = 0, dishes = 0, names = [];
+    try{
+      if(typeof VENDORS === 'object' && VENDORS){
+        Object.keys(VENDORS).forEach(function(k){
+          var v = VENDORS[k];
+          if(v && v.active){ vOpen++; names.push((v.emoji||'🍽️')+' '+(v.name||'').split(' ')[0]); }
+        });
+      }
+      if(typeof MENU === 'object' && MENU){
+        Object.keys(MENU).forEach(function(k){
+          var v = (typeof VENDORS==='object' && VENDORS) ? VENDORS[k] : null;
+          if(!v || !v.active) return;
+          (MENU[k]||[]).forEach(function(i){ if(i && i.avail) dishes++; });
+        });
+      }
+    }catch(e){}
+    return { vOpen:vOpen, dishes:dishes, names:names };
+  }
+  function greeting(){
+    var h = new Date().getHours();
+    if(h >= 5 && h < 11)  return '☀️ Good morning, neighbor! Almusal time?';
+    if(h >= 11 && h < 14) return '🍛 Lunch time sa GRASS! Gutom ka na ba?';
+    if(h >= 14 && h < 18) return '🍢 Merienda break? Your neighbors got you.';
+    if(h >= 18 && h < 22) return '🌙 Dinner plans? Skip the commute — order in-building.';
+    return '🌃 Late night cravings? Check who\'s still open.';
+  }
+  function messages(){
+    var c = counts();
+    var msgs = [ greeting() ];
+    if(c.vOpen > 0)  msgs.push('🏪 ' + c.vOpen + ' neighbor' + (c.vOpen>1?'s are':' is') + ' cooking right now');
+    if(c.dishes > 0) msgs.push('🔥 ' + c.dishes + ' dish' + (c.dishes>1?'es':'') + ' available today — sarap!');
+    if(c.names.length > 0) msgs.push('👨‍🍳 Open now: ' + c.names.slice(0,3).join(' · '));
+    msgs.push('🤝 100% neighbor-made · Same building · No commute');
+    msgs.push('💚 Every order supports a GRASS family');
+    return msgs;
+  }
+  function tick(){
+    try{
+      var elp = document.getElementById('lf-pulse-txt');
+      if(!elp) return;
+      // Only animate while the browse page is actually visible
+      var page = document.getElementById('p-chome');
+      if(!page || !page.classList.contains('on')) return;
+      var msgs = messages();
+      idx = (idx + 1) % msgs.length;
+      var next = msgs[idx];
+      elp.style.opacity = '0';
+      setTimeout(function(){ elp.textContent = next; elp.style.opacity = '1'; }, 450);
+    }catch(e){}
+  }
+  // First fill shortly after load, then rotate
+  setTimeout(function(){
+    try{
+      var elp = document.getElementById('lf-pulse-txt');
+      if(elp) elp.textContent = greeting();
+    }catch(e){}
+  }, 1200);
+  setInterval(tick, 4200);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
      LIVE STATUS BANNER  (Option 2 — append-only, non-invasive)
      Reads existing globals (orders, myOrderIds, activeVendorId,
      VENDORS) and pops a persistent banner on status changes.
@@ -6209,7 +6367,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 27; // ← bump this each release (and version.json)
+  const APP_VERSION = 28; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
