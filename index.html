@@ -3299,7 +3299,8 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
     id:oid, name, unit, phone, total, items, method, ref:ref||'',
     status:'new', timestamp:new Date(), vendorId:Object.keys(cart)[0],
     subtotal:subAmt, deliveryFee:deliveryFee, fee:0, updatedAt:Date.now(),
-    customerFcmToken: _custToken || ''
+    customerFcmToken: _custToken || '',
+    onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
   };
   orders.push(order);
   knownOrderIds.add(order.id);
@@ -6367,7 +6368,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 28; // ← bump this each release (and version.json)
+  const APP_VERSION = 29; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6423,6 +6424,124 @@ setInterval(updateClock,15000);
   // Check shortly after load, then every 5 minutes while the app stays open.
   setTimeout(checkVersion, 4000);
   setInterval(checkVersion, 5 * 60 * 1000);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ONESIGNAL PUSH  (v29 additive — iOS + Android push)
+     Self-contained. If ONESIGNAL_APP_ID is not set, this entire
+     module silently does nothing and the app behaves exactly as
+     before (FCM keeps working as-is). Removing this <script>
+     restores the app exactly.
+
+     SETUP (one time):
+     1. onesignal.com → New App → Web → Site URL = your GitHub
+        Pages URL (https://YOURNAME.github.io/lokalfinder)
+     2. Paste the App ID below.
+     3. Upload OneSignalSDKWorker.js to the repo root.
+═══════════════════════════════════════════════════════════ -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+(function(){
+  'use strict';
+  // ▼▼▼ PASTE YOUR ONESIGNAL APP ID BETWEEN THE QUOTES ▼▼▼
+  var ONESIGNAL_APP_ID = "28b623cf-51df-4020-9a74-e40017f3c5bd";
+  // ▲▲▲ e.g. "8a2b3c4d-1234-5678-9abc-def012345678" ▲▲▲
+
+  if(!ONESIGNAL_APP_ID){ console.log('[OneSignal] No App ID set — module dormant, FCM continues as before.'); return; }
+
+  window._osSubId = window._osSubId || '';
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+
+  OneSignalDeferred.push(async function(OneSignal){
+    try{
+      await OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        // Own scope so it coexists with firebase-messaging-sw.js (which owns "./")
+        serviceWorkerPath: "OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "./push/" },
+        allowLocalhostAsSecureOrigin: true
+      });
+      console.log('[OneSignal] Initialized');
+
+      // Track this device's subscription id so orders can carry it (customer pushes)
+      function captureSubId(){
+        try{
+          var id = OneSignal.User.PushSubscription.id;
+          if(id){ window._osSubId = id; console.log('[OneSignal] Subscription id:', id); }
+        }catch(e){}
+      }
+      captureSubId();
+      try{ OneSignal.User.PushSubscription.addEventListener('change', captureSubId); }catch(e){}
+
+      // If a vendor session is already active (restored from localStorage), bind it
+      try{
+        var savedVid = localStorage.getItem('lf-vendorId');
+        if(savedVid){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
+      }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
+    }catch(e){ console.warn('[OneSignal] init failed:', e); }
+  });
+
+  // ── Wrap vendorLogin: after a successful login, request permission + bind vendor id.
+  //    Wrapping (not editing) keeps the original function byte-identical.
+  var _wrapTries = 0;
+  var _wrapTimer = setInterval(function(){
+    _wrapTries++;
+    if(typeof window.vendorLogin === 'function'){
+      clearInterval(_wrapTimer);
+      var _orig = window.vendorLogin;
+      window.vendorLogin = async function(){
+        var before = (typeof activeVendorId !== 'undefined') ? activeVendorId : null;
+        await _orig.apply(this, arguments);
+        try{
+          var vid = (typeof activeVendorId !== 'undefined') ? activeVendorId : null;
+          if(vid && vid !== before){
+            OneSignalDeferred.push(async function(OneSignal){
+              try{
+                await OneSignal.Notifications.requestPermission();
+                await OneSignal.login(vid);
+                console.log('[OneSignal] Vendor bound:', vid);
+                try{ showToast('✅ iOS/Android push linked for '+vid); }catch(e){}
+              }catch(e){ console.warn('[OneSignal] vendor bind failed:', e); }
+            });
+          }
+        }catch(e){}
+      };
+      console.log('[OneSignal] vendorLogin wrapped');
+    } else if(_wrapTries > 50){ clearInterval(_wrapTimer); }
+  }, 200);
+
+  // ── Wrap vendorLogout: unbind the vendor identity on this device.
+  var _wrapTries2 = 0;
+  var _wrapTimer2 = setInterval(function(){
+    _wrapTries2++;
+    if(typeof window.vendorLogout === 'function'){
+      clearInterval(_wrapTimer2);
+      var _origOut = window.vendorLogout;
+      window.vendorLogout = function(){
+        _origOut.apply(this, arguments);
+        OneSignalDeferred.push(async function(OneSignal){
+          try{ await OneSignal.logout(); console.log('[OneSignal] Vendor unbound'); }catch(e){}
+        });
+      };
+      console.log('[OneSignal] vendorLogout wrapped');
+    } else if(_wrapTries2 > 50){ clearInterval(_wrapTimer2); }
+  }, 200);
+
+  // ── Customers: best-effort permission ask on the Place Order tap
+  //    (gesture context preserved). Buttons only — no false positives.
+  document.addEventListener('click', function(ev){
+    try{
+      var b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+      if(b && b.textContent && b.textContent.indexOf('Place Order') !== -1){
+        OneSignalDeferred.push(async function(OneSignal){
+          try{
+            if(!OneSignal.Notifications.permission){ await OneSignal.Notifications.requestPermission(); }
+          }catch(e){}
+        });
+      }
+    }catch(e){}
+  }, true);
 })();
 </script>
 </body>
