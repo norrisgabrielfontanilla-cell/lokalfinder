@@ -1902,8 +1902,11 @@ select option { color: var(--t1); background: var(--w); }
 ══════════════════════════════════════════ -->
 <div class="page" id="p-vdash">
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
-  <!-- Vendor header -->
-  <div style="background:var(--g);padding:15px 18px 18px;flex-shrink:0">
+  <!-- Vendor header — v35: allowed to shrink and scroll internally so a long
+       store description / many payment accounts can never push the bottom nav
+       off-screen on smaller phones. On normal content it looks identical to
+       before; it only scrolls when it would otherwise overflow. Nav stays pinned. -->
+  <div style="background:var(--g);padding:15px 18px 18px;flex:0 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px">
       <div>
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">Vendor Portal</div>
@@ -6357,7 +6360,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 34; // ← bump this each release (and version.json)
+  const APP_VERSION = 35; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
