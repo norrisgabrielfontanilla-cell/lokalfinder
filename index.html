@@ -6357,7 +6357,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 33; // ← bump this each release (and version.json)
+  const APP_VERSION = 34; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6429,7 +6429,24 @@ setInterval(updateClock,15000);
      2. Paste the App ID below.
      3. Upload OneSignalSDKWorker.js to the repo root.
 ═══════════════════════════════════════════════════════════ -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<!-- OneSignal SDK loaded programmatically below so we can retry on flaky mobile networks -->
+<script>
+(function(){
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  var SDK_URL = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+  function load(attempt){
+    var s = document.createElement('script');
+    s.src = SDK_URL + (attempt > 1 ? '?retry=' + attempt : '');
+    s.async = true;
+    s.onerror = function(){
+      console.warn('[OneSignal] SDK load failed (attempt ' + attempt + ')');
+      if(attempt < 2){ setTimeout(function(){ load(attempt + 1); }, 3000); }
+    };
+    document.head.appendChild(s);
+  }
+  load(1);
+})();
+</script>
 <script>
 (function(){
   'use strict';
@@ -6540,8 +6557,15 @@ setInterval(updateClock,15000);
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
     }catch(e){
       console.warn('[OneSignal] init failed:', e);
-      _paintHealth('#EF4444', 'Push engine failed to start: ' + (e && e.message || e));
-      try{ showToast('⚠️ Notification engine failed to load'); }catch(_){}
+      // Only surface this on the vendor dashboard — the only place push actually matters.
+      // Silent for customers browsing on the landing page (no scary toast on first impression).
+      try{
+        var vdash = document.getElementById('p-vdash');
+        if(vdash && vdash.classList.contains('on')){
+          _paintHealth('#EF4444', 'Push engine failed to start — check internet and tap Fix.');
+          try{ showToast('⚠️ Notification engine failed to load'); }catch(_){}
+        }
+      }catch(_){}
     }
   });
 
