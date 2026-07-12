@@ -1922,6 +1922,12 @@ select option { color: var(--t1); background: var(--w); }
         <button onclick="vendorLogout()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Log Out</button>
       </div>
     </div>
+    <!-- Push health (v31 additive — live diagnosis of the notification pipeline) -->
+    <div id="v-push-health" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.18);border-radius:8px;padding:7px 10px;margin-bottom:10px">
+      <span id="v-push-dot" style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#9CA3AF"></span>
+      <span id="v-push-txt" style="flex:1;font-size:10.5px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.3">Checking notifications…</span>
+      <button onclick="osRepairPush()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛠 Fix</button>
+    </div>
     <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
@@ -5019,34 +5025,20 @@ function _fcmInit(){
 // Returns the device's FCM token (or null). Registers the SW used for push.
 async function fcmGetToken(){
   try{
-    console.log('[FCM.getToken] Starting...');
-    if(!('serviceWorker' in navigator)){ console.log('[FCM] No SW support'); try{showToast('⚠️ No service worker support');}catch(e){} return null; }
-    console.log('[FCM.getToken] SW supported');
-    const perm = 'Notification' in window ? Notification.permission : 'N/A';
-    console.log('[FCM.getToken] Notification permission:', perm);
-    if(!('Notification' in window) || Notification.permission !== 'granted'){ try{showToast('⚠️ Notification permission: '+perm);}catch(e){} return null; }
-    console.log('[FCM.getToken] Permission granted, initializing FCM...');
-    if(!_fcmInit()){ console.log('[FCM] Init failed'); try{showToast('⚠️ FCM SDK not loaded');}catch(e){} return null; }
-    console.log('[FCM.getToken] FCM initialized');
-    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ console.log('[FCM] VAPID key invalid'); try{showToast('⚠️ VAPID key missing');}catch(e){} return null; }
-    console.log('[FCM.getToken] VAPID key valid, registering SW...');
+    if(!('serviceWorker' in navigator)) return null;
+    if(!('Notification' in window) || Notification.permission !== 'granted') return null;
+    if(!_fcmInit()) return null;
+    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0) return null;
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-    console.log('[FCM.getToken] SW registered, scope:', reg.scope);
-    try{showToast('✅ SW registered');}catch(e){}
-    console.log('[FCM.getToken] Calling _fcmMessaging.getToken()...');
     const token = await _fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
     });
-    console.log('[FCM.getToken] Token result:', token ? 'GOT ('+token.slice(0,30)+'...)' : 'NULL');
     _fcmToken = token || null;
-    if(_fcmToken){ try{showToast('✅ Got FCM token');}catch(e){} }
-    else { try{showToast('⚠️ Token came back empty');}catch(e){} }
     return _fcmToken;
-  }catch(e){ 
-    console.error('[FCM.getToken] Error:', e, e.stack);
-    try{showToast('⚠️ FCM error: '+(e&&e.message||e));}catch(_){} 
-    return null; 
+  }catch(e){
+    console.error('[FCM.getToken] Error:', e);
+    return null;
   }
 }
 
@@ -5108,37 +5100,34 @@ function notifyVendorNewOrder(o){
   playPing();
   // In-app banner
   updateVendorDash(activeVendorId);
+  // v30: OneSignal delivers the system notification when the app is backgrounded
+  // or closed. Firing our own here too would double-notify the vendor.
+  if(document.hidden) return;
   // Browser notification (works when app is open or in background on Android)
   const iconUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A6B4A'/%3E%3Ctext y='68' x='50' font-size='55' text-anchor='middle'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E";
-  if(notifGranted && 'serviceWorker' in navigator){
-    navigator.serviceWorker.ready.then(reg=>{
-      reg.showNotification('🔔 New Order — LokalFinder',{
-        body:`${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`,
-        icon: iconUrl,
-        tag:o.id,
-        requireInteraction:true,
-        data:{ orderId:o.id }
-      });
-    }).catch(()=>{
-      if(notifGranted) new Notification('🔔 New Order — LokalFinder',{
-        body:`${o.name} · Unit ${o.unit} · ₱${o.total}`,
-        tag:o.id
-      });
-    });
-  } else if(notifGranted){
-    new Notification('🔔 New Order — LokalFinder',{
-      body:`${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`,
-      tag:o.id,
-      requireInteraction:true
-    });
+  // v30: fire the alert directly. Don't await serviceWorker.ready — after the
+  // firebase worker is unregistered, that promise can hang until OneSignal's
+  // worker claims the page, which would silently drop the vendor's alert.
+  if(notifGranted){
+    const body = `${o.name} · Unit ${o.unit} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`;
+    try{
+      new Notification('🔔 New Order — LokalFinder',{ body, icon: iconUrl, tag:o.id, requireInteraction:true });
+    }catch(e){
+      // Some browsers require showNotification via a registration instead.
+      try{
+        navigator.serviceWorker.getRegistration().then(reg=>{
+          if(reg) reg.showNotification('🔔 New Order — LokalFinder',{ body, icon: iconUrl, tag:o.id, requireInteraction:true, data:{orderId:o.id} });
+        }).catch(()=>{});
+      }catch(_){}
+    }
   }
 }
 
 // Register service worker for background notifications — runs on every boot
+// PROVEN CONFIG (v29): this exact setup delivered a real push to a closed iPhone.
 async function registerServiceWorker(){
   try{
     if(!('serviceWorker' in navigator)) return;
-    // Register the FCM service worker at boot so it's ready before vendor login
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
     console.log('SW registered, scope:', reg.scope);
   }catch(e){ console.warn('SW registration failed:', e); }
@@ -6368,7 +6357,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 29; // ← bump this each release (and version.json)
+  const APP_VERSION = 33; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6448,21 +6437,91 @@ setInterval(updateClock,15000);
   var ONESIGNAL_APP_ID = "28b623cf-51df-4020-9a74-e40017f3c5bd";
   // ▲▲▲ e.g. "8a2b3c4d-1234-5678-9abc-def012345678" ▲▲▲
 
-  if(!ONESIGNAL_APP_ID){ console.log('[OneSignal] No App ID set — module dormant, FCM continues as before.'); return; }
+  // ── Push health UI (always defined so the Fix button never throws) ──
+  function _paintHealth(color, text){
+    try{
+      var d = document.getElementById('v-push-dot'), t = document.getElementById('v-push-txt');
+      if(d) d.style.background = color;
+      if(t) t.textContent = text;
+    }catch(e){}
+  }
+  window.osRepairPush = function(){ _paintHealth('#F59E0B', 'Push module not loaded — check internet and reopen the app.'); try{ showToast('⚠️ Notification module not loaded'); }catch(e){} };
+
+  if(!ONESIGNAL_APP_ID){ console.log('[OneSignal] No App ID set — module dormant, FCM continues as before.'); _paintHealth('#9CA3AF','Push not configured.'); return; }
 
   window._osSubId = window._osSubId || '';
   window.OneSignalDeferred = window.OneSignalDeferred || [];
+  var _osReady = false;
+
+  // Live diagnosis of the full pipeline: permission → subscription → vendor binding.
+  function _osUpdateHealth(OneSignal){
+    try{
+      if(!document.getElementById('v-push-health')) return;
+      var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+      if(perm === 'denied'){
+        _paintHealth('#EF4444', 'Notifications BLOCKED on this device. iPhone: remove app from Home Screen, re-add it, then tap Fix. Android: allow in site settings.');
+        return;
+      }
+      if(perm !== 'granted'){
+        _paintHealth('#F59E0B', 'Notifications not enabled yet — tap Fix and Allow.');
+        return;
+      }
+      var sub = OneSignal.User.PushSubscription;
+      var id = sub && sub.id;
+      var opted = sub && sub.optedIn;
+      if(!id){
+        _paintHealth('#F59E0B', 'Permission OK but device not registered — tap Fix.');
+        return;
+      }
+      if(opted === false){
+        _paintHealth('#F59E0B', 'Device registered but opted out — tap Fix to re-enable.');
+        return;
+      }
+      window._osSubId = id;
+      var vid = '';
+      try{ vid = localStorage.getItem('lf-vendorId') || ''; }catch(e){}
+      _paintHealth('#34D399', 'Notifications ACTIVE' + (vid ? ' for ' + vid : '') + ' · id …' + String(id).slice(-6) + ' · Reminder: turn OFF Do Not Disturb to hear alerts.');
+    }catch(e){ console.warn('[OneSignal] health check failed:', e); }
+  }
+
+  // Full repair sequence — safe to tap repeatedly.
+  window.osRepairPush = function(){
+    _paintHealth('#60A5FA', 'Repairing…');
+    OneSignalDeferred.push(async function(OneSignal){
+      try{
+        if(!_osReady){ _paintHealth('#EF4444','Push engine failed to load — check internet and reopen the app.'); return; }
+        // 1. Permission (no-op if already granted; iOS shows the prompt at most once)
+        try{ await OneSignal.Notifications.requestPermission(); }catch(e){}
+        // 2. Re-opt-in the subscription (revives stale/opted-out registrations)
+        try{ await OneSignal.User.PushSubscription.optIn(); }catch(e){ console.warn('[OneSignal] optIn:', e); }
+        // 3. Re-bind vendor identity so the Cloud Function can target this device
+        try{
+          var vid = localStorage.getItem('lf-vendorId');
+          if(vid){ await OneSignal.login(vid); }
+        }catch(e){ console.warn('[OneSignal] re-login:', e); }
+        setTimeout(function(){ OneSignalDeferred.push(_osUpdateHealth); }, 800);
+        try{ showToast('🔔 Push repair done — check status line'); }catch(e){}
+      }catch(e){
+        _paintHealth('#EF4444', 'Repair failed: ' + (e && e.message || e));
+      }
+    });
+  };
 
   OneSignalDeferred.push(async function(OneSignal){
     try{
       await OneSignal.init({
         appId: ONESIGNAL_APP_ID,
-        // Own scope so it coexists with firebase-messaging-sw.js (which owns "./")
+        // PROVEN CONFIG: this exact scope delivered a real push to a closed
+        // iPhone (2026-07-09 11:23). Do not change without device evidence.
         serviceWorkerPath: "OneSignalSDKWorker.js",
         serviceWorkerParam: { scope: "./push/" },
         allowLocalhostAsSecureOrigin: true
       });
+      _osReady = true;
       console.log('[OneSignal] Initialized');
+      _osUpdateHealth(OneSignal);
+      // Keep the vendor-dashboard health line fresh (cheap; skips when not visible)
+      setInterval(function(){ OneSignalDeferred.push(_osUpdateHealth); }, 5000);
 
       // Track this device's subscription id so orders can carry it (customer pushes)
       function captureSubId(){
@@ -6479,7 +6538,11 @@ setInterval(updateClock,15000);
         var savedVid = localStorage.getItem('lf-vendorId');
         if(savedVid){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
-    }catch(e){ console.warn('[OneSignal] init failed:', e); }
+    }catch(e){
+      console.warn('[OneSignal] init failed:', e);
+      _paintHealth('#EF4444', 'Push engine failed to start: ' + (e && e.message || e));
+      try{ showToast('⚠️ Notification engine failed to load'); }catch(_){}
+    }
   });
 
   // ── Wrap vendorLogin: after a successful login, request permission + bind vendor id.
@@ -6499,9 +6562,10 @@ setInterval(updateClock,15000);
             OneSignalDeferred.push(async function(OneSignal){
               try{
                 await OneSignal.Notifications.requestPermission();
+                try{ await OneSignal.User.PushSubscription.optIn(); }catch(e){}
                 await OneSignal.login(vid);
                 console.log('[OneSignal] Vendor bound:', vid);
-                try{ showToast('✅ iOS/Android push linked for '+vid); }catch(e){}
+                _osUpdateHealth(OneSignal);
               }catch(e){ console.warn('[OneSignal] vendor bind failed:', e); }
             });
           }
@@ -6542,6 +6606,110 @@ setInterval(updateClock,15000);
       }
     }catch(e){}
   }, true);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     IN-APP BROWSER ESCAPE  (v32 additive — self-contained)
+     Vendors open the shared link inside Messenger/FB/Instagram's
+     built-in browser, where push never works, Add-to-Home-Screen
+     doesn't exist, and taps/scroll are unreliable. This detects
+     those WebViews and walks the person out to a real browser.
+     Removing this <script> restores the app exactly.
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  var ua = navigator.userAgent || '';
+  var inApp =
+    /FBAN|FBAV|FB_IAB|FBIOS|MessengerForiOS|MessengerLiteForiOS/i.test(ua) ||
+    /Instagram|Line\/|Twitter|BytedanceWebview|musical_ly|TikTok/i.test(ua);
+  if(!inApp) return;
+  if(sessionStorage.getItem('lf-iab-dismissed') === '1') return;
+
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var appUrl = location.href.split('#')[0];
+
+  var ov = document.createElement('div');
+  ov.id = 'lf-iab-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:linear-gradient(170deg,#0D2B1A,#1A6B4A);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;text-align:center;font-family:inherit';
+
+  var chromeIntent = 'intent://' + location.host + location.pathname + location.search + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(appUrl) + ';end';
+
+  ov.innerHTML =
+    '<div style="font-size:44px;margin-bottom:14px">🌐</div>' +
+    '<div style="font-size:19px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3">Buksan sa totoong browser</div>' +
+    '<div style="font-size:13.5px;color:rgba(255,255,255,.85);line-height:1.55;max-width:300px;margin-bottom:20px">You are inside the <b>Messenger mini browser</b>. Orders, notifications, and buttons do not work properly here.</div>' +
+    (isAndroid
+      ? '<a href="' + chromeIntent + '" style="display:block;width:100%;max-width:280px;background:#fff;color:#0D2B1A;font-weight:800;font-size:15px;padding:14px;border-radius:12px;text-decoration:none;margin-bottom:10px">🚀 Open in Chrome</a>'
+      : '<div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;max-width:300px;margin-bottom:10px;text-align:left"><div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:6px">Sa iPhone:</div><div style="font-size:13px;color:rgba(255,255,255,.9);line-height:1.6">1. Tap the <b>⋯</b> or <b>share</b> icon<br>2. Choose <b>"Open in Safari"</b><br>3. Then <b>Add to Home Screen</b> 📲</div></div>') +
+    '<button id="lf-iab-copy" style="width:100%;max-width:280px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:700;font-size:14px;padding:13px;border-radius:12px;cursor:pointer;font-family:inherit;margin-bottom:16px">📋 Copy Link</button>' +
+    '<button id="lf-iab-skip" style="background:none;border:none;color:rgba(255,255,255,.55);font-size:12.5px;text-decoration:underline;cursor:pointer;font-family:inherit">Continue here anyway (browsing only)</button>';
+
+  function mount(){
+    document.body.appendChild(ov);
+    document.getElementById('lf-iab-copy').addEventListener('click', function(){
+      var done = function(){ this.textContent = '✅ Copied! Paste it in Chrome or Safari'; }.bind(document.getElementById('lf-iab-copy'));
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(appUrl).then(done).catch(function(){ fallbackCopy(); done(); });
+      } else { fallbackCopy(); done(); }
+    });
+    document.getElementById('lf-iab-skip').addEventListener('click', function(){
+      sessionStorage.setItem('lf-iab-dismissed','1');
+      ov.remove();
+    });
+  }
+  function fallbackCopy(){
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = appUrl; ta.style.cssText='position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }catch(e){}
+  }
+  if(document.body) mount();
+  else document.addEventListener('DOMContentLoaded', mount);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     iOS STANDALONE KEYBOARD-OFFSET RECOVERY  (v33 additive)
+     In home-screen web apps, iOS scrolls the window up for the
+     keyboard but often fails to scroll back when it closes. The
+     fixed app shell then renders offset from where taps land —
+     the whole app feels frozen. This snaps the window back to
+     (0,0) whenever an input closes, and continuously guards in
+     standalone mode. Removing this <script> restores the app.
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  function snapBack(){
+    setTimeout(function(){
+      try{
+        if((window.pageYOffset||0) !== 0 || (window.pageXOffset||0) !== 0){
+          window.scrollTo(0,0);
+        }
+      }catch(e){}
+    }, 60);
+  }
+  // Keyboard closed (any input/textarea/select losing focus)
+  document.addEventListener('focusout', snapBack, true);
+  // Rotations reflow the viewport too
+  window.addEventListener('orientationchange', snapBack);
+  // Home-screen mode: iOS is unreliable here, so also guard continuously.
+  var standalone = ('standalone' in navigator && navigator.standalone) ||
+                   (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if(standalone){
+    setInterval(function(){
+      try{
+        var active = document.activeElement;
+        var typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+        if(!typing && (window.pageYOffset||0) > 0) window.scrollTo(0,0);
+      }catch(e){}
+    }, 600);
+  }
 })();
 </script>
 </body>
