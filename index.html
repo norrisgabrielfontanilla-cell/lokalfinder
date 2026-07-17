@@ -3427,14 +3427,14 @@ async function vendorLogin(){
   if(!VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Store not found — contact admin');return;}
   if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
   // Request notification permission NOW — must happen as direct result of user tap
-  if('Notification' in window && Notification.permission !== 'granted'){
+  if(typeof Notification !== 'undefined' && Notification && Notification.permission !== 'granted'){
     try{
       showToast('🔔 Requesting notification permission…');
       const p = await Notification.requestPermission();
       notifGranted = (p === 'granted');
       showToast(notifGranted ? '✅ Notifications allowed!' : '⚠️ Notifications blocked — push won\'t work');
     }catch(e){ console.warn('notif permission error:', e); }
-  } else if('Notification' in window && Notification.permission === 'granted'){
+  } else if(typeof Notification !== 'undefined' && Notification && Notification.permission === 'granted'){
     notifGranted = true;
   }
   activeVendorId=sel;
@@ -4986,7 +4986,7 @@ let notifGranted = false;
 let vendorNotifOrders = new Set();
 
 async function requestNotifPermission(){
-  if(!('Notification' in window)) return;
+  if(typeof Notification === 'undefined' || !Notification) return;
   if(Notification.permission==='granted'){ notifGranted=true; return; }
   if(Notification.permission!=='denied'){
     const p = await Notification.requestPermission();
@@ -6360,7 +6360,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 36; // ← bump this each release (and version.json)
+  const APP_VERSION = 37; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6484,11 +6484,67 @@ setInterval(updateClock,15000);
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   var _osReady = false;
 
+  // ── v37: environment truth. Apple only allows web push in apps opened from
+  //    the Home Screen icon. In a plain Safari tab the Push API simply does
+  //    not exist, so the OneSignal loader stub silently refuses to fetch the
+  //    real engine (it logs "Incompatible browser" to a console nobody sees
+  //    and stops). Without this detection the health strip would wait forever
+  //    for an engine that can never arrive. ──
+  function _envInfo(){
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var standalone = (navigator.standalone === true) ||
+                     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    // Mirror of the exact capability gate inside OneSignal's loader stub:
+    var pushCapable = (typeof PushSubscriptionOptions !== 'undefined' &&
+                       PushSubscriptionOptions.prototype.hasOwnProperty('applicationServerKey')) ||
+                      (typeof window.safari !== 'undefined' && typeof window.safari.pushNotification !== 'undefined');
+    return { isIOS: isIOS, standalone: standalone, pushCapable: pushCapable };
+  }
+
+  function _paintEnvGuidance(env){
+    if(env.isIOS && !env.standalone){
+      _paintHealth('#F59E0B', '📲 Notifications only work from the Home Screen app. In Safari: tap Share (box with arrow) → "Add to Home Screen" → then open LokalFinder from that icon.');
+    } else if(env.isIOS && env.standalone){
+      _paintHealth('#EF4444', 'This iPhone cannot do web notifications — it needs iOS 16.4 or newer. Update in Settings → General → Software Update.');
+    } else {
+      _paintHealth('#F59E0B', 'This browser cannot do notifications — open LokalFinder in Chrome, then add it to your Home Screen.');
+    }
+  }
+
+  // ── v37 watchdog: the strip must NEVER sit on "Checking notifications…"
+  //    forever. Every few seconds until the engine is up, paint the truth of
+  //    where things stand, and kick a recovery reload if the real engine
+  //    stalled after a successful capability check. ──
+  var _stuckTicks = 0;
+  var _watch = setInterval(function(){
+    try{
+      if(_osReady){ clearInterval(_watch); return; }
+      if(!document.getElementById('v-push-health')) return; // vendor dash not open yet
+      var env = _envInfo();
+      if(!env.pushCapable){ _paintEnvGuidance(env); return; }
+      // Capable device, engine not up yet.
+      _stuckTicks++;
+      if(_stuckTicks >= 12){ // ~45s of genuine capability with no engine
+        _paintHealth('#F59E0B', 'Push engine is not starting on this device — force close the app (swipe up) and open it again.');
+      } else {
+        _paintHealth('#60A5FA', 'Starting push engine…');
+      }
+      // Recovery kick: the loader stub downloaded fine but the real engine
+      // (a second file the stub fetches) may have failed on weak signal.
+      // Re-running the stub re-triggers that second fetch. Only kick while
+      // the real engine is provably absent, so this can never double-run it.
+      if(_stuckTicks % 3 === 0 && typeof window.OneSignal === 'undefined'){
+        try{ if(typeof window.__osLoadSDK === 'function') window.__osLoadSDK(1); }catch(e){}
+      }
+    }catch(e){}
+  }, 4000);
+
   // Live diagnosis of the full pipeline: permission → subscription → vendor binding.
   function _osUpdateHealth(OneSignal){
     try{
       if(!document.getElementById('v-push-health')) return;
-      var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+      var perm = (typeof Notification !== 'undefined' && Notification) ? Notification.permission : 'unsupported';
       if(perm === 'denied'){
         _paintHealth('#EF4444', 'Notifications BLOCKED on this device. iPhone: remove app from Home Screen, re-add it, then tap Fix. Android: allow in site settings.');
         return;
@@ -6520,6 +6576,10 @@ setInterval(updateClock,15000);
   window.osRepairPush = function(){
     _paintHealth('#60A5FA', 'Repairing…');
     if(!_osReady){
+      // v37: if this environment can never do push (e.g. iPhone Safari tab),
+      // say so immediately with exact steps — no doomed reconnect theater.
+      var env = _envInfo();
+      if(!env.pushCapable){ _paintEnvGuidance(env); return; }
       // v36: the SDK itself never came online — force a fresh load attempt
       // right now instead of just reporting failure, then watch briefly for
       // it to come up. If it doesn't land within this window it keeps
