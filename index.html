@@ -6360,7 +6360,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 35; // ← bump this each release (and version.json)
+  const APP_VERSION = 36; // ← bump this each release (and version.json)
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6437,16 +6437,27 @@ setInterval(updateClock,15000);
 (function(){
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   var SDK_URL = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+  var _osLoading = false;
+  // v36: retries INDEFINITELY with capped backoff instead of giving up after
+  // 2 tries. A weak connection often just needs more time — this keeps trying
+  // quietly in the background for as long as the app stays open.
   function load(attempt){
+    attempt = attempt || 1;
+    if(_osLoading) return; // an attempt is already in flight — don't stack tags
+    _osLoading = true;
     var s = document.createElement('script');
-    s.src = SDK_URL + (attempt > 1 ? '?retry=' + attempt : '');
+    s.src = SDK_URL + '?a=' + attempt;
     s.async = true;
+    s.onload = function(){ _osLoading = false; };
     s.onerror = function(){
+      _osLoading = false;
       console.warn('[OneSignal] SDK load failed (attempt ' + attempt + ')');
-      if(attempt < 2){ setTimeout(function(){ load(attempt + 1); }, 3000); }
+      var wait = Math.min(3000 * attempt, 20000); // 3s,6s,9s… capped at 20s, forever
+      setTimeout(function(){ load(attempt + 1); }, wait);
     };
     document.head.appendChild(s);
   }
+  window.__osLoadSDK = load; // exposed so the Fix button can force an immediate retry
   load(1);
 })();
 </script>
@@ -6505,11 +6516,37 @@ setInterval(updateClock,15000);
   }
 
   // Full repair sequence — safe to tap repeatedly.
+  var _osPolling = false;
   window.osRepairPush = function(){
     _paintHealth('#60A5FA', 'Repairing…');
+    if(!_osReady){
+      // v36: the SDK itself never came online — force a fresh load attempt
+      // right now instead of just reporting failure, then watch briefly for
+      // it to come up. If it doesn't land within this window it keeps
+      // retrying quietly in the background (loader above) and will paint the
+      // real status the moment it succeeds, even if that's later.
+      try{ if(typeof window.__osLoadSDK === 'function') window.__osLoadSDK(1); }catch(e){}
+      if(_osPolling) return; // already actively watching — don't stack pollers
+      _osPolling = true;
+      _paintHealth('#60A5FA', 'Reconnecting to push service…');
+      var _tries = 0;
+      var _poll = setInterval(function(){
+        _tries++;
+        if(_osReady){
+          clearInterval(_poll); _osPolling = false;
+          OneSignalDeferred.push(_osUpdateHealth);
+          try{ showToast('🔔 Push connected'); }catch(e){}
+          return;
+        }
+        if(_tries >= 10){ // ~15s of active watching
+          clearInterval(_poll); _osPolling = false;
+          _paintHealth('#F59E0B', 'Still connecting in the background — this can take a moment on slow networks. Keep using the app; it will switch on automatically.');
+        }
+      }, 1500);
+      return;
+    }
     OneSignalDeferred.push(async function(OneSignal){
       try{
-        if(!_osReady){ _paintHealth('#EF4444','Push engine failed to load — check internet and reopen the app.'); return; }
         // 1. Permission (no-op if already granted; iOS shows the prompt at most once)
         try{ await OneSignal.Notifications.requestPermission(); }catch(e){}
         // 2. Re-opt-in the subscription (revives stale/opted-out registrations)
