@@ -1930,6 +1930,7 @@ select option { color: var(--t1); background: var(--w); }
       <span id="v-push-dot" style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#9CA3AF"></span>
       <span id="v-push-txt" style="flex:1;font-size:10.5px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.3">Checking notifications…</span>
       <button onclick="osRepairPush()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛠 Fix</button>
+      <button onclick="copyPushDiagnostics()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">📋 Copy Info</button>
     </div>
     <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2575,6 +2576,16 @@ select option { color: var(--t1); background: var(--w); }
 </div><!-- /app -->
 
 <script>
+// ═══════════════════════════════════════════════════════
+//  v40: PUSH INIT SETTLE-GATE — must be defined before ANY consumer.
+//  boot() calls registerServiceWorker() further down in this same block,
+//  and the OneSignal module ~4000 lines below resolves this promise once
+//  its init() settles (success, failure, or timeout — always bounded).
+//  Declaring it here guarantees the boot-time service-worker guard can
+//  actually see it; defined any later, that guard silently does nothing.
+// ═══════════════════════════════════════════════════════
+window._osInitSettled = new Promise(function(res){ window.__osSettleResolve = res; });
+
 // ═══════════════════════════════════════════════════════
 //  DATA
 // ═══════════════════════════════════════════════════════
@@ -5032,7 +5043,24 @@ async function fcmGetToken(){
     if(!('Notification' in window) || Notification.permission !== 'granted') return null;
     if(!_fcmInit()) return null;
     if(FCM_VAPID_KEY.indexOf('PASTE_') === 0) return null;
+    // v38: wait for OneSignal's init() to settle (success, failure, or its own
+    // internal 15s timeout) before registering our own service worker. Two
+    // concurrent SW registrations on the same origin is a known stall
+    // condition on iOS Safari — this removes the race instead of just
+    // detecting it. Bounded to 4s extra wait so a slow OneSignal path can
+    // never block FCM indefinitely; if the flag isn't present at all
+    // (module removed/disabled), proceed immediately as before.
+    if(window._osInitSettled && typeof window._osInitSettled.then === 'function'){
+      console.log('[FCM] Waiting for OneSignal init to settle before registering SW…');
+      await Promise.race([
+        window._osInitSettled,
+        new Promise(function(res){ setTimeout(res, 4000); })
+      ]);
+      console.log('[FCM] Proceeding with SW registration.');
+    }
+    const _fcmT0 = Date.now();
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    console.log('[FCM] SW registered in', Date.now() - _fcmT0, 'ms');
     const token = await _fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
@@ -5128,9 +5156,23 @@ function notifyVendorNewOrder(o){
 
 // Register service worker for background notifications — runs on every boot
 // PROVEN CONFIG (v29): this exact setup delivered a real push to a closed iPhone.
+// v40: this is the PRIMARY dual-registration race site. It fires at boot,
+// unguarded, at the same moment OneSignal's engine registers its own worker.
+// Two concurrent service-worker registrations on one origin is a known stall
+// condition on iOS Safari — and this one runs EARLIER than the fcmGetToken
+// path that v38 already guarded, so it could still collide. Same fix applied:
+// wait for OneSignal's init to settle first (bounded, so it can never hang).
 async function registerServiceWorker(){
   try{
     if(!('serviceWorker' in navigator)) return;
+    if(window._osInitSettled && typeof window._osInitSettled.then === 'function'){
+      console.log('[SW] Waiting for OneSignal init to settle before boot registration…');
+      await Promise.race([
+        window._osInitSettled,
+        new Promise(function(res){ setTimeout(res, 5000); }) // hard cap — never block boot
+      ]);
+      console.log('[SW] Proceeding with boot registration.');
+    }
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
     console.log('SW registered, scope:', reg.scope);
   }catch(e){ console.warn('SW registration failed:', e); }
@@ -6360,7 +6402,8 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 37; // ← bump this each release (and version.json)
+  const APP_VERSION = 40; // ← bump this each release (and version.json)
+  window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
     if(document.getElementById('lf-update-banner')) return;
@@ -6519,22 +6562,31 @@ setInterval(updateClock,15000);
   var _stuckTicks = 0;
   var _watch = setInterval(function(){
     try{
-      if(_osReady){ clearInterval(_watch); return; }
+      if(_osReady || window._osInitDidSettle){ clearInterval(_watch); return; } // init() already gave its own, more specific verdict
       if(!document.getElementById('v-push-health')) return; // vendor dash not open yet
       var env = _envInfo();
       if(!env.pushCapable){ _paintEnvGuidance(env); return; }
       // Capable device, engine not up yet.
       _stuckTicks++;
       if(_stuckTicks >= 12){ // ~45s of genuine capability with no engine
-        _paintHealth('#F59E0B', 'Push engine is not starting on this device — force close the app (swipe up) and open it again.');
+        var _engineLoaded = (typeof window.OneSignal !== 'undefined');
+        console.warn('[OneSignal] watchdog giving up after 45s. Engine object present:', _engineLoaded, '— osReady:', _osReady);
+        _paintHealth('#F59E0B', _engineLoaded
+          ? 'Push engine loaded but never finished starting — force close the app (swipe up) and open it again.'
+          : 'Push engine could not load — check your connection, then force close the app and reopen.');
       } else {
         _paintHealth('#60A5FA', 'Starting push engine…');
       }
       // Recovery kick: the loader stub downloaded fine but the real engine
       // (a second file the stub fetches) may have failed on weak signal.
-      // Re-running the stub re-triggers that second fetch. Only kick while
-      // the real engine is provably absent, so this can never double-run it.
-      if(_stuckTicks % 3 === 0 && typeof window.OneSignal === 'undefined'){
+      // Re-running the stub re-triggers that second fetch. Gated on whether
+      // our OWN queued callback has ever been invoked — NOT on a global
+      // variable — because once the real engine has taken over the queue,
+      // reloading the SDK script serves no purpose (a stuck init() can't be
+      // un-stuck by fetching a fresh copy) and risks feeding an
+      // already-converted queue back through fresh load code that doesn't
+      // expect that shape.
+      if(_stuckTicks % 3 === 0 && !window._osQueueDrained){
         try{ if(typeof window.__osLoadSDK === 'function') window.__osLoadSDK(1); }catch(e){}
       }
     }catch(e){}
@@ -6624,18 +6676,113 @@ setInterval(updateClock,15000);
     });
   };
 
-  OneSignalDeferred.push(async function(OneSignal){
+  // v39: one button that dumps the FULL internal state as plain text —
+  // capability, timing, settle status, permission, subscription id — so
+  // diagnosis doesn't depend on a screenshot of a stuck dot. Has direct
+  // closure access to every internal flag, unlike anything checkable from
+  // outside this module.
+  window.copyPushDiagnostics = function(){
     try{
-      await OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-        // PROVEN CONFIG: this exact scope delivered a real push to a closed
-        // iPhone (2026-07-09 11:23). Do not change without device evidence.
-        serviceWorkerPath: "OneSignalSDKWorker.js",
-        serviceWorkerParam: { scope: "./push/" },
-        allowLocalhostAsSecureOrigin: true
-      });
+      var env = _envInfo();
+      var perm = (typeof Notification !== 'undefined' && Notification) ? Notification.permission : 'unsupported';
+      var lines = [
+        'LokalFinder Push Diagnostics — ' + new Date().toISOString(),
+        'App version: ' + (typeof window.APP_VERSION !== 'undefined' ? window.APP_VERSION : '?'),
+        'User agent: ' + navigator.userAgent,
+        '',
+        '-- Environment --',
+        'isIOS: ' + env.isIOS,
+        'standalone (Home Screen): ' + env.standalone,
+        'pushCapable (matches OneSignal gate): ' + env.pushCapable,
+        '',
+        '-- Engine state --',
+        '_osReady: ' + _osReady,
+        'window._osQueueDrained (real engine took over queue): ' + !!window._osQueueDrained,
+        'window._osInitDidSettle (init resolved/rejected/timed out): ' + !!window._osInitDidSettle,
+        'typeof window.OneSignal: ' + (typeof window.OneSignal),
+        '',
+        '-- Permission & subscription --',
+        'Notification.permission: ' + perm,
+        'window._osSubId: ' + (window._osSubId || '(none)'),
+        '',
+        '-- Vendor session --',
+        'lf-vendorId: ' + (localStorage.getItem('lf-vendorId') || '(none)'),
+        '',
+        '-- Current health strip --',
+        'Text: ' + (document.getElementById('v-push-txt') ? document.getElementById('v-push-txt').textContent : '(not on dashboard)'),
+        'Dot color: ' + (document.getElementById('v-push-dot') ? document.getElementById('v-push-dot').style.background : '(n/a)')
+      ];
+      var report = lines.join('\n');
+      function done(ok){ try{ showToast(ok ? '📋 Copied — paste it in chat' : '⚠️ Copy failed — screenshot this instead'); }catch(e){} }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(report).then(function(){ done(true); }).catch(function(){
+          _fallbackCopy(report, done);
+        });
+      } else {
+        _fallbackCopy(report, done);
+      }
+    }catch(e){ try{ showToast('⚠️ Diagnostics failed: ' + (e && e.message || e)); }catch(_){} }
+  };
+  function _fallbackCopy(text, cb){
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      cb(ok);
+    }catch(e){ cb(false); }
+  }
+
+  // v38: init() must never be able to hang silently. Wrap it in a race
+  // against a hard timeout — if it doesn't settle in time we know, log it,
+  // and report a SPECIFIC cause instead of the generic watchdog fallback.
+  // The original promise is never abandoned: if it resolves late, we still
+  // pick up success quietly.
+  function _withTimeout(promise, ms, label){
+    var timer;
+    var timeout = new Promise(function(_, reject){
+      timer = setTimeout(function(){ reject(new Error(label + ' timed out after ' + ms + 'ms')); }, ms);
+    });
+    return Promise.race([promise, timeout]).finally(function(){ clearTimeout(timer); });
+  }
+  // Resolves once init() has settled ONE WAY OR ANOTHER (success, reject, or
+  // timeout) — the boot-time and FCM service-worker registrations both wait
+  // on this so the registrations never race each other on iOS. Always settles
+  // because it's bounded by the timeout below.
+  // v40: bind to the SINGLE global gate declared at the top of the first
+  // script block. Do NOT redefine it here — boot() is already awaiting that
+  // exact promise object, and replacing it would orphan that waiter forever.
+  var _osSettleResolve = window.__osSettleResolve || function(){};
+
+  OneSignalDeferred.push(async function(OneSignal){
+    window._osQueueDrained = true; // the real engine has taken over the queue — proven by this callback firing at all
+    var _t0 = Date.now();
+    console.log('[OneSignal] init() starting at', _t0);
+    var _rawInit = OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      // PROVEN CONFIG: this exact scope delivered a real push to a closed
+      // iPhone (2026-07-09 11:23). Do not change without device evidence.
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "./push/" },
+      allowLocalhostAsSecureOrigin: true
+    });
+    // If init() eventually resolves AFTER we've already given up on the race
+    // below, still pick up success quietly — the underlying call was never
+    // abandoned, only our waiting for it was bounded.
+    _rawInit.then(function(){
+      if(!_osReady){
+        _osReady = true;
+        console.log('[OneSignal] init() resolved LATE, after', Date.now() - _t0, 'ms — recovering.');
+        window._osInitDidSettle = true; _osSettleResolve();
+        _osUpdateHealth(OneSignal);
+      }
+    }).catch(function(){ /* handled by the raced attempt below */ });
+    try{
+      await _withTimeout(_rawInit, 15000, '[OneSignal] init()');
       _osReady = true;
-      console.log('[OneSignal] Initialized');
+      console.log('[OneSignal] Initialized in', Date.now() - _t0, 'ms');
+      window._osInitDidSettle = true; _osSettleResolve();
       _osUpdateHealth(OneSignal);
       // Keep the vendor-dashboard health line fresh (cheap; skips when not visible)
       setInterval(function(){ OneSignalDeferred.push(_osUpdateHealth); }, 5000);
@@ -6656,13 +6803,17 @@ setInterval(updateClock,15000);
         if(savedVid){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
     }catch(e){
-      console.warn('[OneSignal] init failed:', e);
+      var _isTimeout = e && e.message && e.message.indexOf('timed out') !== -1;
+      console.warn('[OneSignal] init failed after', Date.now() - _t0, 'ms —', _isTimeout ? 'TIMED OUT (likely competing service worker registration)' : e);
+      window._osInitDidSettle = true; _osSettleResolve(); // FCM was waiting — release it even on failure
       // Only surface this on the vendor dashboard — the only place push actually matters.
       // Silent for customers browsing on the landing page (no scary toast on first impression).
       try{
         var vdash = document.getElementById('p-vdash');
         if(vdash && vdash.classList.contains('on')){
-          _paintHealth('#EF4444', 'Push engine failed to start — check internet and tap Fix.');
+          _paintHealth('#EF4444', _isTimeout
+            ? 'Push engine started but got stuck connecting — force close the app and reopen.'
+            : 'Push engine failed to start — check internet and tap Fix.');
           try{ showToast('⚠️ Notification engine failed to load'); }catch(_){}
         }
       }catch(_){}
