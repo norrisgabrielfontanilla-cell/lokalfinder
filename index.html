@@ -5050,14 +5050,10 @@ async function fcmGetToken(){
     // detecting it. Bounded to 4s extra wait so a slow OneSignal path can
     // never block FCM indefinitely; if the flag isn't present at all
     // (module removed/disabled), proceed immediately as before.
-    if(window._osInitSettled && typeof window._osInitSettled.then === 'function'){
-      console.log('[FCM] Waiting for OneSignal init to settle before registering SW…');
-      await Promise.race([
-        window._osInitSettled,
-        new Promise(function(res){ setTimeout(res, 4000); })
-      ]);
-      console.log('[FCM] Proceeding with SW registration.');
-    }
+    // FIX: no longer wait for OneSignal. On iOS PWA, OneSignal can stall
+    // indefinitely and that was blocking FCM from ever getting a token.
+    // FCM now registers its own service worker immediately.
+    console.log('[FCM] Registering SW immediately (OneSignal wait removed).');
     const _fcmT0 = Date.now();
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
     console.log('[FCM] SW registered in', Date.now() - _fcmT0, 'ms');
