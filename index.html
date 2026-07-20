@@ -20,8 +20,8 @@
 ═══════════════════════════════════════ */
 :root{
   /* Warm community green palette — light, fresh, appetizing */
-  --g:#1A6B4A;--gm:#2D9B6F;--gl:#E6F7EF;--gd:#0F4A32;
-  --gg:linear-gradient(135deg,#2D9B6F 0%,#1A6B4A 100%);
+  --g:#0E8A5A;--gm:#12B76A;--gl:#E6F7EF;--gd:#0F4A32;
+  --gg:linear-gradient(135deg,#12B76A 0%,#0E8A5A 100%);
   --acc:#F59E0B;--acl:#FEF3C7;
   --red:#DC2626;--rl:#FEE2E2;
   --blu:#2563EB;--bll:#DBEAFE;
@@ -53,9 +53,37 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 
 /* ═══ PAGES ═══ */
 .page{display:none;flex-direction:column;flex:1;overflow:hidden;position:absolute;inset:0}
-.page.on{display:flex;position:relative}
+.page.on{display:flex;position:relative;animation:pageEnter .32s cubic-bezier(.22,.61,.36,1) both}
+@keyframes pageEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.page.on{animation:none}}
+/* Cart badge bump on change (v-polish #5) */
+@keyframes bnBump{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.bn-bump{animation:bnBump .32s cubic-bezier(.34,1.5,.64,1)}
+/* Header + generic button tap feedback (v-polish #5) */
+.lf2-hbtns button,.lf2-hbtns > div{transition:transform .14s cubic-bezier(.34,1.5,.64,1)}
+.lf2-hbtns button:active,.lf2-hbtns > div:active{transform:scale(.94)}
+/* Share LokalFinder card + QR modal (v-polish: QR share) */
+.lf-share-card{background:#fff;border:1px solid #E2E8E5;border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 3px 12px rgba(13,40,28,.06);transition:transform .14s ease,box-shadow .18s ease}
+.lf-share-card:active{transform:scale(.98)}
+.lf-share-icon{width:44px;height:44px;border-radius:12px;background:var(--gl);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#lf-qr-modal{position:fixed;inset:0;z-index:99000;background:rgba(13,40,28,.55);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+#lf-qr-modal.on{display:flex;animation:fadeIn .22s ease both}
+.lf-qr-sheet{background:#fff;border-radius:22px;padding:24px 20px 18px;width:100%;max-width:340px;box-shadow:0 12px 40px rgba(0,0,0,.28);animation:slideUp .32s cubic-bezier(.22,.61,.36,1) both;text-align:center}
+.lf-qr-title{font-size:18px;font-weight:800;color:var(--t1);margin-bottom:4px}
+.lf-qr-sub{font-size:12px;color:var(--t3);margin-bottom:16px}
+.lf-qr-box{background:#fff;border:1px solid #EEF2F0;border-radius:16px;padding:14px;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.lf-qr-box img{display:block;width:220px;height:220px;image-rendering:pixelated}
+.lf-qr-url{margin-top:14px;font-size:11.5px;color:var(--t2);word-break:break-all;background:#F1F5F3;border-radius:10px;padding:8px 10px}
+.lf-qr-actions{margin-top:14px;display:flex;gap:8px}
+.lf-qr-actions button{flex:1;padding:11px 12px;font-size:13px;font-weight:800;border-radius:11px;cursor:pointer;font-family:var(--ff);border:none;transition:transform .12s ease}
+.lf-qr-actions button:active{transform:scale(.96)}
+.lf-qr-btn-primary{background:var(--g);color:#fff}
+.lf-qr-btn-secondary{background:#F1F5F3;color:var(--t1);border:1px solid #E2E8E5 !important}
 .scrl{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .scrl::-webkit-scrollbar{display:none}
+/* Hide horizontal scrollbars on swipeable rows (category chips, vendor rails, etc) — swipe still works, just no visible bar (v-polish) */
+#cat-row,.hscrl,[style*="overflow-x:auto"]{-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+#cat-row::-webkit-scrollbar,.hscrl::-webkit-scrollbar,[style*="overflow-x:auto"]::-webkit-scrollbar{display:none;height:0;width:0}
 
 /* ═══ NOTCH ═══ */
 .notch{height:50px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 22px 10px;font-size:12px;font-weight:700;flex-shrink:0;background:#fff;color:#0D2B1A}
@@ -66,6 +94,8 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 
 /* ═══ BOTTOM NAV ═══ */
 .bnav{background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-top:.5px solid var(--bd);display:flex;padding:8px 0 max(18px,env(safe-area-inset-bottom));flex-shrink:0;box-shadow:0 -2px 16px rgba(13,40,28,.05)}
+/* Floating pill variant (customer home only) — matches modern super-app look */
+.bnav.bnav-float{background:#fff;border-top:none;margin:0 14px max(14px,env(safe-area-inset-bottom));border-radius:22px;padding:10px 6px 12px;box-shadow:0 6px 22px rgba(13,40,28,.10),0 2px 6px rgba(13,40,28,.06);border:1px solid #EEF2F0}
 .bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;position:relative;user-select:none;transition:transform .14s cubic-bezier(.34,1.4,.64,1)}
 .bni:active{transform:scale(.9)}
 .bni svg{width:23px;height:23px;stroke:var(--t3);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .22s,transform .22s}
@@ -243,6 +273,19 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 @keyframes lbfade{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* ═══ App-open splash (additive) ═══ */
+#lf-splash{position:fixed;inset:0;z-index:100000;background:linear-gradient(170deg,#0E8A5A,#0d3d27);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .55s ease}
+#lf-splash.lf-splash-hide{opacity:0;pointer-events:none}
+#lf-splash-mark{opacity:0;transform:translateY(14px) scale(.9);animation:lfSplashMark .7s cubic-bezier(.2,.8,.2,1) .08s forwards}
+#lf-splash-word{margin-top:16px;font-family:var(--ffl);font-weight:800;font-size:29px;letter-spacing:-1px;color:#fff;opacity:0;transform:translateY(10px);animation:lfSplashWord .6s ease .35s forwards}
+#lf-splash-word em{color:#9df5c9;font-style:normal}
+#lf-splash-dots{margin-top:22px;display:flex;gap:7px;opacity:0;animation:fadeIn .5s ease .7s forwards}
+#lf-splash-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.7);animation:lfSplashDot 1s ease-in-out infinite}
+#lf-splash-dots span:nth-child(2){animation-delay:.2s}
+#lf-splash-dots span:nth-child(3){animation-delay:.4s}
+@keyframes lfSplashMark{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes lfSplashWord{to{opacity:1;transform:translateY(0)}}
+@keyframes lfSplashDot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
 @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
 
 /* Premium micro-animations */
@@ -836,15 +879,24 @@ select option { color: var(--t1); background: var(--w); }
 #p-chome div[style*="backdrop-filter:blur(8px)"]:active{transform:scale(.985)}
 @keyframes lfSearchBreathe{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 0 3px rgba(255,255,255,.06)}}
 
+/* Category chips: colorful round icon + label (replaces flat pill row) */
+.cat-chip{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;width:62px}
+.cat-chip-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:23px;transition:transform .16s ease,box-shadow .2s ease}
+.cat-chip:active .cat-chip-icon{transform:scale(.90)}
+.cat-chip-label{font-size:11px;font-weight:700;color:var(--t2);white-space:nowrap;line-height:1.2}
+.cat-chip.on-cat .cat-chip-label{color:var(--g)}
+.cat-chip.on-cat .cat-chip-icon{box-shadow:0 0 0 2px var(--g),0 4px 10px rgba(14,138,90,.28)}
+.cat-chip-under{width:16px;height:3px;border-radius:2px;background:transparent;margin-top:1px}
+.cat-chip.on-cat .cat-chip-under{background:var(--gm)}
 /* Category pills: spring-in stagger + lively press */
-#cat-row .pill{animation:lfPillIn .5s cubic-bezier(.34,1.56,.64,1) both;transition:transform .16s,box-shadow .2s}
-#cat-row .pill:nth-child(1){animation-delay:.04s}
-#cat-row .pill:nth-child(2){animation-delay:.10s}
-#cat-row .pill:nth-child(3){animation-delay:.16s}
-#cat-row .pill:nth-child(4){animation-delay:.22s}
-#cat-row .pill:nth-child(5){animation-delay:.28s}
+#cat-row .cat-chip{animation:lfPillIn .5s cubic-bezier(.34,1.56,.64,1) both}
+#cat-row .cat-chip:nth-child(1){animation-delay:.04s}
+#cat-row .cat-chip:nth-child(2){animation-delay:.10s}
+#cat-row .cat-chip:nth-child(3){animation-delay:.16s}
+#cat-row .cat-chip:nth-child(4){animation-delay:.22s}
+#cat-row .cat-chip:nth-child(5){animation-delay:.28s}
 #cat-row .pill:active{transform:scale(.92)}
-#cat-row .pill.on-cat{box-shadow:0 4px 14px rgba(26,107,74,.35);animation:lfPillIn .5s cubic-bezier(.34,1.56,.64,1) both,lfActiveGlow 2.6s ease-in-out infinite .5s}
+#cat-row .cat-chip.on-cat .cat-chip-icon{animation:lfActiveGlow 2.6s ease-in-out infinite .5s}
 @keyframes lfPillIn{from{opacity:0;transform:translateY(10px) scale(.85)}to{opacity:1;transform:none}}
 @keyframes lfActiveGlow{0%,100%{box-shadow:0 4px 14px rgba(26,107,74,.30)}50%{box-shadow:0 6px 22px rgba(26,107,74,.5)}}
 
@@ -1076,12 +1128,109 @@ select option { color: var(--t1); background: var(--w); }
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 </head>
 <body>
+<!-- ═══ APP-OPEN SPLASH (additive) — animated logo, fades into app ═══ -->
+<div id="lf-splash" aria-hidden="true">
+  <div id="lf-splash-mark">
+    <svg viewBox="0 0 48 56" width="76" height="88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#0d3d27" stroke="#7fe3b4" stroke-width="2"/>
+      <path d="M14 27v-8l10-8 10 8v8" stroke="#7fe3b4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="21" y="30" width="6" height="7" rx="1" fill="#7fe3b4" opacity=".8"/>
+      <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+    </svg>
+  </div>
+  <div id="lf-splash-word">Lokal<em>Finder</em></div>
+  <div id="lf-splash-dots"><span></span><span></span><span></span></div>
+</div>
+<script>
+/* Splash controller (v-polish #3): hide on boot-ready, with hard safety cap so it never sticks */
+(function(){
+  var minShown = 1400; // keep splash up at least this long so it doesn't flash
+  var t0 = Date.now();
+  var done = false;
+  function hide(){
+    if(done) return; done = true;
+    var el = document.getElementById('lf-splash');
+    if(!el) return;
+    var wait = Math.max(0, minShown - (Date.now() - t0));
+    setTimeout(function(){
+      el.classList.add('lf-splash-hide');
+      setTimeout(function(){ if(el && el.parentNode) el.parentNode.removeChild(el); }, 650);
+    }, wait);
+  }
+  window.lfHideSplash = hide;
+  // Hard safety net: remove splash after 4.5s no matter what
+  setTimeout(hide, 4500);
+})();
+</script>
+
+<!-- ═══ Share LokalFinder — QR modal (v-polish) ═══ -->
+<div id="lf-qr-modal" onclick="if(event.target===this) closeShareQR()">
+  <div class="lf-qr-sheet">
+    <div class="lf-qr-title">Share LokalFinder 💚</div>
+    <div class="lf-qr-sub">Point your neighbor's camera at the code</div>
+    <div class="lf-qr-box">
+      <img id="lf-qr-img" alt="LokalFinder QR" src="">
+    </div>
+    <div class="lf-qr-url" id="lf-qr-url-txt">https://norrisgabrielfontanilla-cell.github.io/lokalfinder/</div>
+    <div class="lf-qr-actions">
+      <button class="lf-qr-btn-secondary" onclick="lfCopyShareLink(this)">📋 Copy link</button>
+      <button class="lf-qr-btn-primary" onclick="lfNativeShare()">Share</button>
+    </div>
+    <button onclick="closeShareQR()" style="margin-top:10px;background:none;border:none;color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ff);padding:6px">Close</button>
+  </div>
+</div>
+<script>
+(function(){
+  var SHARE_URL = 'https://norrisgabrielfontanilla-cell.github.io/lokalfinder/';
+  var QR_SRC = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=2&data=' + encodeURIComponent(SHARE_URL);
+  window.openShareQR = function(){
+    var m = document.getElementById('lf-qr-modal');
+    var img = document.getElementById('lf-qr-img');
+    if(img && !img.src) img.src = QR_SRC; // lazy-load QR image
+    if(m) m.classList.add('on');
+  };
+  window.closeShareQR = function(){
+    var m = document.getElementById('lf-qr-modal');
+    if(m) m.classList.remove('on');
+  };
+  window.lfCopyShareLink = function(btn){
+    var t = SHARE_URL;
+    var done = function(){
+      var orig = btn.innerHTML;
+      btn.innerHTML = '✓ Copied!';
+      setTimeout(function(){ btn.innerHTML = orig; }, 1400);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(function(){ done(); });
+    } else {
+      // Legacy fallback
+      var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta); done();
+    }
+  };
+  window.lfNativeShare = function(){
+    if(navigator.share){
+      navigator.share({
+        title: 'LokalFinder',
+        text: 'Order food from your neighbors at GRASS Residences 💚',
+        url: SHARE_URL
+      }).catch(function(){});
+    } else {
+      // Desktop fallback → copy link
+      window.lfCopyShareLink({innerHTML:'Share'});
+      try{ showToast && showToast('📋 Link copied — paste it anywhere!'); }catch(e){}
+    }
+  };
+})();
+</script>
 <div id="app">
 
 <!-- ══════════════════════════════════════════
      LANDING — choose your portal
 ══════════════════════════════════════════ -->
-<div class="page on" id="p-land">
+<div class="page" id="p-land">
 <div class="lf2-wrap">
 
   <!-- Warm ambient glow blobs -->
@@ -1586,7 +1735,7 @@ select option { color: var(--t1); background: var(--w); }
 </div>
 </div>
 
-<div class="page" id="p-chome">
+<div class="page on" id="p-chome">
   <div class="notch">
     <span class="ph-clock">9:41</span>
     <div class="ni">
@@ -1594,53 +1743,89 @@ select option { color: var(--t1); background: var(--w); }
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M22 11v3" stroke-width="2.5" stroke-linecap="round"/></svg>
     </div>
   </div>
-  <div class="hero-anim-bg" style="padding:14px 16px 20px;flex-shrink:0;position:relative;overflow:hidden">
-    <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(45,155,111,.3) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>
-    <!-- Floating food emojis (additive v28 — decorative, no interaction) -->
-    <div class="lf-float-layer" aria-hidden="true">
-      <span class="lf-float" style="left:6%;animation-delay:0s;animation-duration:11s">🍜</span>
-      <span class="lf-float" style="left:22%;animation-delay:2.5s;animation-duration:13s">🍢</span>
-      <span class="lf-float" style="left:41%;animation-delay:5s;animation-duration:10s">☕</span>
-      <span class="lf-float" style="left:60%;animation-delay:1.2s;animation-duration:14s">🍚</span>
-      <span class="lf-float" style="left:76%;animation-delay:3.8s;animation-duration:12s">🥟</span>
-      <span class="lf-float" style="left:89%;animation-delay:6.4s;animation-duration:11.5s">🍰</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1">
-      <div>
-        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:7px">GRASS Residences <span id="vendor-live-badge" class="hero-live-badge">● 0 live</span></div>
-        <div style="font-family:var(--ffd);font-style:italic;font-size:26px;color:#fff;line-height:1">Finder</div>
+  <div class="hero-anim-bg" style="background:#fff;padding:0 0 22px;flex-shrink:0;position:relative;overflow:hidden">
+    <!-- Landing-style brand header (reused from p-land for a consistent look) -->
+    <div class="lf2-head">
+      <div class="lf2-brand">
+        <div class="lf2-mark-wrap">
+          <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" height="52">
+            <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
+            <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="21" y="30" width="6" height="7" rx="1" fill="#2ea877" opacity=".7"/>
+            <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+          </svg>
+        </div>
+        <div>
+          <div class="lf2-word">Lokal<em>Finder</em></div>
+          <div class="lf2-sub">GRASS Residences &bull; Quezon City</div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="goPage('p-land')" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">← Exit</button>
-        <div style="position:relative;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center" onclick="goPage('p-ccart')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-          <div id="home-badge" class="bni-num" style="display:none;border-color:#0d1a0f">0</div>
+      <div class="lf2-hbtns">
+        <button onclick="goVendorLogin()" style="background:#0E8A5A;border:none;color:#fff;font-size:12px;font-weight:800;padding:9px 15px;border-radius:11px;cursor:pointer;font-family:var(--ff);box-shadow:0 3px 10px rgba(14,138,90,.25)">Vendor</button>
+        <div style="position:relative;cursor:pointer;background:#F1F5F3;border:1px solid #E2E8E5;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="goPage('p-ccart')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <div id="home-badge" class="bni-num" style="display:none;border-color:#fff">0</div>
         </div>
       </div>
     </div>
-    <div style="position:relative;z-index:1">
-      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3">Your neighbors are<br>selling <span class="hero-pulse" style="color:#6EE7A8">right now.</span></div>
-      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px">Real food · Free pickup · Same building</div>
-      <div id="search-container" style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="ff-search-input" style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#fff;flex:1;outline:none" placeholder="Search food inside GRASS…" oninput="ffSearch(this.value)" onfocus="heroSearchFocus(true)" onblur="heroSearchFocus(false)">
-        <span id="ff-search-clear" style="display:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:16px;line-height:1" onclick="ffClearSearch()">✕</span>
+    <!-- subtle Admin link row -->
+    <div style="position:relative;z-index:1;padding:0 20px;text-align:right;margin-top:-2px">
+      <button onclick="goPage('p-alogin')" style="background:none;border:none;color:#b3bdb7;font-size:11px;font-weight:600;padding:2px 2px;cursor:pointer;font-family:var(--ff);letter-spacing:.2px">Admin</button>
+    </div>
+    </div>
+    <!-- Search pill -->
+    <div style="position:relative;z-index:1;padding:4px 20px 0">
+      <div id="search-container" style="background:#fff;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:10px;border:1px solid #E2E8E5;box-shadow:0 6px 18px rgba(13,61,39,.10)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9aa5a0" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="ff-search-input" style="border:none;background:transparent;font-family:var(--ff);font-size:13px;color:#26332c;flex:1;outline:none" placeholder="Search food inside GRASS…" oninput="ffSearch(this.value)" onfocus="heroSearchFocus(true)" onblur="heroSearchFocus(false)">
+        <span id="ff-search-clear" style="display:none;cursor:pointer;color:#9aa5a0;font-size:16px;line-height:1" onclick="ffClearSearch()">✕</span>
       </div>
-      <div id="search-suggestions" style="display:none;font-size:11px;color:rgba(255,255,255,.6);padding:8px 2px 0">Popular: <span id="suggestion-text" style="color:rgba(110,231,168,.9);font-weight:700">Pares</span></div>
-      <!-- Community pulse ticker (additive v28) -->
-      <div id="lf-pulse" style="margin-top:11px;display:flex;align-items:center;gap:7px;overflow:hidden">
-        <span style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#6EE7A8;box-shadow:0 0 8px #6EE7A8;animation:lfPulseDot 1.6s ease-in-out infinite"></span>
-        <div id="lf-pulse-txt" style="font-size:11.5px;color:rgba(255,255,255,.75);font-weight:600;white-space:nowrap;transition:opacity .45s ease">👋 Welcome, neighbor! Checking what's cooking…</div>
+      <div id="search-suggestions" style="display:none;font-size:11px;color:#8a938e;padding:8px 2px 0">Popular: <span id="suggestion-text" style="color:#0E8A5A;font-weight:700">Pares</span></div>
+      <!-- Live dishes-available banner (replaces text ticker) -->
+      <div id="lf-pulse" style="margin-top:11px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gl);border-radius:10px;padding:8px 10px 8px 12px">
+        <div style="display:flex;align-items:center;gap:7px;overflow:hidden">
+          <span style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#12B76A;box-shadow:0 0 8px #12B76A;animation:lfPulseDot 1.6s ease-in-out infinite"></span>
+          <div id="lf-pulse-txt" style="font-size:12px;color:var(--gd);font-weight:700;white-space:nowrap">🔥 <span id="lf-dish-count">0</span> dishes available today — sarap!</div>
+        </div>
+        <span style="flex-shrink:0;background:#fff;color:var(--g);font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;white-space:nowrap;display:flex;align-items:center;gap:4px">🛵 Free pickup</span>
       </div>
     </div>
   </div>
   <div class="scrl">
-    <div style="display:flex;gap:8px;padding:10px 16px 4px;overflow-x:auto" id="cat-row">
-      <div class="pill on-cat" style="cursor:pointer;background:var(--g);color:#fff;border-color:var(--g)" onclick="filterCat(this,'all');heroPillPop(this)">🍽️ All<span class="cat-count" data-cat="all"></span></div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'rice');heroPillPop(this)">🍚 Rice Meals<span class="cat-count" data-cat="rice"></span></div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'coffee');heroPillPop(this)">☕ Coffee<span class="cat-count" data-cat="coffee"></span></div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'snacks');heroPillPop(this)">🍢 Snacks<span class="cat-count" data-cat="snacks"></span></div>
-      <div class="pill" style="cursor:pointer" onclick="filterCat(this,'dessert');heroPillPop(this)">🎂 Desserts<span class="cat-count" data-cat="dessert"></span></div>
+    <div style="display:flex;gap:12px;padding:10px 16px 4px;overflow-x:auto" id="cat-row">
+      <div class="cat-chip on-cat" data-cat="all" onclick="filterCat(this,'all');heroPillPop(this)">
+        <div class="cat-chip-icon" style="background:#274A2E;color:#fff">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+        </div>
+        <span class="cat-chip-label">All</span>
+        <div class="cat-chip-under"></div>
+        <span class="cat-count" data-cat="all" style="display:none"></span>
+      </div>
+      <div class="cat-chip" data-cat="rice" onclick="filterCat(this,'rice');heroPillPop(this)">
+        <div class="cat-chip-icon" style="background:#FCEACB">🍚</div>
+        <span class="cat-chip-label">Rice Meals</span>
+        <div class="cat-chip-under"></div>
+        <span class="cat-count" data-cat="rice" style="display:none"></span>
+      </div>
+      <div class="cat-chip" data-cat="coffee" onclick="filterCat(this,'coffee');heroPillPop(this)">
+        <div class="cat-chip-icon" style="background:#FBDDE3">☕</div>
+        <span class="cat-chip-label">Coffee</span>
+        <div class="cat-chip-under"></div>
+        <span class="cat-count" data-cat="coffee" style="display:none"></span>
+      </div>
+      <div class="cat-chip" data-cat="snacks" onclick="filterCat(this,'snacks');heroPillPop(this)">
+        <div class="cat-chip-icon" style="background:#FCDCC5">🍢</div>
+        <span class="cat-chip-label">Snacks</span>
+        <div class="cat-chip-under"></div>
+        <span class="cat-count" data-cat="snacks" style="display:none"></span>
+      </div>
+      <div class="cat-chip" data-cat="dessert" onclick="filterCat(this,'dessert');heroPillPop(this)">
+        <div class="cat-chip-icon" style="background:#E7DFF7">🎂</div>
+        <span class="cat-chip-label">Desserts</span>
+        <div class="cat-chip-under"></div>
+        <span class="cat-count" data-cat="dessert" style="display:none"></span>
+      </div>
     </div>
     <!-- SEARCH RESULTS (shown only while typing) -->
     <div id="ff-search-wrap" style="display:none"></div>
@@ -1656,6 +1841,19 @@ select option { color: var(--t1); background: var(--w); }
       <div style="font-size:13px;color:var(--t2);margin-top:4px">Fresh from your neighbors. Order now before it sells out! 👀</div>
     </div>
     <div id="todays-picks"></div>
+    <!-- Share LokalFinder card (v-polish: QR share) -->
+    <div style="margin:22px 16px 0" onclick="openShareQR()">
+      <div class="lf-share-card">
+        <div class="lf-share-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px">Share LokalFinder with a neighbor</div>
+          <div style="font-size:12px;color:var(--t3);line-height:1.4">Tap to show a QR they can scan</div>
+        </div>
+        <div style="color:var(--g);font-size:20px;font-weight:800;line-height:1">›</div>
+      </div>
+    </div>
     </div>
     <div style="height:80px"></div>
   </div>
@@ -1663,10 +1861,9 @@ select option { color: var(--t1); background: var(--w); }
     <div class="cb-l"><div class="cb-cnt" id="cbar-cnt">0</div><span class="cb-lbl">View Order</span></div>
     <span class="cb-tot" id="cbar-tot">₱0</span>
   </div>
-  <div class="bnav">
+  <div class="bnav bnav-float">
     <div class="bni on" onclick="goPage('p-chome')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
     <div class="lfn-bnav-feed" onclick="LFN.openFeed()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Feed</span></div>
-    <div class="bni" onclick="goPage('p-ccart')" id="cbnav-cart" style="position:relative"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><div id="bnav-badge" class="bni-num" style="display:none">0</div><span>Cart</span></div>
     <div class="bni" onclick="goPage('p-chistory')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Orders</span></div>
     <div class="bni" style="position:relative" onclick="openNotifPanel('customer')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div id="cust-notif-badge" class="bni-num" style="display:none">0</div><span>Alerts</span></div>
   </div>
@@ -2670,7 +2867,7 @@ function goPage(id){
   // (p-vlogin is intentionally allowed so vendors can reach the login screen.)
   var _vendorOnly = {'p-vdash':1,'p-vorders':1,'p-vmenu':1,'p-vearn':1};
   if(_vendorOnly[id] && !activeVendorId){
-    id = 'p-land';
+    id = 'p-chome'; // landing page retired — send to customer home instead
   }
   var _lb=document.getElementById('img-lightbox'); if(_lb && _lb.style.display!=='none') _lb.style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
@@ -2814,10 +3011,17 @@ function buildVendorCards(force=false){
     const clickAttr = isClosed
       ? `onclick="showClosedVendorToast('${esc(v.name)}','${v.openTime||''}')"`
       : `onclick="openVendor('${v.id}')"`;
+    // Pick a food photo from the vendor's menu to use as the card background (v-polish: less white space)
+    const menuPhoto = ((MENU[v.id]||[]).find(i=>i.photo && i.avail)||{}).photo
+                   || ((MENU[v.id]||[]).find(i=>i.photo)||{}).photo
+                   || '';
+    const imgBg = menuPhoto
+      ? `background:linear-gradient(to bottom,rgba(255,255,255,.05) 0%,rgba(255,255,255,.55) 70%,#fff 100%),url('${menuPhoto}') center/cover no-repeat;`
+      : `background:${v.bg};`;
     return `
     <div class="vc${isClosed?' vc-closed':''}" ${clickAttr}>
-      <div class="vc-img" style="background:${v.bg}">
-        ${v.logo?`<img src="${v.logo}" style="width:84px;height:84px;border-radius:16px;object-fit:cover">`:v.emoji}
+      <div class="vc-img" style="${imgBg}">
+        ${v.logo?`<img src="${v.logo}" style="width:84px;height:84px;border-radius:16px;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.18)">`:`<span style="filter:drop-shadow(0 3px 8px rgba(0,0,0,.25))">${v.emoji}</span>`}
         <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
       </div>
       <div class="vc-body">
@@ -3045,8 +3249,8 @@ function ffSyncSteppers(){
 
 function filterCat(btn,cat){
   activeCatFilter = cat;
-  document.querySelectorAll('#cat-row .pill').forEach(p=>{p.style.background='var(--w)';p.style.color='var(--t2)';p.style.borderColor='var(--bdm)'});
-  btn.style.background='var(--g)'; btn.style.color='#fff'; btn.style.borderColor='var(--g)';
+  document.querySelectorAll('#cat-row .cat-chip').forEach(p=>p.classList.remove('on-cat'));
+  btn.classList.add('on-cat');
   buildVendorCards(true);
   buildTodaysPicks(true);
   buildHeroStrip();
@@ -3202,7 +3406,7 @@ function updateCartBar(){
     bar.classList.add('hide');
     if(vbar) vbar.classList.add('hide');
   }
-  [document.getElementById('home-badge'),document.getElementById('bnav-badge')].forEach(b=>{if(b){b.style.display=c>0?'flex':'none';b.textContent=c;}});
+  [document.getElementById('home-badge'),document.getElementById('bnav-badge')].forEach(b=>{if(b){var old=b.textContent;b.style.display=c>0?'flex':'none';b.textContent=c;if(String(c)!==old && c>0){b.classList.remove('bn-bump');void b.offsetWidth;b.classList.add('bn-bump');}}});
   if(typeof ffSyncSteppers==='function') ffSyncSteppers();
 }
 
@@ -5559,7 +5763,7 @@ function refreshVisible(){
   loadHeroStats();
   applyHeroStats(true);
   registerServiceWorker();
-  showToast('🔄 Connecting…');
+  // splash covers this — toast silenced (v-polish #3)
   // Boot with retry — Firebase free tier can have a slow cold start
   let bootAttempts = 0;
   async function tryBoot(){
@@ -5568,27 +5772,31 @@ function refreshVisible(){
       const existing = await fbGet(ROOM_KEY);
       if(existing && existing.orders){
         applyData(existing);
-        showToast('✅ LokalFinder connected!');
+        // toast silenced during open (splash) — v-polish #3
       } else if(existing) {
         applyData(existing);
-        showToast('✅ LokalFinder ready!');
+        // toast silenced during open (splash) — v-polish #3
       } else {
         // First time setup
         await fbSet(ROOM_KEY, buildPayload());
-        showToast('✅ LokalFinder ready!');
+        // toast silenced during open (splash) — v-polish #3
       }
     }catch(e){
       if(bootAttempts < 5){
         setTimeout(tryBoot, 1500);
       } else {
         console.warn('LokalFinder: connection delayed, will keep retrying in background');
-        showToast('⚠️ Slow connection — retrying…');
+        // slow-connection toast silenced during open — v-polish #3
         // Keep retrying silently in background every 5s
         setInterval(()=>{ if(orders.length===0) tryBoot(); }, 5000);
       }
     }
   }
   await tryBoot();
+  // ═══ Fade out the app-open splash once data is ready (v-polish #3) ═══
+  try{ if(window.lfHideSplash) window.lfHideSplash(); }catch(e){}
+  // ═══ Open straight to the food-browsing home (v-polish #4: landing page retired) ═══
+  try{ goCust(); }catch(e){}
   // Restore vendor session if they were logged in before closing the app
   try{
     const savedVendorId = localStorage.getItem('lf-vendorId');
