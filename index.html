@@ -6891,7 +6891,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 41; // ← bump this each release (and version.json)
+  const APP_VERSION = 42; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -7013,6 +7013,24 @@ setInterval(updateClock,15000);
   if(!ONESIGNAL_APP_ID){ console.log('[OneSignal] No App ID set — module dormant, FCM continues as before.'); _paintHealth('#9CA3AF','Push not configured.'); return; }
 
   window._osSubId = window._osSubId || '';
+
+  // DIAG: continuously snapshot which service workers are actually registered,
+  // so Copy Info can show whether OneSignal's worker (OneSignalSDKWorker.js)
+  // ever loaded and at what scope. Purely observational.
+  setInterval(function(){
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        navigator.serviceWorker.getRegistrations().then(function(regs){
+          window._swList = regs.map(function(r){
+            var u = (r.active && r.active.scriptURL) ||
+                    (r.waiting && r.waiting.scriptURL) ||
+                    (r.installing && r.installing.scriptURL) || '?';
+            return (r.scope || '?') + ' → ' + u.split('/').pop();
+          }).join('  |  ') || '(none registered)';
+        }).catch(function(){});
+      }
+    }catch(e){}
+  }, 3000);
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   var _osReady = false;
 
@@ -7189,6 +7207,11 @@ setInterval(updateClock,15000);
         'window._osQueueDrained (real engine took over queue): ' + !!window._osQueueDrained,
         'window._osInitDidSettle (init resolved/rejected/timed out): ' + !!window._osInitDidSettle,
         'typeof window.OneSignal: ' + (typeof window.OneSignal),
+        'window._osInitError (why init failed): ' + (window._osInitError || '(none — no error recorded)'),
+        'window._osInitMs (how long init ran): ' + (typeof window._osInitMs !== 'undefined' ? window._osInitMs + 'ms' : '(n/a)'),
+        '',
+        '-- Service workers registered --',
+        (window._swList || '(not captured yet — wait 3s and retry)'),
         '',
         '-- Permission & subscription --',
         'Notification.permission: ' + perm,
@@ -7293,6 +7316,8 @@ setInterval(updateClock,15000);
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
     }catch(e){
       var _isTimeout = e && e.message && e.message.indexOf('timed out') !== -1;
+      window._osInitError = (e && e.message) || String(e) || '(empty error)';
+      window._osInitMs = Date.now() - _t0;
       console.warn('[OneSignal] init failed after', Date.now() - _t0, 'ms —', _isTimeout ? 'TIMED OUT (likely competing service worker registration)' : e);
       window._osInitDidSettle = true; _osSettleResolve(); // FCM was waiting — release it even on failure
       // Only surface this on the vendor dashboard — the only place push actually matters.
