@@ -5038,32 +5038,30 @@ function _fcmInit(){
 
 // Returns the device's FCM token (or null). Registers the SW used for push.
 async function fcmGetToken(){
+  // DIAG: show each step on screen so we can see where it fails on iPhone.
+  try{ showToast('🔎 FCM step 1: starting'); }catch(e){}
   try{
-    if(!('serviceWorker' in navigator)) return null;
-    if(!('Notification' in window) || Notification.permission !== 'granted') return null;
-    if(!_fcmInit()) return null;
-    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0) return null;
-    // v38: wait for OneSignal's init() to settle (success, failure, or its own
-    // internal 15s timeout) before registering our own service worker. Two
-    // concurrent SW registrations on the same origin is a known stall
-    // condition on iOS Safari — this removes the race instead of just
-    // detecting it. Bounded to 4s extra wait so a slow OneSignal path can
-    // never block FCM indefinitely; if the flag isn't present at all
-    // (module removed/disabled), proceed immediately as before.
-    // FIX: no longer wait for OneSignal. On iOS PWA, OneSignal can stall
-    // indefinitely and that was blocking FCM from ever getting a token.
-    // FCM now registers its own service worker immediately.
-    console.log('[FCM] Registering SW immediately (OneSignal wait removed).');
+    if(!('serviceWorker' in navigator)){ try{ showToast('❌ FCM: no serviceWorker support'); }catch(e){} return null; }
+    if(!('Notification' in window) || Notification.permission !== 'granted'){ try{ showToast('❌ FCM: permission not granted (is '+ (typeof Notification!=='undefined'?Notification.permission:'none') +')'); }catch(e){} return null; }
+    try{ showToast('🔎 FCM step 2: init'); }catch(e){}
+    if(!_fcmInit()){ try{ showToast('❌ FCM: _fcmInit() failed'); }catch(e){} return null; }
+    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ try{ showToast('❌ FCM: VAPID key not set'); }catch(e){} return null; }
+    try{ showToast('🔎 FCM step 3: registering service worker'); }catch(e){}
     const _fcmT0 = Date.now();
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-    console.log('[FCM] SW registered in', Date.now() - _fcmT0, 'ms');
+    try{ showToast('✅ FCM: SW registered in '+(Date.now()-_fcmT0)+'ms'); }catch(e){}
+    try{ showToast('🔎 FCM step 4: getting token'); }catch(e){}
     const token = await _fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
     });
+    if(token){ try{ showToast('✅ FCM: got token! len='+token.length); }catch(e){} }
+    else { try{ showToast('⚠️ FCM: getToken returned empty'); }catch(e){} }
     _fcmToken = token || null;
     return _fcmToken;
   }catch(e){
+    // THIS is the hidden error we've been chasing — now shown on screen.
+    try{ showToast('🛑 FCM ERROR: '+((e&&e.message)||e)); }catch(_){}
     console.error('[FCM.getToken] Error:', e);
     return null;
   }
