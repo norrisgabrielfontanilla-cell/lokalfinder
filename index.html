@@ -1773,7 +1773,6 @@ select option { color: var(--t1); background: var(--w); }
     <div style="position:relative;z-index:1;padding:0 20px;text-align:right;margin-top:-2px">
       <button onclick="goPage('p-alogin')" style="background:none;border:none;color:#b3bdb7;font-size:11px;font-weight:600;padding:2px 2px;cursor:pointer;font-family:var(--ff);letter-spacing:.2px">Admin</button>
     </div>
-    </div>
     <!-- Search pill -->
     <div style="position:relative;z-index:1;padding:4px 20px 0">
       <div id="search-container" style="background:#fff;border-radius:14px;padding:12px 15px;display:flex;align-items:center;gap:10px;border:1px solid #E2E8E5;box-shadow:0 6px 18px rgba(13,61,39,.10)">
@@ -1831,6 +1830,252 @@ select option { color: var(--t1); background: var(--w); }
     <div id="ff-search-wrap" style="display:none"></div>
     <!-- NORMAL HOME CONTENT (hidden while searching) -->
     <div id="ff-home-content">
+    <!-- Landing hero brought up to home (v-polish: fill the gap) -->
+  <div class="lf2-hero" style="height:180px;border-radius:14px;margin:12px 16px 0;width:auto">
+    <svg viewBox="0 0 430 260" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg"
+         style="position:absolute;inset:0;width:100%;height:100%">
+      <defs>
+        <radialGradient id="skyg" cx="55%" cy="0%" r="100%">
+          <stop offset="0%"   stop-color="#173022"/>
+          <stop offset="60%"  stop-color="#0f1e14"/>
+          <stop offset="100%" stop-color="#0a1410"/>
+        </radialGradient>
+        <radialGradient id="winglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#F5C842" stop-opacity="1"/>
+          <stop offset="80%"  stop-color="#E8973A" stop-opacity=".5"/>
+          <stop offset="100%" stop-color="#E8973A" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="winlit" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#FFD97A"/>
+          <stop offset="100%" stop-color="#E8973A"/>
+        </radialGradient>
+        <radialGradient id="ambglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#F5C842" stop-opacity=".35"/>
+          <stop offset="100%" stop-color="#F5C842" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="wglow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="sglow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <filter id="soften" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="groundg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#1a3320"/>
+          <stop offset="100%" stop-color="#0f1e12"/>
+        </linearGradient>
+        <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="transparent"/>
+          <stop offset="100%" stop-color="#102014"/>
+        </linearGradient>
+      </defs>
+
+      <!-- SKY -->
+      <rect width="430" height="260" fill="url(#skyg)"/>
+
+      <!-- Stars twinkling -->
+      <g opacity=".7">
+        <circle cx="310" cy="16" r="1.4" fill="#fff"><animate attributeName="opacity" values=".2;1;.2" dur="2.1s" repeatCount="indefinite"/></circle>
+        <circle cx="348" cy="28" r="1.1" fill="#fff"><animate attributeName="opacity" values=".5;1;.5" dur="1.7s" repeatCount="indefinite"/></circle>
+        <circle cx="388" cy="12" r="1.5" fill="#fff"><animate attributeName="opacity" values=".2;.9;.2" dur="2.5s" repeatCount="indefinite"/></circle>
+        <circle cx="405" cy="32" r="1"   fill="#fff"><animate attributeName="opacity" values=".4;.8;.4" dur="3.1s" repeatCount="indefinite"/></circle>
+        <circle cx="370" cy="44" r="1.2" fill="#fff"><animate attributeName="opacity" values=".3;.9;.3" dur="1.9s" repeatCount="indefinite"/></circle>
+        <circle cx="292" cy="38" r="1"   fill="#fff"><animate attributeName="opacity" values=".2;.7;.2" dur="2.7s" repeatCount="indefinite"/></circle>
+      </g>
+
+      <!-- BUILDING — right half, tall apartment block -->
+      <!-- Ambient warm glow behind building -->
+      <ellipse cx="340" cy="120" rx="100" ry="90" fill="url(#ambglow)" filter="url(#sglow)"/>
+      <!-- Main block -->
+      <rect x="250" y="22" width="175" height="195" rx="4" fill="#1c3825"/>
+      <!-- Roof ridge -->
+      <rect x="250" y="18" width="175" height="8" rx="3" fill="#244c30"/>
+      <!-- Darker secondary block behind -->
+      <rect x="235" y="44" width="30" height="173" rx="3" fill="#162d1e"/>
+      <!-- Floor dividers -->
+      <line x1="250" y1="64"  x2="425" y2="64"  stroke="#19311f" stroke-width="1.5"/>
+      <line x1="250" y1="100" x2="425" y2="100" stroke="#19311f" stroke-width="1.5"/>
+      <line x1="250" y1="136" x2="425" y2="136" stroke="#19311f" stroke-width="1.5"/>
+      <line x1="250" y1="172" x2="425" y2="172" stroke="#19311f" stroke-width="1.5"/>
+
+      <!-- Windows row 1 — all warm lit -->
+      <rect x="260" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="283" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
+      <rect x="306" y="34" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
+      <rect x="329" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="352" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
+      <rect x="375" y="34" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
+      <rect x="398" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".8"/>
+      <!-- Windows row 2 -->
+      <rect x="260" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
+      <rect x="283" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="306" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
+      <rect x="329" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".45"/>
+      <rect x="352" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="375" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".7"/>
+      <rect x="398" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
+      <!-- Windows row 3 -->
+      <rect x="260" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
+      <rect x="283" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
+      <rect x="306" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="329" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".95"/>
+      <rect x="352" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
+      <rect x="375" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="398" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".6"/>
+      <!-- Windows row 4 -->
+      <rect x="260" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".7"/>
+      <rect x="283" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
+      <rect x="306" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+      <rect x="329" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
+      <rect x="352" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
+      <rect x="375" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
+      <rect x="398" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
+
+      <!-- FAIRY STRING LIGHTS — full width draping wave -->
+      <path d="M-5 78 Q55 92 115 80 Q175 68 235 82 Q295 96 355 84 Q395 76 435 80"
+            stroke="rgba(200,180,80,.55)" stroke-width="1.4" fill="none"/>
+      <!-- Glowing bulbs on the string -->
+      <g filter="url(#wglow)">
+        <ellipse cx="32"  cy="88"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".65;1;.65" dur="1.9s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="90"  cy="82"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".5;.95;.5" dur="2.4s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="152" cy="76"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="212" cy="80"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".45;.9;.45" dur="2.8s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="272" cy="88"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".6;1;.6" dur="2.0s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="332" cy="82"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".5;.85;.5" dur="2.3s" repeatCount="indefinite"/></ellipse>
+        <ellipse cx="392" cy="78"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".7;1;.7" dur="1.7s" repeatCount="indefinite"/></ellipse>
+      </g>
+      <!-- Warm glow pools below each bulb -->
+      <ellipse cx="32"  cy="96" rx="18" ry="6" fill="#F5C842" opacity=".08"/>
+      <ellipse cx="90"  cy="90" rx="18" ry="6" fill="#F5C842" opacity=".07"/>
+      <ellipse cx="152" cy="84" rx="18" ry="6" fill="#F5C842" opacity=".09"/>
+      <ellipse cx="212" cy="88" rx="18" ry="6" fill="#F5C842" opacity=".07"/>
+
+      <!-- FOLIAGE / BUSHES left side -->
+      <ellipse cx="-5"  cy="230" rx="48" ry="58" fill="#1a4228" opacity=".95"/>
+      <ellipse cx="20"  cy="210" rx="38" ry="50" fill="#1f5234" opacity=".9"/>
+      <ellipse cx="50"  cy="235" rx="32" ry="42" fill="#173820" opacity=".85"/>
+      <ellipse cx="75"  cy="220" rx="26" ry="36" fill="#1a4a2a" opacity=".7"/>
+      <ellipse cx="5"   cy="245" rx="24" ry="28" fill="#204a2c" opacity=".8"/>
+
+      <!-- TABLE — warm round dinner table -->
+      <ellipse cx="185" cy="228" rx="70" ry="18" fill="#1e3828"/>
+      <rect    x="115" y="220" width="140" height="10" rx="5" fill="#27533a"/>
+      <!-- Table cloth highlight -->
+      <ellipse cx="185" cy="220" rx="64" ry="6" fill="rgba(255,255,255,.04)"/>
+      <!-- Food dishes on table -->
+      <!-- Bowl left -->
+      <ellipse cx="148" cy="220" rx="16" ry="6" fill="#2d5c3c"/>
+      <ellipse cx="148" cy="218" rx="12" ry="4" fill="#E8973A" opacity=".75" filter="url(#soften)"/>
+      <circle  cx="145" cy="217" r="3.5" fill="#c44" opacity=".6"/>
+      <circle  cx="151" cy="216" r="2.5" fill="#F5C842" opacity=".8"/>
+      <!-- Plate center -->
+      <ellipse cx="188" cy="220" rx="18" ry="6" fill="#2d5c3c"/>
+      <circle  cx="188" cy="218" r="10"   fill="#b85c28" opacity=".5" filter="url(#soften)"/>
+      <ellipse cx="188" cy="217" rx="7"  ry="4" fill="#E8973A" opacity=".7"/>
+      <!-- Bottle / drinks -->
+      <rect x="218" y="207" width="8" height="16" rx="3" fill="#3a8a5a"/>
+      <ellipse cx="222" cy="207" rx="5" ry="3" fill="#4aaa6a"/>
+      <!-- Plate right -->
+      <ellipse cx="230" cy="221" rx="14" ry="5" fill="#2d5c3c"/>
+      <ellipse cx="230" cy="219" rx="9"  ry="3" fill="#F5C842" opacity=".6"/>
+
+      <!-- PEOPLE eating together -->
+      <!-- Person 1 — left, warm tan skin, yellow top, arm reaching to food -->
+      <ellipse cx="122" cy="196" rx="16" ry="20" fill="#E07A3A"/><!-- body/top -->
+      <circle  cx="122" cy="174" r="14" fill="#C17A4A"/><!-- head -->
+      <!-- hair -->
+      <path d="M108 174 Q110 160 122 158 Q134 160 136 174" fill="#3d1a08"/>
+      <ellipse cx="122" cy="159" rx="12" ry="7" fill="#3d1a08"/>
+      <!-- eyes & smile -->
+      <circle cx="117" cy="172" r="2" fill="#3d1a08"/>
+      <circle cx="127" cy="172" r="2" fill="#3d1a08"/>
+      <circle cx="117.5" cy="171.5" r=".7" fill="#fff"/>
+      <circle cx="127.5" cy="171.5" r=".7" fill="#fff"/>
+      <path d="M117 178 Q122 183 127 178" stroke="#3d1a08" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- arm reaching toward food -->
+      <path d="M110 192 Q96 205 90 215" stroke="#C17A4A" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <circle cx="88" cy="217" r="6" fill="#C17A4A"/>
+      <!-- cup in hand -->
+      <rect x="82" y="212" width="9" height="12" rx="2.5" fill="#E8973A"/>
+
+      <!-- Person 2 — center, green hoodie, Filipino look, big smile (tallest) -->
+      <ellipse cx="186" cy="192" rx="18" ry="22" fill="#2ea877"/><!-- hoodie -->
+      <circle  cx="186" cy="168" r="16" fill="#C4845A"/><!-- head -->
+      <!-- hair dark -->
+      <path d="M170 168 Q172 152 186 150 Q200 152 202 168" fill="#1a0800"/>
+      <ellipse cx="186" cy="151" rx="14" ry="8" fill="#1a0800"/>
+      <!-- ears -->
+      <circle cx="170" cy="169" r="5" fill="#C4845A"/>
+      <circle cx="202" cy="169" r="5" fill="#C4845A"/>
+      <!-- eyes bright -->
+      <circle cx="179" cy="165" r="2.5" fill="#1a0800"/>
+      <circle cx="193" cy="165" r="2.5" fill="#1a0800"/>
+      <circle cx="179.8" cy="164.3" r="1" fill="#fff"/>
+      <circle cx="193.8" cy="164.3" r="1" fill="#fff"/>
+      <!-- big warm smile -->
+      <path d="M178 172 Q186 180 194 172" stroke="#1a0800" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="186" cy="174" rx="5" ry="2" fill="#c47050" opacity=".5"/>
+      <!-- hoodie pocket detail -->
+      <rect x="178" y="200" width="16" height="10" rx="4" fill="rgba(0,0,0,.12)"/>
+
+      <!-- Person 3 — right, lighter skin, beige jacket -->
+      <ellipse cx="252" cy="196" rx="15" ry="19" fill="#C4A882"/>
+      <circle  cx="252" cy="175" r="13" fill="#B8896A"/>
+      <!-- hair wavy -->
+      <path d="M239 175 Q241 162 252 160 Q263 162 265 175" fill="#2a1208"/>
+      <ellipse cx="252" cy="161" rx="11" ry="7" fill="#2a1208"/>
+      <!-- eyes -->
+      <circle cx="247" cy="173" r="2" fill="#2a1208"/>
+      <circle cx="257" cy="173" r="2" fill="#2a1208"/>
+      <circle cx="247.7" cy="172.4" r=".7" fill="#fff"/>
+      <circle cx="257.7" cy="172.4" r=".7" fill="#fff"/>
+      <path d="M247 179 Q252 184 257 179" stroke="#2a1208" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <!-- arm reaching -->
+      <path d="M265 190 Q278 202 284 210" stroke="#B8896A" stroke-width="9" stroke-linecap="round" fill="none"/>
+
+      <!-- Person 4 — far right, darker skin, olive cap, waving -->
+      <ellipse cx="310" cy="198" rx="14" ry="18" fill="#5A8A6A"/><!-- jacket -->
+      <circle  cx="310" cy="178" r="12" fill="#8B6040"/><!-- head -->
+      <!-- cap -->
+      <rect x="298" y="167" width="24" height="7" rx="3" fill="#3a3020"/>
+      <rect x="296" y="168" width="28" height="5" rx="2" fill="#4d4030"/>
+      <!-- eyes -->
+      <circle cx="305" cy="177" r="2" fill="#1a0800"/>
+      <circle cx="315" cy="177" r="2" fill="#1a0800"/>
+      <circle cx="305.6" cy="176.4" r=".7" fill="#fff"/>
+      <circle cx="315.6" cy="176.4" r=".7" fill="#fff"/>
+      <!-- grin -->
+      <path d="M305 183 Q310 188 315 183" stroke="#1a0800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- waving arm animated -->
+      <g>
+        <path d="M322 190 Q338 175 344 164" stroke="#8B6040" stroke-width="9" stroke-linecap="round" fill="none">
+          <animateTransform attributeName="transform" type="rotate"
+            values="-8 322 190;10 322 190;-8 322 190" dur="1.6s" repeatCount="indefinite"/>
+        </path>
+        <circle cx="344" cy="163" r="7" fill="#8B6040">
+          <animateTransform attributeName="transform" type="rotate"
+            values="-8 322 190;10 322 190;-8 322 190" dur="1.6s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+
+      <!-- Ground strip -->
+      <rect x="0" y="238" width="430" height="22" fill="#112016"/>
+
+      <!-- Bottom fade into page bg -->
+      <rect x="0" y="220" width="430" height="40" fill="url(#botfade)"/>
+    </svg>
+
+    <!-- Hero text overlay -->
+    <div class="lf2-hero-txt">
+      <div class="lf2-headline">Your community.<br><span class="g">Right</span> here.<br><span class="g">Right</span> now.</div>
+      <div class="lf2-tagline">Real food, real people,<br>same building. &#x1F49A;</div>
+    </div>
+  </div>
     <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
     <div class="sec" style="padding-top:16px"><span class="sec-t">🏪 Your Neighborhood Kitchens</span><span class="sec-a">See all</span></div>
@@ -2075,7 +2320,7 @@ select option { color: var(--t1); background: var(--w); }
 <div class="page" id="p-vlogin">
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
   <div class="login-wrap">
-    <button class="login-back" onclick="goPage('p-land')">← Back</button>
+    <button class="login-back" onclick="goPage('p-chome')">← Back</button>
     <div class="login-ico">🏪</div>
     <div class="login-ttl">Vendor Login</div>
     <div class="login-sub">LokalFinder · GRASS Residences</div>
@@ -2321,7 +2566,7 @@ select option { color: var(--t1); background: var(--w); }
 <div class="page" id="p-alogin">
   <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
   <div class="login-wrap" style="background:#0F4A32">
-    <button class="login-back" style="color:rgba(255,255,255,.6)" onclick="goPage('p-land')">← Back</button>
+    <button class="login-back" style="color:rgba(255,255,255,.6)" onclick="goPage('p-chome')">← Back</button>
     <div class="login-ico">⚙️</div>
     <div class="login-ttl" style="color:#fff">Admin Login</div>
     <div class="login-sub" style="color:rgba(255,255,255,.5)">LokalFinder Control Panel</div>
@@ -2342,7 +2587,7 @@ select option { color: var(--t1); background: var(--w); }
   <div style="background:#0F4A32;padding:14px 18px 16px;flex-shrink:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase">Admin Panel</div>
-      <button onclick="goPage('p-land')" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Sign Out</button>
+      <button onclick="goPage('p-chome')" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Sign Out</button>
     </div>
     <div style="font-size:19px;font-weight:800;color:#fff">LokalFinder HQ 🏢</div>
     <div style="font-size:12px;color:rgba(255,255,255,.55)">GRASS Residences · Full control panel</div>
@@ -3700,7 +3945,7 @@ function vendorLogout(){
   document.getElementById('v-sel').value='';
   document.getElementById('v-pin').value='';
   updateAppBadge(0);
-  goPage('p-land');
+  goPage('p-chome');
   showToast('Logged out of vendor portal');
 }
 
