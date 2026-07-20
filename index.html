@@ -5626,6 +5626,27 @@ async function registerServiceWorker(){
   try{
     if(!('serviceWorker' in navigator)) return;
     if(window.LF_IS_IOS && window.LF_IS_IOS()){
+      // iOS: OneSignal owns push. Actively evict any Firebase worker left
+      // installed from earlier sessions — it holds the single iOS push slot
+      // and blocks OneSignal from subscribing. We do NOT touch OneSignal's
+      // own worker (OneSignalSDKWorker.js, scope ./push/).
+      try{
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for(const r of regs){
+          const url = (r.active && r.active.scriptURL) ||
+                      (r.waiting && r.waiting.scriptURL) ||
+                      (r.installing && r.installing.scriptURL) || '';
+          if(url.indexOf('firebase-messaging-sw') !== -1){
+            try{
+              const sub = await r.pushManager.getSubscription();
+              if(sub){ await sub.unsubscribe(); }
+            }catch(e){}
+            try{ await r.unregister(); }catch(e){}
+            console.log('[SW] iOS — evicted stale Firebase push worker:', url);
+            try{ showToast('🧹 Cleared old Firebase worker — OneSignal now owns push'); }catch(e){}
+          }
+        }
+      }catch(e){ console.warn('[SW] iOS Firebase-worker cleanup failed:', e); }
       console.log('[SW] iOS — Firebase push worker disabled; OneSignal owns push.');
       return;
     }
@@ -6870,7 +6891,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 40; // ← bump this each release (and version.json)
+  const APP_VERSION = 41; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
