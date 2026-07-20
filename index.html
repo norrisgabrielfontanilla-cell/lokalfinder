@@ -3028,6 +3028,17 @@ select option { color: var(--t1); background: var(--w); }
 // ═══════════════════════════════════════════════════════
 window._osInitSettled = new Promise(function(res){ window.__osSettleResolve = res; });
 
+// ── PUSH OWNERSHIP: iOS Safari allows only ONE push subscription per site.
+//    On iOS we let OneSignal own push and switch Firebase (FCM) OFF, ending
+//    the two-systems collision. Android/desktop keep FCM unchanged.
+window.LF_IS_IOS = function(){
+  try{
+    var ua = navigator.userAgent || '';
+    return /iPhone|iPad|iPod/i.test(ua) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }catch(e){ return false; }
+};
+
 // ═══════════════════════════════════════════════════════
 //  DATA
 // ═══════════════════════════════════════════════════════
@@ -5487,6 +5498,12 @@ function _fcmInit(){
 
 // Returns the device's FCM token (or null). Registers the SW used for push.
 async function fcmGetToken(){
+  // iOS: OneSignal owns push. Skip FCM so it never competes for the single
+  // iOS push slot. (Android/desktop continue through FCM as before.)
+  if(window.LF_IS_IOS && window.LF_IS_IOS()){
+    try{ showToast('ℹ️ iOS: using OneSignal for push (FCM off)'); }catch(e){}
+    return null;
+  }
   // DIAG: show each step on screen so we can see where it fails on iPhone.
   try{ showToast('🔎 FCM step 1: starting'); }catch(e){}
   try{
@@ -5608,6 +5625,10 @@ function notifyVendorNewOrder(o){
 async function registerServiceWorker(){
   try{
     if(!('serviceWorker' in navigator)) return;
+    if(window.LF_IS_IOS && window.LF_IS_IOS()){
+      console.log('[SW] iOS — Firebase push worker disabled; OneSignal owns push.');
+      return;
+    }
     if(window._osInitSettled && typeof window._osInitSettled.then === 'function'){
       console.log('[SW] Waiting for OneSignal init to settle before boot registration…');
       await Promise.race([
