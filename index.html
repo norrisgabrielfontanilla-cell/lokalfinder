@@ -6891,7 +6891,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 42; // ← bump this each release (and version.json)
+  const APP_VERSION = 43; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -7273,10 +7273,12 @@ setInterval(updateClock,15000);
     console.log('[OneSignal] init() starting at', _t0);
     var _rawInit = OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-      // PROVEN CONFIG: this exact scope delivered a real push to a closed
-      // iPhone (2026-07-09 11:23). Do not change without device evidence.
-      serviceWorkerPath: "OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "./push/" },
+      // FIXED 2026-07-21: the site now lives under /lokalfinder/ (GitHub
+      // Pages project page), not at the domain root. A bare relative path
+      // was resolving against the domain root and 404ing. Both path and
+      // scope must be explicit for a subfolder site.
+      serviceWorkerPath: "/lokalfinder/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/lokalfinder/push/" },
       allowLocalhostAsSecureOrigin: true
     });
     // If init() eventually resolves AFTER we've already given up on the race
