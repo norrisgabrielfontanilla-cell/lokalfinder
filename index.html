@@ -79,6 +79,24 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .lf-qr-actions button:active{transform:scale(.96)}
 .lf-qr-btn-primary{background:var(--g);color:#fff}
 .lf-qr-btn-secondary{background:#F1F5F3;color:var(--t1);border:1px solid #E2E8E5 !important}
+/* v46: QR modal — inline SVG code + Add-to-Home-Screen guide */
+.lf-qr-sheet{max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.lf-qr-sheet::-webkit-scrollbar{display:none}
+.lf-qr-box svg{display:block;width:200px;height:200px;shape-rendering:crispEdges}
+.lf-a2hs{margin-top:15px;border-top:1px solid #EEF2F0;padding-top:14px;text-align:left}
+.lf-a2hs-ttl{font-size:13.5px;font-weight:800;color:var(--t1);text-align:center;margin-bottom:3px}
+.lf-a2hs-sub{font-size:11px;color:var(--t3);text-align:center;line-height:1.45;margin-bottom:11px}
+.lf-a2hs-tabs{display:flex;gap:5px;background:#F1F5F3;border-radius:11px;padding:4px;margin-bottom:12px}
+.lf-a2hs-tab{flex:1;padding:8px 6px;border:none;border-radius:8px;background:transparent;font-family:var(--ff);font-size:12.5px;font-weight:800;color:var(--t3);cursor:pointer;transition:background .18s,color .18s}
+.lf-a2hs-tab.on{background:#fff;color:var(--g);box-shadow:0 1px 4px rgba(13,40,28,.10)}
+.lf-a2hs-pane{display:none}
+.lf-a2hs-pane.on{display:block;animation:fadeIn .2s ease both}
+.lf-step{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+.lf-step:last-child{margin-bottom:0}
+.lf-step-n{width:19px;height:19px;border-radius:50%;background:var(--g);color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.lf-step-t{font-size:12px;color:var(--t2);line-height:1.45}
+.lf-step-t b{color:var(--t1);font-weight:800}
+.lf-a2hs-note{margin-top:11px;background:var(--gl);border-radius:9px;padding:8px 10px;font-size:10.5px;color:var(--gd);line-height:1.45}
 .scrl{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .scrl::-webkit-scrollbar{display:none}
 /* Hide horizontal scrollbars on swipeable rows (category chips, vendor rails, etc) — swipe still works, just no visible bar (v-polish) */
@@ -1169,13 +1187,47 @@ select option { color: var(--t1); background: var(--w); }
   <div class="lf-qr-sheet">
     <div class="lf-qr-title">Share LokalFinder 💚</div>
     <div class="lf-qr-sub">Point your neighbor's camera at the code</div>
+    <!-- v46: QR is now a pre-generated inline SVG. It used to be fetched from
+         api.qrserver.com — a third-party outage, a slow network, or an offline
+         phone left the single most important growth surface in the app blank.
+         The share URL never changes, so the code never needs regenerating.
+         Verified: decodes to the exact SHARE_URL below. -->
     <div class="lf-qr-box">
-      <img id="lf-qr-img" alt="LokalFinder QR" src="">
+      <svg id="lf-qr-svg" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code linking to LokalFinder"><rect width="37" height="37" fill="#fff"/><path stroke="#0E8A5A" d="M2 2.5h7m3 0h4m2 0h1m1 0h3m1 0h2m2 0h7m-33 1h1m5 0h1m2 0h2m1 0h4m1 0h1m3 0h1m4 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m2 0h1m1 0h1m2 0h3m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m2 0h2m1 0h2m1 0h1m6 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m3 0h1m2 0h1m2 0h1m1 0h4m-24 1h1m1 0h5m3 0h1m2 0h3m1 0h1m1 0h1m2 0h3m1 0h5m-28 1h1m5 0h3m4 0h5m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h4m1 0h3m1 0h1m5 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m-32 1h1m4 0h1m2 0h5m1 0h2m4 0h6m2 0h5m-33 1h1m3 0h3m1 0h2m7 0h1m6 0h2m1 0h3m-30 1h4m5 0h2m1 0h4m1 0h5m1 0h4m2 0h4m-33 1h1m1 0h3m1 0h1m1 0h1m3 0h2m1 0h3m2 0h1m1 0h1m1 0h3m1 0h4m-32 1h1m1 0h4m2 0h2m2 0h1m3 0h1m4 0h6m2 0h2m-30 1h3m1 0h4m3 0h3m2 0h1m4 0h1m2 0h1m1 0h2m3 0h1m-33 1h2m1 0h1m4 0h4m4 0h5m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h1m5 0h3m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h2m1 0h2m-32 1h2m2 0h2m2 0h2m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m2 0h5m-32 1h2m1 0h1m2 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h1m1 0h2m1 0h3m1 0h2m-33 1h1m1 0h1m1 0h2m1 0h2m1 0h1m1 0h3m2 0h5m1 0h1m2 0h1m2 0h1m2 0h1m-33 1h1m4 0h2m3 0h1m1 0h1m2 0h1m1 0h1m2 0h2m3 0h4m1 0h2m-32 1h1m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m4 0h2m1 0h2m3 0h1m1 0h5m-33 1h1m1 0h1m1 0h1m1 0h2m2 0h6m1 0h1m1 0h1m2 0h1m1 0h5m3 0h1m-25 1h4m4 0h1m2 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m2 0h1m1 0h6m4 0h4m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h3m1 0h1m1 0h2m2 0h2m1 0h1m1 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m1 0h1m2 0h1m3 0h3m4 0h1m1 0h6m-30 1h1m1 0h3m1 0h1m1 0h5m1 0h1m1 0h1m1 0h4m1 0h1m1 0h1m2 0h2m1 0h2m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h2m3 0h1m2 0h1m2 0h2m2 0h1m-31 1h1m5 0h1m2 0h1m2 0h2m1 0h2m1 0h4m1 0h1m2 0h1m1 0h1m1 0h1m-31 1h7m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m3 0h1"/></svg>
     </div>
     <div class="lf-qr-url" id="lf-qr-url-txt">https://norrisgabrielfontanilla-cell.github.io/lokalfinder/</div>
     <div class="lf-qr-actions">
       <button class="lf-qr-btn-secondary" onclick="lfCopyShareLink(this)">📋 Copy link</button>
       <button class="lf-qr-btn-primary" onclick="lfNativeShare()">Share</button>
+    </div>
+
+    <!-- v46: Add-to-Home-Screen guide. The steps genuinely differ per platform
+         (and on iPhone it only works in Safari), so a single generic list would
+         strand half of every new neighbor. Tab defaults to their device. -->
+    <div class="lf-a2hs">
+      <div class="lf-a2hs-ttl">📲 Add it to their Home Screen</div>
+      <div class="lf-a2hs-sub">So LokalFinder opens like a real app — no app store needed</div>
+
+      <div class="lf-a2hs-tabs">
+        <button class="lf-a2hs-tab" id="lf-tab-ios" onclick="lfA2HS('ios')">🍎 iPhone</button>
+        <button class="lf-a2hs-tab" id="lf-tab-android" onclick="lfA2HS('android')">🤖 Android</button>
+      </div>
+
+      <div class="lf-a2hs-pane" id="lf-pane-ios">
+        <div class="lf-step"><div class="lf-step-n">1</div><div class="lf-step-t">Scan the code, then open the link in <b>Safari</b> — this does not work in Chrome or inside Messenger</div></div>
+        <div class="lf-step"><div class="lf-step-n">2</div><div class="lf-step-t">Tap the <b>Share</b> button at the bottom (the square with an arrow ↑)</div></div>
+        <div class="lf-step"><div class="lf-step-n">3</div><div class="lf-step-t">Scroll down and tap <b>Add to Home Screen</b></div></div>
+        <div class="lf-step"><div class="lf-step-n">4</div><div class="lf-step-t">Tap <b>Add</b> — then always open LokalFinder from the Home Screen icon</div></div>
+        <div class="lf-a2hs-note">⚠️ On iPhone, order alerts only work from the Home Screen version. Opening it in a browser tab means no notifications.</div>
+      </div>
+
+      <div class="lf-a2hs-pane" id="lf-pane-android">
+        <div class="lf-step"><div class="lf-step-n">1</div><div class="lf-step-t">Scan the code, then open the link in <b>Chrome</b></div></div>
+        <div class="lf-step"><div class="lf-step-n">2</div><div class="lf-step-t">Tap the <b>⋮</b> menu at the top right</div></div>
+        <div class="lf-step"><div class="lf-step-n">3</div><div class="lf-step-t">Tap <b>Add to Home screen</b> — some phones say <b>Install app</b></div></div>
+        <div class="lf-step"><div class="lf-step-n">4</div><div class="lf-step-t">Tap <b>Install</b> — LokalFinder is now on their Home Screen</div></div>
+        <div class="lf-a2hs-note">💡 Chrome may show an <b>Install</b> banner on its own — tapping that works too.</div>
+      </div>
     </div>
     <button onclick="closeShareQR()" style="margin-top:10px;background:none;border:none;color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ff);padding:6px">Close</button>
   </div>
@@ -1183,11 +1235,33 @@ select option { color: var(--t1); background: var(--w); }
 <script>
 (function(){
   var SHARE_URL = 'https://norrisgabrielfontanilla-cell.github.io/lokalfinder/';
-  var QR_SRC = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=2&data=' + encodeURIComponent(SHARE_URL);
+
+  // v46: which Add-to-Home-Screen steps to show first. LF_IS_IOS is defined in
+  // a later script block, so resolve it at call time, not at load time.
+  function lfDetectPlatform(){
+    try{
+      if(typeof window.LF_IS_IOS === 'function' && window.LF_IS_IOS()) return 'ios';
+      var ua = navigator.userAgent || '';
+      if(/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+      if(/Android/i.test(ua)) return 'android';
+      if(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return 'ios';
+    }catch(e){}
+    return 'android';   // desktop/unknown: the more common phone here
+  }
+
+  window.lfA2HS = function(which){
+    var p = (which === 'ios') ? 'ios' : 'android';
+    ['ios','android'].forEach(function(k){
+      var tab  = document.getElementById('lf-tab-' + k);
+      var pane = document.getElementById('lf-pane-' + k);
+      if(tab)  tab.classList.toggle('on',  k === p);
+      if(pane) pane.classList.toggle('on', k === p);
+    });
+  };
+
   window.openShareQR = function(){
     var m = document.getElementById('lf-qr-modal');
-    var img = document.getElementById('lf-qr-img');
-    if(img && !img.src) img.src = QR_SRC; // lazy-load QR image
+    window.lfA2HS(lfDetectPlatform());   // QR itself is inline — nothing to load
     if(m) m.classList.add('on');
   };
   window.closeShareQR = function(){
@@ -2271,14 +2345,23 @@ select option { color: var(--t1); background: var(--w); }
       <b>💰 Total paid:</b> <span id="s-total">₱108</span>
     </div>
 
-    <!-- Vendor contact -->
-    <div id="s-vendor-contact" style="background:var(--s2);border-radius:var(--rs);border:1px solid var(--bdm);padding:12px 14px;margin-bottom:14px;display:none;align-items:center;gap:10px">
-      <span style="font-size:22px" id="s-vendor-emoji">🏪</span>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:700;color:var(--t1)" id="s-vendor-name">Vendor</div>
-        <div style="font-size:11px;color:var(--t3)" id="s-vendor-contact-num">No contact number set</div>
+    <!-- Vendor contact — v44: tap-to-Call / tap-to-Text so customers can follow
+         up directly while an order is still waiting to be accepted. Data-driven
+         from v.contact, so it works for every current AND future vendor. -->
+    <div id="s-vendor-contact" style="background:var(--s2);border-radius:var(--rs);border:1px solid var(--bdm);padding:12px 14px;margin-bottom:14px;display:none;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px" id="s-vendor-emoji">🏪</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--t1)" id="s-vendor-name">Vendor</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:1px" id="s-vendor-contact-num"></div>
+          <div style="font-size:11px;color:var(--t3);margin-top:1px;display:none" id="s-vendor-nocontact">No contact number set — use Chat below</div>
+        </div>
       </div>
-      <a id="s-vendor-call" href="#" style="background:var(--g);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none">📞 Call</a>
+      <div id="s-vendor-actions" style="display:none;gap:8px">
+        <a id="s-vendor-call" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--g);color:#fff;border-radius:10px;padding:11px 10px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">📞 Call</a>
+        <a id="s-vendor-text" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:var(--gd);border:1.5px solid var(--g);border-radius:10px;padding:11px 10px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">💬 Text</a>
+      </div>
+      <div id="s-vendor-followup-hint" style="display:none;font-size:11px;color:var(--t3);line-height:1.5">Still waiting? Tap <b>Call</b> or <b>Text</b> to follow up with the vendor right away.</div>
     </div>
 
     <!-- Chat button -->
@@ -2401,11 +2484,13 @@ select option { color: var(--t1); background: var(--w); }
       <!-- Contact number -->
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.4px">📞 CONTACT</div>
-        <input type="tel" id="v-contact-input" placeholder="e.g. 09171234567" maxlength="15"
+        <input type="tel" id="v-contact-input" placeholder="e.g. 09171234567" maxlength="20" inputmode="tel" autocomplete="tel"
           style="flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:13px;font-weight:600;font-family:var(--ff)"
           onchange="saveVendorContact()">
         <button onclick="saveVendorContact()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save</button>
       </div>
+      <!-- v44: without a number, customers get no Call/Text buttons at all -->
+      <div id="v-contact-note" style="display:none;margin-top:7px;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.45);border-radius:8px;padding:7px 10px;font-size:10.5px;font-weight:600;color:#fde68a;line-height:1.45">⚠️ Add your number so customers can Call or Text you to follow up on their orders.</div>
 
       <!-- Delivery fee -->
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)">
@@ -4180,13 +4265,145 @@ function loadAllChats(){ /* no-op — panel-based chat loads on open */ }
 
 
 
-// Vendor contact number
+/* ══════════════════════════════════════════════════════════════════════
+   v44 — VENDOR PHONE CONTACT (Call / Text)
+   ----------------------------------------------------------------------
+   lfPhone(raw) turns anything a vendor types into ONE canonical dial
+   string, so tel: / sms: links work on every device regardless of how
+   the number was entered. Accepts:
+     09171234567 · 0917 123 4567 · 0917-123-4567 · (0917) 123-4567
+     +639171234567 · +63 917 123 4567 · 639171234567 · 9171234567
+     00639171234567 · landlines like (02) 8123 4567
+   Returns { e164, pretty } — or null when the input isn't dialable.
+   Never throws. Junk ("N/A", "wala pa", "0000") returns null so the
+   UI can hide the buttons instead of rendering a dead link.
+══════════════════════════════════════════════════════════════════════ */
+function lfPhone(raw){
+  try{
+    if(raw === null || raw === undefined) return null;
+    var s = String(raw).trim();
+    if(!s) return null;
+    var hadPlus = s.charAt(0) === '+';
+    var digits  = s.replace(/[^0-9]/g, '');
+    if(!digits) return null;
+
+    // Explicit non-PH international number — trust it exactly as given.
+    if(hadPlus && digits.slice(0,2) !== '63'){
+      if(digits.length < 8 || digits.length > 15) return null;
+      return { e164:'+'+digits, pretty:'+'+digits };
+    }
+
+    // Track whether the vendor clearly MEANT a mobile number. If they did and
+    // the digit count doesn't add up, we reject instead of guessing — a Call
+    // button that dials a dead number is worse than no button at all, because
+    // the vendor never finds out it's broken.
+    var n = digits, mobileIntent = hadPlus;
+    if(n.slice(0,4) === '0063'){ n = n.slice(4); mobileIntent = true; }
+    else if(n.slice(0,2) === '63' && n.length === 12){ n = n.slice(2); mobileIntent = true; }
+    if(/^0[89]/.test(digits)) mobileIntent = true;
+    if(n.charAt(0) === '0' && n.length === 11) n = n.slice(1);
+
+    // PH mobile — the normal case. Exactly 10 national digits beginning with
+    // 9 (Globe / Smart / Sun / TNT / GOMO) or 8 (DITO: 0817, 0895-0898).
+    if(n.length === 10 && (n.charAt(0) === '9' || n.charAt(0) === '8')){
+      return {
+        e164 : '+63' + n,
+        pretty: '0' + n.slice(0,3) + ' ' + n.slice(3,6) + ' ' + n.slice(6)
+      };
+    }
+
+    // Mobile intent but wrong length = typo. Also catches a bare number
+    // starting with 9 that isn't 10 digits.
+    if(mobileIntent || n.charAt(0) === '9') return null;
+
+    // Landline — dial the digits as typed rather than guessing an area code
+    // and producing a wrong number. PH landlines top out at 10 digits
+    // (leading 0 + up to 2-digit area code + 8 digits).
+    if(digits.length >= 7 && digits.length <= 10){
+      return { e164: digits, pretty: digits };
+    }
+    return null;
+  }catch(e){ return null; }
+}
+
+// Builds an sms: link with a pre-filled body. iOS wants "&body=",
+// Android wants "?body=" — get this wrong and the message opens blank.
+function lfSmsHref(num, body){
+  var n = String(num || '');
+  if(!n) return '';
+  if(!body) return 'sms:' + n;
+  var ios = false;
+  try{
+    ios = (typeof window.LF_IS_IOS === 'function')
+        ? window.LF_IS_IOS()
+        : /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  }catch(e){ ios = false; }
+  return 'sms:' + n + (ios ? '&' : '?') + 'body=' + encodeURIComponent(body);
+}
+
+// The message we pre-fill when a customer taps Text.
+function lfFollowUpMsg(o, v){
+  var who  = (v && v.name) ? v.name : 'po';
+  var name = (o && o.name) ? o.name : 'a customer';
+  var unit = (o && o.unit) ? o.unit : '';
+  var oid  = (o && o.id)   ? o.id   : '';
+  var msg  = 'Hi ' + who + '! This is ' + name + (unit ? ' from Unit ' + unit : '') +
+             '. Following up on my LokalFinder order ' + oid + '.';
+  msg += (o && o.status === 'new')
+       ? ' Is it accepted na po? Salamat!'
+       : ' Thank you!';
+  return msg;
+}
+
+// Vendor contact number — validates, stores canonical E.164, keeps the
+// dashboard input and the "add your number" nudge in sync.
 function saveVendorContact(){
   if(!activeVendorId) return;
-  const num = el('v-contact-input').value.trim();
-  VENDORS[activeVendorId].contact=num;
+  const v = VENDORS[activeVendorId]; if(!v) return;
+  const inp = el('v-contact-input'); if(!inp) return;
+  const raw = String(inp.value || '').trim();
+
+  if(!raw){
+    v.contact = '';
+    inp.value = '';
+    window._lfContactSaved = '';
+    pushState();
+    updateVendorContactUI();
+    showToast('✅ Contact number cleared');
+    return;
+  }
+
+  const p = lfPhone(raw);
+  if(!p){
+    showToast('⚠️ That number looks incomplete. Use 09XX XXX XXXX');
+    const cur = lfPhone(v.contact);
+    inp.value = cur ? cur.pretty : '';
+    return;
+  }
+
+  inp.value = p.pretty;
+  // The input fires onchange on blur AND the Save button fires onclick —
+  // without this guard one tap would write to Firebase twice.
+  if(v.contact === p.e164 && window._lfContactSaved === p.e164){
+    updateVendorContactUI();
+    return;
+  }
+  v.contact = p.e164;
+  window._lfContactSaved = p.e164;
   pushState();
-  showToast('✅ Contact number saved!');
+  updateVendorContactUI();
+  showToast('✅ Saved — customers can now Call or Text you');
+}
+
+// Reflects the stored number back into the vendor dashboard. Never
+// overwrites the field while the vendor is actively typing in it.
+function updateVendorContactUI(){
+  const inp  = el('v-contact-input');
+  const note = el('v-contact-note');
+  const v    = activeVendorId ? VENDORS[activeVendorId] : null;
+  const p    = v ? lfPhone(v.contact) : null;
+  if(inp && document.activeElement !== inp) inp.value = p ? p.pretty : '';
+  if(note) note.style.display = p ? 'none' : 'block';
 }
 
 // Store description — vendor-written details customers see (payment rules, delivery rates, etc.)
@@ -4228,24 +4445,49 @@ function getCartDeliveryFee(){
   return Math.max(0, parseInt(v.deliveryFee || 0, 10) || 0);
 }
 
+// v44: renders the vendor row on the customer order tracker, including the
+// tap-to-Call / tap-to-Text follow-up buttons. Runs on every 3s sync, so it
+// must be cheap, idempotent, and never throw on missing orders/vendors.
 function loadCustomerVendorContact(oid){
-  const o = orders.find(x=>x.id===oid); if(!o) return;
-  const v = VENDORS[o.vendorId]; if(!v) return;
-  const box = el('s-vendor-contact');
-  if(box){
-    box.style.display='flex';
-    el('s-vendor-emoji').textContent=v.emoji||'🏪';
-    el('s-vendor-name').textContent=v.name;
-    const contactEl = el('s-vendor-contact-num');
-    const callEl = el('s-vendor-call');
-    if(v.contact){
-      contactEl.textContent='📞 '+v.contact;
-      callEl.href='tel:'+v.contact;
-      callEl.style.display='block';
-    } else {
-      contactEl.textContent='No contact number set';
-      callEl.style.display='none';
-    }
+  const box = el('s-vendor-contact'); if(!box) return;
+  const acts  = el('s-vendor-actions');
+  const call  = el('s-vendor-call');
+  const text  = el('s-vendor-text');
+  const numEl = el('s-vendor-contact-num');
+  const noneEl= el('s-vendor-nocontact');
+  const hint  = el('s-vendor-followup-hint');
+
+  const clearLinks = ()=>{
+    if(acts) acts.style.display='none';
+    if(call) call.removeAttribute('href');
+    if(text) text.removeAttribute('href');
+    if(hint) hint.style.display='none';
+  };
+
+  let o = null;
+  try{ o = orders.find(x=>x.id===oid); }catch(e){ o = null; }
+  const v = o ? VENDORS[o.vendorId] : null;
+  // Unknown order or deleted vendor — hide the whole row rather than
+  // leaving a stale number pointing at the wrong store.
+  if(!o || !v){ box.style.display='none'; clearLinks(); return; }
+
+  box.style.display='flex';
+  if(el('s-vendor-emoji')) el('s-vendor-emoji').textContent = v.emoji||'🏪';
+  if(el('s-vendor-name'))  el('s-vendor-name').textContent  = v.name||'Vendor';
+
+  const p = lfPhone(v.contact);
+  if(p){
+    if(numEl){ numEl.textContent = '📞 ' + p.pretty; numEl.style.display='block'; }
+    if(noneEl) noneEl.style.display='none';
+    if(call) call.setAttribute('href', 'tel:' + p.e164);
+    if(text) text.setAttribute('href', lfSmsHref(p.e164, lfFollowUpMsg(o, v)));
+    if(acts) acts.style.display='flex';
+    // Nudge only while the order still hasn't been accepted.
+    if(hint) hint.style.display = (o.status==='new') ? 'block' : 'none';
+  } else {
+    if(numEl){ numEl.textContent=''; numEl.style.display='none'; }
+    if(noneEl) noneEl.style.display='block';
+    clearLinks();
   }
 }
 
@@ -4705,7 +4947,10 @@ function updateStoreStatusUI(){
   // Load saved hours into inputs
   if(v.openTime && el('v-open-time')) el('v-open-time').value=v.openTime;
   if(v.closeTime && el('v-close-time')) el('v-close-time').value=v.closeTime;
-  if(v.contact && el('v-contact-input')) el('v-contact-input').value=v.contact;
+  // v44: pretty-prints the stored number and toggles the "add your number"
+  // nudge. Skips the field while it has focus so a 3s sync can't wipe out
+  // whatever the vendor is halfway through typing.
+  if(typeof updateVendorContactUI === 'function') updateVendorContactUI();
   // Load saved delivery fee
   if(el('v-pickup-only') && el('v-delivery-fee')){
     const mode = v.deliveryMode || (typeof v.deliveryFee === 'number' ? (v.deliveryFee===0?'free':'paid') : '');
@@ -5205,7 +5450,7 @@ function renderAdminOrders(){
   el2.innerHTML='<div style="height:4px"></div>'+filtered.map(o=>{
     const followUp = isFollowUp(o);
     const v = VENDORS[o.vendorId];
-    const contact = v?.contact;
+    const vp = lfPhone(v?.contact);   // v44: normalized, so the link always dials
     return `
     <div class="ocard" style="margin:0 16px 10px;${followUp?'border:1.5px solid #ef4444;':''}">
       ${followUp?`<div style="background:#fef2f2;padding:7px 14px;font-size:11px;font-weight:700;color:#ef4444;border-bottom:1px solid #fecaca">🚨 Needs follow-up — ${o.status==='new'?'Not accepted yet':'Order may be stuck'} · ${formatOrderTime(o.timestamp)}</div>`:''}
@@ -5225,7 +5470,8 @@ function renderAdminOrders(){
         <button class="oact s" onclick="adminUpdateStatus('${o.id}','${nextStatus(o.status)}')" ${['delivered','declined'].includes(o.status)?'disabled style="opacity:.4;cursor:default"':''}>
           ${nextStatusLabel(o.status)}
         </button>
-        ${followUp&&contact?`<a href="tel:${contact}" style="padding:6px 12px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">📞 Call Vendor</a>`:''}
+        ${followUp&&vp?`<a href="tel:${vp.e164}" style="padding:6px 12px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">📞 Call Vendor</a>`:''}
+        ${followUp&&vp?`<a href="${lfSmsHref(vp.e164,'LokalFinder: order '+o.id+' still needs action. Please open your vendor dashboard.')}" style="padding:6px 12px;background:#eff6ff;border:1px solid #93c5fd;color:#1e40af;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">💬 Text Vendor</a>`:''}
       </div>
     </div>`;
   }).join('')+'<div style="height:80px"></div>';
@@ -5942,7 +6188,7 @@ function applyData(d){
   // whole app to visibly "refresh / move" on its own and feel laggy.
   const _sig = JSON.stringify({
     o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
-    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')),
     m: Object.entries(MENU).map(([k,it])=>k+':'+it.map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
     h: d.heroStats ? JSON.stringify(d.heroStats) : ''
   });
@@ -6734,6 +6980,25 @@ setInterval(updateClock,15000);
   font-size:16px; color:#8A9890; line-height:1; padding:2px;
 }
 </style>
+<!-- ═══════════════════════════════════════════════════════════
+     v45 — REMOVE THE FAKE PHONE STATUS BAR
+     .notch was a mock iPhone status bar (fake clock + fake wifi
+     and battery icons) left over from the original design mockup.
+     It duplicated the real device status bar directly above it and
+     cost 50px of vertical space on EVERY page. Hidden here rather
+     than deleted from the ~20 pages that use it, so putting it
+     back is a one-line change.
+     The .page safe-area guard resolves to 0px today (the viewport
+     meta has no viewport-fit=cover), so it costs nothing now but
+     stops content sliding under the real notch if that ever
+     changes — the black-translucent status bar style makes that a
+     real risk otherwise.
+     Removing this whole <style> restores the app exactly.
+═══════════════════════════════════════════════════════════ -->
+<style>
+.notch{display:none !important}
+.page{padding-top:env(safe-area-inset-top,0px)}
+</style>
 <div id="lf-banner-stack"></div>
 
 <script>
@@ -6891,7 +7156,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 43; // ← bump this each release (and version.json)
+  const APP_VERSION = 47; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
