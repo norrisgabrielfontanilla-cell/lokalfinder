@@ -3348,10 +3348,11 @@ function buildVendorCards(force=false){
   const cardHTML = (v, isClosed) => {
     const hours=v.openTime&&v.closeTime?fmtTime(v.openTime)+'–'+fmtTime(v.closeTime):'';
     const subLine=v.sub.split('·').slice(0,2).join('·').trim()+(hours?' · '+hours:'');
-    const opensTxt = v.openTime?('Opens '+fmtTime(v.openTime)):'Currently closed';
-    const clickAttr = isClosed
-      ? `onclick="showClosedVendorToast('${esc(v.name)}','${v.openTime||''}')"`
-      : `onclick="openVendor('${v.id}')"`;
+    // v49: one source of truth for the badge, and closed stores are now
+    // browsable — a closed store used to be a dead end that only fired a toast.
+    const _st = storeStatus(v);
+    const opensTxt = _st.detail || (v.openTime?('Opens '+fmtTime(v.openTime)):'Currently closed');
+    const clickAttr = `onclick="openVendor('${v.id}')"`;
     // Pick a food photo from the vendor's menu to use as the card background (v-polish: less white space)
     const menuPhoto = ((MENU[v.id]||[]).find(i=>i.photo && i.avail)||{}).photo
                    || ((MENU[v.id]||[]).find(i=>i.photo)||{}).photo
@@ -3606,11 +3607,9 @@ function toggleFav(id,btn){
 
 // ═══ VENDOR DETAIL ═══
 function openVendor(vid){
-  // Safety: never open a closed store
-  if(VENDORS[vid] && !VENDORS[vid].active){
-    showClosedVendorToast(VENDORS[vid].name, VENDORS[vid].openTime||'');
-    return;
-  }
+  // v49: a closed store is no longer a dead end. Customers can browse the
+  // menu, prices and photos; only ordering is disabled. Ordering is blocked
+  // in addToCart() and again at placeOrder(), so browsing is always safe.
   // Guard: if cart has items from a different vendor, warn before browsing
   const currentVid=Object.keys(cart)[0];
   if(currentVid && currentVid!==vid && cart[currentVid] && cart[currentVid].items.length>0){
@@ -3662,15 +3661,33 @@ function openVendor(vid){
     }
   }catch(e){}
   const menuEl=document.getElementById('vd-menu');
-  menuEl.innerHTML='<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
+  // v49: the store page now states WHY you can't order — closed on the
+  // schedule, or open but nothing left. An empty menu used to render as a
+  // bare "Menu" heading with nothing under it, which just looked broken.
+  const _st = storeStatus(v);
+  const _avail = _normalizeMenu(MENU[vid]).filter(i=>i.avail);
+  let _banner = '';
+  if(!_st.open){
+    _banner = `<div style="margin:10px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🔴</span>
+      <div><div style="font-size:13px;font-weight:800;color:#991B1B">Closed right now</div>
+      <div style="font-size:11.5px;color:#B91C1C;margin-top:1px">${esc(_st.detail||'Currently closed')} · you can still browse the menu</div></div></div>`;
+  } else if(!_avail.length){
+    _banner = `<div style="margin:10px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🍽️</span>
+      <div><div style="font-size:13px;font-weight:800;color:#92400E">Sold out for today</div>
+      <div style="font-size:11.5px;color:#B45309;margin-top:1px">Everything is finished — check back${v.openTime?' from '+fmtTime(v.openTime):' tomorrow'}</div></div></div>`;
+  }
+  const _canOrder = _st.open;
+  menuEl.innerHTML=_banner+'<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Menu</div>'+
     MENU[vid].filter(i=>i.avail).map(item=>`
-      <div class="mrow" onclick="addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">
+      <div class="mrow" ${_canOrder?`onclick="addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})"`:'style="cursor:default;opacity:.62"'}>
         <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;cursor:zoom-in;position:relative':''}" ${item.photo?`onclick="event.stopPropagation();openImgLightbox('${item.photo}','${esc(item.name)}')"`:''}>
           ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
         </div>
         <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.desc}</div></div>
         <div class="mrow-price">₱${item.price}</div>
-        <button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>
+        ${_canOrder?`<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>`:''}
       </div>`).join('');
   menuEl.innerHTML+='<div style="height:80px"></div>';
   goPage('p-cvendor');
@@ -3680,6 +3697,47 @@ function openVendor(vid){
 function shareVendor(){
   if(!activeVendorId) return;
   showToast('📋 Link copied! Share with your neighbors 🏢');
+}
+
+// v49: last line of defence before an order is created. Returns false and
+// explains itself if the store has closed or any item is no longer available.
+// Without this, marking an item sold out did nothing to a cart that already
+// held it — the vendor still received the order.
+function validateCartNow(){
+  const vid = Object.keys(cart)[0];
+  if(!vid) return false;
+  const v = VENDORS[vid];
+  if(!v){ showToast('⚠️ That store is no longer available'); cart={}; updateCartBar(); goCust(); return false; }
+
+  const st = storeStatus(v);
+  if(!st.open){
+    showToast('⏰ ' + v.name + ' just closed · ' + (st.detail||'try again later'));
+    return false;
+  }
+
+  const menu = _normalizeMenu(MENU[vid]);
+  const gone = [];
+  cart[vid].items = cart[vid].items.filter(ci=>{
+    const m = menu.find(i=>i.name===ci.name);
+    if(m && m.avail) return true;
+    gone.push(ci.name);
+    return false;
+  });
+
+  if(gone.length){
+    updateCartBar();
+    const list = gone.length===1 ? gone[0] : gone.slice(0,2).join(', ')+(gone.length>2?' +'+(gone.length-2)+' more':'');
+    if(!cart[vid].items.length){
+      delete cart[vid];
+      updateCartBar();
+      showToast('⚠️ ' + list + ' sold out — your cart is now empty');
+      openVendor(vid);
+      return false;
+    }
+    showToast('⚠️ ' + list + ' sold out — removed. Check your total and confirm again.');
+    return false;
+  }
+  return true;
 }
 
 // ═══ CART ═══
@@ -3693,6 +3751,20 @@ function cartCount(){
 let pendingAdd=null;
 
 function addToCart(vid,name,emoji,price){
+  // v49 gate 1: refuse at the point of adding. Browsing a closed store is
+  // fine; ordering from one is not.
+  const _v = VENDORS[vid];
+  const _st = storeStatus(_v);
+  if(!_st.open){
+    showToast('\u23F0 ' + ((_v&&_v.name)||'This store') + ' is closed \u00b7 ' + (_st.detail||'try again later'));
+    return;
+  }
+  const _it = _normalizeMenu(MENU[vid]).find(i=>i.name===name);
+  if(!_it || !_it.avail){
+    showToast('\u26A0\uFE0F ' + name + ' is sold out');
+    if(activeVendorId!==vid) openVendor(vid);
+    return;
+  }
   // One cart = one vendor. Ordering from another seller is a separate transaction.
   const currentVid=Object.keys(cart)[0];
   if(currentVid&&currentVid!==vid){
@@ -3813,6 +3885,10 @@ function setPay(m){
 
 function placeOrder(){
   if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
+  // v49 gate 2: the cart was filled minutes ago. Re-check right now, at the
+  // moment of paying — the store may have closed, or the vendor may have
+  // marked something sold out while the customer was typing their details.
+  if(!validateCartNow()) return;
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
   const phone=document.getElementById('cust-phone').value.trim();
@@ -4889,15 +4965,100 @@ function goVendorTab(tab){
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   v49 — STORE HOURS AS THE SINGLE SOURCE OF TRUTH
+   -----------------------------------------------------------------------
+   Every surface that cares whether a store is open (card badge, store page,
+   Add buttons, checkout) now reads storeStatus() instead of guessing from
+   v.active. That way they can never disagree with each other.
+
+   It also fixes a bug that quietly killed opening hours: toggling the store
+   by hand set manualOverride=true FOREVER, and applySchedule() bailed out on
+   it. The first time a vendor closed early, their schedule stopped working
+   permanently — the store never reopened on its own again. The override now
+   expires at the vendor's next opening time.
+═══════════════════════════════════════════════════════════════════════ */
+
+// Minutes since midnight, Manila time.
+function lfNowMin(){
+  const ph = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Manila'}));
+  return ph.getHours()*60 + ph.getMinutes();
+}
+function lfToMin(hhmm){
+  if(!hhmm) return null;
+  const p = String(hhmm).split(':').map(Number);
+  if(p.length<2 || isNaN(p[0]) || isNaN(p[1])) return null;
+  return p[0]*60 + p[1];
+}
+
+// Epoch ms of the vendor's next opening boundary — used to expire a manual
+// "closed early" so the schedule resumes by itself the next morning.
+function lfNextOpenTs(v){
+  const openMin = lfToMin(v && v.openTime);
+  if(openMin === null) return 0;
+  const now = new Date();
+  const ph  = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Manila'}));
+  const cur = ph.getHours()*60 + ph.getMinutes();
+  const msToNext = ((openMin > cur) ? (openMin - cur) : (1440 - cur + openMin)) * 60000;
+  return now.getTime() + msToNext;
+}
+
+// The one answer everything else reads.
+//   open      – can a customer order right now?
+//   hasHours  – has the vendor set a schedule at all?
+//   manual    – is this a hand-set state rather than the schedule?
+//   label     – short badge text ("Open" / "Closed")
+//   detail    – longer line ("Opens 7:00 AM", "7:00 AM–9:00 PM")
+function storeStatus(v){
+  if(!v) return { open:false, hasHours:false, manual:false, label:'Closed', detail:'', opensAt:'' };
+  const openMin  = lfToMin(v.openTime);
+  const closeMin = lfToMin(v.closeTime);
+  const hasHours = openMin !== null && closeMin !== null;
+
+  // No hours set — the manual toggle is the only signal (v.active defaults true).
+  if(!hasHours){
+    const on = v.active !== false;
+    return { open:on, hasHours:false, manual:true, label:on?'Open':'Closed',
+             detail:on?'':'Currently closed', opensAt:'' };
+  }
+
+  const cur = lfNowMin();
+  const scheduled = (closeMin > openMin)
+    ? (cur >= openMin && cur < closeMin)          // normal same-day hours
+    : (cur >= openMin || cur < closeMin);         // hours that run past midnight
+
+  // A manual override still standing (not yet expired) wins over the schedule.
+  const overrideLive = !!v.manualOverride && (!v.manualUntil || Date.now() < v.manualUntil);
+  const open = overrideLive ? (v.active !== false) : scheduled;
+
+  let detail;
+  if(open) detail = fmtTime(v.openTime)+'–'+fmtTime(v.closeTime);
+  else if(overrideLive) detail = 'Closed early · Opens '+fmtTime(v.openTime);
+  else detail = 'Opens '+fmtTime(v.openTime);
+
+  return { open, hasHours:true, manual:overrideLive,
+           label: open?'Open':'Closed', detail, opensAt: v.openTime||'' };
+}
+
 function toggleStore(on){
+  let msg = on ? '✅ Store is now Open!' : '🔴 Store is now Closed';
   if(activeVendorId){
-    VENDORS[activeVendorId].active=on;
-    VENDORS[activeVendorId].manualOverride=true; // manual toggle overrides schedule
+    const v = VENDORS[activeVendorId];
+    v.active = on;
+    v.manualOverride = true;
+    // v49: the override now EXPIRES at the next opening time, so closing early
+    // means "closed for today" — not "my schedule is dead forever".
+    v.manualUntil = lfNextOpenTs(v);
+    if(v.openTime && v.closeTime){
+      msg = on
+        ? '✅ Store is now Open'
+        : '🔴 Closed for today · reopens ' + fmtTime(v.openTime);
+    }
   }
   updateStoreStatusUI();
   pushState();
   buildVendorCards();
-  showToast(on?'✅ Store is now Open!':'🔴 Store is now Closed');
+  showToast(msg);
 }
 
 function saveStoreHours(){
@@ -4907,6 +5068,7 @@ function saveStoreHours(){
   VENDORS[activeVendorId].openTime=open;
   VENDORS[activeVendorId].closeTime=close;
   VENDORS[activeVendorId].manualOverride=false; // schedule takes over again
+  VENDORS[activeVendorId].manualUntil=0;
   applySchedule(activeVendorId);
   pushState();
   showToast('✅ Hours saved: '+fmtTime(open)+' – '+fmtTime(close));
@@ -4922,18 +5084,18 @@ function fmtTime(t){
 
 function applySchedule(vid){
   const v=VENDORS[vid]; if(!v) return;
-  if(v.manualOverride) return; // vendor manually set it, don't override
   if(!v.openTime||!v.closeTime) return;
-  const now=new Date();
-  const ph=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Manila'}));
-  const cur=ph.getHours()*60+ph.getMinutes();
-  const [oh,om]=v.openTime.split(':').map(Number);
-  const [ch,cm]=v.closeTime.split(':').map(Number);
-  const openMin=oh*60+om;
-  const closeMin=ch*60+cm;
-  const shouldBeOpen = closeMin>openMin ? (cur>=openMin&&cur<closeMin) : (cur>=openMin||cur<closeMin);
-  if(v.active!==shouldBeOpen){
-    v.active=shouldBeOpen;
+  // v49: a manual open/close only holds until the next opening time. Without
+  // this the flag stuck forever and the schedule never ran again.
+  if(v.manualOverride){
+    if(!v.manualUntil) v.manualUntil = lfNextOpenTs(v);   // heal records saved before v49
+    if(Date.now() < v.manualUntil) return;                // override still standing
+    v.manualOverride = false;
+    v.manualUntil = 0;
+  }
+  const st = storeStatus(v);
+  if(v.active !== st.open){
+    v.active = st.open;
     if(activeVendorId===vid) updateStoreStatusUI();
     buildVendorCards();
   }
@@ -5092,10 +5254,67 @@ function filterVOrders(type,btn){
   });
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   v48 — MENU EDIT RELIABILITY
+   -----------------------------------------------------------------------
+   Vendors reported that marking an item SOLD OUT, or deleting it, would
+   silently come back ("bumabalik siya sa menu list"). Four separate causes:
+
+   A) toggleMenuItem() looked for `.mrow`, a class that only exists on the
+      CUSTOMER menu row — so it threw on every single tap, killing the
+      confirmation toast and the dimming. Vendors got zero feedback.
+   B) pushState() paused syncing for 1500ms, but a full menu+vendors PUT
+      carries every base64 photo (~2MB) and takes 2-15s on condo LTE. The
+      pause expired mid-flight, the 3s sync pulled STALE cloud data, and
+      applyData wholesale-replaced MENU[vid] — destroying the local edit.
+   C) Row handlers were wired to the ARRAY INDEX. A sync could reorder the
+      array between render and tap, so Delete removed the WRONG item.
+   D) Firebase RTDB treats a written [] as a DELETE, so emptying a menu made
+      the key vanish; applyData only iterated the keys the cloud returned,
+      never noticed, and re-uploaded the stale local copy.
+
+   The guard below fixes (B) and (D). Rather than bookkeeping per-record
+   "pending" state (which can stall convergence while it waits to expire), we
+   simply detect a READ that raced a WRITE: if a write landed while a read was
+   in flight, that read's data may predate it, so we discard it and let the
+   next sync 3s later pick up the truth. Stateless, self-correcting, and it
+   cannot leak or wedge.
+═══════════════════════════════════════════════════════════════════════ */
+const LF_PENDING_MS = 20000;      // longer than fbSet's 8s timeout, with headroom
+let _pendingWrites = 0;           // writes currently in flight
+let _lastWriteDoneAt = 0;         // when the most recent write settled
+
+function _newItemId(){
+  return 'it' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+// Firebase can hand an array back as an object with numeric keys (that's how
+// it stores arrays), and holes come back as nulls. Normalise to a clean dense
+// array and backfill any item that predates stable ids.
+function _normalizeMenu(raw){
+  let arr;
+  if(Array.isArray(raw)) arr = raw.slice();
+  else if(raw && typeof raw === 'object') arr = Object.keys(raw).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
+  else arr = [];
+  arr = arr.filter(x => x && typeof x === 'object');
+  arr.forEach(it => { if(!it.id) it.id = _newItemId(); });
+  return arr;
+}
+
+// Locate a menu item by its stable id rather than its position in the array.
+function _findItem(vid, itemId){
+  const arr = MENU[vid] || [];
+  const idx = arr.findIndex(i => i && String(i.id) === String(itemId));
+  return { arr, idx, item: idx >= 0 ? arr[idx] : null };
+}
+
 function renderVendorMenu(vid){
   const el2=el('vendor-menu-list');
   if(!el2) return;
-  const items=MENU[vid]||[];
+  // v48: guarantee every row has a stable id to key its handlers off, even
+  // for items created before ids existed or reshaped by Firebase.
+  MENU[vid]=_normalizeMenu(MENU[vid]);
+  const items=MENU[vid];
   if(!items.length){
     el2.innerHTML=`<div style="text-align:center;padding:32px 20px;color:var(--t3);font-size:13px">No menu items yet.<br>Tap "+ Add Item" to get started.</div>`;
     return;
@@ -5112,19 +5331,20 @@ function renderVendorMenu(vid){
         </div>
         <div class="mrow-price">₱${item.price}</div>
         <label class="tog">
-          <input type="checkbox" ${item.avail?'checked':''} onchange="toggleMenuItem('${vid}',${i},this)">
+          <input type="checkbox" ${item.avail?'checked':''} onchange="toggleMenuItem('${vid}','${item.id}',this)">
           <div class="tog-t"></div><div class="tog-k"></div>
         </label>
       </div>
       <div style="display:flex;gap:8px;padding:0 16px 11px;padding-left:82px">
-        <button onclick="openEditItemModal('${vid}',${i})" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--g);cursor:pointer">✏️ Edit</button>
-        <button onclick="deleteMenuItem('${vid}',${i})" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--red);cursor:pointer">🗑 Delete</button>
+        <button onclick="openEditItemModal('${vid}','${item.id}')" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--g);cursor:pointer">✏️ Edit</button>
+        <button onclick="deleteMenuItem('${vid}','${item.id}')" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bdm);background:var(--w);font-family:var(--ff);font-size:11px;font-weight:700;color:var(--red);cursor:pointer">🗑 Delete</button>
       </div>
     </div>`).join('');
 }
 
-function openEditItemModal(vid, idx){
-  const item=MENU[vid][idx];
+function openEditItemModal(vid, itemId){
+  const { item } = _findItem(vid, itemId);
+  if(!item){ showToast('⚠️ That item is no longer on your menu'); renderVendorMenu(vid); return; }
   el('edit-item-name').value=item.name;
   el('edit-item-price').value=item.price;
   el('edit-item-desc').value=item.desc;
@@ -5141,14 +5361,16 @@ function openEditItemModal(vid, idx){
     el('edit-photo-text').style.display='';
   }
   el('modal-edititem').dataset.vid=vid;
-  el('modal-edititem').dataset.idx=idx;
+  el('modal-edititem').dataset.itemId=item.id;   // v48: stable id, never a position
   el('modal-edititem').classList.add('on');
 }
 
 function saveEditItem(){
   const modal=el('modal-edititem');
   const vid=modal.dataset.vid;
-  const idx=parseInt(modal.dataset.idx);
+  const itemId=modal.dataset.itemId;
+  const { item }=_findItem(vid,itemId);
+  if(!item){ showToast('⚠️ That item is no longer on your menu'); closeModal('modal-edititem'); renderVendorMenu(vid); return; }
   const name=el('edit-item-name').value.trim();
   const price=parseInt(el('edit-item-price').value);
   const desc=el('edit-item-desc').value.trim();
@@ -5156,29 +5378,59 @@ function saveEditItem(){
   const avail=el('edit-item-avail').checked;
   if(!name||!price){showToast('⚠️ Fill in name and price');return;}
   const editPhotoSrc=el('edit-photo-img').src||'';
-  const photo=editPhotoSrc.startsWith('data:')?editPhotoSrc:(MENU[vid][idx].photo||'');
-  MENU[vid][idx]={...MENU[vid][idx],name,price,desc,emoji,avail,photo};
-  pushState();
+  const photo=editPhotoSrc.startsWith('data:')?editPhotoSrc:(item.photo||'');
+  const before={...item};
+  Object.assign(item,{name,price,desc,emoji,avail,photo});
   renderVendorMenu(vid);
   closeModal('modal-edititem');
   showToast('✅ '+name+' updated!');
+  // v48: if the write fails, put it back rather than leaving the vendor
+  // believing a change saved that never left the phone.
+  pushState().then(okSave=>{
+    if(okSave) return;
+    const { item:cur }=_findItem(vid,itemId);
+    if(cur) Object.assign(cur,before);
+    renderVendorMenu(vid);
+    showToast('⚠️ Not saved — check your connection and try again');
+  });
 }
 
-function deleteMenuItem(vid, idx){
-  const item=MENU[vid][idx];
+function deleteMenuItem(vid, itemId){
+  const { arr, idx, item }=_findItem(vid,itemId);
+  if(!item){ showToast('⚠️ That item is no longer on your menu'); renderVendorMenu(vid); return; }
   if(!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
-  MENU[vid].splice(idx,1);
-  pushState();
+  const backup=arr.slice();              // v48: exact restore point if the save fails
+  arr.splice(idx,1);
   renderVendorMenu(vid);
   showToast('🗑 '+item.name+' removed from menu');
+  pushState().then(okSave=>{
+    if(okSave) return;
+    MENU[vid]=backup;
+    renderVendorMenu(vid);
+    showToast('⚠️ Not saved — item restored. Check your connection.');
+  });
 }
 
-function toggleMenuItem(vid,idx,chk){
-  MENU[vid][idx].avail=chk.checked;
-  pushState();
-  const row=chk.closest('.mrow');
-  row.style.opacity=chk.checked?'1':'0.5';
-  showToast(chk.checked?'✓ Item now available':'Item hidden from customers');
+function toggleMenuItem(vid,itemId,chk){
+  const { item }=_findItem(vid,itemId);
+  if(!item){ showToast('⚠️ That item is no longer on your menu'); renderVendorMenu(vid); return; }
+  const want=!!(chk&&chk.checked);
+  const prev=item.avail;
+  item.avail=want;
+  // v48 (Bug A): the vendor row is #mi-<id>. The old code reached for
+  // `.mrow`, which only exists on the CUSTOMER menu row, so this threw on
+  // every tap and swallowed the toast below it.
+  const row=document.getElementById('mi-'+item.id);
+  if(row) row.style.opacity=want?'1':'0.5';
+  showToast(want?'✓ Item now available':'🚫 Marked sold out — hidden from customers');
+  pushState().then(okSave=>{
+    if(okSave) return;
+    const { item:cur }=_findItem(vid,itemId);
+    if(cur) cur.avail=prev;
+    if(row) row.style.opacity=prev?'1':'0.5';
+    if(chk) chk.checked=prev;
+    showToast('⚠️ Not saved — check your connection and try again');
+  });
 }
 
 function openAddItemModal(){ el('modal-additem').classList.add('on'); }
@@ -5212,8 +5464,11 @@ function addMenuItemConfirm(){
   const photoSrc=el('new-photo-img').src||'';
   if(!name||!price){showToast('⚠️ Fill in name and price');return;}
   if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
-  MENU[activeVendorId].push({id:'new'+Date.now(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''});
-  pushState();
+  // v48: Date.now() alone collides when two items are added in the same
+  // millisecond, or on two devices at once. Add entropy.
+  const newItem={id:_newItemId(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''};
+  MENU[activeVendorId].push(newItem);
+  const vidAdd=activeVendorId;
   renderVendorMenu(activeVendorId);
   closeModal('modal-additem');
   el('new-item-name').value=''; el('new-item-price').value=''; el('new-item-desc').value=''; el('new-item-emoji').value='';
@@ -5221,6 +5476,14 @@ function addMenuItemConfirm(){
   el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
   el('new-item-photo').value='';
   showToast('✅ '+name+' added to menu!');
+  pushState().then(okSave=>{
+    if(okSave) return;
+    const arr=MENU[vidAdd]||[];
+    const i=arr.findIndex(x=>x&&x.id===newItem.id);
+    if(i>=0) arr.splice(i,1);
+    renderVendorMenu(vidAdd);
+    showToast('⚠️ Not saved — check your connection and add it again');
+  });
 }
 
 function renderVendorEarnings(){
@@ -5671,7 +5934,18 @@ function closeImgLightbox(){
   const img=el('img-lightbox-img'); if(img) img.src='';
 }
 
-function esc(s){ return s.replace(/'/g,"\\'"); }
+// v49: esc() previously escaped only apostrophes. It is used inside
+// onclick="...addToCart('NAME')..." — so an item named  Sisig "Extra"  closed
+// the HTML attribute early and the + button threw a SyntaxError, making that
+// item impossible to order. Backslash first (or we'd double-escape), then the
+// apostrophe for the JS string, then the double quote as an HTML entity — the
+// parser turns &quot; back into " inside the single-quoted JS string.
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;');
+}
 function timeSince(d){
   const s=Math.floor((Date.now()-new Date(d))/1000);
   if(s<60) return 'Just now';
@@ -6173,7 +6447,20 @@ function applyData(d){
   }
 
   if(d.vendors && Object.keys(d.vendors).length>0) Object.keys(d.vendors).forEach(k=>{ if(!tombstoned.has(k)) VENDORS[k]=d.vendors[k]; });
-  if(d.menu && Object.keys(d.menu).length>0) Object.keys(d.menu).forEach(k=>{ if(!tombstoned.has(k)) MENU[k]=d.menu[k]; });
+  if(d.menu && Object.keys(d.menu).length>0){
+    Object.keys(d.menu).forEach(k=>{ if(!tombstoned.has(k)) MENU[k]=_normalizeMenu(d.menu[k]); });
+    // v48 (Bug D): Firebase deletes a key when you write [], so a vendor who
+    // removed every item has NO key in the cloud. The old loop only visited
+    // keys the cloud returned, so the stale local array survived and the next
+    // save put the deleted items right back. Treat "cloud knows this vendor
+    // but has no menu for them" as a genuine empty menu.
+    Object.keys(MENU).forEach(k=>{
+      if(tombstoned.has(k)) return;
+      if(d.menu[k] !== undefined) return;
+      if(!d.vendors || !d.vendors[k]) return;          // cloud doesn't know them yet — leave alone
+      if((MENU[k]||[]).length) MENU[k]=[];
+    });
+  }
   if(d.pins && Object.keys(d.pins).length>0) Object.keys(d.pins).forEach(k=>{ if(!tombstoned.has(k)) VENDOR_PINS_PLAIN[k]=d.pins[k]; });
 
   // Also clean up in case a deleted vendor somehow still exists locally
@@ -6188,8 +6475,8 @@ function applyData(d){
   // whole app to visibly "refresh / move" on its own and feel laggy.
   const _sig = JSON.stringify({
     o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
-    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')),
-    m: Object.entries(MENU).map(([k,it])=>k+':'+it.map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)),
+    m: Object.entries(MENU).map(([k,it])=>k+':'+_normalizeMenu(it).map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
     h: d.heroStats ? JSON.stringify(d.heroStats) : ''
   });
   if(_sig === window._lastApplySig){
@@ -6238,8 +6525,15 @@ async function pushOrders(oid=null){
 }
 
 async function pushState(){
+  // v48: the old code paused syncing for a flat 1500ms, but fbSet allows up
+  // to 8000ms and a full menu+vendors PUT carries every base64 photo — 2-15s
+  // on condo LTE. The pause expired mid-flight, the 3s sync pulled stale
+  // cloud data, and applyData wiped the vendor's edit. Now the pause covers
+  // the whole write and is only released once the LAST in-flight write ends.
+  _pendingWrites++;
+  syncPausedUntil = Date.now() + LF_PENDING_MS;
+  let landed = false;
   try{
-    syncPausedUntil = Date.now() + 1500; // pause sync while we write
     // Write all nodes in parallel — one round-trip instead of four (much faster on slow connections)
     await Promise.all([
       fbSet(ROOM_KEY+'/vendors', VENDORS),
@@ -6247,13 +6541,30 @@ async function pushState(){
       fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN),
       fbSet(ROOM_KEY+'/rev', Date.now()),
     ]);
-  }catch(e){ console.error('pushState:', e); }
+    landed = true;
+    return true;
+  }catch(e){
+    console.error('pushState:', e);
+    return false;
+  }finally{
+    _pendingWrites = Math.max(0, _pendingWrites - 1);
+    // Stamped on failure too: after a failed write the caller rolls the change
+    // back, and a read issued before that must not land in between.
+    _lastWriteDoneAt = Date.now();
+    // Short grace once everything has landed so the next read sees our data.
+    if(_pendingWrites === 0) syncPausedUntil = Date.now() + 700;
+  }
 }
 
 async function syncFromCloud(){
   if(Date.now() < syncPausedUntil){ return; }
+  const _issuedAt = Date.now();
   try{
     const d = await fbGet(ROOM_KEY);
+    // v48: if a write started or landed while this read was in flight, the
+    // data we just received may predate it. Discard it — the next sync picks
+    // up the truth 3s later — rather than overwriting fresher local state.
+    if(_pendingWrites > 0 || _lastWriteDoneAt > _issuedAt) return;
     const orderCount = d && d.orders ? Object.keys(d.orders).length : 0;
     applyData(d);
     lastSyncTime = Date.now();
@@ -7156,7 +7467,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 47; // ← bump this each release (and version.json)
+  const APP_VERSION = 49; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
