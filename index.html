@@ -3235,15 +3235,15 @@ function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); 
 
 // ── HERO ENHANCEMENTS ──────────────────────────────
 function updateVendorLiveBadge(){
-  const count=Object.values(VENDORS).filter(v=>v.active).length;
+  const count=Object.values(VENDORS).filter(v=>isOpenNow(v)).length;
   const b=document.getElementById('vendor-live-badge');
   if(b) b.textContent='● '+count+' live';
 }
 function updateCategoryCounts(){
   const catFor=cat=>{
-    if(cat==='all') return Object.entries(MENU).reduce((s,[vid,items])=>s+((VENDORS[vid]&&VENDORS[vid].active)?items.filter(i=>i.avail).length:0),0);
+    if(cat==='all') return Object.entries(MENU).reduce((s,[vid,items])=>s+((VENDORS[vid]&&isOpenNow(VENDORS[vid]))?items.filter(i=>i.avail).length:0),0);
     return Object.entries(VENDORS).reduce((s,[vid,v])=>{
-      if(!v.active) return s;
+      if(!isOpenNow(v)) return s;
       if(!(v.cats||[]).some(c=>c.toLowerCase().includes(cat.toLowerCase()))) return s;
       return s+((MENU[vid]||[]).filter(i=>i.avail).length);
     },0);
@@ -3298,7 +3298,7 @@ function buildFeaturedBanner(){
   const banner = el('featured-banner'); if(!banner) return;
 
   // Priority 1: admin-marked featured vendor that is active
-  let featured = Object.values(VENDORS).find(v=>v.featured && v.active);
+  let featured = Object.values(VENDORS).find(v=>v.featured && isOpenNow(v));
 
   // Priority 2: vendor with most orders today that is active
   if(!featured){
@@ -3306,7 +3306,7 @@ function buildFeaturedBanner(){
     const counts = {};
     orders.forEach(o=>{
       const d = new Date(o.timestamp).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'});
-      if(d===today && VENDORS[o.vendorId]?.active){
+      if(d===today && isOpenNow(VENDORS[o.vendorId])){
         counts[o.vendorId]=(counts[o.vendorId]||0)+1;
       }
     });
@@ -3333,13 +3333,16 @@ function buildFeaturedBanner(){
 
 function buildVendorCards(force=false){
   const el=document.getElementById('vendor-cards');
-  const vh=Object.values(VENDORS).map(v=>v.id+v.active+v.name+(v.logo?'1':'0')).join(',')+activeCatFilter;
+  // v49b: key the cache on the LIVE open state, not the stored v.active flag.
+  // Keying on v.active meant nothing changed when the clock crossed 8 PM, so
+  // the repaint was skipped and cards kept showing yesterday's status.
+  const vh=Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)+v.name+(v.logo?'1':'0')).join(',')+activeCatFilter;
   if(!force && vh===_vendorHash&&el.children.length>0) return;
   _vendorHash=vh;
   // Category filter (applies to both open and closed)
   const inCat = v => activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()));
-  const openVendors = Object.values(VENDORS).filter(v=>v.active && inCat(v));
-  const closedVendors = Object.values(VENDORS).filter(v=>!v.active && inCat(v));
+  const openVendors = Object.values(VENDORS).filter(v=>isOpenNow(v) && inCat(v));
+  const closedVendors = Object.values(VENDORS).filter(v=>!isOpenNow(v) && inCat(v));
   if(!openVendors.length && !closedVendors.length){
     el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🍽️</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No vendors in this category yet</div></div>';
     updateVendorLiveBadge(); updateCategoryCounts();
@@ -3393,7 +3396,7 @@ function buildTodaysPicks(force=false){
   const picks=[];
   Object.entries(MENU).forEach(([vid,items])=>{
     const v=VENDORS[vid];
-    if(!v||!v.active) return;
+    if(!v||!isOpenNow(v)) return;
     if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) return;
     items.filter(i=>i.avail).slice(0,2).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}));
   });
@@ -3500,7 +3503,7 @@ function buildHeroStrip(){
   // pick a bestseller from an active vendor matching current filter
   let pick=null;
   for(const [vid,items] of Object.entries(MENU)){
-    const v=VENDORS[vid]; if(!v||!v.active) continue;
+    const v=VENDORS[vid]; if(!v||!isOpenNow(v)) continue;
     if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) continue;
     const best=items.find(i=>i.avail&&i.tag==='best');
     if(best){ pick={...best,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji}; break; }
@@ -3533,11 +3536,11 @@ function ffSearch(q){
   _ffSearchActive=true; wrap.style.display=''; home.style.display='none';
 
   // match vendors
-  const vMatches=Object.values(VENDORS).filter(v=>v.active && (v.name.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)));
+  const vMatches=Object.values(VENDORS).filter(v=>isOpenNow(v) && (v.name.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)));
   // match dishes
   const dMatches=[];
   Object.entries(MENU).forEach(([vid,items])=>{
-    const v=VENDORS[vid]; if(!v||!v.active) return;
+    const v=VENDORS[vid]; if(!v||!isOpenNow(v)) return;
     items.filter(i=>i.avail).forEach(i=>{
       if(i.name.toLowerCase().includes(q)||(i.desc||'').toLowerCase().includes(q))
         dMatches.push({...i,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji});
@@ -5028,7 +5031,10 @@ function storeStatus(v){
     : (cur >= openMin || cur < closeMin);         // hours that run past midnight
 
   // A manual override still standing (not yet expired) wins over the schedule.
-  const overrideLive = !!v.manualOverride && (!v.manualUntil || Date.now() < v.manualUntil);
+  // v49b: an override with NO expiry is a record written before v49 — we have
+  // no idea when it was set, so we do NOT trust it. Trusting it is what kept
+  // Eduardo's and Toss Tacos showing "Open" at 6am. Schedule wins instead.
+  const overrideLive = !!v.manualOverride && !!v.manualUntil && Date.now() < v.manualUntil;
   const open = overrideLive ? (v.active !== false) : scheduled;
 
   let detail;
@@ -5039,6 +5045,12 @@ function storeStatus(v){
   return { open, hasHours:true, manual:overrideLive,
            label: open?'Open':'Closed', detail, opensAt: v.openTime||'' };
 }
+
+// v49b: shorthand for "is this store open RIGHT NOW, by the clock".
+// Everything the customer sees must ask this, never the stored v.active flag —
+// that flag is a cached value the 3s sync keeps overwriting with whatever the
+// cloud last saved, which is why stores showed "Open" at 6am with 8PM-12AM hours.
+function isOpenNow(v){ return storeStatus(v).open; }
 
 function toggleStore(on){
   let msg = on ? '✅ Store is now Open!' : '🔴 Store is now Closed';
@@ -5088,8 +5100,9 @@ function applySchedule(vid){
   // v49: a manual open/close only holds until the next opening time. Without
   // this the flag stuck forever and the schedule never ran again.
   if(v.manualOverride){
-    if(!v.manualUntil) v.manualUntil = lfNextOpenTs(v);   // heal records saved before v49
-    if(Date.now() < v.manualUntil) return;                // override still standing
+    // No expiry = written before v49. Clear it so the schedule takes over now,
+    // instead of leaving the store stuck open until its next opening time.
+    if(v.manualUntil && Date.now() < v.manualUntil) return;   // genuine, still standing
     v.manualOverride = false;
     v.manualUntil = 0;
   }
@@ -6701,7 +6714,19 @@ function refreshVisible(){
   }catch(e){ console.warn('order preload skipped:', e); }
   setInterval(syncFromCloud, 3000);
   setInterval(syncChats, 3000);
-  setInterval(()=>Object.keys(VENDORS).forEach(applySchedule), 60000);
+  // v49b: every 60s, re-sync the stored flag AND repaint if any store crossed
+  // an opening/closing boundary, so a card flips at 8 PM without a reload.
+  setInterval(()=>{
+    let snapshot = '';
+    try{ snapshot = Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)).join(','); }catch(e){}
+    Object.keys(VENDORS).forEach(applySchedule);
+    let after = '';
+    try{ after = Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)).join(','); }catch(e){}
+    if(snapshot !== after || snapshot !== window._lfOpenSnap){
+      window._lfOpenSnap = after;
+      try{ buildVendorCards(); buildTodaysPicks(true); buildFeaturedBanner(); updateCategoryCounts(); updateVendorLiveBadge(); }catch(e){}
+    }
+  }, 60000);
   setInterval(refreshBadge, 5000);
   setInterval(()=>{
     if(!activeVendorId) loadCustomerNotifs();
