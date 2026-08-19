@@ -5014,6 +5014,18 @@ function lfNextOpenTs(v){
 //   detail    – longer line ("Opens 7:00 AM", "7:00 AM–9:00 PM")
 function storeStatus(v){
   if(!v) return { open:false, hasHours:false, manual:false, label:'Closed', detail:'', opensAt:'' };
+
+  // v50: ADMIN SUSPEND — highest priority, beats hours AND the vendor's own
+  // manual override. Deliberately a separate flag from manualOverride: that one
+  // is day-scoped (expires at the next opening time), this one has NO expiry and
+  // only an admin can lift it. Sits above both branches below so it short-circuits
+  // no-hours vendors and scheduled vendors alike.
+  // Detail text is deliberately vague — customers don't need to know why.
+  if(v.suspended){
+    return { open:false, hasHours:false, manual:true, label:'Closed',
+             detail:'Temporarily unavailable', opensAt:'' };
+  }
+
   const openMin  = lfToMin(v.openTime);
   const closeMin = lfToMin(v.closeTime);
   const hasHours = openMin !== null && closeMin !== null;
@@ -5096,6 +5108,20 @@ function fmtTime(t){
 
 function applySchedule(vid){
   const v=VENDORS[vid]; if(!v) return;
+
+  // v50: an admin suspend is schedule-proof. This is THE fix for "admin can't
+  // close a vendor" — previously the pause only flipped v.active, and this
+  // 60s tick recomputed v.active from the vendor's hours and silently undid it.
+  // Returns before the hours math and before the manualOverride block below.
+  if(v.suspended){
+    if(v.active !== false){
+      v.active = false;
+      if(activeVendorId===vid) updateStoreStatusUI();
+      buildVendorCards();
+    }
+    return;
+  }
+
   if(!v.openTime||!v.closeTime) return;
   // v49: a manual open/close only holds until the next opening time. Without
   // this the flag stuck forever and the schedule never ran again.
@@ -5774,7 +5800,7 @@ function renderAdminVendors(){
       <div class="av-hd">
         <div class="av-ico">${v.emoji}</div>
         <div class="av-info"><div class="av-name">${v.name}</div><div class="av-sub">${v.sub.split('·').slice(0,2).join('·')}</div></div>
-        <span class="bdg ${v.active?'open':'closed'}">${v.active?'● Open':'● Closed'}</span>
+        <span class="bdg ${v.suspended?'closed':(v.active?'open':'closed')}">${v.suspended?'⏸ Paused':(v.active?'● Open':'● Closed')}</span>
       </div>
       <div class="av-body">
         <div class="av-row"><span>Orders today</span><span class="av-val">${vOrders.length}</span></div>
@@ -5789,7 +5815,7 @@ function renderAdminVendors(){
         </div>
       </div>
       <div class="av-acts">
-        <button class="oact ${v.active?'d':'p'}" onclick="toggleVendorActive('${v.id}')">${v.active?'Pause Store':'Reactivate'}</button>
+        <button class="oact ${v.suspended?'p':'d'}" onclick="toggleVendorActive('${v.id}')">${v.suspended?'Reactivate':'Pause Store'}</button>
         <button class="oact s" onclick="openEditVendorModal('${v.id}')">✏️ Edit</button>
         <button class="oact d" onclick="deleteVendor('${v.id}')">🗑️ Delete</button>
       </div>
@@ -5797,9 +5823,28 @@ function renderAdminVendors(){
   }).join('');
 }
 
+// v50: admin Pause/Reactivate. Flips v.suspended — NOT v.active — because
+// v.active is owned by applySchedule() and gets recomputed from the vendor's
+// opening hours every 60s. Writing v.active here is what made the pause revert.
 function toggleVendorActive(vid){
-  VENDORS[vid].active=!VENDORS[vid].active;
-  showToast(VENDORS[vid].active?'✅ '+VENDORS[vid].name+' reactivated':'🔴 '+VENDORS[vid].name+' paused');
+  const v = VENDORS[vid]; if(!v) return;
+  const nowSuspended = !v.suspended;
+  v.suspended = nowSuspended;
+  if(nowSuspended){
+    v.active = false;                 // reflect immediately, don't wait for the tick
+  } else {
+    // Reactivating hands control straight back to the vendor's hours. Clearing
+    // the day-scoped override too, so a stale early-close can't keep them shut.
+    v.manualOverride = false;
+    v.manualUntil = 0;
+    if(v.openTime && v.closeTime){
+      applySchedule(vid);             // recompute active from the vendor's hours
+    } else {
+      v.active = true;                // no hours set = always-open vendor; applySchedule
+                                      // early-returns on these, so restore it here
+    }
+  }
+  showToast(nowSuspended ? '🔴 '+v.name+' paused' : '✅ '+v.name+' reactivated');
   pushState();
   renderAdminVendors();
   updateAdminStats();
@@ -6488,7 +6533,7 @@ function applyData(d){
   // whole app to visibly "refresh / move" on its own and feel laggy.
   const _sig = JSON.stringify({
     o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
-    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)+'|'+(v.suspended?1:0)),
     m: Object.entries(MENU).map(([k,it])=>k+':'+_normalizeMenu(it).map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
     h: d.heroStats ? JSON.stringify(d.heroStats) : ''
   });
@@ -7492,7 +7537,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 49; // ← bump this each release (and version.json)
+  const APP_VERSION = 50; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
