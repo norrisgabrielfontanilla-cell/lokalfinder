@@ -2152,8 +2152,8 @@ select option { color: var(--t1); background: var(--w); }
   </div>
     <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
-    <div class="sec" style="padding-top:16px"><span class="sec-t">🏪 Your Neighborhood Kitchens</span><span class="sec-a">See all</span></div>
-    <div class="hscrl" id="vendor-cards"></div>
+    <div class="sec" style="padding-top:16px"><span class="sec-t">🏪 Your Neighborhood Kitchens</span><span class="sec-a lf-swipe" id="vc-swipe" onclick="nudgeVendorRow()">Swipe<span class="lf-swipe-arrows"><i></i><i></i><i></i></span></span></div>
+    <div class="lf-row-wrap"><div class="hscrl" id="vendor-cards"></div><div class="lf-edge" id="vc-edge" aria-hidden="true"></div></div>
     <div class="dvdr"></div>
     <div style="padding:16px 16px 4px">
       <div style="font-size:22px;font-weight:800;color:var(--t1);line-height:1.2">🔥 Today's Picks</div>
@@ -3379,7 +3379,49 @@ function buildVendorCards(force=false){
   };
   el.innerHTML = openVendors.map(v=>cardHTML(v,false)).join('') + closedVendors.map(v=>cardHTML(v,true)).join('');
   updateVendorLiveBadge(); updateCategoryCounts();
+  updateSwipeHint();   // v52: cards just changed — re-decide if there's anything to swipe to
 }
+
+// ── v52: SWIPE HINT ──────────────────────────────────────────
+// Shown ONLY when the vendor row actually overflows and the user
+// isn't already at the end. A hint that says "swipe for more" when
+// there is no more is the same dishonesty as the dead "See all" it
+// replaced, so every path here is gated on real scroll geometry.
+function updateSwipeHint(){
+  const row  = document.getElementById('vendor-cards');
+  const hint = document.getElementById('vc-swipe');
+  if(!row || !hint) return;
+  // 8px tolerance: sub-pixel layout rounding can leave scrollWidth a
+  // hair over clientWidth even when nothing is really clipped.
+  const overflows = row.scrollWidth > row.clientWidth + 8;
+  const atEnd     = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
+  hint.classList.toggle('on', overflows && !atEnd);
+  const edge = document.getElementById('vc-edge');
+  if(edge) edge.classList.toggle('on', overflows && !atEnd);
+}
+
+// Tapping the hint scrolls the row instead of doing nothing — the old
+// "See all" had cursor:pointer and a press animation with no handler,
+// and that promise-then-nothing is what made it feel broken.
+function nudgeVendorRow(){
+  const row = document.getElementById('vendor-cards');
+  if(!row) return;
+  const card = row.querySelector('.vc');
+  const step = card ? card.getBoundingClientRect().width + 14 : row.clientWidth * .8;
+  row.scrollBy({left: step * 2, behavior: 'smooth'});
+}
+
+(function initSwipeHint(){
+  function wire(){
+    const row = document.getElementById('vendor-cards');
+    if(!row) return;
+    row.addEventListener('scroll', updateSwipeHint, {passive:true});
+    window.addEventListener('resize', updateSwipeHint);
+    updateSwipeHint();
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
 
 function showClosedVendorToast(name, openTime){
   const opens = openTime ? (' · Opens '+fmtTime(openTime)) : '';
@@ -4165,19 +4207,59 @@ function applyVendorLogo(logo){
   }
 }
 
+// v51: "Clear Done" used to fbDelete every delivered/declined order for this
+// vendor — permanently, from the cloud. That destroyed the only record the
+// admin analytics can be built from, and made a tidy vendor indistinguishable
+// from a dead one. It is now a per-vendor WATERMARK: the vendor's own views
+// hide finished orders older than the mark, the record survives, and admin
+// reporting ignores the mark entirely.
+// Chosen shape: one scalar on the vendor object — monotonic (so concurrent
+// writes can't corrupt it), rides the existing pushState/_sig vendor path,
+// and needs no per-order bookkeeping.
 async function confirmClearOrderHistory(){
-  const done=orders.filter(o=>o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined'));
+  const v = VENDORS[activeVendorId];
+  if(!v){ showToast('⚠️ Not logged in'); return; }
+  const done = vendorVisibleOrders(activeVendorId)
+                 .filter(o=>o.status==='delivered'||o.status==='declined');
   if(!done.length){showToast('No completed orders to clear');return;}
-  if(!confirm(`Clear ${done.length} completed order${done.length>1?'s':''}? This cannot be undone.`)) return;
-  // Remove delivered/declined orders for this vendor — delete each from Firebase individually
-  for(const o of done){
-    const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-    try{ await fbDelete(ROOM_KEY+'/orders/'+key); }catch(e){ console.error('delete order:',e); }
+  if(!confirm(`Clear ${done.length} completed order${done.length>1?'s':''} from your list?`)) return;
+  const prev = v.clearedBefore || 0;
+  v.clearedBefore = Date.now();
+  const ok = await pushState();
+  if(ok === false){
+    v.clearedBefore = prev;               // roll back so the list doesn't lie
+    showToast('⚠️ Not saved — try again');
+    return;
   }
-  orders=orders.filter(o=>!(o.vendorId===activeVendorId&&(o.status==='delivered'||o.status==='declined')));
   renderVendorOrders();
   updateVendorDash(activeVendorId);
+  renderVendorEarnings();
   showToast('✅ Completed orders cleared');
+}
+
+// v51: single source of truth for "which orders should this vendor SEE".
+// Every vendor-facing surface that includes finished orders reads through
+// this; admin surfaces deliberately do not, so the admin always sees the
+// full record. Only terminal orders are ever hidden — anything still in
+// flight stays visible no matter what the watermark says, so clearing can
+// never make a live order disappear on a vendor.
+function vendorVisibleOrders(vid){
+  const cut = (VENDORS[vid] && VENDORS[vid].clearedBefore) || 0;
+  return orders.filter(o=>{
+    if(o.vendorId !== vid) return false;
+    if(!cut) return true;
+    if(o.status !== 'delivered' && o.status !== 'declined') return true;
+    // Compare against when the order FINISHED, not when it was placed.
+    // An order placed at 10:00, cleared past at 11:00, then delivered at
+    // 12:00 must stay visible — the vendor never cleared it, it wasn't
+    // finished yet. Keying on o.timestamp would make it vanish the moment
+    // they marked it delivered.
+    // v51 stamps give the exact time; updatedAt covers orders that finished
+    // before v51 shipped; timestamp is the last resort for old records.
+    const finishedAt = o.deliveredAt || o.declinedAt || o.updatedAt
+                       || new Date(o.timestamp).getTime();
+    return finishedAt >= cut;
+  });
 }
 
 
@@ -4580,6 +4662,7 @@ async function customerCancelOrder(){
   o.status='declined';
   o.cancelledByCustomer=true;  // flag so UI shows correct message
   o.updatedAt=Date.now();
+  stampStatusTime(o, 'declined', 'customer');  // v51
   await pushOrders(o.id);
   updateTrackerFromStatus();
   showToast('✅ Order cancelled');
@@ -5190,7 +5273,7 @@ function updateStoreStatusUI(){
 
 function updateVendorDash(vid){
   if(!vid||!el('v-dname')) return;
-  const myOrders=orders.filter(o=>o.vendorId===vid);
+  const myOrders=vendorVisibleOrders(vid);  // v51: respects the clear watermark
   const gross=myOrders.reduce((s,o)=>s+o.subtotal,0);
   const fees=myOrders.length*SERVICE_FEE;
   const net=gross;
@@ -5218,7 +5301,7 @@ function updateVendorDash(vid){
 function renderVendorRecentOrders(vid){
   const el2=el('v-recent-orders');
   if(!el2) return;
-  const myOrders=orders.filter(o=>o.vendorId===vid).slice(-3).reverse();
+  const myOrders=vendorVisibleOrders(vid).slice(-3).reverse();  // v51
   if(!myOrders.length){el2.innerHTML='<div class="empty" style="padding:20px"><div class="empty-sub">No orders yet.</div></div>';return;}
   el2.innerHTML=myOrders.map(o=>renderOrderCard(o,true)).join('');
 }
@@ -5226,7 +5309,7 @@ function renderVendorRecentOrders(vid){
 function renderVendorOrders(){
   if(!activeVendorId) return;
   const el2=el('v-orders-list');
-  const myOrders=orders.filter(o=>o.vendorId===activeVendorId).slice().reverse();
+  const myOrders=vendorVisibleOrders(activeVendorId).slice().reverse();  // v51
   if(!myOrders.length){
     el2.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">New orders will appear here. Make sure your store is open!</div></div>';
     return;
@@ -5267,11 +5350,28 @@ function getVendorActions(o){
   return '';
 }
 
+// v51: record WHEN each terminal transition happened, alongside the existing
+// single `updatedAt` (which every transition overwrites, so it can only ever
+// tell you about the LAST change). These are what make time-to-accept and
+// month-by-month accept-rate computable.
+// Deliberately FLAT fields, not a nested {statusAt:{...}} map — Firebase
+// returns objects where you expect arrays (see _normalizeMenu), and flat
+// scalars can't be mangled that way.
+// Never overwritten once set: 'new' has exactly three exits, so a stamped
+// order cannot legitimately re-enter that state.
+function stampStatusTime(o, status, by){
+  const now = Date.now();
+  if(status==='accepted'  && !o.acceptedAt)  o.acceptedAt  = now;
+  if(status==='declined'  && !o.declinedAt){ o.declinedAt  = now; if(by) o.declinedBy = by; }
+  if(status==='delivered' && !o.deliveredAt) o.deliveredAt = now;
+}
+
 async function updateOrderStatus(oid,status){
   const o=orders.find(o=>o.id===oid);
   if(!o) return;
   o.status=status;
   o.updatedAt=Date.now();
+  stampStatusTime(o, status, 'vendor');
   await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   refreshBadge();
@@ -5527,7 +5627,7 @@ function addMenuItemConfirm(){
 
 function renderVendorEarnings(){
   if(!activeVendorId) return;
-  const allOrders = orders.filter(o=>o.vendorId===activeVendorId&&o.status!=='declined');
+  const allOrders = vendorVisibleOrders(activeVendorId).filter(o=>o.status!=='declined');  // v51
 
   function phDate(o){ return new Date(o.timestamp).toLocaleDateString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric'}); }
   function phDateKey(o){ return new Date(o.timestamp).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}); }
@@ -5784,6 +5884,8 @@ async function adminUpdateStatus(oid,status){
   if(!o||!status) return;
   o.status=status;
   o.updatedAt=Date.now();
+  // v51: 'admin' so an admin-side decline is never miscounted against the vendor
+  stampStatusTime(o, status, 'admin');
   await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   showToast('Order '+oid+' → '+statusLabel(status));
@@ -6533,7 +6635,7 @@ function applyData(d){
   // whole app to visibly "refresh / move" on its own and feel laggy.
   const _sig = JSON.stringify({
     o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
-    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)+'|'+(v.suspended?1:0)),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)+'|'+(v.suspended?1:0)+'|'+(v.clearedBefore||0)),
     m: Object.entries(MENU).map(([k,it])=>k+':'+_normalizeMenu(it).map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
     h: d.heroStats ? JSON.stringify(d.heroStats) : ''
   });
@@ -7380,6 +7482,67 @@ setInterval(updateClock,15000);
 .notch{display:none !important}
 .page{padding-top:env(safe-area-inset-top,0px)}
 </style>
+
+<!-- ═══════════════════════════════════════════════════════════
+     v52 — SWIPE HINT on "Your Neighborhood Kitchens"
+     Replaces the old "See all" span, which had no onclick but did
+     have cursor:pointer, link-green, and an :active scale — so it
+     animated on tap and then did nothing.
+     The row IS horizontally scrollable (.hscrl = flex + overflow-x
+     :auto, .vc = min-width 172px, flex-shrink 0), but the scrollbar
+     is deliberately hidden, so nothing signalled that. This is that
+     missing affordance.
+     Self-contained: deleting this block + the JS block reverts it.
+═══════════════════════════════════════════════════════════ -->
+<style>
+.lf-swipe{
+  /* As a flex child of .sec this blockifies, and .sec aligns on the text
+     baseline — verified sitting at exactly the same top as a plain
+     .sec-a link. inline-block is kept so it still behaves predictably
+     if this ever moves out of a flex parent.
+     white-space:nowrap matters: .sec is space-between, and without it
+     "Swipe for more" wraps to two lines on a narrow phone. */
+  display:inline-block;
+  font-size:12px;font-weight:800;letter-spacing:.2px;
+  color:var(--g);white-space:nowrap;
+  opacity:0;transform:translateX(4px);
+  transition:opacity .32s ease,transform .32s ease;
+  pointer-events:none;                 /* nothing to swipe to = not tappable */
+}
+.lf-swipe.on{opacity:1;transform:none;pointer-events:auto}
+.lf-swipe-arrows{display:inline-flex;align-items:center;gap:1px;margin-left:6px;vertical-align:middle;position:relative;top:-1px}
+.lf-swipe-arrows i{
+  width:5px;height:5px;flex:none;
+  border-right:1.8px solid currentColor;
+  border-top:1.8px solid currentColor;
+  transform:rotate(45deg);
+  opacity:.25;
+  animation:lfSwipeChase 1.5s ease-in-out infinite;
+}
+.lf-swipe-arrows i:nth-child(2){animation-delay:.15s}
+.lf-swipe-arrows i:nth-child(3){animation-delay:.3s}
+@keyframes lfSwipeChase{
+  0%,70%,100%{opacity:.25;transform:rotate(45deg) translate(0,0)}
+  35%        {opacity:1;  transform:rotate(45deg) translate(1.5px,-1.5px)}
+}
+.lf-swipe:active{transform:scale(.94)}
+
+/* Right-edge fade on the row itself — the real affordance. Costs zero
+   header width, and sits exactly where the cards get clipped so it
+   points at the content that continues. Purely decorative: never
+   intercepts taps, so it can't block a card underneath. */
+.lf-row-wrap{position:relative}
+.lf-edge{
+  position:absolute;top:0;right:0;bottom:18px;width:44px;
+  pointer-events:none;opacity:0;transition:opacity .3s ease;
+  background:linear-gradient(90deg,rgba(244,249,246,0) 0%,rgba(244,249,246,.82) 62%,rgba(244,249,246,.96) 100%);
+}
+.lf-edge.on{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .lf-swipe-arrows i{animation:none;opacity:.75}
+  .lf-swipe{transition:opacity .2s ease}
+}
+</style>
 <div id="lf-banner-stack"></div>
 
 <script>
@@ -7537,7 +7700,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 50; // ← bump this each release (and version.json)
+  const APP_VERSION = 52; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
