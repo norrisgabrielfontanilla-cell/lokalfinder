@@ -148,7 +148,7 @@ export default function BoomerangVideoBg() {
   }, [framesReady]);
 
   return (
-    <div className="absolute inset-0 z-0 scale-[1.15] origin-top overflow-hidden">
+    <div aria-hidden="true" className="absolute inset-0 z-0 scale-[1.15] origin-top overflow-hidden">
       <video
         ref={videoRef}
         src={VIDEO_SRC}
