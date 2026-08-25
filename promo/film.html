@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lokal Finder — 60s film</title>
+<style>
+  @font-face {
+    font-family: 'Fraunces';
+    src: url('fonts/Fraunces.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: block;
+  }
+  @font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('fonts/PlusJakartaSans.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: block;
+  }
+
+  :root {
+    --ink: #14231C;
+    --brand: #0E8A5A;
+    --brand-dark: #0F4A32;
+    --brand-light: #E6F7EF;
+    --surface: #FFFFFF;
+    --surface-alt: #F6F8F6;
+    --line: #E5E7EB;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Every property is set imperatively per frame — no CSS animation or
+     transition may run, or captured frames would be non-deterministic. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html, body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #stage {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    will-change: transform, opacity;
+  }
+
+  .fill-light { background: var(--surface); }
+  .fill-alt   { background: var(--surface-alt); }
+  .fill-ink   { background: var(--ink); }
+  .fill-brand { background: var(--brand-dark); }
+
+  /* ---------- shared type ---------- */
+  .eyebrow {
+    font-size: 24px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -.03em;
+  }
+  .mask { overflow: hidden; display: block; }
+  .mask > span { display: block; will-change: transform; }
+
+  /* ---------- nav ---------- */
+  #nav {
+    position: absolute;
+    top: 300px;
+    left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  #nav svg { width: 46px; height: 46px; }
+  #nav span { font-size: 34px; font-weight: 600; letter-spacing: -.02em; }
+
+  /* ---------- chips ---------- */
+  #chips {
+    position: absolute;
+    top: 1290px;
+    left: 0; right: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 60px;
+  }
+  .chip {
+    padding: 13px 22px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.9);
+    border: 1px solid var(--line);
+    font-size: 22px;
+    white-space: nowrap;
+    color: rgba(20,35,28,.8);
+    box-shadow: 0 4px 20px rgba(20,35,28,.05);
+    will-change: transform, opacity;
+  }
+
+  /* ---------- phone ---------- */
+  #phone {
+    position: relative;
+    width: 620px;
+    height: 940px;
+    border-radius: 60px;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    box-shadow: 0 60px 140px rgba(20,35,28,.20), 0 8px 30px rgba(20,35,28,.08);
+    overflow: hidden;
+    will-change: transform;
+  }
+  #phone-top {
+    display: flex; align-items: center; gap: 12px;
+    padding: 40px 38px 28px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+  }
+  #phone-top .pin { width: 26px; height: 26px; }
+  #phone-top span { font-size: 22px; font-weight: 500; color: rgba(20,35,28,.7); }
+  #phone-body { position: relative; padding: 34px; height: calc(100% - 132px); }
+  .pstage { position: absolute; inset: 34px; will-change: opacity, transform; }
+
+  .searchbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 26px 28px;
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--line);
+  }
+  .searchbar svg { width: 26px; height: 26px; }
+  .searchbar .q { font-size: 26px; color: var(--ink); }
+  .caret { display: inline-block; width: 2px; height: 28px; background: rgba(20,35,28,.5); vertical-align: -5px; }
+
+  .cats { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .cat {
+    padding: 12px 22px; border-radius: 999px; background: #fff;
+    border: 1px solid var(--line); font-size: 20px; color: rgba(20,35,28,.6);
+  }
+
+  .result {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 28px; border-radius: 22px; margin-bottom: 16px;
+    background: #fff; border: 1px solid var(--line);
+    will-change: transform, opacity;
+  }
+  .result.sel { border-color: var(--brand); background: var(--brand-light); }
+  .result .n { font-size: 25px; font-weight: 500; color: var(--ink); }
+  .result .m { font-size: 19px; color: rgba(20,35,28,.5); margin-top: 6px; }
+  .result .p { font-size: 19px; color: rgba(20,35,28,.4); }
+
+  .cartrow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 28px; border-radius: 22px;
+    background: #fff; border: 1px solid var(--line);
+  }
+  .plus {
+    width: 52px; height: 52px; border-radius: 999px;
+    background: var(--brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    will-change: transform;
+  }
+  .cartbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 28px; border-radius: 22px; margin-top: 18px;
+    background: var(--ink); color: #fff;
+  }
+  .cartbar span { font-size: 24px; }
+
+  .confirm { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 26px; }
+  .check {
+    width: 110px; height: 110px; border-radius: 999px; background: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    will-change: transform;
+  }
+
+  .caption {
+    position: absolute;
+    left: 0; right: 0;
+    text-align: center;
+    padding: 0 90px;
+    will-change: transform, opacity;
+  }
+
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 58%, rgba(0,0,0,.07) 100%);
+  }
+
+  #safe {
+    position: absolute; inset: 0; display: none; pointer-events: none;
+  }
+  #safe.on { display: block; }
+  #safe .bar { position: absolute; left: 0; right: 0; height: 250px; background: rgba(255,0,0,.18); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ============ 1. HERO ============ -->
+  <div class="layer fill-light" id="l-hero">
+    <div id="nav" style="color:var(--ink)">
+      <svg viewBox="0 0 256 256" fill="currentColor"><path d="M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z"/></svg>
+      <span>Lokal Finder</span>
+    </div>
+
+    <div style="position:absolute;top:620px;left:0;right:0;padding:0 90px;text-align:center;color:var(--ink)">
+      <div class="display" style="font-size:118px">
+        <span class="mask"><span id="h1a">Everything local.</span></span>
+        <span class="mask"><span id="h1b">One place.</span></span>
+      </div>
+      <p id="hsub" style="margin:44px auto 0;max-width:720px;font-size:30px;line-height:1.5;color:rgba(20,35,28,.7)">
+        Discover food, services, and businesses around your community.
+      </p>
+    </div>
+
+    <div id="chips"></div>
+  </div>
+
+  <!-- ============ 2. PRODUCT ============ -->
+  <div class="layer fill-alt" id="l-product" style="justify-content:flex-start;padding-top:360px">
+    <div id="phone">
+      <div id="phone-top">
+        <svg class="pin" viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="2">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>Grass Residences, Block C</span>
+      </div>
+      <div id="phone-body">
+
+        <div class="pstage" id="p-search">
+          <div class="searchbar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(20,35,28,.4)" stroke-width="2">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+            </svg>
+            <span class="q"><span id="typed"></span><span class="caret" id="caret"></span></span>
+          </div>
+          <div class="cats">
+            <span class="cat">Food</span><span class="cat">Coffee</span>
+            <span class="cat">Laundry</span><span class="cat">Services</span>
+          </div>
+        </div>
+
+        <div class="pstage" id="p-results"></div>
+
+        <div class="pstage" id="p-cart">
+          <div class="cartrow">
+            <div>
+              <div class="result n">Classic Cheeseburger</div>
+              <div class="result m" style="border:0;padding:0;margin:6px 0 0">Neighbor's Grill</div>
+            </div>
+            <div class="plus" id="plusbtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+          </div>
+          <div class="cartbar">
+            <span>1 item</span><span style="font-weight:600">₱185.00</span>
+          </div>
+        </div>
+
+        <div class="pstage" id="p-done">
+          <div class="confirm">
+            <div class="check" id="checkmark">
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:28px;font-weight:600;color:var(--ink)">Order placed</div>
+              <div style="font-size:22px;color:rgba(20,35,28,.5);margin-top:10px">Arriving in ~12 minutes</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="caption" id="pcap" style="top:1430px;color:var(--ink)">
+      <div class="eyebrow" style="color:rgba(20,35,28,.45)">The product</div>
+      <div class="display" style="font-size:56px;margin-top:16px">Order in seconds.</div>
+    </div>
+  </div>
+
+  <!-- ============ 3. COMMUNITY MAP ============ -->
+  <div class="layer fill-alt" id="l-map">
+    <svg id="city" viewBox="0 0 1080 1100" style="position:absolute;top:600px;left:0;width:1080px;height:1100px"></svg>
+    <div class="caption" id="mapcap" style="top:330px;color:var(--ink)">
+      <div class="eyebrow" style="color:rgba(20,35,28,.45)">Built for your community</div>
+      <div class="display" style="font-size:66px;margin-top:18px">Your neighbours.<br/>Not the whole city.</div>
+    </div>
+  </div>
+
+  <!-- ============ 4. EXPANSION ============ -->
+  <div class="layer fill-ink" id="l-expand">
+    <div class="caption" style="top:360px;color:#fff">
+      <div class="eyebrow" style="color:rgba(255,255,255,.5)">The bigger vision</div>
+      <div class="display" id="excap" style="font-size:66px;margin-top:18px;color:#fff">It starts with food.<br/>It doesn’t end there.</div>
+    </div>
+    <div id="orbit" style="position:absolute;top:700px;left:140px;width:800px;height:800px"></div>
+  </div>
+
+  <!-- ============ 5. VISION NETWORK ============ -->
+  <div class="layer fill-ink" id="l-vision">
+    <svg id="net" viewBox="0 0 1080 1080" style="position:absolute;top:480px;left:0;width:1080px;height:1080px"></svg>
+    <div class="caption" id="viscap" style="top:1470px;color:#fff">
+      <div class="display" style="font-size:62px">Everything you need,<br/>around you.</div>
+    </div>
+  </div>
+
+  <!-- ============ 6. BRAND ============ -->
+  <div class="layer fill-brand" id="l-brand">
+    <svg id="bmark" viewBox="0 0 256 256" fill="#fff" style="width:210px;height:210px"></svg>
+    <div id="bword" style="margin-top:44px;font-size:52px;font-weight:600;letter-spacing:-.02em;color:#fff">Lokal Finder</div>
+  </div>
+
+  <!-- ============ 7. FINAL ============ -->
+  <div class="layer fill-brand" id="l-final">
+    <svg viewBox="0 0 256 256" fill="#fff" id="fmark" style="width:104px;height:104px">
+      <path d="M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z"/>
+    </svg>
+    <div class="display" id="ftag" style="font-size:88px;margin-top:56px;text-align:center;color:#fff">
+      Your community.<br/>Connected.
+    </div>
+    <div id="fcta" style="margin-top:70px;padding:26px 56px;border-radius:16px;background:#fff;color:var(--brand-dark);font-size:30px;font-weight:600">
+      Get early access
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="safe"><div class="bar" style="top:0"></div><div class="bar" style="bottom:0"></div></div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   Deterministic 60s timeline.
+   Nothing animates on its own: seek(t) fully derives the frame from t,
+   so the capture script can step frame-by-frame with no timing drift.
+------------------------------------------------------------------- */
+const DUR = 60;
+const LOGO_PATH = 'M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z';
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp  = (a, b, u) => a + (b - a) * u;
+/** normalised progress of t across [a,b] */
+const prog  = (t, a, b) => clamp((t - a) / (b - a));
+
+/* Real cubic-bezier evaluation (Newton-Raphson, bisection fallback) so the
+   film uses the exact UI curves rather than JS lookalikes. */
+function cubicBezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sampleX  = u => ((ax * u + bx) * u + cx) * u;
+  const sampleY  = u => ((ay * u + by) * u + cy) * u;
+  const sampleDX = u => (3 * ax * u + 2 * bx) * u + cx;
+  return function (x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let u = x;
+    for (let i = 0; i < 8; i++) {
+      const err = sampleX(u) - x;
+      if (Math.abs(err) < 1e-6) return sampleY(u);
+      const d = sampleDX(u);
+      if (Math.abs(d) < 1e-6) break;
+      u -= err / d;
+    }
+    let lo = 0, hi = 1; u = x;
+    for (let i = 0; i < 24; i++) {
+      const xv = sampleX(u);
+      if (Math.abs(xv - x) < 1e-6) break;
+      if (x > xv) lo = u; else hi = u;
+      u = (lo + hi) / 2;
+    }
+    return sampleY(u);
+  };
+}
+
+// entrances/exits
+const easeOut   = cubicBezier(0.23, 1, 0.32, 1);
+// on-screen movement / morphing
+const easeInOut = cubicBezier(0.77, 0, 0.175, 1);
+// gentle overshoot, reserved for the rare delight beats (order confirmed)
+const easeOutBack = u => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+
+const $ = id => document.getElementById(id);
+
+/* ---------- scene windows (with deliberate cross-fade overlap) ---------- */
+const S = {
+  hero:    { in: 0.0,  out: 12.2 },
+  product: { in: 11.6, out: 25.8 },
+  map:     { in: 25.2, out: 35.8 },
+  expand:  { in: 35.2, out: 45.4 },
+  vision:  { in: 44.8, out: 53.4 },
+  brand:   { in: 52.8, out: 57.3 },
+  final:   { in: 56.7, out: 60.0 },
+};
+
+/** cross-fade alpha for a scene layer */
+function alpha(t, s, fadeIn = 0.6, fadeOut = 0.6) {
+  const a = fadeIn === 0 ? 1 : clamp((t - s.in) / fadeIn);
+  const b = fadeOut === 0 ? 1 : clamp((s.out - t) / fadeOut);
+  return Math.min(a, b);
+}
+
+/* ================= build repeated DOM once ================= */
+
+const CHIPS = ['Restaurants', 'Coffee shops', 'Laundry', 'Services', 'Local sellers'];
+CHIPS.forEach(label => {
+  const el = document.createElement('div');
+  el.className = 'chip';
+  el.textContent = label;
+  $('chips').appendChild(el);
+});
+const chipEls = [...document.querySelectorAll('.chip')];
+
+const RESULTS = [
+  { n: "Neighbor's Grill", m: '4.9 · 12 min · Block C', p: '$$', sel: true },
+  { n: 'Corner Burger Co.', m: '4.7 · 8 min · Block A',  p: '$'  },
+  { n: "Bea's Kitchen",     m: '4.8 · 15 min · Block D', p: '$$' },
+];
+RESULTS.forEach(r => {
+  const el = document.createElement('div');
+  el.className = 'result' + (r.sel ? ' sel' : '');
+  el.innerHTML = `<div><div class="n">${r.n}</div><div class="m">${r.m}</div></div><div class="p">${r.p}</div>`;
+  $('p-results').appendChild(el);
+});
+const resultEls = [...$('p-results').querySelectorAll('.result')];
+
+$('bmark').innerHTML = `<path d="${LOGO_PATH}"/>`;
+
+/* ---------- isometric city ---------- */
+const TILE = 80, GRID = 7;
+const cityCx = 540, cityCy = 300;
+function iso(gx, gy, h) {
+  return [cityCx + (gx - gy) * TILE, cityCy + (gx + gy) * TILE * 0.5 - h];
+}
+// deterministic pseudo-random so every render is identical
+let seed = 20260824;
+const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+
+const BUILDINGS = [];
+for (let gx = 0; gx < GRID; gx++) {
+  for (let gy = 0; gy < GRID; gy++) {
+    if (rnd() < 0.16) continue;                       // street gaps
+    const d = Math.hypot(gx - (GRID - 1) / 2, gy - (GRID - 1) / 2);
+    BUILDINGS.push({ gx, gy, h: 40 + rnd() * 150, d, biz: rnd() < 0.16 });
+  }
+}
+BUILDINGS.sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));   // painter's order
+
+// pick the two most distant business markers for the delivery route
+const bizAll = BUILDINGS.filter(b => b.biz);
+let ROUTE_A = bizAll[0], ROUTE_B = bizAll[bizAll.length - 1], bestD = -1;
+for (const p of bizAll) for (const q of bizAll) {
+  const d = Math.hypot(p.gx - q.gx, p.gy - q.gy);
+  if (d > bestD) { bestD = d; ROUTE_A = p; ROUTE_B = q; }
+}
+
+const cityNS = 'http://www.w3.org/2000/svg';
+const cityEls = BUILDINGS.map(b => {
+  const g = document.createElementNS(cityNS, 'g');
+  ['right', 'left', 'top'].forEach(face => {
+    const p = document.createElementNS(cityNS, 'polygon');
+    p.setAttribute('data-face', face);
+    g.appendChild(p);
+  });
+  $('city').appendChild(g);
+  return g;
+});
+// business markers + route drawn above the city
+const markerEls = BUILDINGS.map(b => {
+  if (!b.biz) return null;
+  const c = document.createElementNS(cityNS, 'circle');
+  c.setAttribute('r', '11');
+  c.setAttribute('fill', '#0E8A5A');
+  $('city').appendChild(c);
+  return c;
+});
+const route = document.createElementNS(cityNS, 'path');
+route.setAttribute('fill', 'none');
+route.setAttribute('stroke', '#0E8A5A');
+route.setAttribute('stroke-width', '6');
+route.setAttribute('stroke-linecap', 'round');
+route.setAttribute('stroke-dasharray', '10 14');
+$('city').appendChild(route);
+
+/* ---------- expansion orbit ---------- */
+const CATS = [
+  { label: 'Food',         icon: 'M7 3v8M5 3v6a2 2 0 0 0 4 0V3M16 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6ZM16 9v12M7 11v10' },
+  { label: 'Laundry',      icon: 'M6 4h12l2 4-4 1v11H8V9L4 8Z' },
+  { label: 'Cleaning',     icon: 'M12 3v6M9 9h6l1 12H8ZM5 6l2 1M19 6l-2 1' },
+  { label: 'Housekeeping', icon: 'M4 11 12 4l8 7M6 10v10h12V10' },
+  { label: 'Services',     icon: 'M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1 6.9 6.9M17.1 17.1l1.8 1.8M18.9 5.1 17.1 6.9M6.9 17.1l-1.8 1.8' },
+  { label: 'Local retail', icon: 'M4 8h16l-1 12H5ZM9 8V6a3 3 0 0 1 6 0v2' },
+];
+CATS.forEach((c, i) => {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px;will-change:transform,opacity';
+  wrap.innerHTML =
+    `<div style="width:124px;height:124px;border-radius:32px;background:rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center">
+       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"
+            stroke-linecap="round" stroke-linejoin="round"><path d="${c.icon}"/></svg>
+     </div>
+     <div style="font-size:23px;color:rgba(255,255,255,.72);white-space:nowrap">${c.label}</div>`;
+  $('orbit').appendChild(wrap);
+});
+const catEls = [...$('orbit').children];
+
+/* ---------- vision network ---------- */
+const NET_N = 22;
+const netNodes = [];
+for (let i = 0; i < NET_N; i++) {
+  const ring = i < 7 ? 0 : (i < 15 ? 1 : 2);
+  const idxInRing = ring === 0 ? i : (ring === 1 ? i - 7 : i - 15);
+  const countInRing = ring === 0 ? 7 : (ring === 1 ? 8 : 7);
+  const rad = [170, 310, 440][ring];
+  const ang = (idxInRing / countInRing) * Math.PI * 2 + ring * 0.5;
+  netNodes.push({ x: 540 + Math.cos(ang) * rad, y: 540 + Math.sin(ang) * rad * 0.82, ring });
+}
+const netNS = cityNS;
+const netLines = [];
+netNodes.forEach((n, i) => {
+  if (n.ring === 0) return;
+  const target = netNodes[n.ring === 1 ? (i - 7) % 7 : (i - 15) % 8 + 7];
+  const l = document.createElementNS(netNS, 'line');
+  l.setAttribute('stroke', 'rgba(255,255,255,.16)');
+  l.setAttribute('stroke-width', '1.6');
+  l.setAttribute('x1', n.x); l.setAttribute('y1', n.y);
+  l.setAttribute('x2', target.x); l.setAttribute('y2', target.y);
+  $('net').appendChild(l);
+  netLines.push({ el: l, from: n, to: target });
+});
+const netDots = netNodes.map(n => {
+  const c = document.createElementNS(netNS, 'circle');
+  c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+  c.setAttribute('fill', n.ring === 0 ? '#0E8A5A' : 'rgba(255,255,255,.85)');
+  $('net').appendChild(c);
+  return c;
+});
+
+/* ================= per-frame render ================= */
+
+function seek(t) {
+  t = clamp(t, 0, DUR);
+
+  /* ---------------- 1. HERO ---------------- */
+  const hA = alpha(t, S.hero, 0, 0.6);
+  const hero = $('l-hero');
+  hero.style.opacity = hA;
+  hero.style.display = hA <= 0.001 ? 'none' : 'flex';
+  if (hA > 0.001) {
+    // slow cinematic push-in across the whole scene
+    const push = lerp(1.07, 1.0, easeOut(prog(t, 0, 7)));
+    const drift = lerp(0, -40, prog(t, 0, 12));
+    hero.style.transform = `scale(${push}) translateY(${drift}px)`;
+
+    const navU = easeOut(prog(t, 0.15, 1.1));
+    $('nav').style.opacity = navU;
+    $('nav').style.transform = `translateY(${lerp(-24, 0, navU)}px)`;
+
+    // line-by-line masked reveal
+    const l1 = easeOut(prog(t, 0.5, 1.9));
+    const l2 = easeOut(prog(t, 0.78, 2.2));
+    $('h1a').style.transform = `translateY(${lerp(115, 0, l1)}%)`;
+    $('h1b').style.transform = `translateY(${lerp(115, 0, l2)}%)`;
+
+    const subU = easeOut(prog(t, 1.5, 2.6));
+    $('hsub').style.opacity = subU;
+    $('hsub').style.transform = `translateY(${lerp(26, 0, subU)}px)`;
+
+    chipEls.forEach((el, i) => {
+      const u = easeOutBack(prog(t, 2.3 + i * 0.08, 3.1 + i * 0.08));
+      // gentle continuous float keeps the frame alive without being busy
+      const float = Math.sin((t - 3) * 1.05 + i * 0.9) * 5 * clamp(prog(t, 3.2, 4.2));
+      el.style.opacity = clamp(u);
+      el.style.transform = `translateY(${lerp(40, 0, u) + float}px) scale(${lerp(.94, 1, u)})`;
+    });
+  }
+
+  /* ---------------- 2. PRODUCT ---------------- */
+  const pA = alpha(t, S.product);
+  const prod = $('l-product');
+  prod.style.opacity = pA;
+  prod.style.display = pA <= 0.001 ? 'none' : 'flex';
+  if (pA > 0.001) {
+    // phone rises in, holds, then recedes as the map takes over
+    const rise = easeOut(prog(t, 11.6, 13.4));
+    const exit = easeInOut(prog(t, 24.6, 25.8));
+    const y = lerp(150, 0, rise) + lerp(0, -90, exit);
+    const sc = lerp(0.92, 1, rise) * lerp(1, 0.9, exit);
+    $('phone').style.transform = `translateY(${y}px) scale(${sc})`;
+
+    const capU = easeOut(prog(t, 12.6, 13.8));
+    $('pcap').style.opacity = capU * (1 - prog(t, 24.2, 25.4));
+    $('pcap').style.transform = `translateY(${lerp(26, 0, capU)}px)`;
+
+    // --- sub-beats inside the phone ---
+    const bSearch  = { in: 13.2, out: 17.2 };
+    const bResults = { in: 17.0, out: 20.6 };
+    const bCart    = { in: 20.4, out: 23.0 };
+    const bDone    = { in: 22.8, out: 25.8 };
+
+    const stageAlpha = (b, fi = .35, fo = .35) =>
+      Math.min(clamp((t - b.in) / fi), clamp((b.out - t) / fo));
+
+    const aS = stageAlpha(bSearch), aR = stageAlpha(bResults),
+          aC = stageAlpha(bCart),   aD = stageAlpha(bDone);
+
+    $('p-search').style.opacity  = aS;
+    $('p-results').style.opacity = aR;
+    $('p-cart').style.opacity    = aC;
+    $('p-done').style.opacity    = aD;
+    $('p-search').style.display  = aS <= .001 ? 'none' : 'block';
+    $('p-results').style.display = aR <= .001 ? 'none' : 'block';
+    $('p-cart').style.display    = aC <= .001 ? 'none' : 'block';
+    $('p-done').style.display    = aD <= .001 ? 'none' : 'block';
+
+    // typing "Burger"
+    const word = 'Burger';
+    const typed = Math.round(lerp(0, word.length, clamp(prog(t, 13.6, 15.3))));
+    $('typed').textContent = word.slice(0, typed);
+    $('caret').style.opacity = (t < 15.5 && Math.floor(t * 2) % 2 === 0) ? 1 : 0;
+
+    resultEls.forEach((el, i) => {
+      const u = easeOut(prog(t, 17.25 + i * 0.07, 17.95 + i * 0.07));
+      el.style.opacity = u;
+      el.style.transform = `translateX(${lerp(-18, 0, u)}px)`;
+    });
+
+    // add-to-cart pop
+    const pop = prog(t, 21.0, 21.5);
+    $('plusbtn').style.transform = `scale(${lerp(0.9, 1, easeOutBack(pop))})`;
+
+    // confirmation pop
+    const cp = prog(t, 23.1, 23.8);
+    $('checkmark').style.transform = `scale(${lerp(0.9, 1, easeOutBack(cp))})`;
+  }
+
+  /* ---------------- 3. COMMUNITY MAP ---------------- */
+  const mA = alpha(t, S.map);
+  const map = $('l-map');
+  map.style.opacity = mA;
+  map.style.display = mA <= 0.001 ? 'none' : 'flex';
+  if (mA > 0.001) {
+    const capU = easeOut(prog(t, 25.6, 26.8));
+    $('mapcap').style.opacity = capU;
+    $('mapcap').style.transform = `translateY(${lerp(28, 0, capU)}px)`;
+
+    // slow parallax drift over the whole map beat
+    const drift = lerp(0, -70, prog(t, 25.2, 35.8));
+    const zoom  = lerp(0.96, 1.04, prog(t, 25.2, 35.8));
+    $('city').style.transform = `translateY(${drift}px) scale(${zoom})`;
+    $('city').style.transformOrigin = '540px 460px';
+
+    BUILDINGS.forEach((b, i) => {
+      // buildings rise outward from the centre
+      const st = 26.3 + b.d * 0.30;
+      const u = easeOut(prog(t, st, st + 0.95));
+      const h = b.h * u;
+      const [tx, ty] = iso(b.gx, b.gy, h);
+      const w = TILE, hw = TILE * 0.5;
+      const g = cityEls[i];
+      const [top, left, right] = [g.children[2], g.children[1], g.children[0]];
+      // top face
+      top.setAttribute('points', `${tx},${ty} ${tx + w},${ty + hw} ${tx},${ty + w} ${tx - w},${ty + hw}`);
+      top.setAttribute('fill', '#E8EDE9');
+      // left face
+      left.setAttribute('points', `${tx - w},${ty + hw} ${tx},${ty + w} ${tx},${ty + w + h} ${tx - w},${ty + hw + h}`);
+      left.setAttribute('fill', '#C6D0C9');
+      // right face
+      right.setAttribute('points', `${tx + w},${ty + hw} ${tx},${ty + w} ${tx},${ty + w + h} ${tx + w},${ty + hw + h}`);
+      right.setAttribute('fill', '#D7DFD9');
+      g.style.opacity = u;
+
+      const mk = markerEls[i];
+      if (mk) {
+        const mu = clamp(prog(t, st + 0.7, st + 1.3));
+        const pulse = 1 + Math.sin(t * 3 + i) * 0.16;
+        mk.setAttribute('cx', tx);
+        mk.setAttribute('cy', ty - 20);
+        mk.setAttribute('r', 11 * mu * pulse);
+        mk.style.opacity = mu;
+      }
+    });
+
+    // delivery route: seller -> customer, drawn on
+    // farthest-apart pair of business markers, so the route reads as
+    // "across your community" rather than a stub between two neighbours
+    const A = iso(ROUTE_A.gx, ROUTE_A.gy, ROUTE_A.h);
+    const B = iso(ROUTE_B.gx, ROUTE_B.gy, ROUTE_B.h);
+    const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2 - 120;
+    route.setAttribute('d', `M ${A[0]} ${A[1] - 20} Q ${mx} ${my} ${B[0]} ${B[1] - 20}`);
+    const len = route.getTotalLength();
+    const ru = easeInOut(prog(t, 30.4, 33.2));
+    route.setAttribute('stroke-dasharray', `${len}`);
+    route.setAttribute('stroke-dashoffset', `${len * (1 - ru)}`);
+    route.style.opacity = clamp(prog(t, 30.3, 30.8)) * (1 - prog(t, 35.0, 35.8));
+  }
+
+  /* ---------------- 4. EXPANSION ---------------- */
+  const eA = alpha(t, S.expand);
+  const exp = $('l-expand');
+  exp.style.opacity = eA;
+  exp.style.display = eA <= 0.001 ? 'none' : 'flex';
+  if (eA > 0.001) {
+    const capU = easeOut(prog(t, 35.5, 36.7));
+    $('excap').style.opacity = capU;
+    $('excap').style.transform = `translateY(${lerp(24, 0, capU)}px)`;
+
+    catEls.forEach((el, i) => {
+      const st = 36.6 + i * 0.62;
+      const u = easeOutBack(clamp(prog(t, st, st + 0.8)));
+      const ang = (i / CATS.length) * Math.PI * 2 - Math.PI / 2;
+      const R = 300 * clamp(prog(t, st, st + 0.9));
+      const x = 400 + Math.cos(ang) * R - 62;
+      const y = 400 + Math.sin(ang) * R - 76;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.opacity = clamp(u);
+      el.style.transform = `scale(${lerp(0.94, 1, clamp(u))})`;
+    });
+
+    // whole cluster breathes outward slightly as it fills in
+    const grow = lerp(0.92, 1.0, easeOut(prog(t, 36.6, 43.5)));
+    $('orbit').style.transform = `scale(${grow})`;
+  }
+
+  /* ---------------- 5. VISION NETWORK ---------------- */
+  const vA = alpha(t, S.vision);
+  const vis = $('l-vision');
+  vis.style.opacity = vA;
+  vis.style.display = vA <= 0.001 ? 'none' : 'flex';
+  if (vA > 0.001) {
+    // pull back to reveal the whole connected community
+    const pull = lerp(1.5, 0.98, easeInOut(prog(t, 45.0, 51.5)));
+    $('net').style.transform = `scale(${pull})`;
+    $('net').style.transformOrigin = '540px 540px';
+
+    netDots.forEach((c, i) => {
+      const n = netNodes[i];
+      const st = 45.3 + n.ring * 1.5 + (i % 7) * 0.06;
+      const u = easeOutBack(clamp(prog(t, st, st + 0.7)));
+      c.setAttribute('r', (n.ring === 0 ? 13 : 8) * lerp(0.94, 1, clamp(u)));
+      c.style.opacity = clamp(u);
+    });
+
+    netLines.forEach((l, i) => {
+      const st = 47.4 + (i % 10) * 0.08;
+      const u = easeOut(clamp(prog(t, st, st + 0.8)));
+      l.el.setAttribute('x2', lerp(l.from.x, l.to.x, u));
+      l.el.setAttribute('y2', lerp(l.from.y, l.to.y, u));
+      l.el.style.opacity = u;
+    });
+
+    const capU = easeOut(prog(t, 50.6, 51.8));
+    $('viscap').style.opacity = capU;
+    $('viscap').style.transform = `translateY(${lerp(26, 0, capU)}px)`;
+  }
+
+  /* ---------------- 6. BRAND ---------------- */
+  const bA = alpha(t, S.brand);
+  const brand = $('l-brand');
+  brand.style.opacity = bA;
+  brand.style.display = bA <= 0.001 ? 'none' : 'flex';
+  if (bA > 0.001) {
+    const u = easeOut(prog(t, 53.0, 54.6));
+    $('bmark').style.transform = `scale(${lerp(0.94, 1, u)})`;
+    $('bmark').style.opacity = u;
+    const wu = easeOut(prog(t, 53.7, 55.0));
+    $('bword').style.opacity = wu;
+    $('bword').style.transform = `translateY(${lerp(22, 0, wu)}px)`;
+  }
+
+  /* ---------------- 7. FINAL ---------------- */
+  const fA = alpha(t, S.final, 0.6, 0);
+  const fin = $('l-final');
+  fin.style.opacity = fA;
+  fin.style.display = fA <= 0.001 ? 'none' : 'flex';
+  if (fA > 0.001) {
+    const u = easeOut(prog(t, 57.0, 58.2));
+    $('fmark').style.opacity = u;
+    $('ftag').style.opacity = u;
+    $('ftag').style.transform = `translateY(${lerp(22, 0, u)}px)`;
+    const cu = easeOut(prog(t, 57.8, 58.9));
+    $('fcta').style.opacity = cu;
+    $('fcta').style.transform = `translateY(${lerp(18, 0, cu)}px)`;
+  }
+}
+
+window.seek = seek;
+window.FILM = { DUR };
+seek(0);
+// signal to the capture script that layout + fonts are settled
+document.fonts.ready.then(() => { window.__filmReady = true; });
+
+/* ------------------------------------------------------------------
+   Preview playback — opt-in via ?preview=1 so the capture path stays
+   purely seek-driven and deterministic. Space toggles play/pause.
+   Honours prefers-reduced-motion: no autoplay, opens on a held frame
+   the viewer can scrub rather than motion they didn't ask for.
+------------------------------------------------------------------- */
+if (new URLSearchParams(location.search).has('preview')) {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing = !reduce, t0 = performance.now(), acc = 0;
+
+  const tick = now => {
+    if (playing) {
+      acc += (now - t0) / 1000;
+      if (acc > DUR) acc = 0;
+      seek(acc);
+    }
+    t0 = now;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); playing = !playing; }
+    if (e.code === 'ArrowRight') { playing = false; acc = Math.min(DUR, acc + 1); seek(acc); }
+    if (e.code === 'ArrowLeft')  { playing = false; acc = Math.max(0, acc - 1);  seek(acc); }
+    if (e.key === 's') $('safe').classList.toggle('on');   // safe-area overlay
+  });
+}
+</script>
+</body>
+</html>
