@@ -14,11 +14,30 @@ were confirmed by reading the repo directly — treat anything not listed here
 as unknown, not as true.
 
 **What this repo actually contains:**
-- `index.html` (~8,600 lines, ~470KB) — the entire Lokal Finder app: a
+- `index.html` (~9,000 lines) — the entire Lokal Finder app: a
   single-page, hand-written vanilla JS/CSS/HTML application. No build step,
   no framework, no bundler. All markup, styles, and logic live in this one
   file. Currently branded "LokalFinder — GRASS Residences" (one residential
   community, not yet multi-community).
+
+**Marketplace verticals (v54):** the app is no longer food-only. A
+`MARKETPLACES` registry in `index.html` defines the verticals (`food`,
+`cleaning`) and two defaulting helpers carry all the backward compatibility:
+
+- `vendorCat(v)` → `v.category || 'food'`
+- `orderKind(o)` → `o.kind || 'food'`
+
+Every vendor and order written before v54 lacks both fields and therefore
+reads back as Food. There is **no** second item store, transaction store,
+auth system, notification engine, dashboard or status machine for the new
+vertical — cleaning services live in `MENU[vid]` like any other item list,
+and a booking is an order in the same `orders` array carrying
+`kind:'cleaning'` plus `svcDate` / `svcTime` / `building` / `instructions`.
+Bookings reuse the food status *strings* (`new`→`accepted`→`preparing`→
+`ready`→`delivered`, plus `declined`) and only re-label them via
+`LF_STATUS_COPY`, which is why `updateOrderStatus()` needed no branching.
+To add a third vertical (laundry, beauty…), add one `MARKETPLACES` entry
+and give its vendors that `category`.
 - `landing/` — a **separate** React 19 + TypeScript + Vite marketing/landing
   site (Tailwind, Framer Motion, GSAP, react-three-fiber/drei for 3D). This
   is independent of the main app and only used for the public-facing landing
@@ -50,6 +69,19 @@ as unknown, not as true.
 - Firebase is otherwise only used for **Cloud Messaging** (push
   notifications), loaded via the `firebase-app-compat` /
   `firebase-messaging-compat` CDN scripts — not for auth or data storage.
+- **In-app notifications** are RTDB rows under `{ROOM_KEY}/notifs/{userId}`,
+  written by `pushNotif()` and read by `loadNotifs()` /
+  `loadCustomerNotifs()`. Always build that path with `notifNode(userId)` —
+  order ids contain `#`, which is both an illegal RTDB key character and a
+  URL fragment delimiter. Before v54 the raw path was interpolated directly,
+  so every customer's alerts silently collapsed into one shared `cust_`
+  bucket (broken *and* a cross-customer privacy leak); `notifNode()` is the
+  single chokepoint that keeps reads and writes sanitised identically.
+- **Nothing in this repo actually sends a push.** FCM tokens
+  (`{ROOM_KEY}/fcmTokens/vendors/...`) and OneSignal subscription ids are
+  only *stored*; whatever delivers the OS-level notification lives outside
+  this repo and was not verified. Treat "does a closed-app push actually
+  arrive" as an open question.
 - No payments integration, no formal user authentication system, and no
   seller/admin backend were found in this pass. If a task assumes one exists,
   verify by reading `index.html` first rather than assuming.
@@ -67,6 +99,19 @@ as unknown, not as true.
 - This is a single-community proof of concept (GRASS Residences), not yet a
   multi-community platform. Any "expansion to many communities" strategy
   work is aspirational, not implemented.
+- The seeded vendors and cleaning providers in `index.html` are **demo
+  fixtures**, not evidence of real supply. Two cleaning providers exist in
+  code (`sparkle`, `freshnest`); no real cleaning vendor has been onboarded,
+  and no cleaning booking has been placed by a real customer. Do not cite
+  them as traction.
+- Vendor PINs are still stored in plain text in `VENDOR_PINS_PLAIN` and
+  synced to the RTDB. `VENDOR_PIN_HASHES` exists but is unused by
+  `vendorLogin()`. This is a known weakness, unchanged by v54.
+
+**Testing:** there is no test framework in the repo. v54 was verified with a
+throwaway Playwright harness that stubs the RTDB endpoint in-memory so tests
+never touch production data — if you re-verify, do the same. Never point a
+test run at the live `FB_URL`.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
