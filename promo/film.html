@@ -2,841 +2,685 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Lokal Finder — 60s film</title>
+<title>LokalFinder — social film</title>
 <style>
-  @font-face {
-    font-family: 'Fraunces';
-    src: url('fonts/Fraunces.woff2') format('woff2');
-    font-weight: 100 900;
-    font-display: block;
-  }
-  @font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('fonts/PlusJakartaSans.woff2') format('woff2');
-    font-weight: 100 900;
-    font-display: block;
+  @font-face { font-family:'Fraunces';  src:url('fonts/Fraunces.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+  @font-face { font-family:'Plus Jakarta Sans'; src:url('fonts/PlusJakartaSans.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+  @font-face { font-family:'Bricolage Grotesque'; src:url('fonts/BricolageGrotesque.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+
+  :root{
+    /* pulled from the app's own tokens */
+    --g:#0E8A5A; --gm:#12B76A; --gl:#E6F7EF; --gd:#0F4A32;
+    --lgreen:#1A6B4A; --warm:#F59E0B; --gold:#F5C842;
+    --t1:#0D2B1A; --t2:#2D4A38; --t3:#6B8F7A;
+    --lbg:#F0F7F3; --s3:#E2F0E9; --w:#fff;
+    --night:#0B2318; --night2:#0d3d27;
   }
 
-  :root {
-    --ink: #14231C;
-    --brand: #0E8A5A;
-    --brand-dark: #0F4A32;
-    --brand-light: #E6F7EF;
-    --surface: #FFFFFF;
-    --surface-alt: #F6F8F6;
-    --line: #E5E7EB;
-  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  /* every property is set per-frame; nothing may animate on its own */
+  *,*::before,*::after{animation:none!important;transition:none!important}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html,body{width:1080px;height:1920px;overflow:hidden;background:#000;
+    font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+  #stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--lbg)}
 
-  /* Every property is set imperatively per frame — no CSS animation or
-     transition may run, or captured frames would be non-deterministic. */
-  *, *::before, *::after {
-    animation: none !important;
-    transition: none !important;
-  }
+  .layer{position:absolute;inset:0;will-change:transform,opacity}
+  .fill-night{background:var(--night)}
+  .fill-lbg{background:var(--lbg)}
+  .fill-green{background:var(--lgreen)}
+  .fill-white{background:#fff}
 
-  html, body {
-    width: 1080px;
-    height: 1920px;
-    overflow: hidden;
-    background: #000;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
+  /* ---- type ---- */
+  .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
+       letter-spacing:-.035em;line-height:.98;will-change:transform,opacity}
+  .ser{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.03em;line-height:1.02}
+  .cap{position:absolute;left:0;right:0;text-align:center;padding:0 70px;will-change:transform,opacity}
 
-  #stage {
-    position: relative;
-    width: 1080px;
-    height: 1920px;
-    overflow: hidden;
-    background: var(--surface);
-  }
+  .word{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;letter-spacing:-1.5px;line-height:1}
+  .word em{font-style:normal}
 
-  .layer {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    will-change: transform, opacity;
-  }
+  /* ---- phone ---- */
+  #phone{position:absolute;left:50%;top:430px;margin-left:-310px;width:620px;height:1020px;
+    border-radius:52px;background:#fff;border:1px solid rgba(26,107,74,.14);
+    box-shadow:0 40px 90px rgba(13,43,26,.18),0 6px 20px rgba(13,43,26,.08);
+    overflow:hidden;will-change:transform}
+  #ptop{display:flex;align-items:center;gap:12px;padding:34px 34px 26px;border-bottom:1px solid rgba(26,107,74,.10)}
+  #ptop span{font-size:21px;font-weight:600;color:var(--t2)}
+  .pst{position:absolute;left:30px;right:30px;top:130px;will-change:opacity,transform}
 
-  .fill-light { background: var(--surface); }
-  .fill-alt   { background: var(--surface-alt); }
-  .fill-ink   { background: var(--ink); }
-  .fill-brand { background: var(--brand-dark); }
+  .sbar{display:flex;align-items:center;gap:14px;padding:24px 26px;border-radius:20px;
+        background:var(--lbg);border:1px solid rgba(26,107,74,.12)}
+  .sbar .q{font-size:26px;font-weight:600;color:var(--t1)}
+  .caret{display:inline-block;width:3px;height:26px;background:var(--g);vertical-align:-4px}
 
-  /* ---------- shared type ---------- */
-  .eyebrow {
-    font-size: 24px;
-    letter-spacing: .22em;
-    text-transform: uppercase;
-    font-weight: 600;
-  }
-  .display {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 400;
-    line-height: 1.02;
-    letter-spacing: -.03em;
-  }
-  .mask { overflow: hidden; display: block; }
-  .mask > span { display: block; will-change: transform; }
+  .rcard{display:flex;align-items:center;gap:18px;padding:20px 22px;border-radius:22px;margin-bottom:14px;
+    background:#fff;border:1px solid rgba(26,107,74,.12);box-shadow:0 2px 10px rgba(26,107,74,.05);
+    will-change:transform,opacity}
+  .rcard .em{width:74px;height:74px;border-radius:18px;background:var(--lbg);
+    display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0}
+  .rcard .n{font-size:25px;font-weight:700;color:var(--t1)}
+  .rcard .m{font-size:18px;color:var(--t3);margin-top:4px}
+  .rcard .pill{margin-left:auto;padding:8px 14px;border-radius:999px;background:var(--gl);
+    color:var(--lgreen);font-size:17px;font-weight:700;white-space:nowrap}
 
-  /* ---------- nav ---------- */
-  #nav {
-    position: absolute;
-    top: 300px;
-    left: 0; right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-  }
-  #nav svg { width: 46px; height: 46px; }
-  #nav span { font-size: 34px; font-weight: 600; letter-spacing: -.02em; }
+  .cartbar{display:flex;align-items:center;justify-content:space-between;padding:24px 28px;
+    border-radius:22px;background:var(--lgreen);color:#fff;font-size:24px;font-weight:700}
 
-  /* ---------- chips ---------- */
-  #chips {
-    position: absolute;
-    top: 1290px;
-    left: 0; right: 0;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 12px;
-    padding: 0 60px;
-  }
-  .chip {
-    padding: 13px 22px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.9);
-    border: 1px solid var(--line);
-    font-size: 22px;
-    white-space: nowrap;
-    color: rgba(20,35,28,.8);
-    box-shadow: 0 4px 20px rgba(20,35,28,.05);
-    will-change: transform, opacity;
-  }
-
-  /* ---------- phone ---------- */
-  #phone {
-    position: relative;
-    width: 620px;
-    height: 940px;
-    border-radius: 60px;
-    background: var(--surface-alt);
-    border: 1px solid var(--line);
-    box-shadow: 0 60px 140px rgba(20,35,28,.20), 0 8px 30px rgba(20,35,28,.08);
-    overflow: hidden;
-    will-change: transform;
-  }
-  #phone-top {
-    display: flex; align-items: center; gap: 12px;
-    padding: 40px 38px 28px;
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-  }
-  #phone-top .pin { width: 26px; height: 26px; }
-  #phone-top span { font-size: 22px; font-weight: 500; color: rgba(20,35,28,.7); }
-  #phone-body { position: relative; padding: 34px; height: calc(100% - 132px); }
-  .pstage { position: absolute; inset: 34px; will-change: opacity, transform; }
-
-  .searchbar {
-    display: flex; align-items: center; gap: 16px;
-    padding: 26px 28px;
-    border-radius: 22px;
-    background: #fff;
-    border: 1px solid var(--line);
-  }
-  .searchbar svg { width: 26px; height: 26px; }
-  .searchbar .q { font-size: 26px; color: var(--ink); }
-  .caret { display: inline-block; width: 2px; height: 28px; background: rgba(20,35,28,.5); vertical-align: -5px; }
-
-  .cats { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
-  .cat {
-    padding: 12px 22px; border-radius: 999px; background: #fff;
-    border: 1px solid var(--line); font-size: 20px; color: rgba(20,35,28,.6);
-  }
-
-  .result {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 26px 28px; border-radius: 22px; margin-bottom: 16px;
-    background: #fff; border: 1px solid var(--line);
-    will-change: transform, opacity;
-  }
-  .result.sel { border-color: var(--brand); background: var(--brand-light); }
-  .result .n { font-size: 25px; font-weight: 500; color: var(--ink); }
-  .result .m { font-size: 19px; color: rgba(20,35,28,.5); margin-top: 6px; }
-  .result .p { font-size: 19px; color: rgba(20,35,28,.4); }
-
-  .cartrow {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 26px 28px; border-radius: 22px;
-    background: #fff; border: 1px solid var(--line);
-  }
-  .plus {
-    width: 52px; height: 52px; border-radius: 999px;
-    background: var(--brand); color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    will-change: transform;
-  }
-  .cartbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 26px 28px; border-radius: 22px; margin-top: 18px;
-    background: var(--ink); color: #fff;
-  }
-  .cartbar span { font-size: 24px; }
-
-  .confirm { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 26px; }
-  .check {
-    width: 110px; height: 110px; border-radius: 999px; background: var(--brand);
-    display: flex; align-items: center; justify-content: center;
-    will-change: transform;
-  }
-
-  .caption {
-    position: absolute;
-    left: 0; right: 0;
-    text-align: center;
-    padding: 0 90px;
-    will-change: transform, opacity;
-  }
-
-  #vignette {
-    position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 58%, rgba(0,0,0,.07) 100%);
-  }
-
-  #safe {
-    position: absolute; inset: 0; display: none; pointer-events: none;
-  }
-  #safe.on { display: block; }
-  #safe .bar { position: absolute; left: 0; right: 0; height: 250px; background: rgba(255,0,0,.18); }
+  #vig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 60%,rgba(0,0,0,.10) 100%)}
+  #safe{position:absolute;inset:0;display:none;pointer-events:none}
+  #safe.on{display:block}
+  #safe .bar{position:absolute;left:0;right:0;height:250px;background:rgba(255,0,0,.16)}
 </style>
 </head>
 <body>
 <div id="stage">
 
-  <!-- ============ 1. HERO ============ -->
-  <div class="layer fill-light" id="l-hero">
-    <div id="nav" style="color:var(--ink)">
-      <svg viewBox="0 0 256 256" fill="currentColor"><path d="M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z"/></svg>
-      <span>Lokal Finder</span>
-    </div>
-
-    <div style="position:absolute;top:620px;left:0;right:0;padding:0 90px;text-align:center;color:var(--ink)">
-      <div class="display" style="font-size:118px">
-        <span class="mask"><span id="h1a">Everything local.</span></span>
-        <span class="mask"><span id="h1b">One place.</span></span>
-      </div>
-      <p id="hsub" style="margin:44px auto 0;max-width:720px;font-size:30px;line-height:1.5;color:rgba(20,35,28,.7)">
-        Discover food, services, and businesses around your community.
-      </p>
-    </div>
-
-    <div id="chips"></div>
+  <!-- 1 · HOOK — the building wakes up -->
+  <div class="layer fill-night" id="l-hook">
+    <svg id="facade" viewBox="0 0 1080 1500" style="position:absolute;left:0;top:400px;width:1080px;height:1500px"></svg>
+    <div class="cap kin" id="hook1" style="top:300px;font-size:132px;color:#fff">7<span style="font-size:64px">PM</span></div>
+    <div class="cap kin" id="hook2" style="top:1330px;font-size:74px;color:#fff">Your neighbours<br/>are cooking.</div>
   </div>
 
-  <!-- ============ 2. PRODUCT ============ -->
-  <div class="layer fill-alt" id="l-product" style="justify-content:flex-start;padding-top:360px">
+  <!-- 2 · LOGO -->
+  <div class="layer fill-lbg" id="l-logo">
+    <div style="position:absolute;left:0;right:0;top:640px;display:flex;flex-direction:column;align-items:center">
+      <svg id="mark" viewBox="0 0 48 56" style="width:250px;height:292px"></svg>
+      <div class="word" id="logoword" style="margin-top:56px;font-size:88px;color:var(--t1)">Lokal<em style="color:var(--lgreen)">Finder</em></div>
+      <div id="logosub" style="margin-top:22px;font-size:28px;color:var(--t3);letter-spacing:.02em">Everything local. One place.</div>
+    </div>
+  </div>
+
+  <!-- 3 · SEARCH + 4 · ORDER (one phone, two beats) -->
+  <div class="layer fill-lbg" id="l-phone">
+    <div class="cap kin" id="phcap" style="top:250px;font-size:66px;color:var(--t1)">Order from<br/>your building.</div>
     <div id="phone">
-      <div id="phone-top">
-        <svg class="pin" viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="2">
+      <div id="ptop">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0E8A5A" stroke-width="2.2">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
         </svg>
-        <span>Grass Residences, Block C</span>
+        <span>GRASS Residences · Block C</span>
       </div>
-      <div id="phone-body">
-
-        <div class="pstage" id="p-search">
-          <div class="searchbar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(20,35,28,.4)" stroke-width="2">
-              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
-            </svg>
-            <span class="q"><span id="typed"></span><span class="caret" id="caret"></span></span>
-          </div>
-          <div class="cats">
-            <span class="cat">Food</span><span class="cat">Coffee</span>
-            <span class="cat">Laundry</span><span class="cat">Services</span>
-          </div>
+      <div class="pst" id="st-search">
+        <div class="sbar">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#6B8F7A" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="q"><span id="typed"></span><span class="caret" id="caret"></span></span>
         </div>
-
-        <div class="pstage" id="p-results"></div>
-
-        <div class="pstage" id="p-cart">
-          <div class="cartrow">
-            <div>
-              <div class="result n">Classic Cheeseburger</div>
-              <div class="result m" style="border:0;padding:0;margin:6px 0 0">Neighbor's Grill</div>
-            </div>
-            <div class="plus" id="plusbtn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            </div>
-          </div>
-          <div class="cartbar">
-            <span>1 item</span><span style="font-weight:600">₱185.00</span>
-          </div>
+        <div id="results" style="margin-top:26px"></div>
+      </div>
+      <div class="pst" id="st-order" style="top:150px">
+        <div class="rcard" style="margin-bottom:26px">
+          <div class="em">🍔</div>
+          <div><div class="n">Classic Cheeseburger</div><div class="m">Ate Bea · 2 floors up</div></div>
+          <div class="pill" id="addpill">+ Add</div>
         </div>
-
-        <div class="pstage" id="p-done">
-          <div class="confirm">
-            <div class="check" id="checkmark">
-              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg>
-            </div>
-            <div style="text-align:center">
-              <div style="font-size:28px;font-weight:600;color:var(--ink)">Order placed</div>
-              <div style="font-size:22px;color:rgba(20,35,28,.5);margin-top:10px">Arriving in ~12 minutes</div>
-            </div>
-          </div>
+        <div class="cartbar" id="cartbar"><span>1 item</span><span>₱185</span></div>
+        <div id="placed" style="margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:22px">
+          <div id="checkring" style="width:150px;height:150px;border-radius:999px;background:var(--gl);
+               display:flex;align-items:center;justify-content:center;font-size:76px">💚</div>
+          <div style="font-size:30px;font-weight:800;color:var(--t1)" class="kin">Order placed</div>
+          <div style="font-size:23px;color:var(--t3)">Bea is cooking · 12 min away</div>
         </div>
-
       </div>
     </div>
-    <div class="caption" id="pcap" style="top:1430px;color:var(--ink)">
-      <div class="eyebrow" style="color:rgba(20,35,28,.45)">The product</div>
-      <div class="display" style="font-size:56px;margin-top:16px">Order in seconds.</div>
+  </div>
+
+  <!-- 5 · DELIVERY walk -->
+  <div class="layer fill-lbg" id="l-walk">
+    <svg id="walkscene" viewBox="0 0 1080 1000" style="position:absolute;left:0;top:560px;width:1080px;height:1000px"></svg>
+    <div class="cap kin" id="walkcap" style="top:330px;font-size:70px;color:var(--t1)">No traffic.<br/>No city-wide detour.</div>
+  </div>
+
+  <!-- 6 · HANDOFF -->
+  <div class="layer fill-lbg" id="l-hand">
+    <svg id="handscene" viewBox="0 0 1080 900" style="position:absolute;left:0;top:520px;width:1080px;height:900px"></svg>
+    <div class="cap kin" id="handcap" style="top:340px;font-size:70px;color:var(--t1)">Just a neighbour<br/>at your door.</div>
+  </div>
+
+  <!-- 7 · MAP -->
+  <div class="layer fill-lbg" id="l-map">
+    <svg id="city" viewBox="0 0 1080 1000" style="position:absolute;left:0;top:600px;width:1080px;height:1000px"></svg>
+    <div class="cap kin" id="mapcap" style="top:320px;font-size:70px;color:var(--t1)">All of it —<br/>already downstairs.</div>
+  </div>
+
+  <!-- 8 · EXPANSION -->
+  <div class="layer fill-green" id="l-exp">
+    <div class="cap kin" id="expcap" style="top:330px;font-size:70px;color:#fff">It starts with food.</div>
+    <div id="grid" style="position:absolute;left:90px;top:700px;width:900px"></div>
+  </div>
+
+  <!-- 9 · COMMUNITY -->
+  <div class="layer fill-lbg" id="l-comm">
+    <svg id="crowd" viewBox="0 0 1080 800" style="position:absolute;left:0;top:700px;width:1080px;height:800px"></svg>
+    <div class="cap kin" id="commcap" style="top:400px;font-size:74px;color:var(--t1)">A whole community,<br/>one tap away.</div>
+  </div>
+
+  <!-- 10 · CTA -->
+  <div class="layer fill-green" id="l-cta">
+    <div style="position:absolute;left:0;right:0;top:610px;display:flex;flex-direction:column;align-items:center">
+      <svg id="mark2" viewBox="0 0 48 56" style="width:150px;height:175px"></svg>
+      <div class="word" id="ctaword" style="margin-top:40px;font-size:82px;color:#fff">Lokal<em style="color:#9df5c9">Finder</em></div>
+      <div class="ser" id="ctatag" style="margin-top:30px;font-size:52px;color:rgba(255,255,255,.92);text-align:center">Your community.<br/>Connected.</div>
+      <div id="ctabtn" style="margin-top:56px;padding:28px 66px;border-radius:999px;background:#fff;
+           color:var(--lgreen);font-size:32px;font-weight:800" class="kin">Get early access</div>
     </div>
   </div>
 
-  <!-- ============ 3. COMMUNITY MAP ============ -->
-  <div class="layer fill-alt" id="l-map">
-    <svg id="city" viewBox="0 0 1080 1100" style="position:absolute;top:600px;left:0;width:1080px;height:1100px"></svg>
-    <div class="caption" id="mapcap" style="top:330px;color:var(--ink)">
-      <div class="eyebrow" style="color:rgba(20,35,28,.45)">Built for your community</div>
-      <div class="display" style="font-size:66px;margin-top:18px">Your neighbours.<br/>Not the whole city.</div>
-    </div>
-  </div>
-
-  <!-- ============ 4. EXPANSION ============ -->
-  <div class="layer fill-ink" id="l-expand">
-    <div class="caption" style="top:360px;color:#fff">
-      <div class="eyebrow" style="color:rgba(255,255,255,.5)">The bigger vision</div>
-      <div class="display" id="excap" style="font-size:66px;margin-top:18px;color:#fff">It starts with food.<br/>It doesn’t end there.</div>
-    </div>
-    <div id="orbit" style="position:absolute;top:700px;left:140px;width:800px;height:800px"></div>
-  </div>
-
-  <!-- ============ 5. VISION NETWORK ============ -->
-  <div class="layer fill-ink" id="l-vision">
-    <svg id="net" viewBox="0 0 1080 1080" style="position:absolute;top:480px;left:0;width:1080px;height:1080px"></svg>
-    <div class="caption" id="viscap" style="top:1470px;color:#fff">
-      <div class="display" style="font-size:62px">Everything you need,<br/>around you.</div>
-    </div>
-  </div>
-
-  <!-- ============ 6. BRAND ============ -->
-  <div class="layer fill-brand" id="l-brand">
-    <svg id="bmark" viewBox="0 0 256 256" fill="#fff" style="width:210px;height:210px"></svg>
-    <div id="bword" style="margin-top:44px;font-size:52px;font-weight:600;letter-spacing:-.02em;color:#fff">Lokal Finder</div>
-  </div>
-
-  <!-- ============ 7. FINAL ============ -->
-  <div class="layer fill-brand" id="l-final">
-    <svg viewBox="0 0 256 256" fill="#fff" id="fmark" style="width:104px;height:104px">
-      <path d="M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z"/>
-    </svg>
-    <div class="display" id="ftag" style="font-size:88px;margin-top:56px;text-align:center;color:#fff">
-      Your community.<br/>Connected.
-    </div>
-    <div id="fcta" style="margin-top:70px;padding:26px 56px;border-radius:16px;background:#fff;color:var(--brand-dark);font-size:30px;font-weight:600">
-      Get early access
-    </div>
-  </div>
-
-  <div id="vignette"></div>
+  <div id="vig"></div>
   <div id="safe"><div class="bar" style="top:0"></div><div class="bar" style="bottom:0"></div></div>
 </div>
 
 <script>
-/* ------------------------------------------------------------------
-   Deterministic 60s timeline.
-   Nothing animates on its own: seek(t) fully derives the frame from t,
-   so the capture script can step frame-by-frame with no timing drift.
-------------------------------------------------------------------- */
-const DUR = 60;
-const LOGO_PATH = 'M 64 32 L 128 32 L 128 160 L 224 160 L 224 224 L 64 224 Z';
-
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const lerp  = (a, b, u) => a + (b - a) * u;
-/** normalised progress of t across [a,b] */
-const prog  = (t, a, b) => clamp((t - a) / (b - a));
-
-/* Real cubic-bezier evaluation (Newton-Raphson, bisection fallback) so the
-   film uses the exact UI curves rather than JS lookalikes. */
-function cubicBezier(x1, y1, x2, y2) {
-  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
-  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
-  const sampleX  = u => ((ax * u + bx) * u + cx) * u;
-  const sampleY  = u => ((ay * u + by) * u + cy) * u;
-  const sampleDX = u => (3 * ax * u + 2 * bx) * u + cx;
-  return function (x) {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
-    let u = x;
-    for (let i = 0; i < 8; i++) {
-      const err = sampleX(u) - x;
-      if (Math.abs(err) < 1e-6) return sampleY(u);
-      const d = sampleDX(u);
-      if (Math.abs(d) < 1e-6) break;
-      u -= err / d;
-    }
-    let lo = 0, hi = 1; u = x;
-    for (let i = 0; i < 24; i++) {
-      const xv = sampleX(u);
-      if (Math.abs(xv - x) < 1e-6) break;
-      if (x > xv) lo = u; else hi = u;
-      u = (lo + hi) / 2;
-    }
-    return sampleY(u);
-  };
-}
-
-// entrances/exits
-const easeOut   = cubicBezier(0.23, 1, 0.32, 1);
-// on-screen movement / morphing
-const easeInOut = cubicBezier(0.77, 0, 0.175, 1);
-// gentle overshoot, reserved for the rare delight beats (order confirmed)
-const easeOutBack = u => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
-
+/* =====================================================================
+   Deterministic timeline. seek(t) derives the whole frame from t, so the
+   renderer can step frames exactly — no drift, reproducible output.
+   Paced for social: ~11 beats in 40s, nothing held longer than ~4s.
+===================================================================== */
+const DUR = 40;
 const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
 
-/* ---------- scene windows (with deliberate cross-fade overlap) ---------- */
-const S = {
-  hero:    { in: 0.0,  out: 12.2 },
-  product: { in: 11.6, out: 25.8 },
-  map:     { in: 25.2, out: 35.8 },
-  expand:  { in: 35.2, out: 45.4 },
-  vision:  { in: 44.8, out: 53.4 },
-  brand:   { in: 52.8, out: 57.3 },
-  final:   { in: 56.7, out: 60.0 },
-};
+const clamp = (v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const lerp  = (a,b,u)=>a+(b-a)*u;
+const prog  = (t,a,b)=>clamp((t-a)/(b-a));
 
-/** cross-fade alpha for a scene layer */
-function alpha(t, s, fadeIn = 0.6, fadeOut = 0.6) {
-  const a = fadeIn === 0 ? 1 : clamp((t - s.in) / fadeIn);
-  const b = fadeOut === 0 ? 1 : clamp((s.out - t) / fadeOut);
-  return Math.min(a, b);
-}
-
-/* ================= build repeated DOM once ================= */
-
-const CHIPS = ['Restaurants', 'Coffee shops', 'Laundry', 'Services', 'Local sellers'];
-CHIPS.forEach(label => {
-  const el = document.createElement('div');
-  el.className = 'chip';
-  el.textContent = label;
-  $('chips').appendChild(el);
-});
-const chipEls = [...document.querySelectorAll('.chip')];
-
-const RESULTS = [
-  { n: "Neighbor's Grill", m: '4.9 · 12 min · Block C', p: '$$', sel: true },
-  { n: 'Corner Burger Co.', m: '4.7 · 8 min · Block A',  p: '$'  },
-  { n: "Bea's Kitchen",     m: '4.8 · 15 min · Block D', p: '$$' },
-];
-RESULTS.forEach(r => {
-  const el = document.createElement('div');
-  el.className = 'result' + (r.sel ? ' sel' : '');
-  el.innerHTML = `<div><div class="n">${r.n}</div><div class="m">${r.m}</div></div><div class="p">${r.p}</div>`;
-  $('p-results').appendChild(el);
-});
-const resultEls = [...$('p-results').querySelectorAll('.result')];
-
-$('bmark').innerHTML = `<path d="${LOGO_PATH}"/>`;
-
-/* ---------- isometric city ---------- */
-const TILE = 80, GRID = 7;
-const cityCx = 540, cityCy = 300;
-function iso(gx, gy, h) {
-  return [cityCx + (gx - gy) * TILE, cityCy + (gx + gy) * TILE * 0.5 - h];
-}
-// deterministic pseudo-random so every render is identical
-let seed = 20260824;
-const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
-
-const BUILDINGS = [];
-for (let gx = 0; gx < GRID; gx++) {
-  for (let gy = 0; gy < GRID; gy++) {
-    if (rnd() < 0.16) continue;                       // street gaps
-    const d = Math.hypot(gx - (GRID - 1) / 2, gy - (GRID - 1) / 2);
-    BUILDINGS.push({ gx, gy, h: 40 + rnd() * 150, d, biz: rnd() < 0.16 });
-  }
-}
-BUILDINGS.sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));   // painter's order
-
-// pick the two most distant business markers for the delivery route
-const bizAll = BUILDINGS.filter(b => b.biz);
-let ROUTE_A = bizAll[0], ROUTE_B = bizAll[bizAll.length - 1], bestD = -1;
-for (const p of bizAll) for (const q of bizAll) {
-  const d = Math.hypot(p.gx - q.gx, p.gy - q.gy);
-  if (d > bestD) { bestD = d; ROUTE_A = p; ROUTE_B = q; }
-}
-
-const cityNS = 'http://www.w3.org/2000/svg';
-const cityEls = BUILDINGS.map(b => {
-  const g = document.createElementNS(cityNS, 'g');
-  ['right', 'left', 'top'].forEach(face => {
-    const p = document.createElementNS(cityNS, 'polygon');
-    p.setAttribute('data-face', face);
-    g.appendChild(p);
-  });
-  $('city').appendChild(g);
-  return g;
-});
-// business markers + route drawn above the city
-const markerEls = BUILDINGS.map(b => {
-  if (!b.biz) return null;
-  const c = document.createElementNS(cityNS, 'circle');
-  c.setAttribute('r', '11');
-  c.setAttribute('fill', '#0E8A5A');
-  $('city').appendChild(c);
-  return c;
-});
-const route = document.createElementNS(cityNS, 'path');
-route.setAttribute('fill', 'none');
-route.setAttribute('stroke', '#0E8A5A');
-route.setAttribute('stroke-width', '6');
-route.setAttribute('stroke-linecap', 'round');
-route.setAttribute('stroke-dasharray', '10 14');
-$('city').appendChild(route);
-
-/* ---------- expansion orbit ---------- */
-const CATS = [
-  { label: 'Food',         icon: 'M7 3v8M5 3v6a2 2 0 0 0 4 0V3M16 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6ZM16 9v12M7 11v10' },
-  { label: 'Laundry',      icon: 'M6 4h12l2 4-4 1v11H8V9L4 8Z' },
-  { label: 'Cleaning',     icon: 'M12 3v6M9 9h6l1 12H8ZM5 6l2 1M19 6l-2 1' },
-  { label: 'Housekeeping', icon: 'M4 11 12 4l8 7M6 10v10h12V10' },
-  { label: 'Services',     icon: 'M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1 6.9 6.9M17.1 17.1l1.8 1.8M18.9 5.1 17.1 6.9M6.9 17.1l-1.8 1.8' },
-  { label: 'Local retail', icon: 'M4 8h16l-1 12H5ZM9 8V6a3 3 0 0 1 6 0v2' },
-];
-CATS.forEach((c, i) => {
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px;will-change:transform,opacity';
-  wrap.innerHTML =
-    `<div style="width:124px;height:124px;border-radius:32px;background:rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center">
-       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"
-            stroke-linecap="round" stroke-linejoin="round"><path d="${c.icon}"/></svg>
-     </div>
-     <div style="font-size:23px;color:rgba(255,255,255,.72);white-space:nowrap">${c.label}</div>`;
-  $('orbit').appendChild(wrap);
-});
-const catEls = [...$('orbit').children];
-
-/* ---------- vision network ---------- */
-const NET_N = 22;
-const netNodes = [];
-for (let i = 0; i < NET_N; i++) {
-  const ring = i < 7 ? 0 : (i < 15 ? 1 : 2);
-  const idxInRing = ring === 0 ? i : (ring === 1 ? i - 7 : i - 15);
-  const countInRing = ring === 0 ? 7 : (ring === 1 ? 8 : 7);
-  const rad = [170, 310, 440][ring];
-  const ang = (idxInRing / countInRing) * Math.PI * 2 + ring * 0.5;
-  netNodes.push({ x: 540 + Math.cos(ang) * rad, y: 540 + Math.sin(ang) * rad * 0.82, ring });
-}
-const netNS = cityNS;
-const netLines = [];
-netNodes.forEach((n, i) => {
-  if (n.ring === 0) return;
-  const target = netNodes[n.ring === 1 ? (i - 7) % 7 : (i - 15) % 8 + 7];
-  const l = document.createElementNS(netNS, 'line');
-  l.setAttribute('stroke', 'rgba(255,255,255,.16)');
-  l.setAttribute('stroke-width', '1.6');
-  l.setAttribute('x1', n.x); l.setAttribute('y1', n.y);
-  l.setAttribute('x2', target.x); l.setAttribute('y2', target.y);
-  $('net').appendChild(l);
-  netLines.push({ el: l, from: n, to: target });
-});
-const netDots = netNodes.map(n => {
-  const c = document.createElementNS(netNS, 'circle');
-  c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
-  c.setAttribute('fill', n.ring === 0 ? '#0E8A5A' : 'rgba(255,255,255,.85)');
-  $('net').appendChild(c);
-  return c;
-});
-
-/* ================= per-frame render ================= */
-
-function seek(t) {
-  t = clamp(t, 0, DUR);
-
-  /* ---------------- 1. HERO ---------------- */
-  const hA = alpha(t, S.hero, 0, 0.6);
-  const hero = $('l-hero');
-  hero.style.opacity = hA;
-  hero.style.display = hA <= 0.001 ? 'none' : 'flex';
-  if (hA > 0.001) {
-    // slow cinematic push-in across the whole scene
-    const push = lerp(1.07, 1.0, easeOut(prog(t, 0, 7)));
-    const drift = lerp(0, -40, prog(t, 0, 12));
-    hero.style.transform = `scale(${push}) translateY(${drift}px)`;
-
-    const navU = easeOut(prog(t, 0.15, 1.1));
-    $('nav').style.opacity = navU;
-    $('nav').style.transform = `translateY(${lerp(-24, 0, navU)}px)`;
-
-    // line-by-line masked reveal
-    const l1 = easeOut(prog(t, 0.5, 1.9));
-    const l2 = easeOut(prog(t, 0.78, 2.2));
-    $('h1a').style.transform = `translateY(${lerp(115, 0, l1)}%)`;
-    $('h1b').style.transform = `translateY(${lerp(115, 0, l2)}%)`;
-
-    const subU = easeOut(prog(t, 1.5, 2.6));
-    $('hsub').style.opacity = subU;
-    $('hsub').style.transform = `translateY(${lerp(26, 0, subU)}px)`;
-
-    chipEls.forEach((el, i) => {
-      const u = easeOutBack(prog(t, 2.3 + i * 0.08, 3.1 + i * 0.08));
-      // gentle continuous float keeps the frame alive without being busy
-      const float = Math.sin((t - 3) * 1.05 + i * 0.9) * 5 * clamp(prog(t, 3.2, 4.2));
-      el.style.opacity = clamp(u);
-      el.style.transform = `translateY(${lerp(40, 0, u) + float}px) scale(${lerp(.94, 1, u)})`;
-    });
-  }
-
-  /* ---------------- 2. PRODUCT ---------------- */
-  const pA = alpha(t, S.product);
-  const prod = $('l-product');
-  prod.style.opacity = pA;
-  prod.style.display = pA <= 0.001 ? 'none' : 'flex';
-  if (pA > 0.001) {
-    // phone rises in, holds, then recedes as the map takes over
-    const rise = easeOut(prog(t, 11.6, 13.4));
-    const exit = easeInOut(prog(t, 24.6, 25.8));
-    const y = lerp(150, 0, rise) + lerp(0, -90, exit);
-    const sc = lerp(0.92, 1, rise) * lerp(1, 0.9, exit);
-    $('phone').style.transform = `translateY(${y}px) scale(${sc})`;
-
-    const capU = easeOut(prog(t, 12.6, 13.8));
-    $('pcap').style.opacity = capU * (1 - prog(t, 24.2, 25.4));
-    $('pcap').style.transform = `translateY(${lerp(26, 0, capU)}px)`;
-
-    // --- sub-beats inside the phone ---
-    const bSearch  = { in: 13.2, out: 17.2 };
-    const bResults = { in: 17.0, out: 20.6 };
-    const bCart    = { in: 20.4, out: 23.0 };
-    const bDone    = { in: 22.8, out: 25.8 };
-
-    const stageAlpha = (b, fi = .35, fo = .35) =>
-      Math.min(clamp((t - b.in) / fi), clamp((b.out - t) / fo));
-
-    const aS = stageAlpha(bSearch), aR = stageAlpha(bResults),
-          aC = stageAlpha(bCart),   aD = stageAlpha(bDone);
-
-    $('p-search').style.opacity  = aS;
-    $('p-results').style.opacity = aR;
-    $('p-cart').style.opacity    = aC;
-    $('p-done').style.opacity    = aD;
-    $('p-search').style.display  = aS <= .001 ? 'none' : 'block';
-    $('p-results').style.display = aR <= .001 ? 'none' : 'block';
-    $('p-cart').style.display    = aC <= .001 ? 'none' : 'block';
-    $('p-done').style.display    = aD <= .001 ? 'none' : 'block';
-
-    // typing "Burger"
-    const word = 'Burger';
-    const typed = Math.round(lerp(0, word.length, clamp(prog(t, 13.6, 15.3))));
-    $('typed').textContent = word.slice(0, typed);
-    $('caret').style.opacity = (t < 15.5 && Math.floor(t * 2) % 2 === 0) ? 1 : 0;
-
-    resultEls.forEach((el, i) => {
-      const u = easeOut(prog(t, 17.25 + i * 0.07, 17.95 + i * 0.07));
-      el.style.opacity = u;
-      el.style.transform = `translateX(${lerp(-18, 0, u)}px)`;
-    });
-
-    // add-to-cart pop
-    const pop = prog(t, 21.0, 21.5);
-    $('plusbtn').style.transform = `scale(${lerp(0.9, 1, easeOutBack(pop))})`;
-
-    // confirmation pop
-    const cp = prog(t, 23.1, 23.8);
-    $('checkmark').style.transform = `scale(${lerp(0.9, 1, easeOutBack(cp))})`;
-  }
-
-  /* ---------------- 3. COMMUNITY MAP ---------------- */
-  const mA = alpha(t, S.map);
-  const map = $('l-map');
-  map.style.opacity = mA;
-  map.style.display = mA <= 0.001 ? 'none' : 'flex';
-  if (mA > 0.001) {
-    const capU = easeOut(prog(t, 25.6, 26.8));
-    $('mapcap').style.opacity = capU;
-    $('mapcap').style.transform = `translateY(${lerp(28, 0, capU)}px)`;
-
-    // slow parallax drift over the whole map beat
-    const drift = lerp(0, -70, prog(t, 25.2, 35.8));
-    const zoom  = lerp(0.96, 1.04, prog(t, 25.2, 35.8));
-    $('city').style.transform = `translateY(${drift}px) scale(${zoom})`;
-    $('city').style.transformOrigin = '540px 460px';
-
-    BUILDINGS.forEach((b, i) => {
-      // buildings rise outward from the centre
-      const st = 26.3 + b.d * 0.30;
-      const u = easeOut(prog(t, st, st + 0.95));
-      const h = b.h * u;
-      const [tx, ty] = iso(b.gx, b.gy, h);
-      const w = TILE, hw = TILE * 0.5;
-      const g = cityEls[i];
-      const [top, left, right] = [g.children[2], g.children[1], g.children[0]];
-      // top face
-      top.setAttribute('points', `${tx},${ty} ${tx + w},${ty + hw} ${tx},${ty + w} ${tx - w},${ty + hw}`);
-      top.setAttribute('fill', '#E8EDE9');
-      // left face
-      left.setAttribute('points', `${tx - w},${ty + hw} ${tx},${ty + w} ${tx},${ty + w + h} ${tx - w},${ty + hw + h}`);
-      left.setAttribute('fill', '#C6D0C9');
-      // right face
-      right.setAttribute('points', `${tx + w},${ty + hw} ${tx},${ty + w} ${tx},${ty + w + h} ${tx + w},${ty + hw + h}`);
-      right.setAttribute('fill', '#D7DFD9');
-      g.style.opacity = u;
-
-      const mk = markerEls[i];
-      if (mk) {
-        const mu = clamp(prog(t, st + 0.7, st + 1.3));
-        const pulse = 1 + Math.sin(t * 3 + i) * 0.16;
-        mk.setAttribute('cx', tx);
-        mk.setAttribute('cy', ty - 20);
-        mk.setAttribute('r', 11 * mu * pulse);
-        mk.style.opacity = mu;
-      }
-    });
-
-    // delivery route: seller -> customer, drawn on
-    // farthest-apart pair of business markers, so the route reads as
-    // "across your community" rather than a stub between two neighbours
-    const A = iso(ROUTE_A.gx, ROUTE_A.gy, ROUTE_A.h);
-    const B = iso(ROUTE_B.gx, ROUTE_B.gy, ROUTE_B.h);
-    const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2 - 120;
-    route.setAttribute('d', `M ${A[0]} ${A[1] - 20} Q ${mx} ${my} ${B[0]} ${B[1] - 20}`);
-    const len = route.getTotalLength();
-    const ru = easeInOut(prog(t, 30.4, 33.2));
-    route.setAttribute('stroke-dasharray', `${len}`);
-    route.setAttribute('stroke-dashoffset', `${len * (1 - ru)}`);
-    route.style.opacity = clamp(prog(t, 30.3, 30.8)) * (1 - prog(t, 35.0, 35.8));
-  }
-
-  /* ---------------- 4. EXPANSION ---------------- */
-  const eA = alpha(t, S.expand);
-  const exp = $('l-expand');
-  exp.style.opacity = eA;
-  exp.style.display = eA <= 0.001 ? 'none' : 'flex';
-  if (eA > 0.001) {
-    const capU = easeOut(prog(t, 35.5, 36.7));
-    $('excap').style.opacity = capU;
-    $('excap').style.transform = `translateY(${lerp(24, 0, capU)}px)`;
-
-    catEls.forEach((el, i) => {
-      const st = 36.6 + i * 0.62;
-      const u = easeOutBack(clamp(prog(t, st, st + 0.8)));
-      const ang = (i / CATS.length) * Math.PI * 2 - Math.PI / 2;
-      const R = 300 * clamp(prog(t, st, st + 0.9));
-      const x = 400 + Math.cos(ang) * R - 62;
-      const y = 400 + Math.sin(ang) * R - 76;
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-      el.style.opacity = clamp(u);
-      el.style.transform = `scale(${lerp(0.94, 1, clamp(u))})`;
-    });
-
-    // whole cluster breathes outward slightly as it fills in
-    const grow = lerp(0.92, 1.0, easeOut(prog(t, 36.6, 43.5)));
-    $('orbit').style.transform = `scale(${grow})`;
-  }
-
-  /* ---------------- 5. VISION NETWORK ---------------- */
-  const vA = alpha(t, S.vision);
-  const vis = $('l-vision');
-  vis.style.opacity = vA;
-  vis.style.display = vA <= 0.001 ? 'none' : 'flex';
-  if (vA > 0.001) {
-    // pull back to reveal the whole connected community
-    const pull = lerp(1.5, 0.98, easeInOut(prog(t, 45.0, 51.5)));
-    $('net').style.transform = `scale(${pull})`;
-    $('net').style.transformOrigin = '540px 540px';
-
-    netDots.forEach((c, i) => {
-      const n = netNodes[i];
-      const st = 45.3 + n.ring * 1.5 + (i % 7) * 0.06;
-      const u = easeOutBack(clamp(prog(t, st, st + 0.7)));
-      c.setAttribute('r', (n.ring === 0 ? 13 : 8) * lerp(0.94, 1, clamp(u)));
-      c.style.opacity = clamp(u);
-    });
-
-    netLines.forEach((l, i) => {
-      const st = 47.4 + (i % 10) * 0.08;
-      const u = easeOut(clamp(prog(t, st, st + 0.8)));
-      l.el.setAttribute('x2', lerp(l.from.x, l.to.x, u));
-      l.el.setAttribute('y2', lerp(l.from.y, l.to.y, u));
-      l.el.style.opacity = u;
-    });
-
-    const capU = easeOut(prog(t, 50.6, 51.8));
-    $('viscap').style.opacity = capU;
-    $('viscap').style.transform = `translateY(${lerp(26, 0, capU)}px)`;
-  }
-
-  /* ---------------- 6. BRAND ---------------- */
-  const bA = alpha(t, S.brand);
-  const brand = $('l-brand');
-  brand.style.opacity = bA;
-  brand.style.display = bA <= 0.001 ? 'none' : 'flex';
-  if (bA > 0.001) {
-    const u = easeOut(prog(t, 53.0, 54.6));
-    $('bmark').style.transform = `scale(${lerp(0.94, 1, u)})`;
-    $('bmark').style.opacity = u;
-    const wu = easeOut(prog(t, 53.7, 55.0));
-    $('bword').style.opacity = wu;
-    $('bword').style.transform = `translateY(${lerp(22, 0, wu)}px)`;
-  }
-
-  /* ---------------- 7. FINAL ---------------- */
-  const fA = alpha(t, S.final, 0.6, 0);
-  const fin = $('l-final');
-  fin.style.opacity = fA;
-  fin.style.display = fA <= 0.001 ? 'none' : 'flex';
-  if (fA > 0.001) {
-    const u = easeOut(prog(t, 57.0, 58.2));
-    $('fmark').style.opacity = u;
-    $('ftag').style.opacity = u;
-    $('ftag').style.transform = `translateY(${lerp(22, 0, u)}px)`;
-    const cu = easeOut(prog(t, 57.8, 58.9));
-    $('fcta').style.opacity = cu;
-    $('fcta').style.transform = `translateY(${lerp(18, 0, cu)}px)`;
-  }
-}
-
-window.seek = seek;
-window.FILM = { DUR };
-seek(0);
-// signal to the capture script that layout + fonts are settled
-document.fonts.ready.then(() => { window.__filmReady = true; });
-
-/* ------------------------------------------------------------------
-   Preview playback — opt-in via ?preview=1 so the capture path stays
-   purely seek-driven and deterministic. Space toggles play/pause.
-   Honours prefers-reduced-motion: no autoplay, opens on a held frame
-   the viewer can scrub rather than motion they didn't ask for.
-------------------------------------------------------------------- */
-if (new URLSearchParams(location.search).has('preview')) {
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let playing = !reduce, t0 = performance.now(), acc = 0;
-
-  const tick = now => {
-    if (playing) {
-      acc += (now - t0) / 1000;
-      if (acc > DUR) acc = 0;
-      seek(acc);
-    }
-    t0 = now;
-    requestAnimationFrame(tick);
+function cubicBezier(x1,y1,x2,y2){
+  const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx;
+  const cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const sx=u=>((ax*u+bx)*u+cx)*u, sy=u=>((ay*u+by)*u+cy)*u, dx=u=>(3*ax*u+2*bx)*u+cx;
+  return x=>{
+    if(x<=0)return 0; if(x>=1)return 1;
+    let u=x;
+    for(let i=0;i<8;i++){const e=sx(u)-x; if(Math.abs(e)<1e-6)return sy(u);
+      const d=dx(u); if(Math.abs(d)<1e-6)break; u-=e/d;}
+    let lo=0,hi=1;u=x;
+    for(let i=0;i<24;i++){const xv=sx(u); if(Math.abs(xv-x)<1e-6)break;
+      if(x>xv)lo=u;else hi=u; u=(lo+hi)/2;}
+    return sy(u);
   };
-  requestAnimationFrame(tick);
+}
+const easeOut   = cubicBezier(0.23,1,0.32,1);      // entrances / exits
+const easeInOut = cubicBezier(0.77,0,0.175,1);     // on-screen movement
+const back      = u=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(u-1,3)+c*Math.pow(u-1,2);};
 
-  addEventListener('keydown', e => {
-    if (e.code === 'Space') { e.preventDefault(); playing = !playing; }
-    if (e.code === 'ArrowRight') { playing = false; acc = Math.min(DUR, acc + 1); seek(acc); }
-    if (e.code === 'ArrowLeft')  { playing = false; acc = Math.max(0, acc - 1);  seek(acc); }
-    if (e.key === 's') $('safe').classList.toggle('on');   // safe-area overlay
+let seed = 7;
+const rnd = ()=>((seed=(seed*9301+49297)%233280)/233280);
+
+/* ---------- scene windows (short holds, ~0.35s crossfades) ---------- */
+const S = {
+  hook : {in:0.0,  out:5.4},
+  logo : {in:5.2,  out:8.4},
+  phone: {in:8.2,  out:15.6},
+  walk : {in:15.4, out:19.4},
+  hand : {in:19.2, out:22.6},
+  map  : {in:22.4, out:27.0},
+  exp  : {in:26.8, out:31.6},
+  comm : {in:31.4, out:35.4},
+  cta  : {in:35.2, out:40.0},
+};
+const alpha=(t,s,fi=0.35,fo=0.35)=>Math.min(fi?clamp((t-s.in)/fi):1, fo?clamp((s.out-t)/fo):1);
+
+/* ================= brand mark (the app's pin-house) ================= */
+function markSVG(pin, stroke, house, gold){
+  return `
+    <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z"
+          fill="${pin}" stroke="${stroke}" stroke-width="2"/>
+    <path class="roof" d="M14 27v-8l10-8 10 8v8" stroke="${stroke}" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path class="walls" d="M18 27v10h12V27" stroke="${house}" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="21" y="30" width="6" height="7" rx="1" fill="${stroke}" opacity=".8"/>
+    <circle class="dot" cx="24" cy="20" r="2.5" fill="${gold}"/>`;
+}
+$('mark').innerHTML  = markSVG('#1a5438','#2ea877','#EFF7F2','#F5C842');
+$('mark2').innerHTML = markSVG('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
+
+/* ================= cartoon people (matches the app's illustration) ==== */
+const SKIN  = ['#C4845A','#B8896A','#8B6040','#E0A878','#A9714B'];
+const HAIR  = ['#3d2010','#2a1a0a','#2a1810','#4a2c14'];
+const SHIRT = ['#2ea877','#5A7A5A','#3a6a5a','#F59E0B','#1A6B4A','#D97706'];
+
+/** Cartoon person, built from the same primitives the app's banner art uses. */
+function personSVG(i, {bag=false, wave=false} = {}){
+  const skin=SKIN[i%SKIN.length], hair=HAIR[i%HAIR.length], shirt=SHIRT[i%SHIRT.length];
+  return `
+  <g class="person">
+    <g class="legs">
+      <path class="legL" d="M-7 40 L-8 62" stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>
+      <path class="legR" d="M7 40 L8 62"  stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>
+    </g>
+    <ellipse class="body" cx="0" cy="22" rx="18" ry="22" fill="${shirt}"/>
+    ${bag?`<g class="bag"><rect x="16" y="14" width="26" height="26" rx="5" fill="#F5C842"/>
+        <path d="M23 14v-4a5 5 0 0 1 10 0v4" stroke="#B8860B" stroke-width="2.4" fill="none"/></g>`:''}
+    <path class="armR" d="M15 14 Q30 8 34 2" stroke="${skin}" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <path class="armL" d="M-15 14 Q-28 20 -30 28" stroke="${skin}" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <circle cx="0" cy="-8" r="16" fill="${skin}"/>
+    <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="${hair}"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="8" fill="${hair}"/>
+    <circle cx="-5" cy="-8" r="1.9" fill="#2a1810"/>
+    <circle cx="5"  cy="-8" r="1.9" fill="#2a1810"/>
+    <path d="M-6 -2 Q0 3 6 -2" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+
+/* ---------- 1. facade: windows that light up with food ---------- */
+const COLS=5, ROWS=4, WW=118, WH=120, GAPX=42, GAPY=34;
+const FACADE_X=(1080-(COLS*WW+(COLS-1)*GAPX))/2, FACADE_Y=120;
+const FOOD=['🍔','🍜','☕','🍗','🧋','🍰','🍕','🥟','🍚','🌮','🍳','🥘'];
+const winCells=[];
+{
+  const svg=$('facade');
+  const wall=document.createElementNS(NS,'rect');
+  wall.setAttribute('x',FACADE_X-56); wall.setAttribute('y',FACADE_Y-70);
+  wall.setAttribute('width',COLS*WW+(COLS-1)*GAPX+112);
+  wall.setAttribute('height',ROWS*WH+(ROWS-1)*GAPY+250);
+  wall.setAttribute('rx',34); wall.setAttribute('fill','#0d3d27');
+  svg.appendChild(wall);
+
+  const doorY=FACADE_Y+ROWS*WH+(ROWS-1)*GAPY+56;
+  const door=document.createElementNS(NS,'rect');
+  door.setAttribute('x',540-58); door.setAttribute('y',doorY);
+  door.setAttribute('width',116); door.setAttribute('height',118);
+  door.setAttribute('rx',10); door.setAttribute('fill','#F5C842'); door.setAttribute('opacity','.85');
+  svg.appendChild(door);
+  const awn=document.createElementNS(NS,'rect');
+  awn.setAttribute('x',540-84); awn.setAttribute('y',doorY-22);
+  awn.setAttribute('width',168); awn.setAttribute('height',24);
+  awn.setAttribute('rx',10); awn.setAttribute('fill','#2ea877');
+  svg.appendChild(awn);
+
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=FACADE_X+c*(WW+GAPX), y=FACADE_Y+r*(WH+GAPY);
+    const g=document.createElementNS(NS,'g');
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',y);
+    rect.setAttribute('width',WW); rect.setAttribute('height',WH);
+    rect.setAttribute('rx',14); rect.setAttribute('fill','#0a2c1c');
+    const glow=document.createElementNS(NS,'rect');
+    glow.setAttribute('x',x); glow.setAttribute('y',y);
+    glow.setAttribute('width',WW); glow.setAttribute('height',WH);
+    glow.setAttribute('rx',14); glow.setAttribute('fill','#F5C842');
+    const em=document.createElementNS(NS,'text');
+    em.setAttribute('x',x+WW/2); em.setAttribute('y',y+WH/2+22);
+    em.setAttribute('text-anchor','middle'); em.setAttribute('font-size','58');
+    em.textContent=FOOD[(r*COLS+c)%FOOD.length];
+    g.append(rect,glow,em); svg.appendChild(g);
+    // centre window lights first, then it spreads outward
+    const d=Math.hypot(c-(COLS-1)/2, r-(ROWS-1)/2);
+    winCells.push({glow,em,d,hasFood:rnd()<0.62,lit:rnd()<0.86});
+  }
+}
+
+/* ---------- 3. search results ---------- */
+const RES=[
+  {em:'🍔', n:"Ate Bea's Burgers", m:'Tower 2 · 4.9 ★', p:'12 min'},
+  {em:'🍜', n:'Kuya Jun Ramen',    m:'Tower 1 · 4.8 ★', p:'9 min'},
+  {em:'🧋', n:'Milktea Corner',    m:'Lobby · 4.7 ★',   p:'6 min'},
+];
+RES.forEach(r=>{
+  const d=document.createElement('div');
+  d.className='rcard';
+  d.innerHTML=`<div class="em">${r.em}</div>
+    <div><div class="n">${r.n}</div><div class="m">${r.m}</div></div>
+    <div class="pill">${r.p}</div>`;
+  $('results').appendChild(d);
+});
+const resEls=[...$('results').children];
+
+/* ---------- 5. walk scene ---------- */
+{
+  const s=$('walkscene');
+  // street + buildings behind
+  for(let i=0;i<7;i++){
+    const h=180+rnd()*260, w=120+rnd()*60, x=40+i*150;
+    const b=document.createElementNS(NS,'rect');
+    b.setAttribute('x',x); b.setAttribute('y',560-h); b.setAttribute('width',w);
+    b.setAttribute('height',h); b.setAttribute('rx',16);
+    b.setAttribute('fill', i%2?'#DCEBE2':'#CFE3D8');
+    s.appendChild(b);
+    for(let k=0;k<3;k++){
+      const win=document.createElementNS(NS,'rect');
+      win.setAttribute('x',x+18); win.setAttribute('y',560-h+34+k*54);
+      win.setAttribute('width',w-36); win.setAttribute('height',30);
+      win.setAttribute('rx',7); win.setAttribute('fill','#F5C842'); win.setAttribute('opacity','.5');
+      s.appendChild(win);
+    }
+  }
+  const road=document.createElementNS(NS,'rect');
+  road.setAttribute('x',0); road.setAttribute('y',560); road.setAttribute('width',1080);
+  road.setAttribute('height',26); road.setAttribute('fill','#C3DACB');
+  s.appendChild(road);
+
+  const walker=document.createElementNS(NS,'g');
+  walker.setAttribute('id','walker');
+  walker.innerHTML=personSVG(0,{bag:true});
+  s.appendChild(walker);
+}
+const walker=$('walker');
+const wLegL=walker.querySelector('.legL'), wLegR=walker.querySelector('.legR');
+
+/* ---------- 6. handoff scene ---------- */
+{
+  const s=$('handscene');
+  const door=document.createElementNS(NS,'rect');
+  door.setAttribute('x',640); door.setAttribute('y',120); door.setAttribute('width',300);
+  door.setAttribute('height',620); door.setAttribute('rx',20); door.setAttribute('fill','#CFE3D8');
+  s.appendChild(door);
+  const dIn=document.createElementNS(NS,'rect');
+  dIn.setAttribute('x',668); dIn.setAttribute('y',150); dIn.setAttribute('width',244);
+  dIn.setAttribute('height',590); dIn.setAttribute('rx',14); dIn.setAttribute('fill','#BFD8CA');
+  s.appendChild(dIn);
+  const knob=document.createElementNS(NS,'circle');
+  knob.setAttribute('cx',690); knob.setAttribute('cy',450); knob.setAttribute('r',11);
+  knob.setAttribute('fill','#8FB3A0'); s.appendChild(knob);
+  // potted plant — the app's illustrations always carry foliage
+  const pot=document.createElementNS(NS,'rect');
+  pot.setAttribute('x',960); pot.setAttribute('y',640); pot.setAttribute('width',80);
+  pot.setAttribute('height',86); pot.setAttribute('rx',10); pot.setAttribute('fill','#C98A5B');
+  s.appendChild(pot);
+  [[1000,560,52,74],[962,596,40,58],[1038,596,40,58]].forEach(([cx,cy,rx,ry])=>{
+    const e=document.createElementNS(NS,'ellipse');
+    e.setAttribute('cx',cx);e.setAttribute('cy',cy);e.setAttribute('rx',rx);e.setAttribute('ry',ry);
+    e.setAttribute('fill','#1a5a30');e.setAttribute('opacity','.75');s.appendChild(e);});
+  const g1=document.createElementNS(NS,'g'); g1.setAttribute('id','hp1');
+  g1.innerHTML=personSVG(1,{bag:true}); s.appendChild(g1);
+  const g2=document.createElementNS(NS,'g'); g2.setAttribute('id','hp2');
+  g2.innerHTML=personSVG(3); s.appendChild(g2);
+  const heart=document.createElementNS(NS,'text');
+  heart.setAttribute('id','hheart'); heart.setAttribute('text-anchor','middle');
+  heart.setAttribute('font-size','120'); heart.textContent='💚';
+  s.appendChild(heart);
+}
+
+/* ---------- 7. map pins ---------- */
+const PIN=[
+  {x:250,y:300,e:'🍔'},{x:520,y:210,e:'☕'},{x:800,y:320,e:'🧺'},
+  {x:330,y:520,e:'🍜'},{x:640,y:470,e:'🧹'},{x:880,y:600,e:'🛒'},
+  {x:200,y:700,e:'🧋'},{x:520,y:730,e:'🍰'},{x:790,y:840,e:'🔧'},
+];
+const pinEls=[];
+{
+  const s=$('city');
+  const base=document.createElementNS(NS,'ellipse');
+  base.setAttribute('cx',540); base.setAttribute('cy',560); base.setAttribute('rx',470);
+  base.setAttribute('ry',330); base.setAttribute('fill','#E2F0E9');
+  s.appendChild(base);
+  for(let i=0;i<11;i++){
+    const w=90+rnd()*70,h=70+rnd()*90;
+    const b=document.createElementNS(NS,'rect');
+    b.setAttribute('x',120+rnd()*820); b.setAttribute('y',260+rnd()*520);
+    b.setAttribute('width',w); b.setAttribute('height',h); b.setAttribute('rx',14);
+    b.setAttribute('fill','#CFE3D8'); s.appendChild(b);
+  }
+  PIN.forEach(p=>{
+    const g=document.createElementNS(NS,'g');
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',46);
+    c.setAttribute('fill','#fff'); c.setAttribute('stroke','#1A6B4A'); c.setAttribute('stroke-width','4');
+    const tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',p.x); tx.setAttribute('y',p.y+16); tx.setAttribute('text-anchor','middle');
+    tx.setAttribute('font-size','42'); tx.textContent=p.e;
+    g.append(c,tx); s.appendChild(g); pinEls.push(g);
+  });
+}
+
+/* ---------- 8. expansion grid ---------- */
+const CATS=[['🍔','Food'],['🧺','Laundry'],['🧹','Cleaning'],['🏠','Housekeeping'],['🔧','Services'],['🛒','Local shops']];
+CATS.forEach(([e,label])=>{
+  const d=document.createElement('div');
+  d.style.cssText='position:absolute;width:270px;display:flex;flex-direction:column;align-items:center;gap:16px;will-change:transform,opacity';
+  d.innerHTML=`<div style="width:150px;height:150px;border-radius:40px;background:rgba(255,255,255,.14);
+      display:flex;align-items:center;justify-content:center;font-size:72px">${e}</div>
+    <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,.9)" class="kin">${label}</div>`;
+  $('grid').appendChild(d);
+});
+const catEls=[...$('grid').children];
+
+/* ---------- 9. crowd ---------- */
+const crowdEls=[];
+{
+  const s=$('crowd');
+  const glow=document.createElementNS(NS,'ellipse');
+  glow.setAttribute('cx',540); glow.setAttribute('cy',600); glow.setAttribute('rx',480);
+  glow.setAttribute('ry',100); glow.setAttribute('fill','#D7EADF');
+  s.appendChild(glow);
+  for(let i=0;i<6;i++){
+    const g=document.createElementNS(NS,'g');
+    g.innerHTML=personSVG(i,{wave:i%2===0});
+    s.appendChild(g); crowdEls.push(g);
+  }
+  for(let i=0;i<5;i++){
+    const h=document.createElementNS(NS,'text');
+    h.setAttribute('text-anchor','middle'); h.setAttribute('font-size','66');
+    h.textContent=i%2?'💚':'✨';
+    h.setAttribute('class','cheart'); s.appendChild(h);
+  }
+}
+const heartEls=[...$('crowd').querySelectorAll('.cheart')];
+
+/* ================= per-frame ================= */
+function show(el,a){ el.style.opacity=a; el.style.display=a<=0.002?'none':'block'; }
+
+function seek(t){
+  t=clamp(t,0,DUR);
+
+  /* ---- 1 HOOK ---- */
+  const aH=alpha(t,S.hook,0,0.35); show($('l-hook'),aH);
+  if(aH>0.002){
+    const push=lerp(1.12,1.0,easeOut(prog(t,0,4.6)));
+    $('facade').style.transform=`scale(${push})`;
+    $('facade').style.transformOrigin='540px 500px';
+
+    winCells.forEach(w=>{
+      // one window first, then the building spreads awake
+      const st=0.25+w.d*0.42;
+      const u=easeOut(prog(t,st,st+0.5));
+      const flicker=1-0.10*Math.sin((t-st)*9)*clamp(prog(t,st,st+0.28));
+      w.glow.style.opacity=w.lit?u*0.92*flicker:0;
+      w.em.style.opacity=(w.lit&&w.hasFood)?easeOut(prog(t,st+0.28,st+0.7)):0;
+    });
+
+    const h1=back(prog(t,0.15,0.65));
+    $('hook1').style.opacity=clamp(prog(t,0.12,0.4))*(1-prog(t,2.5,2.9));
+    $('hook1').style.transform=`scale(${lerp(0.9,1,clamp(h1))})`;
+
+    const h2=easeOut(prog(t,2.55,3.05));
+    $('hook2').style.opacity=h2*(1-prog(t,5.0,5.4));
+    $('hook2').style.transform=`translateY(${lerp(34,0,h2)}px)`;
+  }
+
+  /* ---- 2 LOGO ---- */
+  const aL=alpha(t,S.logo); show($('l-logo'),aL);
+  if(aL>0.002){
+    const u=easeOut(prog(t,5.3,6.1));
+    const drop=lerp(-70,0,u);
+    const sc=lerp(0.9,1,back(clamp(prog(t,5.3,6.15))));
+    $('mark').style.transform=`translateY(${drop}px) scale(${sc})`;
+    $('mark').style.opacity=u;
+    // gold dot pings after the mark lands
+    const dot=$('mark').querySelector('.dot');
+    const dp=prog(t,6.0,6.45);
+    dot.setAttribute('r', 2.5*lerp(1,1.9,Math.sin(dp*Math.PI)));
+    const wu=easeOut(prog(t,5.95,6.6));
+    $('logoword').style.opacity=wu;
+    $('logoword').style.transform=`translateY(${lerp(26,0,wu)}px)`;
+    const su=easeOut(prog(t,6.35,7.0));
+    $('logosub').style.opacity=su*0.95;
+    $('logosub').style.transform=`translateY(${lerp(18,0,su)}px)`;
+  }
+
+  /* ---- 3+4 PHONE ---- */
+  const aP=alpha(t,S.phone); show($('l-phone'),aP);
+  if(aP>0.002){
+    const rise=easeOut(prog(t,8.3,9.2));
+    const out=easeInOut(prog(t,15.0,15.6));
+    $('phone').style.transform=`translateY(${lerp(120,0,rise)+lerp(0,-70,out)}px) scale(${lerp(0.94,1,rise)*lerp(1,0.94,out)})`;
+    const cu=easeOut(prog(t,8.5,9.3));
+    $('phcap').style.opacity=cu*(1-prog(t,14.6,15.2));
+    $('phcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+
+    const searchA=Math.min(clamp((t-9.0)/0.3),clamp((11.9-t)/0.3));
+    const orderA =Math.min(clamp((t-11.8)/0.3),clamp((15.6-t)/0.3));
+    show($('st-search'),searchA); show($('st-order'),orderA);
+
+    const word='Burger';
+    const n=Math.round(lerp(0,word.length,clamp(prog(t,9.25,10.05))));
+    $('typed').textContent=word.slice(0,n);
+    $('caret').style.opacity=(t<10.3&&Math.floor(t*3)%2===0)?1:0;
+
+    resEls.forEach((el,i)=>{
+      const u=easeOut(prog(t,10.25+i*0.07,10.8+i*0.07));
+      el.style.opacity=u;
+      el.style.transform=`translateY(${lerp(26,0,u)}px) scale(${lerp(0.96,1,u)})`;
+    });
+
+    // tap "+ Add" → cart → placed
+    const tap=prog(t,12.35,12.7);
+    $('addpill').style.transform=`scale(${lerp(1,0.9,Math.sin(tap*Math.PI))})`;
+    const cb=easeOut(prog(t,12.6,13.0));
+    $('cartbar').style.opacity=cb;
+    $('cartbar').style.transform=`translateY(${lerp(20,0,cb)}px)`;
+    const pl=easeOut(prog(t,13.5,14.0));
+    $('placed').style.opacity=pl;
+    $('placed').style.transform=`translateY(${lerp(24,0,pl)}px)`;
+    $('checkring').style.transform=`scale(${lerp(0.9,1,back(clamp(prog(t,13.55,14.15))))})`;
+  }
+
+  /* ---- 5 WALK ---- */
+  const aW=alpha(t,S.walk); show($('l-walk'),aW);
+  if(aW>0.002){
+    const u=prog(t,15.5,19.1);
+    const x=lerp(-120,1200,u);
+    const bob=Math.abs(Math.sin(t*7))*7;
+    walker.setAttribute('transform',`translate(${x} ${374-bob}) scale(3)`);
+    const sw=Math.sin(t*7)*22;
+    wLegL.setAttribute('transform',`rotate(${sw} -7 40)`);
+    wLegR.setAttribute('transform',`rotate(${-sw} 7 40)`);
+    const cu=easeOut(prog(t,15.6,16.2));
+    $('walkcap').style.opacity=cu*(1-prog(t,18.7,19.3));
+    $('walkcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+  }
+
+  /* ---- 6 HANDOFF ---- */
+  const aHo=alpha(t,S.hand); show($('l-hand'),aHo);
+  if(aHo>0.002){
+    const app=easeOut(prog(t,19.4,20.3));
+    $('hp1').setAttribute('transform',`translate(${lerp(120,400,app)} 480) scale(4)`);
+    $('hp2').setAttribute('transform',`translate(790 480) scale(4)`);
+    const give=prog(t,20.5,21.2);
+    const arm=$('hp1').querySelector('.armR');
+    arm.setAttribute('transform',`rotate(${lerp(0,-26,easeOut(give))} 15 14)`);
+    const hp=prog(t,21.0,22.2);
+    $('hheart').setAttribute('x',595);
+    $('hheart').setAttribute('y',lerp(300,140,easeOut(hp)));
+    $('hheart').style.opacity=Math.sin(clamp(hp)*Math.PI);
+    const cu=easeOut(prog(t,19.5,20.1));
+    $('handcap').style.opacity=cu*(1-prog(t,21.9,22.5));
+    $('handcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+  }
+
+  /* ---- 7 MAP ---- */
+  const aM=alpha(t,S.map); show($('l-map'),aM);
+  if(aM>0.002){
+    $('city').style.transform=`scale(${lerp(0.97,1.05,prog(t,22.4,27.0))})`;
+    $('city').style.transformOrigin='540px 520px';
+    pinEls.forEach((g,i)=>{
+      const st=22.9+i*0.09;
+      const u=clamp(back(clamp(prog(t,st,st+0.42))));
+      const float=Math.sin((t-st)*2.4+i)*5*clamp(prog(t,st+0.4,st+0.9));
+      g.style.opacity=clamp(prog(t,st,st+0.22));
+      g.setAttribute('transform',`translate(0 ${float}) scale(${lerp(0.9,1,u)})`);
+      g.style.transformOrigin=`${PIN[i].x}px ${PIN[i].y}px`;
+    });
+    const cu=easeOut(prog(t,22.6,23.2));
+    $('mapcap').style.opacity=cu*(1-prog(t,26.4,27.0));
+    $('mapcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+  }
+
+  /* ---- 8 EXPANSION ---- */
+  const aE=alpha(t,S.exp); show($('l-exp'),aE);
+  if(aE>0.002){
+    const cu=easeOut(prog(t,26.9,27.5));
+    $('expcap').style.opacity=cu;
+    $('expcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+    catEls.forEach((el,i)=>{
+      const st=27.3+i*0.20;                    // quick cascade, not a slow orbit
+      const u=easeOut(clamp(prog(t,st,st+0.5)));
+      el.style.left=(i%3)*310+'px';
+      el.style.top=Math.floor(i/3)*310+'px';
+      el.style.opacity=u;
+      el.style.transform=`translateY(${lerp(40,0,u)}px) scale(${lerp(0.94,1,u)})`;
+    });
+  }
+
+  /* ---- 9 COMMUNITY ---- */
+  const aC=alpha(t,S.comm); show($('l-comm'),aC);
+  if(aC>0.002){
+    crowdEls.forEach((g,i)=>{
+      const st=31.6+i*0.08;
+      const u=easeOut(clamp(prog(t,st,st+0.5)));
+      const x=125+i*166, bob=Math.sin(t*2.6+i*0.8)*10;
+      g.style.opacity=u;
+      g.setAttribute('transform',`translate(${x} ${lerp(500,420,u)+bob}) scale(2.5)`);
+      const arm=g.querySelector('.armR');
+      if(i%2===0) arm.setAttribute('transform',`rotate(${Math.sin(t*5+i)*20} 15 14)`);
+    });
+    heartEls.forEach((h,i)=>{
+      const st=32.3+i*0.28;
+      const u=prog(t,st,st+1.6);
+      h.setAttribute('x',170+i*190);
+      h.setAttribute('y',lerp(400,170,easeOut(u)));
+      h.style.opacity=Math.sin(clamp(u)*Math.PI)*0.95;
+    });
+    const cu=easeOut(prog(t,31.6,32.2));
+    $('commcap').style.opacity=cu*(1-prog(t,34.9,35.4));
+    $('commcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+  }
+
+  /* ---- 10 CTA ---- */
+  const aT=alpha(t,S.cta,0.35,0); show($('l-cta'),aT);
+  if(aT>0.002){
+    const u=easeOut(prog(t,35.4,36.2));
+    $('mark2').style.opacity=u;
+    $('mark2').style.transform=`scale(${lerp(0.92,1,back(clamp(prog(t,35.4,36.3))))})`;
+    const wu=easeOut(prog(t,35.9,36.6));
+    $('ctaword').style.opacity=wu;
+    $('ctaword').style.transform=`translateY(${lerp(24,0,wu)}px)`;
+    const tu=easeOut(prog(t,36.3,37.0));
+    $('ctatag').style.opacity=tu;
+    $('ctatag').style.transform=`translateY(${lerp(20,0,tu)}px)`;
+    const bu=easeOut(prog(t,36.8,37.5));
+    $('ctabtn').style.opacity=bu;
+    $('ctabtn').style.transform=`translateY(${lerp(18,0,bu)}px) scale(${lerp(0.96,1,bu)})`;
+  }
+}
+
+window.seek=seek; window.FILM={DUR};
+seek(0);
+
+/* Force every face to load before capture starts. document.fonts.ready alone
+   is not enough: a face used only inside a scene that is hidden at t=0 would
+   otherwise stream in mid-render and a few frames would fall back. */
+Promise.all([
+  document.fonts.load("800 100px 'Bricolage Grotesque'"),
+  document.fonts.load("400 100px 'Fraunces'"),
+  document.fonts.load("600 100px 'Plus Jakarta Sans'"),
+]).then(()=>document.fonts.ready).then(()=>{ window.__filmReady=true; });
+
+/* preview only — kept off the capture path so renders stay deterministic */
+if(new URLSearchParams(location.search).has('preview')){
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing=!reduce,t0=performance.now(),acc=0;
+  const tick=now=>{ if(playing){acc+=(now-t0)/1000; if(acc>DUR)acc=0; seek(acc);} t0=now; requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+  addEventListener('keydown',e=>{
+    if(e.code==='Space'){e.preventDefault();playing=!playing;}
+    if(e.code==='ArrowRight'){playing=false;acc=Math.min(DUR,acc+1);seek(acc);}
+    if(e.code==='ArrowLeft'){playing=false;acc=Math.max(0,acc-1);seek(acc);}
+    if(e.key==='s')$('safe').classList.toggle('on');
   });
 }
 </script>

@@ -1,4 +1,4 @@
-# Lokal Finder — 60s brand film
+# LokalFinder — social film
 
 A 60-second vertical (1080×1920) film for Instagram Stories, rendered from the
 same design system as the site: the real brand tokens, logo mark, typography
@@ -6,7 +6,7 @@ and product UI, not a separate set of marketing assets.
 
 | | |
 |---|---|
-| Output | `lokal-finder-60s.mp4` — 1080×1920, 30fps, H.264 |
+| Output | `lokalfinder-social-40s.mp4` — 1080×1920, 30fps, H.264 |
 | Source | `film.html` — the entire film, in one file |
 | Render | `render.mjs` — frame capture + encode |
 | Audio | none (see below) |
