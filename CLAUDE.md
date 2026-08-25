@@ -74,9 +74,24 @@ and give its vendors that `category`.
   `loadCustomerNotifs()`. Always build that path with `notifNode(userId)` —
   order ids contain `#`, which is both an illegal RTDB key character and a
   URL fragment delimiter. Before v54 the raw path was interpolated directly,
-  so every customer's alerts silently collapsed into one shared `cust_`
-  bucket (broken *and* a cross-customer privacy leak); `notifNode()` is the
-  single chokepoint that keeps reads and writes sanitised identically.
+  so `.../notifs/cust_#LF-XXX/123.json` reached the network as
+  `.../notifs/cust_` with everything after the `#` — including the required
+  `.json` suffix — discarded by the browser.
+
+  **What that did in production is NOT fully verified.** The RTDB REST API
+  requires a `.json` suffix, so the write most likely failed outright and was
+  swallowed by `pushNotif()`'s `try/catch`, meaning customer status alerts
+  were silently never delivered. An earlier note here claimed it was instead
+  a cross-customer privacy leak (alerts pooling in a shared `cust_` key that
+  any customer could read back). That claim came from a test stub that
+  accepted suffix-less paths and returned 200 — it was an artifact of the
+  stub, not observed production behaviour. Treat the leak reading as
+  **unconfirmed**; the silent-failure reading is the more likely one. Either
+  way `notifNode()` is the fix, and it is the single chokepoint that keeps
+  reads and writes sanitised identically.
+
+  If you ever re-test this against a stub, make the stub **reject** requests
+  whose path does not end in `.json`, the way real RTDB does.
 - **Nothing in this repo actually sends a push.** FCM tokens
   (`{ROOM_KEY}/fcmTokens/vendors/...`) and OneSignal subscription ids are
   only *stored*; whatever delivers the OS-level notification lives outside
