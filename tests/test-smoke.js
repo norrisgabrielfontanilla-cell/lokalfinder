@@ -138,6 +138,36 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   check('GCash: reference number is captured on the order',
         gcash.created && gcash.method==='gcash' && gcash.ref==='REF-123456' && gcash.total===100, JSON.stringify(gcash));
 
+  // ── 4b. YOU CAN STILL REACH THE ADMIN PANEL ───────────────────────
+  // v55 removed the public Admin button but left the 5-tap fallback bound to
+  // a 1px hidden element on the retired landing page — i.e. no way in at all.
+  // These guard both replacement routes.
+  await page.evaluate(() => goCust());
+  await page.waitForTimeout(300);
+  const tapTarget = await page.evaluate(() => {
+    const e = document.getElementById('lf-brand-tap');
+    if(!e) return {exists:false};
+    const r = e.getBoundingClientRect();
+    return {exists:true, w:Math.round(r.width), h:Math.round(r.height), onHome:!!e.closest('#p-chome')};
+  });
+  check('Admin tap target exists and is a real, visible element on Home',
+        tapTarget.exists && tapTarget.w > 40 && tapTarget.h > 10 && tapTarget.onHome, JSON.stringify(tapTarget));
+
+  for(let i=0;i<5;i++){ await page.click('#lf-brand-tap'); await page.waitForTimeout(80); }
+  await page.waitForTimeout(400);
+  const viaTaps = await page.evaluate(() => document.querySelector('.page.on')?.id);
+  check('5 fast taps on the wordmark open the admin login', viaTaps==='p-alogin', viaTaps);
+
+  await page.evaluate(() => goCust());
+  await page.waitForTimeout(300);
+  for(let i=0;i<3;i++){ await page.click('#lf-brand-tap'); await page.waitForTimeout(700); }
+  const viaSlow = await page.evaluate(() => document.querySelector('.page.on')?.id);
+  check('Slow taps do NOT open it (no accidental customer discovery)', viaSlow!=='p-alogin', viaSlow);
+
+  const noPublicBtn = await page.evaluate(() =>
+    [...document.querySelectorAll('#p-chome button')].filter(b=>b.textContent.trim()==='Admin').length);
+  check('No public "Admin" button on the customer home', noPublicBtn===0, 'count='+noPublicBtn);
+
   // ── 5. Admin: setup, add vendor, edit PIN, archive ────────────────
   const admin = await page.evaluate(async () => {
     const out={};

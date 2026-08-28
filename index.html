@@ -1871,7 +1871,7 @@ select option { color: var(--t1); background: var(--w); }
             <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
           </svg>
         </div>
-        <div>
+        <div id="lf-brand-tap" style="cursor:default">
           <div class="lf2-word">Lokal<em>Finder</em></div>
           <div class="lf2-sub">GRASS Residences &bull; Quezon City</div>
         </div>
@@ -3526,15 +3526,40 @@ function goAdminLogin(){
 }
 // Admin: tap LokalFinder logo 5x fast to access
 window.addEventListener('DOMContentLoaded',()=>{
+  /* v55b — HOW YOU REACH THE ADMIN PANEL.
+     v55 removed the visible "Admin" button from the customer home, because it
+     sat next to a password that was published in this file. But the 5-tap
+     fallback it left behind was bound to `.land-logo`, which lives on the
+     RETIRED landing page and is a 1px, opacity-0 element — so there was in
+     practice NO way left to reach admin at all. That was a lock-out, not a
+     security improvement.
+
+     Two unadvertised routes now, both bound to things that actually exist:
+       1. Tap the "LokalFinder" wordmark on the home header 5 times, fast.
+       2. Open the app with #admin on the URL.
+     Neither is discoverable by a customer browsing lunch, and neither is a
+     security control — the Firebase rules are. This is just a door. */
   let _taps=0,_tt=null;
-  const logo=document.querySelector('.land-logo');
-  if(logo){
-    logo.style.cursor='pointer';
-    logo.addEventListener('click',()=>{
+  const _adminTargets = [
+    document.getElementById('lf-brand-tap'),
+    document.querySelector('.land-logo')      // legacy, harmless if absent
+  ].filter(Boolean);
+  _adminTargets.forEach(t=>{
+    t.addEventListener('click',()=>{
       _taps++; clearTimeout(_tt); _tt=setTimeout(()=>_taps=0,1500);
-      if(_taps>=5){_taps=0; goPage('p-alogin');}
+      if(_taps>=5){ _taps=0; goPage('p-alogin'); }
     });
+  });
+
+  // Direct route, for when you just need in without tapping.
+  function _adminFromHash(){
+    if((location.hash||'').toLowerCase()==='#admin'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+      goPage('p-alogin');
+    }
   }
+  window.addEventListener('hashchange', _adminFromHash);
+  setTimeout(_adminFromHash, 800);   // after boot() has navigated to home
 });
 
 
