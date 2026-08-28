@@ -23,9 +23,9 @@
 
   .layer{position:absolute;inset:0;will-change:transform,opacity}
   /* soft warm ground under the light scenes instead of a flat wash */
-  .f-lbg{background:radial-gradient(ellipse 90% 60% at 50% 38%,#FBFDFB 0%,#F0F7F3 55%,#E4EFE8 100%)}
-  .f-night{background:radial-gradient(ellipse 80% 55% at 50% 42%,#123726 0%,#0B2318 60%,#071A12 100%)}
-  .f-green{background:radial-gradient(ellipse 85% 60% at 50% 40%,#22815A 0%,#1A6B4A 55%,#125237 100%)}
+  .f-lbg{background:#F0F7F3 url('bg/lbg.png') center/100% 100% no-repeat}
+  .f-night{background:#0B2318 url('bg/night.png') center/100% 100% no-repeat}
+  .f-green{background:#1A6B4A url('bg/green.png') center/100% 100% no-repeat}
 
   .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
        letter-spacing:-.035em;line-height:.98;will-change:transform,opacity}
@@ -74,8 +74,8 @@
     border-radius:22px;background:var(--lgreen);color:#fff;font-size:23px;font-weight:800}
 
   /* rasterised once by the browser — adds tooth without a per-frame filter */
-  #grain{position:absolute;inset:0;pointer-events:none;opacity:.045;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+  #grain{position:absolute;inset:0;pointer-events:none;opacity:.05;
+    background:url('bg/grain.png') repeat}
   #vig{position:absolute;inset:0;pointer-events:none;
     background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 60%,rgba(0,0,0,.11) 100%)}
   #safe{position:absolute;inset:0;display:none;pointer-events:none}

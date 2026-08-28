@@ -34,6 +34,7 @@ const MIME = {
   '.woff2': 'font/woff2',
   '.css': 'text/css',
   '.js': 'text/javascript',
+  '.png': 'image/png',
 };
 
 /** Serve promo/ over http — Chromium won't load fonts from file:// reliably. */
