@@ -1886,7 +1886,7 @@ select option { color: var(--t1); background: var(--w); }
     </div>
     <!-- subtle Admin link row -->
     <div style="position:relative;z-index:1;padding:0 20px;text-align:right;margin-top:-2px">
-      <button onclick="goPage('p-alogin')" style="background:none;border:none;color:#b3bdb7;font-size:11px;font-weight:600;padding:2px 2px;cursor:pointer;font-family:var(--ff);letter-spacing:.2px">Admin</button>
+      
     </div>
     <!-- Search pill -->
     <div style="position:relative;z-index:1;padding:4px 20px 0">
@@ -2775,7 +2775,25 @@ select option { color: var(--t1); background: var(--w); }
     <label class="flbl" style="color:rgba(255,255,255,.6)">Password</label>
     <input class="finp" id="a-pass" type="password" placeholder="Your password" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
     <button class="cta" style="margin-top:4px;background:var(--acc);color:#fff" onclick="adminLogin()">Enter Admin Panel →</button>
-    
+  </div>
+</div>
+
+<!-- ADMIN — FIRST-RUN PASSWORD SETUP (v55)
+     Shown once, the first time an admin signs in after the hashed-credential
+     change. Retires the published 'admin1234' default instead of letting it
+     quietly keep working on every device forever. -->
+<div class="page" id="p-asetup">
+  <div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>
+  <div class="login-wrap" style="background:#0F4A32">
+    <button class="login-back" style="color:rgba(255,255,255,.6)" onclick="goPage('p-alogin')">← Back</button>
+    <div class="login-ico">🔐</div>
+    <div class="login-ttl" style="color:#fff">Secure your admin account</div>
+    <div class="login-sub" style="color:rgba(255,255,255,.5)">Your old password was stored in plain text and only on this device. Set a new one — it will be hashed and will work on every device.</div>
+    <label class="flbl" style="color:rgba(255,255,255,.6)">New password (min 8 characters)</label>
+    <input class="finp" id="asetup-pass" type="password" autocomplete="new-password" placeholder="New password" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
+    <label class="flbl" style="color:rgba(255,255,255,.6)">Confirm new password</label>
+    <input class="finp" id="asetup-confirm" type="password" autocomplete="new-password" placeholder="Repeat it" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
+    <button class="cta" style="margin-top:4px;background:var(--acc);color:#fff" onclick="adminCompleteSetup()">Save and continue →</button>
   </div>
 </div>
 
@@ -2787,7 +2805,7 @@ select option { color: var(--t1); background: var(--w); }
   <div style="background:#0F4A32;padding:14px 18px 16px;flex-shrink:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase">Admin Panel</div>
-      <button onclick="goPage('p-chome')" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Sign Out</button>
+      <button onclick="adminSignOut()" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Sign Out</button>
     </div>
     <div style="font-size:19px;font-weight:800;color:#fff">LokalFinder HQ 🏢</div>
     <div style="font-size:12px;color:rgba(255,255,255,.55)">GRASS Residences · Full control panel</div>
@@ -2928,6 +2946,25 @@ select option { color: var(--t1); background: var(--w); }
     <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Sales &amp; order activity by store</div>
   </div>
   <div class="scrl">
+    <!-- v55: orders were never deleted, so the table grew forever and every
+         device re-downloaded it. This is the only way to actually shrink it. -->
+    <div class="card-sm" style="margin:12px 16px;padding:12px 14px">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:4px">🧹 Archive old orders</div>
+      <div style="font-size:11.5px;color:var(--t3);line-height:1.5;margin-bottom:10px">
+        Permanently deletes completed and declined orders older than the cutoff.
+        Keeps the database small and the app fast. <b>This cannot be undone</b> —
+        export anything you need for your records first.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="finp" id="purge-days" style="flex:1;margin:0;-webkit-appearance:none">
+          <option value="90">Older than 90 days</option>
+          <option value="180">Older than 180 days</option>
+          <option value="365">Older than 1 year</option>
+        </select>
+        <button onclick="adminPurgeOldOrders()" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);white-space:nowrap">Archive</button>
+      </div>
+      <div id="purge-note" style="font-size:11px;color:var(--t3);margin-top:8px"></div>
+    </div>
     <div style="padding-top:12px">
       <!-- v53: entire body is rendered by renderAdminRevenue(). The old
            static cells (Total Collected / GCash / Cash fees / Avg) were all
@@ -3031,7 +3068,7 @@ select option { color: var(--t1); background: var(--w); }
     <label class="flbl" id="nv-cat-lbl">Category</label>
     <input class="finp" id="nv-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
     <label class="flbl">Vendor PIN (4 digits)</label>
-    <input class="finp" id="nv-pin" type="text" placeholder="e.g. 5678" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:20px">
+    <input class="finp" id="nv-pin" type="text" placeholder="6+ digits recommended" maxlength="10" minlength="4" style="text-align:center;letter-spacing:6px;font-size:20px">
     <label class="flbl">Vendor GCash Number</label>
     <input class="finp" id="nv-gcash" type="tel" placeholder="09XX XXX XXXX">
     <button class="cta" onclick="addVendorConfirm()">Create Vendor Account ✓</button>
@@ -3085,7 +3122,7 @@ select option { color: var(--t1); background: var(--w); }
     <label class="flbl">GCash Number</label>
     <input class="finp" id="ev-gcash" type="tel" placeholder="09XX XXX XXXX">
     <label class="flbl">PIN (4 digits)</label>
-    <input class="finp" id="ev-pin" type="text" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:20px">
+    <input class="finp" id="ev-pin" type="text" placeholder="Leave blank to keep current" maxlength="10" minlength="4" style="text-align:center;letter-spacing:6px;font-size:20px">
     <label class="flbl">Minimum Order (₱)</label>
     <input class="finp" id="ev-min" type="number" placeholder="e.g. 50">
     <button class="cta" onclick="saveEditVendor()" style="margin-bottom:8px">Save Changes ✓</button>
@@ -3250,20 +3287,18 @@ const SERVICE_FEE = 0;
 // Plain-text passwords are never stored in this file.
 // To change: run sha256('yourpassword') and update the hash below.
 const ADMIN_EMAIL = 'admin@lokalfinder.ph';
-const ADMIN_PASS_HASH = 'a49e4f5e8d78cd67a4d84f2c3c1234567890abcdef1234567890abcdef123456'; // placeholder
-const VENDOR_PIN_HASHES = {
-  pares:  '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-  siomai: '38083c7ee9121e17401883566a148aa5c2e2d55dc53bc4a94a026517dbff3c6b',
-  kape:   'ceaa28bba4caba687dc31b1bbe79eca3c70c33f871f1ce8f528cf9ab5cfd76dd',
-  adbuns: 'db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669',
-};
+// v55: the old ADMIN_PASS_HASH placeholder is gone — it was never read, and a
+// dead "hash" constant made this file look more secure than it was. The real
+// credential is a salted hash in the database (see adminAuthNode).
+// v55: the old unsalted VENDOR_PIN_HASHES table lived here and was never read
+// by vendorLogin() — dead code that made the file look safer than it was. The
+// live, SALTED store is declared further down next to setVendorPin().
 // Hash function (SHA-256 via Web Crypto API)
 async function sha256(str){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-// Secret admin URL token — admin panel only opens if URL contains this
-const ADMIN_TOKEN = 'UNUSED';
+
 let activeVendorId = null;
 let payMethod = 'gcash';
 let pageHistory = ['p-land'];
@@ -3572,9 +3607,15 @@ function buildVendorCards(force=false){
     const menuPhoto = ((MENU[v.id]||[]).find(i=>i.photo && i.avail)||{}).photo
                    || ((MENU[v.id]||[]).find(i=>i.photo)||{}).photo
                    || '';
-    const imgBg = menuPhoto
-      ? `background:linear-gradient(to bottom,rgba(255,255,255,.05) 0%,rgba(255,255,255,.55) 70%,#fff 100%),url('${menuPhoto}') center/cover no-repeat;`
-      : `background:${v.bg};`;
+    // v55: both of these land inside a style="" attribute. A vendor record is
+    // writable by anyone who can reach the database, so treat it as untrusted:
+    // escape, and allow only a data: URL for the photo so the value cannot
+    // carry quotes or parentheses that break out of the CSS url().
+    const _safePhoto = /^data:image\//.test(menuPhoto) ? menuPhoto : '';
+    const _safeBg = /^#[0-9a-fA-F]{3,8}$/.test(String(v.bg||'')) ? v.bg : '#F5F5F5';
+    const imgBg = _safePhoto
+      ? `background:linear-gradient(to bottom,rgba(255,255,255,.05) 0%,rgba(255,255,255,.55) 70%,#fff 100%),url('${_safePhoto}') center/cover no-repeat;`
+      : `background:${_safeBg};`;
     // v54: in the "All" tab a kitchen and a cleaner sit side by side, so the
     // card has to say which is which. Redundant inside a single-vertical tab,
     // so it's only drawn there.
@@ -3584,14 +3625,14 @@ function buildVendorCards(force=false){
     return `
     <div class="vc${isClosed?' vc-closed':''}" ${clickAttr}>
       <div class="vc-img" style="${imgBg}">
-        ${v.logo?`<img src="${v.logo}" style="width:84px;height:84px;border-radius:16px;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.18)">`:`<span style="filter:drop-shadow(0 3px 8px rgba(0,0,0,.25))">${v.emoji}</span>`}
+        ${/^data:image\//.test(v.logo||'')?`<img src="${esc(v.logo)}" alt="" style="width:84px;height:84px;border-radius:16px;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.18)">`:`<span style="filter:drop-shadow(0 3px 8px rgba(0,0,0,.25))">${esc(v.emoji)}</span>`}
         <button class="vc-fav ${savedVendors[v.id]?'on':''}" id="fav-${v.id}" onclick="event.stopPropagation();toggleFav('${v.id}',this)">${savedVendors[v.id]?'❤':'♡'}</button>
       </div>
       <div class="vc-body">
         <div style="margin-bottom:4px"><span class="bdg ${isClosed?'closed':'open'}">● ${isClosed?'Closed':'Open'}</span>${_mktChip}${(!isClosed&&v.featured)?'<span class="bdg" style="background:#FEF9C3;color:#854d0e;margin-left:4px">⭐ Best Seller</span>':''}</div>
-        <div class="vc-name">${v.name}</div>
-        <div class="vc-sub">${isClosed?opensTxt:subLine}</div>
-        <div class="vc-foot"><span class="vc-price">From ₱${String(v.min).replace(/^₱/,'')}</span><span class="vc-rating">${v.rating}</span></div>
+        <div class="vc-name">${esc(v.name)}</div>
+        <div class="vc-sub">${esc(isClosed?opensTxt:subLine)}</div>
+        <div class="vc-foot"><span class="vc-price">From ₱${esc(String(v.min).replace(/^₱/,''))}</span><span class="vc-rating">${esc(v.rating)}</span></div>
       </div>
     </div>`;
   };
@@ -3695,10 +3736,10 @@ function ffFoodCard(item){
   if(_isClean){
     const _dur = item.dur ? `<span class="ff-fc-vendor" style="margin-top:1px">⏱ ${lfFmtDur(item.dur)}</span>` : '';
     return `
-    <div class="ff-fc" onclick="startBooking('${item.vendorId}','${esc(item.id)}')">
+    <div class="ff-fc" onclick="startBooking('${item.vendorId}','${escJs(item.id)}')">
       <div class="ff-fc-img" style="background:${bg}">${img}${tag}</div>
       <div class="ff-fc-body">
-        <div class="ff-fc-name">${item.name}</div>
+        <div class="ff-fc-name">${esc(item.name)}</div>
         <div class="ff-fc-vendor">${item.vendorEmoji} ${item.vendorName}</div>
         ${_dur}
         <div class="ff-fc-foot">
@@ -3709,10 +3750,10 @@ function ffFoodCard(item){
     </div>`;
   }
   return `
-    <div class="ff-fc" onclick="quickAdd('${item.vendorId}','${esc(item.name)}','${item.emoji}',${item.price})">
+    <div class="ff-fc" onclick="quickAdd('${item.vendorId}','${escJs(item.name)}','${item.emoji}',${item.price})">
       <div class="ff-fc-img" style="background:${bg}">${img}${tag}</div>
       <div class="ff-fc-body">
-        <div class="ff-fc-name">${item.name}</div>
+        <div class="ff-fc-name">${esc(item.name)}</div>
         <div class="ff-fc-vendor">${item.vendorEmoji} ${item.vendorName}</div>
         <div class="ff-fc-foot">
           <span class="ff-fc-price">₱${item.price}</span>
@@ -3754,12 +3795,12 @@ function ffStepperHTML(vid,name,emoji,price){
   const q=ffQtyOf(vid,name);
   if(q>0){
     return `<span class="ff-step">
-      <button onclick="ffDec('${vid}','${esc(name)}')">−</button>
+      <button onclick="ffDec('${vid}','${escJs(name)}')">−</button>
       <span class="q">${q}</span>
-      <button onclick="ffInc('${vid}','${esc(name)}','${emoji}',${price})">+</button>
+      <button onclick="ffInc('${vid}','${escJs(name)}','${emoji}',${price})">+</button>
     </span>`;
   }
-  return `<button class="ff-add" onclick="quickAdd('${vid}','${esc(name)}','${emoji}',${price})">+</button>`;
+  return `<button class="ff-add" onclick="quickAdd('${vid}','${escJs(name)}','${emoji}',${price})">+</button>`;
 }
 function ffRefreshStepper(vid,name,emoji,price){
   const holder=document.getElementById('ffctl-'+vid+'-'+ffKey(name));
@@ -3804,8 +3845,8 @@ function buildHeroStrip(){
   // its call to action both change. Same card, honest verb.
   const _isClean = pick.vendorCat==='cleaning';
   const _tap = _isClean
-    ? `startBooking('${pick.vendorId}','${esc(pick.id)}')`
-    : `quickAdd('${pick.vendorId}','${esc(pick.name)}','${pick.emoji}',${pick.price})`;
+    ? `startBooking('${pick.vendorId}','${escJs(pick.id)}')`
+    : `quickAdd('${pick.vendorId}','${escJs(pick.name)}','${pick.emoji}',${pick.price})`;
   host.innerHTML=`
     <div class="ff-hero" onclick="${_tap}">
       <div class="ff-hero-txt">
@@ -3857,7 +3898,7 @@ function ffSearch(q){
     html+=vMatches.map(v=>`
       <div class="ff-sr-row" onclick="openVendor('${v.id}')">
         <div class="ff-sr-ic">${v.logo?`<img src="${v.logo}">`:v.emoji}</div>
-        <div class="ff-sr-info"><div class="ff-sr-name">${v.name}</div><div class="ff-sr-sub">${(v.sub||'').split('·').slice(0,2).join('·')}</div></div>
+        <div class="ff-sr-info"><div class="ff-sr-name">${esc(v.name)}</div><div class="ff-sr-sub">${esc((v.sub||'').split('·').slice(0,2).join('·'))}</div></div>
         <span class="ff-sr-price">From ₱${String(v.min).replace(/^₱/,'')}</span>
       </div>`).join('');
   }
@@ -3869,16 +3910,16 @@ function ffSearch(q){
       html+=_foods.map(i=>`
         <div class="ff-sr-row" onclick="openVendor('${i.vendorId}')">
           <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
-          <div class="ff-sr-info"><div class="ff-sr-name">${i.name}</div><div class="ff-sr-sub">${i.vendorEmoji} ${i.vendorName}</div></div>
+          <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}</div></div>
           <span id="ffsr-${i.vendorId}-${ffKey(i.name)}" onclick="event.stopPropagation()">${ffStepperHTML(i.vendorId,i.name,i.emoji,i.price)}</span>
         </div>`).join('');
     }
     if(_svcs.length){
       html+='<div class="ff-sr-head">Cleaning Services</div>';
       html+=_svcs.map(i=>`
-        <div class="ff-sr-row" onclick="startBooking('${i.vendorId}','${esc(i.id)}')">
+        <div class="ff-sr-row" onclick="startBooking('${i.vendorId}','${escJs(i.id)}')">
           <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
-          <div class="ff-sr-info"><div class="ff-sr-name">${i.name}</div><div class="ff-sr-sub">${i.vendorEmoji} ${i.vendorName}${i.dur?' · ⏱ '+lfFmtDur(i.dur):''}</div></div>
+          <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}${i.dur?' · ⏱ '+lfFmtDur(i.dur):''}</div></div>
           <span class="ff-sr-price">₱${i.price}</span>
         </div>`).join('');
     }
@@ -4082,19 +4123,22 @@ function openVendor(vid){
   // anything. Everything else (photos, lightbox, sold-out dimming) is shared.
   const _clean = isCleaning(v);
   const _tapFor = item => _clean
-    ? `startBooking('${vid}','${esc(item.id)}')`
-    : `addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})`;
+    // v55: these strings become the VALUE of an onclick attribute further
+    // down, so they need escJs (JS-literal + entity), not esc (entity only).
+    // esc() here decoded back into a bare quote and broke the handler.
+    ? `startBooking('${vid}','${escJs(item.id)}')`
+    : `addToCart('${vid}','${escJs(item.name)}','${item.emoji}',${item.price})`;
   menuEl.innerHTML=_banner+'<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">'+esc(mkt(v).itemsNoun)+'</div>'+
     _normalizeMenu(MENU[vid]).filter(i=>i.avail).map(item=>`
       <div class="mrow" ${_canOrder?`onclick="${_tapFor(item)}"`:'style="cursor:default;opacity:.62"'}>
-        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;cursor:zoom-in;position:relative':''}" ${item.photo?`onclick="event.stopPropagation();openImgLightbox('${item.photo}','${esc(item.name)}')"`:''}>
-          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
+        <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;cursor:zoom-in;position:relative':''}" ${item.photo?`onclick="event.stopPropagation();openImgLightbox('${item.photo}','${escJs(item.name)}')"`:''}>
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
         </div>
-        <div class="mrow-info"><div class="mrow-name">${item.name}</div><div class="mrow-desc">${item.desc||''}${(_clean&&item.dur)?' · ⏱ '+lfFmtDur(item.dur):''}</div></div>
+        <div class="mrow-info"><div class="mrow-name">${esc(item.name)}</div><div class="mrow-desc">${esc(item.desc||'')}${(_clean&&item.dur)?' · ⏱ '+lfFmtDur(item.dur):''}</div></div>
         <div class="mrow-price">₱${item.price}</div>
         ${_canOrder?(_clean
-          ? `<button class="add-btn" style="width:auto;padding:0 13px;border-radius:999px;font-size:11.5px;font-weight:800" onclick="event.stopPropagation();startBooking('${vid}','${esc(item.id)}')">Book</button>`
-          : `<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${esc(item.name)}','${item.emoji}',${item.price})">+</button>`):''}
+          ? `<button class="add-btn" style="width:auto;padding:0 13px;border-radius:999px;font-size:11.5px;font-weight:800" onclick="event.stopPropagation();startBooking('${vid}','${escJs(item.id)}')">Book</button>`
+          : `<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${escJs(item.name)}','${item.emoji}',${item.price})">+</button>`):''}
       </div>`).join('');
   menuEl.innerHTML+='<div style="height:80px"></div>';
   goPage('p-cvendor');
@@ -4242,11 +4286,11 @@ function renderCartPage(){
     vCart.items.forEach(item=>{
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:.5px solid var(--bd);background:var(--w)">
         <div style="font-size:22px;width:36px;height:36px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${item.emoji}</div>
-        <div style="flex:1;font-size:13px;font-weight:600;color:var(--t1)">${item.name}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;color:var(--t1)">${esc(item.name)}</div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="changeQty('${vid}','${esc(item.name)}',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">−</button>
+          <button onclick="changeQty('${vid}','${escJs(item.name)}',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">−</button>
           <span style="font-size:13px;font-weight:700;min-width:16px;text-align:center">${item.qty}</span>
-          <button onclick="changeQty('${vid}','${esc(item.name)}',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">+</button>
+          <button onclick="changeQty('${vid}','${escJs(item.name)}',1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">+</button>
         </div>
         <div style="font-size:13px;font-weight:700;color:var(--g);flex-shrink:0;min-width:46px;text-align:right">₱${item.price*item.qty}</div>
       </div>`;
@@ -4410,7 +4454,7 @@ function startBooking(vid, itemId){
   // landing on a fully-booked day with an empty time list looks broken.
   let date = dates[0], time = '';
   for(const d of dates){
-    const free = lfSlotsFor(v,d).filter(s=>!s.taken);
+    const free = lfSlotsFor(v,d,svc.dur).filter(s=>!s.taken);
     if(free.length){ date=d; time=''; break; }
   }
   booking = { vid, itemId, date, time };
@@ -4474,7 +4518,7 @@ function bkRenderDates(){
   const dates = lfBookingDates(v);
   if(!dates.length){ box.innerHTML='<div style="padding:8px 0;font-size:12.5px;color:var(--t3)">No open days in the next 2 weeks.</div>'; return; }
   box.innerHTML = dates.map(k=>{
-    const free = lfSlotsFor(v,k).filter(s=>!s.taken).length;
+    const free = lfSlotsFor(v,k,(bkService()||{}).dur).filter(s=>!s.taken).length;
     return `<div class="bk-date ${k===booking.date?'on':''}" onclick="bkPickDate('${k}')">
       <div class="bd-d">${k===lfTodayKey()?'Today':lfDayName(k)}</div>
       <div class="bd-n">${lfFmtDate(k,true).replace(/^[A-Za-z]+ /,'')}</div>
@@ -4494,7 +4538,7 @@ function bkRenderSlots(){
   const box = el('bk-slots'); const note = el('bk-slot-note');
   if(!box || !booking) return;
   const v = VENDORS[booking.vid];
-  const slots = lfSlotsFor(v, booking.date);
+  const slots = lfSlotsFor(v, booking.date, (bkService()||{}).dur);
   if(!slots.length){
     box.innerHTML='';
     if(note) note.textContent = (booking.date===lfTodayKey())
@@ -4554,13 +4598,13 @@ async function submitBooking(){
   }
   if(!lfVendorWorksOn(v, booking.date)){ showToast('📅 That date is no longer available'); bkRenderDates(); bkRenderSlots(); return; }
   if(!booking.time){ showToast('⏰ Pick a preferred time'); return; }
-  if(lfSlotTaken(v.id, booking.date, booking.time)){
+  if(lfSlotTaken(v.id, booking.date, booking.time, null, svc.dur)){
     showToast('⚠️ That slot was just booked — pick another time');
     booking.time=''; bkRenderSlots(); bkRenderReview();
     return;
   }
   // A slot that has slipped into the past while the form sat open.
-  if(!lfSlotsFor(v, booking.date).some(s=>s.time===booking.time && !s.taken)){
+  if(!lfSlotsFor(v, booking.date, svc.dur).some(s=>s.time===booking.time && !s.taken)){
     showToast('⏰ That time has passed — pick another slot');
     booking.time=''; bkRenderSlots(); bkRenderReview();
     return;
@@ -4755,14 +4799,69 @@ function openMyOrder(oid){
 // v54: cleaning providers authenticate through this same PIN map and the same
 // vendorLogin() — there is deliberately no second login system for the new
 // vertical. A vendor's category, not their credentials, decides what they see.
-const VENDOR_PINS_PLAIN = {pares:'1234',siomai:'5678',kape:'2222',adbuns:'3333',sparkle:'4444',freshnest:'5555'};
+/* ═══════════════════════════════════════════════════════════════════════
+   v55 — VENDOR PINS ARE NO LONGER STORED IN PLAIN TEXT
+   -----------------------------------------------------------------------
+   They used to sit right here, in a file served to every visitor, AND be
+   mirrored to the database in the clear. Anyone who opened view-source
+   could sign in as any vendor and accept, decline or complete their orders.
+
+   Now: only a salted SHA-256 hash is kept, in VENDOR_PIN_HASHES, synced
+   under /pinHashes. verifyVendorPin() hashes the typed PIN and compares.
+
+   ── BE HONEST ABOUT WHAT THIS BUYS ──
+   A 4-digit PIN has 10,000 possibilities. Anyone who can read the hashes
+   can brute-force one offline in under a second. This removes the trivial
+   "read the password off the screen" attack and nothing more. Real vendor
+   auth needs Firebase Auth and a server check; until then, the Firebase
+   rules in firebase-rules.json (which make /pinHashes unreadable) are what
+   actually carries the weight. Longer PINs help — the admin PIN field now
+   accepts 4-10 characters.
+═══════════════════════════════════════════════════════════════════════ */
+// Seed credentials for the DEMO vendors only, so a fresh install isn't locked
+// out of the vendor portal entirely. These are salted hashes of the same demo
+// PINs that used to sit here in the clear.
+//
+// A 4-digit PIN has 10,000 possibilities, so publishing its hash is barely
+// better than publishing the PIN — treat these six accounts as PUBLIC and
+// rotate them from the admin panel before any real vendor uses one. Vendors
+// created through the admin panel never appear here: their hash is written
+// straight to /pinHashes, which firebase-rules.json makes unreadable.
+let VENDOR_PIN_HASHES = {
+  pares:{salt:'f20479173ee2ffdd8b4f36c7eb7f11fc',hash:'d8f8077a04329462b21cd091007eed6005c0382adb114486bcc4eb8a31887941'},
+  siomai:{salt:'4a47e2cc63b107dc714f0c0ac79c39f1',hash:'2bec2cef123c403d46cd811381a0af8e2bfe5647ebcb1e0215ac2c0a6e729765'},
+  kape:{salt:'163219179f2d2e30e639f25bcdde9a09',hash:'55de90bbac704593056f3aca6987012b88a4fef835a7dd7190198fd877a8632f'},
+  adbuns:{salt:'c266ced9d3b4d4564b95032e9a8908a3',hash:'b95434d58dcaf4b37506a9d55a16ed4b8af6d8723512c4ed6cddc56015312cf1'},
+  sparkle:{salt:'ece4e8f2570718fc95fe30875a62de90',hash:'604bf7e55254e33ee5bceaf5f8feb9d20ca57043ed7ed93e2ebfa986aafff783'},
+  freshnest:{salt:'a310f1da754cc4fc4d460493ee611406',hash:'03251a58d551e4a9af47c4f2e5c672db64da4d5ac0cfe84a28d825019f087d58'},
+};
+const LF_LEGACY_PINS = {};       // migration only; filled from any legacy cloud data
+
+async function setVendorPin(vid, pin){
+  const salt = lfNewSalt();
+  VENDOR_PIN_HASHES[vid] = { salt, hash: await lfHashPass(pin, salt) };
+}
+async function verifyVendorPin(vid, pin){
+  const rec = VENDOR_PIN_HASHES[vid];
+  if(rec && rec.salt && rec.hash){
+    return (await lfHashPass(pin, rec.salt)) === rec.hash;
+  }
+  // Migration path: a vendor whose hash hasn't been written yet. Accept the
+  // legacy plaintext once, then immediately upgrade them to a hash so the
+  // plaintext stops being the credential.
+  if(LF_LEGACY_PINS[vid] && String(pin) === String(LF_LEGACY_PINS[vid])){
+    await setVendorPin(vid, pin);
+    try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); }catch(e){}
+    return true;
+  }
+  return false;
+}
 async function vendorLogin(){
   const sel=document.getElementById('v-sel').value;
   const pin=document.getElementById('v-pin').value;
   if(!sel){showToast('⚠️ Select your store');return;}
   if(!pin){showToast('⚠️ Enter your PIN');return;}
-  if(!VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Store not found — contact admin');return;}
-  if(pin!==VENDOR_PINS_PLAIN[sel]){showToast('⚠️ Incorrect PIN — contact admin');return;}
+  if(!(await verifyVendorPin(sel, pin))){showToast('⚠️ Incorrect PIN — contact admin');return;}
   // Request notification permission NOW — must happen as direct result of user tap
   if(typeof Notification !== 'undefined' && Notification && Notification.permission !== 'granted'){
     try{
@@ -5064,8 +5163,8 @@ function renderChatPanel(){
 
   box.innerHTML = msgs.map(m=>{
     const isMe = m.from===role;
-    const safe = m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const label = !isMe ? (m.from==='vendor' ? (o?VENDORS[o.vendorId]?.name||'Vendor':'Vendor') : 'Unit '+(o?.unit||'')) : '';
+    const safe = esc(m.text);
+    const label = esc(!isMe ? (m.from==='vendor' ? (o?VENDORS[o.vendorId]?.name||'Vendor':'Vendor') : 'Unit '+(o?.unit||'')) : '');
     return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};margin-bottom:2px">
       <div style="max-width:78%;background:${isMe?'var(--g)':'var(--s2)'};color:${isMe?'#fff':'var(--t1)'};border-radius:${isMe?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:9px 13px;font-size:14px;line-height:1.4">
         ${label?`<div style="font-size:10px;font-weight:700;margin-bottom:3px;opacity:.65">${label}</div>`:''}
@@ -5091,14 +5190,12 @@ async function syncChats(){
   if(activeVendorId){
     orders.filter(o=>o.vendorId===activeVendorId)
       .forEach(o=>orderIds.add(o.id));
-    // Also fetch fresh orders from Firebase to catch any not yet in local cache
-    try{
-      const fbOrders = await fbGet(ROOM_KEY+'/orders');
-      if(fbOrders && Array.isArray(fbOrders)){
-        fbOrders.filter(o=>o && o.vendorId===activeVendorId && !['delivered','declined'].includes(o.status))
-          .forEach(o=>orderIds.add(o.id));
-      }
-    }catch(e){ /* use local orders if Firebase fails */ }
+    // v55: this used to re-download the ENTIRE orders node here every 3s and
+    // then test Array.isArray() on it. Orders are stored keyed by id, so the
+    // cloud always returns an OBJECT — the test was never true and the branch
+    // never ran, while still paying for the download. The local `orders`
+    // array above is already kept current by syncFromCloud(), so the fetch
+    // was redundant as well as dead. Removed.
   }
 
   for(const oid of orderIds){
@@ -5416,7 +5513,7 @@ function openEditVendorModal(vid){
   el('ev-emoji').value = v.emoji||'';
   el('ev-cat').value = (v.cats||[]).join(', ');
   el('ev-gcash').value = v.gcash||'';
-  el('ev-pin').value = VENDOR_PINS_PLAIN[vid]||'';
+  el('ev-pin').value = '';   // v55: PINs are hashed — there is nothing to show
   el('ev-min').value = v.min||50;
   // Set location
   const locSel = el('ev-loc');
@@ -5438,7 +5535,7 @@ async function saveEditVendor(){
   const pin = el('ev-pin').value.trim();
   const min = parseInt(el('ev-min').value)||50;
   if(!name){ showToast('⚠️ Store name is required'); return; }
-  if(pin && (pin.length!==4||!/^\d+$/.test(pin))){ showToast('⚠️ PIN must be exactly 4 digits'); return; }
+  if(pin && !/^\d{4,10}$/.test(pin)){ showToast('⚠️ PIN must be 4–10 digits (6+ recommended)'); return; }
 
   // Update vendor
   VENDORS[vid].name = name;
@@ -5447,7 +5544,7 @@ async function saveEditVendor(){
   VENDORS[vid].cats = cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean);
   VENDORS[vid].gcash = gcash;
   VENDORS[vid].min = min;
-  if(pin) VENDOR_PINS_PLAIN[vid] = pin;
+  if(pin){ await setVendorPin(vid, pin); try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); }catch(e){} }
 
   await pushState();
   closeModal('modal-editvendor');
@@ -5588,8 +5685,8 @@ function renderNotifPanel(){
     <div style="padding:14px 16px;border-bottom:.5px solid var(--bd);background:${n.read?'var(--w)':'var(--gl)'};display:flex;gap:12px;align-items:flex-start">
       <div style="font-size:24px;flex-shrink:0;margin-top:2px">${icons[n.type]||'🔔'}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--t1)">${n.title}</div>
-        <div style="font-size:12px;color:var(--t2);margin-top:3px;line-height:1.4">${n.body}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${esc(n.title)}</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:3px;line-height:1.4">${esc(n.body)}</div>
         <div style="font-size:10px;color:var(--t3);margin-top:5px">${timeSince(new Date(n.ts))}</div>
       </div>
       ${!n.read?'<div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:6px"></div>':''}
@@ -6030,13 +6127,32 @@ function lfLiveBookings(vid){
     o.svcDate && o.svcTime
   );
 }
-function lfSlotTaken(vid, key, time, ignoreId){
-  return lfLiveBookings(vid).some(o=> o.svcDate===key && o.svcTime===time && o.id!==ignoreId );
+// v55: DURATION-AWARE. This used to compare start times only, so a 4-hour
+// Deep Cleaning booked at 2 PM left 3, 4 and 5 PM bookable and the provider
+// got double-booked. Now a booking occupies its whole run, and a candidate
+// slot is taken if the job we'd start there would overlap an existing one.
+// `dur` is minutes; a booking with no duration falls back to one hour.
+function lfBookingSpan(o){
+  const start = lfToMin(o && o.svcTime);
+  if(start === null) return null;
+  const mins = Number(o && o.items && o.items[0] && o.items[0].dur) || 60;
+  return { start, end: start + Math.max(15, mins) };
+}
+function lfSlotTaken(vid, key, time, ignoreId, durMins){
+  const start = lfToMin(time);
+  if(start === null) return false;
+  const end = start + Math.max(15, Number(durMins) || 60);
+  return lfLiveBookings(vid).some(o=>{
+    if(o.svcDate !== key || o.id === ignoreId) return false;
+    const span = lfBookingSpan(o);
+    if(!span) return false;
+    return start < span.end && end > span.start;   // half-open overlap
+  });
 }
 
 // Hourly slots inside the vendor's working window. Past slots are dropped for
 // today so a customer can never book a time that has already gone by.
-function lfSlotsFor(v, key){
+function lfSlotsFor(v, key, durMins){
   if(!v || !key || !lfVendorWorksOn(v, key)) return [];
   const openMin  = lfToMin(v.openTime)  ?? 8*60;
   let   closeMin = lfToMin(v.closeTime) ?? 18*60;
@@ -6050,7 +6166,10 @@ function lfSlotsFor(v, key){
     // 60-minute lead time — nobody can send a cleaner to your door in 5 minutes.
     if(isToday && m < nowMin+60) continue;
     const hhmm = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-    out.push({ time:hhmm, label:fmtTime(hhmm), taken:lfSlotTaken(v.id,key,hhmm) });
+    // A job must also FIT inside the working day, not just start inside it.
+    const _d = Math.max(15, Number(durMins) || 60);
+    const fits = (m + _d) <= closeMin;
+    out.push({ time:hhmm, label:fmtTime(hhmm), taken:lfSlotTaken(v.id,key,hhmm,null,_d) || !fits });
   }
   return out;
 }
@@ -6182,12 +6301,20 @@ function updateStoreStatusUI(){
 function updateVendorDash(vid){
   if(!vid||!el('v-dname')) return;
   const myOrders=vendorVisibleOrders(vid);  // v51: respects the clear watermark
-  const gross=myOrders.reduce((s,o)=>s+o.subtotal,0);
-  const fees=myOrders.length*SERVICE_FEE;
+  // v55: these three tiles are labelled "today", so scope them to today —
+  // they previously showed every order since the vendor last tapped Clear
+  // Done, which for most vendors is "since they signed up".
+  const _today = lfTodayKey();
+  const todays = myOrders.filter(o=>lfDateKey(o.timestamp)===_today);
+  // v55: and only orders that actually EARNED money count as earnings.
+  // Declined and customer-cancelled orders were being added to the payout.
+  const earning = todays.filter(o=>o.status!=='declined');
+  const gross=earning.reduce((s,o)=>s+(Number(o.subtotal)||0),0);
+  const fees=earning.length*SERVICE_FEE;
   const net=gross;
   const newOrders=myOrders.filter(o=>o.status==='new');
   const pendingOrders=myOrders.filter(o=>['new','accepted','preparing','ready'].includes(o.status));
-  el('v-orders-today').textContent=myOrders.length;
+  el('v-orders-today').textContent=todays.length;
   el('v-earned-today').textContent='₱'+net;
   el('v-new-cnt').textContent=newOrders.length;
   el('v-payout').textContent='₱'+net;
@@ -6450,11 +6577,11 @@ function renderVendorMenu(vid){
     <div style="background:var(--w);border-bottom:.5px solid var(--bd);opacity:${item.avail?1:.5};transition:opacity .2s" id="mi-${item.id}">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px">
         <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
-          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${item.name}">`:`${item.emoji}`}
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}">`:`${item.emoji}`}
         </div>
         <div class="mrow-info">
-          <div class="mrow-name">${item.name}</div>
-          <div class="mrow-desc">${item.desc}</div>
+          <div class="mrow-name">${esc(item.name)}</div>
+          <div class="mrow-desc">${esc(item.desc)}</div>
         </div>
         <div class="mrow-price">₱${item.price}</div>
         <label class="tog">
@@ -6653,7 +6780,7 @@ function renderVendorEarnings(){
     logEl.innerHTML=todayOrders.slice().reverse().map(o=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--bd)">
         <div>
-          <div style="font-size:12px;font-weight:600;color:var(--t1)">${o.id} · Unit ${o.unit}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--t1)">${esc(o.id)} · ${esc(lfLocationOf(o))}</div>
           <div style="font-size:11px;color:var(--t3);margin-top:1px">${o.items[0].name}${o.items.length>1?' +'+(o.items.length-1)+' more':''}</div>
         </div>
         <div style="text-align:right">
@@ -6693,46 +6820,193 @@ function renderVendorEarnings(){
   }
 }
 
-// ═══ ADMIN ═══
+/* ═══════════════════════════════════════════════════════════════════════
+   v55 — ADMIN AUTH
+   -----------------------------------------------------------------------
+   What was here before: the password was compared in PLAIN TEXT against
+   localStorage, defaulting to the literal string 'admin1234' — which ships
+   in this file, which is public. Worse, a password change wrote only to
+   localStorage, which is per-device and never syncs, so every OTHER phone
+   still accepted 'admin1234' forever. Changing the admin password was, in
+   practice, impossible.
+
+   Now: a salted SHA-256 hash lives in the database, so a change applies on
+   every device, and no plaintext password is stored anywhere. The unused
+   ADMIN_PASS_HASH placeholder and the dead ADMIN_TOKEN are gone.
+
+   ── READ THIS BEFORE TRUSTING IT ──
+   This is still CLIENT-SIDE auth. Anyone can open devtools and call the
+   admin render functions directly, or write to the database themselves.
+   It raises the bar from "type the published password" to "know how to use
+   devtools" — nothing more. The ONLY thing that actually protects admin
+   data is Firebase security rules. See firebase-rules.json in this repo.
+═══════════════════════════════════════════════════════════════════════ */
+function adminAuthNode(){ return ROOM_KEY + '/adminAuth'; }
+async function lfHashPass(pass, salt){ return await sha256(String(salt) + ':' + String(pass)); }
+function lfNewSalt(){
+  const a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Throttle guessing. Client-side only, so it is a speed bump, not a lock.
+let _adminFails = 0;
+
 async function adminLogin(){
-  const email=el('a-email').value.trim();
+  const email=el('a-email').value.trim().toLowerCase();
   const pass=el('a-pass').value;
-  if(email!==ADMIN_EMAIL){showToast('⚠️ Incorrect email');return;}
-  const savedPass = localStorage.getItem('lf-adminPass')||'admin1234';
-  const savedEmail = localStorage.getItem('lf-adminEmail')||'admin@lokalfinder.ph';
-  if(email!==savedEmail){showToast('⚠️ Incorrect email');return;}
-  const validPass = pass === savedPass;
-  if(!validPass){showToast('⚠️ Incorrect password');return;}
+  if(!email || !pass){ showToast('⚠️ Enter your email and password'); return; }
+
+  if(_adminFails >= 5){
+    showToast('⚠️ Too many attempts — reload the app to try again');
+    return;
+  }
+
+  let rec = null;
+  try{ rec = await fbGet(adminAuthNode()); }
+  catch(e){ showToast('⚠️ Could not reach the server — check your connection'); return; }
+
+  // ── FIRST RUN AFTER THIS UPDATE ──────────────────────────────────────
+  // No hash stored yet. Prove ownership with the OLD password (this device's
+  // localStorage value, or the legacy default), then immediately force a new
+  // one. That retires 'admin1234' instead of silently carrying it forward,
+  // and stops a stranger from claiming the account by getting here first.
+  if(!rec || !rec.hash || !rec.salt){
+    const legacy = localStorage.getItem('lf-adminPass') || 'admin1234';
+    if(pass !== legacy){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
+    showToast('🔐 Set a new admin password to finish securing this account');
+    _adminBootstrapEmail = email;
+    goPage('p-asetup');
+    return;
+  }
+
+  if(email !== String(rec.email||'').toLowerCase()){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
+  const h = await lfHashPass(pass, rec.salt);
+  if(h !== rec.hash){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
+
+  _adminFails = 0;
+  _lfAdminMode = true;
+  try{ localStorage.removeItem('lf-adminPass'); }catch(e){}   // no plaintext left behind
+  el('a-pass').value='';
+  await syncFromCloud();            // pull the full order set for the dashboard
   goPage('p-adash');
   updateAdminStats();
   renderAdminVendors();
   renderAdminOrders();
   loadAdminSettingsForm();
-  showToast('Welcome back, Norris! 🏢');
+  showToast('Welcome back! 🏢');
 }
 
-function saveAdminSettings(){
-  const email = el('settings-email').value.trim();
+// v55: signing out must also drop admin mode, otherwise the device keeps
+// pulling the entire orders table on every 3s sync long after they've left.
+/* v55 — the only thing that ever SHRINKS the orders table.
+   Before this, orders were never deleted: `clearedBefore` is just a per-vendor
+   display watermark, so the cloud copy grew without bound and every device
+   paid to re-download it. Deliberately manual and admin-only — there is no
+   server here to run a nightly job, and silently deleting a founder's sales
+   history on a timer would be worse than making them press a button. */
+async function adminPurgeOldOrders(){
+  const days = parseInt((el('purge-days')||{}).value || '90', 10);
+  const cutoff = Date.now() - days*86400000;
+  const done = orders.filter(o=>{
+    if(o.status!=='delivered' && o.status!=='declined') return false;   // never touch live work
+    const t = o.deliveredAt || o.declinedAt || o.updatedAt || new Date(o.timestamp).getTime();
+    return t && t < cutoff;
+  });
+  const note = el('purge-note');
+  if(!done.length){ if(note) note.textContent='Nothing older than '+days+' days to archive.'; return; }
+  if(!confirm('Permanently delete '+done.length+' completed/declined order'+(done.length>1?'s':'')+
+              ' older than '+days+' days?\n\nThis cannot be undone.')) return;
+
+  if(note) note.textContent='Archiving '+done.length+'…';
+  let ok=0, fail=0;
+  for(const o of done){
+    const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+    try{ await fbDelete(ROOM_KEY+'/orders/'+key); ok++; }
+    catch(e){ fail++; }
+    // Drop the order's chat and notification rows too, otherwise the space is
+    // never actually reclaimed and stale alerts outlive the order they describe.
+    try{ await fbDelete(ROOM_KEY+'/chats/'+key); }catch(e){}
+    try{ await fbDelete(notifNode('cust_'+o.id)); }catch(e){}
+  }
+  const gone = new Set(done.map(o=>o.id));
+  orders = orders.filter(o=>!gone.has(o.id));
+  myOrderIds = myOrderIds.filter(id=>!gone.has(id));
+  saveLocal();
+  updateAdminStats(); renderAdminOrders(); renderAdminRevenue();
+  if(note) note.textContent = fail ? ('Archived '+ok+', '+fail+' failed — try again.')
+                                   : ('✅ Archived '+ok+' order'+(ok>1?'s':'')+'.');
+  showToast(fail ? ('⚠️ Archived '+ok+', '+fail+' failed') : ('✅ Archived '+ok+' old order'+(ok>1?'s':'')));
+}
+
+function adminSignOut(){
+  _lfAdminMode = false;
+  _adminFails = 0;
+  goCust();
+  showToast('Signed out of admin');
+}
+
+// ── First-run password setup ──────────────────────────────────────────
+let _adminBootstrapEmail = '';
+async function adminCompleteSetup(){
+  const p1 = el('asetup-pass').value;
+  const p2 = el('asetup-confirm').value;
+  if(!p1 || p1.length < 8){ showToast('⚠️ Use at least 8 characters'); return; }
+  if(p1 !== p2){ showToast('⚠️ Passwords do not match'); return; }
+  if(p1 === 'admin1234'){ showToast('⚠️ Pick something other than the old default'); return; }
+  const salt = lfNewSalt();
+  const hash = await lfHashPass(p1, salt);
+  try{
+    await fbSet(adminAuthNode(), { email:(_adminBootstrapEmail||ADMIN_EMAIL).toLowerCase(), salt, hash, updatedAt: Date.now() });
+  }catch(e){ showToast('⚠️ Could not save — check your connection'); return; }
+  try{ localStorage.removeItem('lf-adminPass'); }catch(e){}
+  el('asetup-pass').value=''; el('asetup-confirm').value='';
+  _adminFails = 0;
+  _lfAdminMode = true;
+  await syncFromCloud();
+  goPage('p-adash');
+  updateAdminStats(); renderAdminVendors(); renderAdminOrders(); loadAdminSettingsForm();
+  showToast('✅ Admin password set — it now works on every device');
+}
+
+// v55: writes the new salted hash to the DATABASE, not localStorage, so the
+// change actually takes effect on every device instead of only this one.
+async function saveAdminSettings(){
+  const email = el('settings-email').value.trim().toLowerCase();
   const oldPass = el('settings-old-pass').value;
   const newPass = el('settings-new-pass').value;
   const confirmPass = el('settings-confirm-pass').value;
 
-  const currentPass = localStorage.getItem('lf-adminPass')||'admin1234';
-
   if(!email){ showToast('⚠️ Email cannot be empty'); return; }
-  if(oldPass !== currentPass){ showToast('⚠️ Current password is incorrect'); return; }
-  if(newPass && newPass.length < 6){ showToast('⚠️ New password must be at least 6 characters'); return; }
-  if(newPass && newPass !== confirmPass){ showToast('⚠️ Passwords do not match'); return; }
 
-  localStorage.setItem('lf-adminEmail', email);
-  if(newPass) localStorage.setItem('lf-adminPass', newPass);
+  let rec = null;
+  try{ rec = await fbGet(adminAuthNode()); }
+  catch(e){ showToast('⚠️ Could not reach the server'); return; }
+  if(!rec || !rec.salt || !rec.hash){ showToast('⚠️ Sign out and sign in again to finish setup'); return; }
 
-  // Clear fields
+  // Re-authenticate before ANY change — otherwise a left-open dashboard lets
+  // a passer-by silently take over the account.
+  const oldHash = await lfHashPass(oldPass, rec.salt);
+  if(oldHash !== rec.hash){ showToast('⚠️ Current password is incorrect'); return; }
+
+  if(newPass){
+    if(newPass.length < 8){ showToast('⚠️ New password must be at least 8 characters'); return; }
+    if(newPass !== confirmPass){ showToast('⚠️ Passwords do not match'); return; }
+    if(newPass === 'admin1234'){ showToast('⚠️ Pick something other than the old default'); return; }
+  }
+
+  const salt = newPass ? lfNewSalt() : rec.salt;
+  const hash = newPass ? await lfHashPass(newPass, salt) : rec.hash;
+  try{
+    await fbSet(adminAuthNode(), { email, salt, hash, updatedAt: Date.now() });
+  }catch(e){ showToast('⚠️ Could not save — check your connection'); return; }
+
   el('settings-old-pass').value='';
   el('settings-new-pass').value='';
   el('settings-confirm-pass').value='';
+  try{ localStorage.removeItem('lf-adminPass'); }catch(e){}
 
-  showToast('✅ Admin credentials updated!');
+  showToast(newPass ? '✅ Password updated on all devices' : '✅ Admin email updated');
 }
 
 function loadAdminSettingsForm(){
@@ -6803,7 +7077,7 @@ function renderAdminOrdersPreview(){
   el2.innerHTML=recent.map(o=>`
     <div class="ocard" style="margin:0 16px 10px">
       <div class="ocard-hd">
-        <div><div class="ocard-id">${o.id} · ${VENDORS[o.vendorId]?.name||'Unknown'}</div><div class="ocard-tm">${formatOrderTime(o.timestamp)} · Unit ${o.unit}</div></div>
+        <div><div class="ocard-id">${esc(o.id)} · ${esc(VENDORS[o.vendorId]?.name||'Unknown')}</div><div class="ocard-tm">${formatOrderTime(o.timestamp)} · ${esc(lfLocationOf(o))}</div></div>
         <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
       </div>
       <div class="ocard-ft">
@@ -6861,11 +7135,11 @@ function renderAdminOrders(){
       <div class="ocard-hd">
         <div>
           <div class="ocard-id">${o.id}</div>
-          <div class="ocard-tm">${formatOrderTime(o.timestamp)} · ${v?.name||'Unknown'} · Unit ${o.unit} · ${o.name}</div>
+          <div class="ocard-tm">${formatOrderTime(o.timestamp)} · ${esc(v?.name||'Unknown')} · ${esc(lfLocationOf(o))} · ${esc(o.name)}</div>
         </div>
         <span class="bdg ${o.status}">${statusLabel(o.status)}</span>
       </div>
-      <div class="ocard-bd">${o.items.map(i=>`<div class="oitem">${i.emoji} ${i.name} x ${i.qty}</div>`).join('')}</div>
+      <div class="ocard-bd">${o.items.map(i=>`<div class="oitem">${esc(i.emoji)} ${esc(i.name)} x ${i.qty}</div>`).join('')}</div>
       <div class="ocard-ft">
         <div><div class="ocard-total">₱${o.total}</div></div>
         <span class="bdg ${o.method==='gcash'?'paid':'cash'}">${o.method==='gcash'?'GCash ✓':'Cash'}</span>
@@ -6975,7 +7249,8 @@ async function deleteVendor(vid){
   // Remove locally
   delete VENDORS[vid];
   delete MENU[vid];
-  delete VENDOR_PINS_PLAIN[vid];
+  delete VENDOR_PIN_HASHES[vid];
+  try{ fbDelete(ROOM_KEY+'/pinHashes/'+vid); }catch(e){}
   if(activeVendorId===vid) activeVendorId=null;
 
   // Pause all background syncs long enough for Firebase writes to land on slow WiFi
@@ -6996,7 +7271,7 @@ async function deleteVendor(vid){
     await Promise.all([
       fbSet(ROOM_KEY+'/vendors', VENDORS),
       fbSet(ROOM_KEY+'/menu', MENU),
-      fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN),
+      fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
       fbSet(ROOM_KEY+'/rev', Date.now()),
     ]);
   };
@@ -7331,7 +7606,7 @@ function addVendorConfirm(){
   const pin=el('nv-pin').value.trim();
   const gcash=el('nv-gcash').value.trim();
   if(!name||!pin){showToast('⚠️ Fill in store name and PIN');return;}
-  if(!/^\d{4}$/.test(pin)){showToast('⚠️ PIN must be exactly 4 digits');return;}
+  if(!/^\d{4,10}$/.test(pin)){showToast('⚠️ PIN must be 4–10 digits (6+ recommended)');return;}
   const id='v'+Date.now();
   VENDORS[id]={
     id,name,emoji,
@@ -7345,7 +7620,7 @@ function addVendorConfirm(){
     ...(M.scheduled ? {openTime:'08:00',closeTime:'18:00',closedDays:[]} : {})
   };
   MENU[id]=[];
-  VENDOR_PINS_PLAIN[id]=pin;
+  setVendorPin(id, pin).then(()=>fbSet(ROOM_KEY+'/pinHashes/'+id, VENDOR_PIN_HASHES[id])).catch(()=>{});
 
   // Update UI immediately — vendor shows up right away, no waiting
   rebuildVendorSelect();
@@ -7392,10 +7667,41 @@ function closeImgLightbox(){
 // item impossible to order. Backslash first (or we'd double-escape), then the
 // apostrophe for the JS string, then the double quote as an HTML entity — the
 // parser turns &quot; back into " inside the single-quoted JS string.
+/* ═══════════════════════════════════════════════════════════════════════
+   v55 — ESCAPING. Two contexts, two functions. Do not merge them.
+   -----------------------------------------------------------------------
+   The old single esc() escaped backslashes and quotes but NOT < or >, and
+   was used for both of the jobs below. Everything rendered through it into
+   innerHTML — customer names, unit numbers, booking instructions, item
+   names — was therefore an HTML injection point. Confirmed by test: a
+   customer whose name was `<img src=x onerror=…>` executed script inside
+   the VENDOR's dashboard.
+
+   esc(s)    — TEXT going into innerHTML. Pure HTML entity escaping.
+   escJs(s)  — a JS string literal sitting inside an HTML attribute, i.e.
+               onclick="f('${escJs(x)}')". Needs BOTH: backslash/quote
+               escaping so the JS literal can't be broken out of, and then
+               entity escaping so the attribute can't be broken out of.
+               Order matters — JS first, then HTML, so the browser's
+               attribute decode hands JS exactly the backslashes it needs.
+
+   Neither is safe for a URL or a style value. Don't reach for them there.
+═══════════════════════════════════════════════════════════════════════ */
 function esc(s){
   return String(s == null ? '' : s)
-    .replace(/\\/g, '\\\\')
+    .replace(/&/g, '&amp;')      // must be first, or it double-escapes the rest
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function escJs(s){
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')      // JS layer: survive the string literal
     .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;')      // HTML layer: survive the attribute
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
 function timeSince(d){
@@ -7934,7 +8240,7 @@ function buildPayload(){
     const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
     ordersObj[key] = {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp};
   });
-  return { orders: ordersObj, vendors: VENDORS, menu: MENU, pins: VENDOR_PINS_PLAIN, rev: Date.now() };
+  return { orders: ordersObj, vendors: VENDORS, menu: MENU, pinHashes: VENDOR_PIN_HASHES, rev: Date.now() };
 }
 
 function applyData(d){
@@ -7979,11 +8285,14 @@ function applyData(d){
       if((MENU[k]||[]).length) MENU[k]=[];
     });
   }
-  if(d.pins && Object.keys(d.pins).length>0) Object.keys(d.pins).forEach(k=>{ if(!tombstoned.has(k)) VENDOR_PINS_PLAIN[k]=d.pins[k]; });
+  if(d.pinHashes && typeof d.pinHashes==='object') Object.keys(d.pinHashes).forEach(k=>{ if(!tombstoned.has(k)) VENDOR_PIN_HASHES[k]=d.pinHashes[k]; });
+  // Legacy plaintext still in the cloud from before v55: keep it ONLY in memory
+  // for the one-time migration in verifyVendorPin(), never re-publish it.
+  if(d.pins && typeof d.pins==='object') Object.keys(d.pins).forEach(k=>{ LF_LEGACY_PINS[k]=d.pins[k]; });
 
   // Also clean up in case a deleted vendor somehow still exists locally
   tombstoned.forEach(k=>{
-    delete VENDORS[k]; delete MENU[k]; delete VENDOR_PINS_PLAIN[k];
+    delete VENDORS[k]; delete MENU[k]; delete VENDOR_PIN_HASHES[k]; delete LF_LEGACY_PINS[k];
     if(activeVendorId===k) activeVendorId=null;
   });
 
@@ -8056,7 +8365,7 @@ async function pushState(){
     await Promise.all([
       fbSet(ROOM_KEY+'/vendors', VENDORS),
       fbSet(ROOM_KEY+'/menu', MENU),
-      fbSet(ROOM_KEY+'/pins', VENDOR_PINS_PLAIN),
+      fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
       fbSet(ROOM_KEY+'/rev', Date.now()),
     ]);
     landed = true;
@@ -8078,12 +8387,11 @@ async function syncFromCloud(){
   if(Date.now() < syncPausedUntil){ return; }
   const _issuedAt = Date.now();
   try{
-    const d = await fbGet(ROOM_KEY);
+    const d = await lfFetchScoped();
     // v48: if a write started or landed while this read was in flight, the
     // data we just received may predate it. Discard it — the next sync picks
     // up the truth 3s later — rather than overwriting fresher local state.
     if(_pendingWrites > 0 || _lastWriteDoneAt > _issuedAt) return;
-    const orderCount = d && d.orders ? Object.keys(d.orders).length : 0;
     applyData(d);
     lastSyncTime = Date.now();
   }catch(e){
@@ -8092,6 +8400,97 @@ async function syncFromCloud(){
       window._lastSyncErrLog = Date.now();
     }
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v55 — SCOPED SYNC. This replaces fbGet(ROOM_KEY).
+   -----------------------------------------------------------------------
+   The old sync pulled the ENTIRE database every 3 seconds, on every open
+   device: every order ever placed, every vendor, every menu, and every
+   base64 menu photo inside them. Orders are never deleted, so that payload
+   only ever grew. At a 3s interval that is 1,200 full-database downloads
+   per device per hour — the single biggest cost and battery problem in the
+   app, and the reason the Firebase rules could not be locked down (a rule
+   that blocks bulk-reading /orders would have broken the whole app).
+
+   Now each device fetches only what it is entitled to render:
+     • catalog (vendors / menu / tombstones / heroStats) — public, needed
+       by everyone, and small once photos are the only heavy part.
+     • orders — a VENDOR gets an indexed query for their own orders; a
+       CUSTOMER fetches their own order ids by exact key. Nobody downloads
+       the whole table any more.
+
+   The vendor query needs  "orders": { ".indexOn": ["vendorId"] }  in the
+   database rules (already in firebase-rules.json). Without the index
+   Firebase answers 400, so lfFetchScoped falls back to the old whole-node
+   read and logs once — the app keeps working, just less efficiently.
+═══════════════════════════════════════════════════════════════════════ */
+let _lfIndexWarned = false;
+// The admin dashboard genuinely needs every order (stats, revenue, order
+// monitoring), so it opts back into the full read — but only while an admin
+// is actually signed in, not for all 500 residents browsing lunch.
+let _lfAdminMode = false;
+
+// One vendor's orders, via the indexed query the rules allow.
+// Falls back to a full read only if the index is missing — which means the
+// rules haven't been published yet, and in that case the full read is still
+// permitted. Once firebase-rules.json is live the fallback is denied too,
+// and the console warning is the signal to go publish it.
+async function lfOrdersForVendor(vid){
+  try{
+    const q = `orders.json?orderBy=${encodeURIComponent('"vendorId"')}&equalTo=${encodeURIComponent('"'+vid+'"')}`;
+    const r = await fetch(`${FB_URL}/${ROOM_KEY}/${q}`);
+    if(!r.ok) throw new Error('index query failed: '+r.status);
+    return (await r.json()) || {};
+  }catch(e){
+    if(!_lfIndexWarned){
+      _lfIndexWarned = true;
+      console.warn('sync: /orders is missing .indexOn["vendorId"] — falling back to a full read. '+
+                   'Publish firebase-rules.json to fix this.', e);
+    }
+    return (await fbGet(ROOM_KEY+'/orders').catch(()=>null)) || {};
+  }
+}
+
+async function lfFetchScoped(){
+  // Catalog: everything except the orders table.
+  const [vendors, menu, pinHashes, pins, deletedVendors, heroStatsNode] = await Promise.all([
+    fbGet(ROOM_KEY+'/vendors').catch(()=>null),
+    fbGet(ROOM_KEY+'/menu').catch(()=>null),
+    fbGet(ROOM_KEY+'/pinHashes').catch(()=>null),
+    fbGet(ROOM_KEY+'/pins').catch(()=>null),          // legacy, migration only
+    fbGet(ROOM_KEY+'/deletedVendors').catch(()=>null),
+    fbGet(ROOM_KEY+'/heroStats').catch(()=>null),
+  ]);
+
+  const d = { vendors, menu, pinHashes, pins, deletedVendors, heroStats: heroStatsNode, orders: {} };
+
+  if(_lfAdminMode){
+    // v55: the admin needs every order, but firebase-rules.json deliberately
+    // REFUSES an unfiltered read of /orders — that refusal is the thing that
+    // stops a stranger dumping every customer's details. So the admin asks the
+    // same way a vendor does, once per vendor, and merges. More requests, but
+    // it is admin-only and it keeps the rule that protects everyone else.
+    const vids = Object.keys(VENDORS).length ? Object.keys(VENDORS)
+                                             : Object.keys((vendors||{}));
+    const chunks = await Promise.all(vids.map(vid=>lfOrdersForVendor(vid).catch(()=>({}))));
+    chunks.forEach(c=>Object.assign(d.orders, c||{}));
+  } else if(activeVendorId){
+    // Vendor: indexed query for just this vendor's orders.
+    d.orders = await lfOrdersForVendor(activeVendorId);
+  } else {
+    // Customer: fetch only the orders this device actually placed, by key.
+    const ids = Array.from(new Set(myOrderIds||[]));
+    if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
+    // Cap the fan-out; saveLocal() already trims myOrderIds to the last 100.
+    const recent = ids.slice(-25);
+    const rows = await Promise.all(recent.map(id=>{
+      const key = id.replace(/[^a-zA-Z0-9]/g,'_');
+      return fbGet(ROOM_KEY+'/orders/'+key).catch(()=>null);
+    }));
+    rows.forEach((o,i)=>{ if(o) d.orders[recent[i].replace(/[^a-zA-Z0-9]/g,'_')] = o; });
+  }
+  return d;
 }
 
 function rebuildVendorSelect(){
@@ -8164,7 +8563,7 @@ function refreshVisible(){
     const savedVendorId = localStorage.getItem('lf-vendorId');
     const savedVendorPin = localStorage.getItem('lf-vendorPin');
     if(savedVendorId && savedVendorPin){
-      const pinOk = VENDOR_PINS_PLAIN[savedVendorId] && savedVendorPin === VENDOR_PINS_PLAIN[savedVendorId];
+      const pinOk = await verifyVendorPin(savedVendorId, savedVendorPin);
       if(pinOk){
         activeVendorId = savedVendorId;
         function _doVendorRestore(vid, vendor){
