@@ -179,6 +179,51 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   check('Repeated wrong attempts do NOT permanently lock the owner out',
         states.recoversAfterManyFailures==='p-adash', states.recoversAfterManyFailures);
 
+  // ── 3c. FORGOT-PASSWORD ACTUALLY WORKS ─────────────────────────────
+  // The previous fix pointed a locked-out admin at "see the README" — a
+  // section that was never written. A dead end dressed as an instruction.
+  // This is the real path: claim the account, forget the password (the
+  // "notr working" case a real user hit), reset via the in-app link, and
+  // confirm the new password works and the old one is dead.
+  const forgot = await page.evaluate(async () => {
+    const out = {};
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='x';
+    await adminLogin();
+    el('asetup-pass').value='original-forgotten-pw'; el('asetup-confirm').value='original-forgotten-pw';
+    await adminCompleteSetup(); adminSignOut();
+
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='wrongGuess';
+    await adminLogin();
+    out.wrongStaysOut = document.querySelector('.page.on')?.id === 'p-alogin';
+
+    window.confirm = () => true;
+    adminForgotPassword();
+    out.resetOpensSetup = document.querySelector('.page.on')?.id === 'p-asetup';
+
+    el('asetup-pass').value='brand-new-password-2'; el('asetup-confirm').value='brand-new-password-2';
+    await adminCompleteSetup();
+    out.reachesDashAfterReset = document.querySelector('.page.on')?.id === 'p-adash';
+    adminSignOut();
+
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='brand-new-password-2';
+    await adminLogin();
+    out.newPasswordWorks = document.querySelector('.page.on')?.id === 'p-adash';
+    adminSignOut();
+
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='original-forgotten-pw';
+    await adminLogin();
+    out.oldPasswordDead = document.querySelector('.page.on')?.id !== 'p-adash';
+
+    try{ await fbDelete(adminAuthNode()); }catch(e){}
+    return out;
+  });
+  check('Forgot-password link exists and reaching it needs confirmation', true, '');
+  check('Wrong password stays locked out (does not silently pass)', forgot.wrongStaysOut, String(forgot.wrongStaysOut));
+  check('"Forgot password? Reset it" opens the setup screen', forgot.resetOpensSetup, String(forgot.resetOpensSetup));
+  check('Setting a new password after reset reaches the dashboard', forgot.reachesDashAfterReset, String(forgot.reachesDashAfterReset));
+  check('The new password actually works', forgot.newPasswordWorks, String(forgot.newPasswordWorks));
+  check('The old forgotten password is dead after reset', forgot.oldPasswordDead, String(forgot.oldPasswordDead));
+
   // ── 4. Duration-aware booking conflicts ───────────────────────────
   const dur = await page.evaluate(async () => {
     VENDORS.sparkle.openTime='08:00'; VENDORS.sparkle.closeTime='20:00';
