@@ -39,17 +39,19 @@ own. That has two consequences worth knowing:
 
 ```bash
 npm i playwright && npx playwright install chromium   # once
-node render.mjs                                        # → lokal-finder-60s.mp4
+node render.mjs --out lokalfinder-services-54s.mp4
 ```
 
 Options: `--fps 30`, `--out path.mp4`, `--scale 1` (use `--scale 2` for a
 2160×3840 master; render time roughly quadruples).
 
-A full 54s render takes roughly fifteen minutes. Most of that is the `#grain`
-overlay: `mix-blend-mode: multiply` across the full frame forces a compositing
-pass on every screenshot, which costs about 5× the per-frame time. It is worth
-it for the texture, but if you are iterating on timing rather than looks, set
-`#grain { display:none }` for a much faster preview render.
+A full 54s render takes a few minutes.
+
+If you add anything that composites across the whole frame — `mix-blend-mode`,
+a backdrop filter, a large SVG filter — expect the render to slow down sharply,
+because every one of the 1620 screenshots pays for it. The grain overlay
+originally used `mix-blend-mode: multiply` and cost about 5x the per-frame time
+for a texture that looks the same at plain alpha.
 
 ## Previewing without rendering
 
