@@ -3797,10 +3797,10 @@ function ffStepperHTML(vid,name,emoji,price){
     return `<span class="ff-step">
       <button onclick="ffDec('${vid}','${escJs(name)}')">−</button>
       <span class="q">${q}</span>
-      <button onclick="ffInc('${vid}','${escJs(name)}','${emoji}',${price})">+</button>
+      <button onclick="ffInc('${vid}','${escJs(name)}','${escJs(emoji)}',${price})">+</button>
     </span>`;
   }
-  return `<button class="ff-add" onclick="quickAdd('${vid}','${escJs(name)}','${emoji}',${price})">+</button>`;
+  return `<button class="ff-add" onclick="quickAdd('${vid}','${escJs(name)}','${escJs(emoji)}',${price})">+</button>`;
 }
 function ffRefreshStepper(vid,name,emoji,price){
   const holder=document.getElementById('ffctl-'+vid+'-'+ffKey(name));
@@ -3899,7 +3899,7 @@ function ffSearch(q){
       <div class="ff-sr-row" onclick="openVendor('${v.id}')">
         <div class="ff-sr-ic">${v.logo?`<img src="${v.logo}">`:v.emoji}</div>
         <div class="ff-sr-info"><div class="ff-sr-name">${esc(v.name)}</div><div class="ff-sr-sub">${esc((v.sub||'').split('·').slice(0,2).join('·'))}</div></div>
-        <span class="ff-sr-price">From ₱${String(v.min).replace(/^₱/,'')}</span>
+        <span class="ff-sr-price">From ₱${esc(String(v.min).replace(/^₱/,''))}</span>
       </div>`).join('');
   }
   if(dMatches.length){
@@ -4285,7 +4285,7 @@ function renderCartPage(){
     html+=`<div style="padding:9px 16px 3px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2)">${vCart.name}</div>`;
     vCart.items.forEach(item=>{
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:.5px solid var(--bd);background:var(--w)">
-        <div style="font-size:22px;width:36px;height:36px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${item.emoji}</div>
+        <div style="font-size:22px;width:36px;height:36px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${esc(item.emoji)}</div>
         <div style="flex:1;font-size:13px;font-weight:600;color:var(--t1)">${esc(item.name)}</div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="changeQty('${vid}','${escJs(item.name)}',-1)" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdm);background:var(--w);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--ff)">−</button>
@@ -4354,7 +4354,9 @@ function placeOrder(){
   const oid=pendingOid;
   document.getElementById('s-oid').textContent=oid;
   if(payMethod==='gcash'){
-    document.getElementById('gc-amt').textContent='₱'+total;
+    // v55: the surrounding markup already renders the ₱ — prefixing another
+    // here made the payment screen read "₱₱100" to every GCash customer.
+    document.getElementById('gc-amt').textContent=total;
     const vid = Object.keys(cart)[0];
     loadPaymentWallets(vid);
     goPage('p-cgcash');
@@ -7176,8 +7178,8 @@ function renderAdminVendors(){
     const gross=vOrders.reduce((s,o)=>s+o.subtotal,0);
     return `<div class="av-card">
       <div class="av-hd">
-        <div class="av-ico">${v.emoji}</div>
-        <div class="av-info"><div class="av-name">${v.name}</div><div class="av-sub">${mkt(v).icon} ${esc(mkt(v).short)} · ${(v.sub||'').split('·').slice(0,2).join('·')}</div></div>
+        <div class="av-ico">${esc(v.emoji)}</div>
+        <div class="av-info"><div class="av-name">${esc(v.name)}</div><div class="av-sub">${mkt(v).icon} ${esc(mkt(v).short)} · ${esc((v.sub||'').split('·').slice(0,2).join('·'))}</div></div>
         <span class="bdg ${v.suspended?'closed':(v.active?'open':'closed')}">${v.suspended?'⏸ Paused':(v.active?'● Open':'● Closed')}</span>
       </div>
       <div class="av-body">
@@ -8737,7 +8739,7 @@ window.LFN = (function(){
         <div class="lfn-post">
           <div class="lfn-post-photo" style="${bgStyle}">
             <div class="lfn-post-vendor" onclick="openVendor('${p.vendorId}')">
-              <div class="lfn-post-avatar">${v.emoji}</div>
+              <div class="lfn-post-avatar">${escHTML(v.emoji)}</div>
               <div>
                 <div class="lfn-post-vname">${escHTML(v.name)}</div>
                 <div class="lfn-post-vmeta">${escHTML(v.sub.split('·')[0].trim())} · ${timeAgo(p.createdAt)}${avg?` · ⭐ ${avg}`:''}</div>
