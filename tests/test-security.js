@@ -130,6 +130,55 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   check('Admin button removed from customer home',
         !/onclick="goPage\('p-alogin'\)"[^>]*>Admin</.test(src), '');
 
+  // ── 3b. EVERY ADMIN LOGIN STATE ───────────────────────────────────
+  // v55 gated first-run on the OLD password. On a device where that password
+  // had ever been changed, localStorage held the custom value, so the
+  // documented 'admin1234' was rejected — with a generic "incorrect" that
+  // gave no clue why. The owner was locked out of his own dashboard.
+  // The gate also protected nothing: the database is writable without auth,
+  // so /adminAuth could be written directly with one REST call.
+  const states = await page.evaluate(async () => {
+    const out = {};
+    const reset = async () => { try{ await fbDelete(adminAuthNode()); }catch(e){}
+                                try{ localStorage.removeItem('lf-adminPass'); }catch(e){}
+                                _adminFails = 0; adminSignOut(); };
+    // A) unclaimed account, clean device
+    await reset();
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='admin1234';
+    await adminLogin(); out.unclaimed = document.querySelector('.page.on')?.id;
+    // B) unclaimed, but this device remembers a DIFFERENT old password
+    await reset(); localStorage.setItem('lf-adminPass','someOldCustomPassword');
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='admin1234';
+    await adminLogin(); out.staleLocalStorage = document.querySelector('.page.on')?.id;
+    // C) unclaimed, blank password
+    await reset();
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='';
+    await adminLogin(); out.blankPass = document.querySelector('.page.on')?.id;
+    // D) claim it, then sign in properly
+    el('asetup-pass').value='a-real-password-99'; el('asetup-confirm').value='a-real-password-99';
+    await adminCompleteSetup(); adminSignOut();
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='a-real-password-99';
+    await adminLogin(); out.correct = document.querySelector('.page.on')?.id;
+    adminSignOut();
+    // E) wrong password stays out
+    goPage('p-alogin'); el('a-email').value='admin@lokalfinder.ph'; el('a-pass').value='WRONG';
+    await adminLogin(); out.wrong = document.querySelector('.page.on')?.id;
+    // F) many failures must not permanently lock the owner out
+    for(let i=0;i<8;i++){ el('a-pass').value='nope'+i; await adminLogin(); }
+    el('a-pass').value='a-real-password-99'; await adminLogin();
+    out.recoversAfterManyFailures = document.querySelector('.page.on')?.id;
+    adminSignOut(); await reset();
+    return out;
+  });
+  check('Unclaimed admin account goes straight to password setup', states.unclaimed==='p-asetup', states.unclaimed);
+  check('A stale custom password in localStorage no longer blocks setup',
+        states.staleLocalStorage==='p-asetup', states.staleLocalStorage);
+  check('Blank password on an unclaimed account still reaches setup', states.blankPass==='p-asetup', states.blankPass);
+  check('Correct password signs in', states.correct==='p-adash', states.correct);
+  check('Wrong password is refused', states.wrong==='p-alogin', states.wrong);
+  check('Repeated wrong attempts do NOT permanently lock the owner out',
+        states.recoversAfterManyFailures==='p-adash', states.recoversAfterManyFailures);
+
   // ── 4. Duration-aware booking conflicts ───────────────────────────
   const dur = await page.evaluate(async () => {
     VENDORS.sparkle.openTime='08:00'; VENDORS.sparkle.closeTime='20:00';
