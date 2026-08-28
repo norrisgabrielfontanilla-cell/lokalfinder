@@ -164,35 +164,19 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   const viaSlow = await page.evaluate(() => document.querySelector('.page.on')?.id);
   check('Slow taps do NOT open it (no accidental customer discovery)', viaSlow!=='p-alogin', viaSlow);
 
-  // v56: there IS a real admin control again — a gear in the header. The old
-  // objection (a button beside a password published in this file) is gone now
-  // that the password is a salted hash, and hiding the only door behind five
-  // fast taps locked the founder out of his own tool. It must be a genuinely
-  // clickable, visible, one-click control on BOTH laptop and phone.
-  const gear = await page.evaluate(() => {
-    const btn = [...document.querySelectorAll('#p-chome button')].find(b=>b.getAttribute('title')==='Admin');
-    if(!btn) return {found:false};
-    const r = btn.getBoundingClientRect();
-    return {found:true, w:Math.round(r.width), h:Math.round(r.height),
-            cursor:getComputedStyle(btn).cursor, inView:r.top>=0 && r.top<window.innerHeight,
-            labelled: btn.getAttribute('aria-label')==='Admin panel'};
-  });
-  check('Admin control exists in the home header, visible and 44px+ (tap-target size)',
-        gear.found && gear.w>=40 && gear.h>=40 && gear.inView, JSON.stringify(gear));
-  check('Admin control looks clickable (cursor:pointer) and is labelled for screen readers',
-        gear.cursor==='pointer' && gear.labelled, JSON.stringify(gear));
-
-  await page.evaluate(() => goCust());
-  await page.waitForTimeout(250);
-  await page.click('#p-chome button[title=\"Admin\"]');
-  await page.waitForTimeout(350);
-  const oneClick = await page.evaluate(() => document.querySelector('.page.on')?.id);
-  check('ONE click on the admin control opens the login', oneClick==='p-alogin', oneClick);
+  // v57: the visible gear from v56 was removed at the founder's request,
+  // after he confirmed the tap route works. Back to unadvertised-only. This
+  // guards that the gear does NOT quietly come back, and that the tap route
+  // it depended on is still the sole visible-ish entrance.
+  const noGear = await page.evaluate(() =>
+    [...document.querySelectorAll('#p-chome button, #p-chome [role=\"button\"]')]
+      .filter(b => b.getAttribute('title')==='Admin' || b.getAttribute('aria-label')==='Admin panel').length);
+  check('No visible admin control in the header (removed per founder request)', noGear===0, 'count='+noGear);
 
   // It must not shout "admin panel" at 500 residents either.
   const shouty = await page.evaluate(() =>
     [...document.querySelectorAll('#p-chome button')].filter(b=>/admin/i.test(b.textContent)).length);
-  check('Admin control is an icon, not the word "Admin" in the UI', shouty===0, 'count='+shouty);
+  check('No control anywhere on Home says the word "Admin"', shouty===0, 'count='+shouty);
 
   // ── 5. Admin: setup, add vendor, edit PIN, archive ────────────────
   const admin = await page.evaluate(async () => {
