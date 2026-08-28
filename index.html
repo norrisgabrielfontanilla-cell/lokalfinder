@@ -6895,34 +6895,52 @@ let _adminFails = 0;
 async function adminLogin(){
   const email=el('a-email').value.trim().toLowerCase();
   const pass=el('a-pass').value;
-  if(!email || !pass){ showToast('⚠️ Enter your email and password'); return; }
-
-  if(_adminFails >= 5){
-    showToast('⚠️ Too many attempts — reload the app to try again');
-    return;
-  }
+  if(!email){ showToast('⚠️ Enter your email'); return; }
 
   let rec = null;
   try{ rec = await fbGet(adminAuthNode()); }
   catch(e){ showToast('⚠️ Could not reach the server — check your connection'); return; }
 
-  // ── FIRST RUN AFTER THIS UPDATE ──────────────────────────────────────
-  // No hash stored yet. Prove ownership with the OLD password (this device's
-  // localStorage value, or the legacy default), then immediately force a new
-  // one. That retires 'admin1234' instead of silently carrying it forward,
-  // and stops a stranger from claiming the account by getting here first.
+  /* ── UNCLAIMED ACCOUNT ────────────────────────────────────────────────
+     No hash stored yet. v55 demanded the OLD password here ('admin1234', or
+     whatever this device had in localStorage) before letting you set a new
+     one. That locked the owner out in practice: on a device where the old
+     password had ever been changed, localStorage held THAT value, so the
+     documented 'admin1234' was rejected — with a generic "incorrect" that
+     gave no clue why.
+
+     Worse, the gate protected nothing. The database is writable without
+     authentication, so anyone who wanted the admin record could write
+     /adminAuth directly with one REST call and never touch this screen.
+     Demanding a password the owner may never have known bought zero
+     security and cost them access to their own dashboard.
+
+     So: an unclaimed account can be claimed here. Claim it NOW — until you
+     do, so could anyone else who finds this screen. The thing that actually
+     protects this data is firebase-rules.json, not this form. */
   if(!rec || !rec.hash || !rec.salt){
-    const legacy = localStorage.getItem('lf-adminPass') || 'admin1234';
-    if(pass !== legacy){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
-    showToast('🔐 Set a new admin password to finish securing this account');
     _adminBootstrapEmail = email;
     goPage('p-asetup');
+    showToast('🔐 No admin password set yet — choose one now');
     return;
   }
 
-  if(email !== String(rec.email||'').toLowerCase()){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
+  if(!pass){ showToast('⚠️ Enter your password'); return; }
+
+  // Claimed. Distinct messages so a failure is diagnosable instead of a
+  // uniform "incorrect" that could mean four different things.
+  if(email !== String(rec.email||'').toLowerCase()){
+    showToast('⚠️ That email does not match the admin account (' + String(rec.email||'?') + ')');
+    return;
+  }
   const h = await lfHashPass(pass, rec.salt);
-  if(h !== rec.hash){ _adminFails++; showToast('⚠️ Incorrect email or password'); return; }
+  if(h !== rec.hash){
+    _adminFails++;
+    showToast(_adminFails >= 3
+      ? '⚠️ Wrong password. Forgot it? See "Reset admin access" in the README.'
+      : '⚠️ Wrong password');
+    return;
+  }
 
   _adminFails = 0;
   _lfAdminMode = true;
