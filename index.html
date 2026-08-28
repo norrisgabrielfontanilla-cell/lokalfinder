@@ -1871,13 +1871,26 @@ select option { color: var(--t1); background: var(--w); }
             <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
           </svg>
         </div>
-        <div id="lf-brand-tap" style="cursor:default">
+        <div id="lf-brand-tap" style="cursor:pointer">
           <div class="lf2-word">Lokal<em>Finder</em></div>
           <div class="lf2-sub">GRASS Residences &bull; Quezon City</div>
         </div>
       </div>
       <div class="lf2-hbtns">
         <button onclick="goVendorLogin()" style="background:#0E8A5A;border:none;color:#fff;font-size:12px;font-weight:800;padding:9px 15px;border-radius:11px;cursor:pointer;font-family:var(--ff);box-shadow:0 3px 10px rgba(14,138,90,.25)">Vendor</button>
+        <!-- v56: a REAL admin control, back in the header.
+             v55 removed the old "Admin" text button because it sat next to a
+             password published in this file. That reason is gone — the password
+             is now a salted hash and the admin1234 default is dead — and hiding
+             the only entrance behind five fast taps left the founder locked out
+             of his own tool, twice. A gear is findable and clickable on a laptop
+             (the taps had no cursor affordance at all) without putting the words
+             "admin panel" in front of 500 residents. The 5-tap and #admin routes
+             still work as backups. -->
+        <button onclick="goPage('p-alogin')" title="Admin" aria-label="Admin panel"
+          style="background:#F1F5F3;border:1px solid #E2E8E5;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;padding:0">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6B8F7A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
         <div style="position:relative;cursor:pointer;background:#F1F5F3;border:1px solid #E2E8E5;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="goPage('p-ccart')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <div id="home-badge" class="bni-num" style="display:none;border-color:#fff">0</div>
