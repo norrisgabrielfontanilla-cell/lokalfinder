@@ -25,6 +25,8 @@
   /* soft warm ground under the light scenes instead of a flat wash */
   .f-lbg{background:#F0F7F3 url('bg/lbg.png') center/100% 100% no-repeat}
   .f-night{background:#0B2318 url('bg/night.png') center/100% 100% no-repeat}
+  .f-dusk{background:#0B2318 url('bg/dusk.png') center/100% 100% no-repeat}
+  .f-map{background:#07140F url('bg/map.png') center/100% 100% no-repeat}
   .f-green{background:#1A6B4A url('bg/green.png') center/100% 100% no-repeat}
 
   .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
@@ -87,14 +89,14 @@
 <div id="stage">
 
   <!-- 1 HOOK — the building is full of small businesses -->
-  <div class="layer f-night" id="l-hook">
+  <div class="layer f-dusk" id="l-hook">
     <svg id="facade" viewBox="0 0 1080 1200" style="position:absolute;left:0;top:430px;width:1080px;height:1200px"></svg>
     <div class="cap kin" id="hook1" style="top:290px;font-size:128px;color:#fff">7<span style="font-size:60px">PM</span></div>
-    <div class="cap kin" id="hook2" style="top:1350px;font-size:60px;color:#fff">Your building is full of<br/><span class="hl">people who do things.</span></div>
+    <div class="cap kin" id="hook2" style="top:300px;font-size:58px;color:#fff">Your building is full of<br/><span class="hl">people who do things.</span></div>
   </div>
 
   <!-- 2 PROBLEM -->
-  <div class="layer f-night" id="l-prob">
+  <div class="layer f-map" id="l-prob">
     <svg id="cityfar" viewBox="0 0 1080 1100" style="position:absolute;left:0;top:520px;width:1080px;height:1100px"></svg>
     <div class="cap kin" id="prob1" style="top:300px;font-size:60px;color:#fff">You just don't<br/>know who they are.</div>
     <div class="cap kin" id="prob2" style="top:300px;font-size:60px;color:#fff">So everything comes<br/>from <span class="hl">across the city.</span></div>
@@ -288,31 +290,62 @@ function personSVG(i,{bag=false,apron=false,cap=false}={}){
   </g>`;
 }
 
-/* ---- 1. facade: every kind of small business, not just kitchens ---- */
-const COLS=5,ROWS=4,WW=118,WH=118,GAPX=42,GAPY=34;
-const FX=(1080-(COLS*WW+(COLS-1)*GAPX))/2, FY=110;
+/* ---- 1. the tower at dusk: real massing, lit windows, rooftop sign ---- */
+const COLS=5,ROWS=4,WW=104,WH=104,GAPX=30,GAPY=26;
+const TW=COLS*WW+(COLS-1)*GAPX+96;            // tower width from its window grid
+const TX=(1080-TW)/2, TY=250;
+const FX=TX+48, FY=TY+150;
 const TRADES=['🍔','🧺','🔧','☕','🧹','🛒','🍜','🧵','💇','🧋','🔨','🎂','🪴','📦','🧼','🍰','🚿','🧰','🍳','🧴'];
-const winCells=[];
+const winCells=[]; let signBoard,signText,signGlow;
 {
-  const s=$('facade');
-  const defs=el('defs');
-  const lg=el('linearGradient',{id:'wallg',x1:0,y1:0,x2:0,y2:1});
-  lg.append(el('stop',{offset:'0%','stop-color':'#14522f'}),el('stop',{offset:'100%','stop-color':'#0b3421'}));
-  const wg=el('linearGradient',{id:'wing',x1:0,y1:0,x2:0,y2:1});
-  wg.append(el('stop',{offset:'0%','stop-color':'#FFDD6B'}),el('stop',{offset:'100%','stop-color':'#F0B429'}));
-  defs.append(lg,wg); s.appendChild(defs);
+  const s=$('facade'), defs=el('defs');
+  const g1=el('linearGradient',{id:'twr',x1:0,y1:0,x2:1,y2:0});
+  g1.append(el('stop',{offset:'0%','stop-color':'#16412C'}),
+            el('stop',{offset:'62%','stop-color':'#0F3122'}),
+            el('stop',{offset:'100%','stop-color':'#0A2418'}));
+  const g2=el('linearGradient',{id:'win',x1:0,y1:0,x2:0,y2:1});
+  g2.append(el('stop',{offset:'0%','stop-color':'#FFE28A'}),el('stop',{offset:'100%','stop-color':'#F0A81E'}));
+  const g3=el('linearGradient',{id:'nbr',x1:0,y1:0,x2:1,y2:0});
+  g3.append(el('stop',{offset:'0%','stop-color':'#0C2A1D'}),el('stop',{offset:'100%','stop-color':'#071C13'}));
+  defs.append(g1,g2,g3); s.appendChild(defs);
 
-  s.appendChild(el('rect',{x:FX-56,y:FY-70,width:COLS*WW+(COLS-1)*GAPX+112,
-    height:ROWS*WH+(ROWS-1)*GAPY+240,rx:34,fill:'url(#wallg)'}));
-  const dy=FY+ROWS*WH+(ROWS-1)*GAPY+58;
-  s.appendChild(el('rect',{x:540-84,y:dy-22,width:168,height:24,rx:10,fill:'#2ea877'}));
-  s.appendChild(el('rect',{x:540-58,y:dy,width:116,height:116,rx:10,fill:'url(#wing)',opacity:.9}));
+  // neighbouring towers, flattened and darker so the hero reads forward
+  [[40,470,190,760],[236,560,140,670],[812,430,170,800],[956,520,120,710]].forEach(([x,y,w,h])=>{
+    s.appendChild(el('rect',{x,y,width:w,height:h,rx:8,fill:'url(#nbr)'}));
+    for(let r=0;r<Math.floor(h/74);r++)for(let c=0;c<Math.floor(w/56);c++)
+      if(((r*7+c*3)%3)!==0)
+        s.appendChild(el('rect',{x:x+16+c*56,y:y+26+r*74,width:32,height:38,rx:4,
+          fill:'#F5C842',opacity:0.10+((r*c)%4)*0.05}));
+  });
+
+  // hero tower
+  s.appendChild(el('rect',{x:TX,y:TY,width:TW,height:1200-TY,rx:10,fill:'url(#twr)'}));
+  s.appendChild(el('rect',{x:TX,y:TY,width:14,height:1200-TY,fill:'#2F6B4C',opacity:.55}));  // rim light
+  s.appendChild(el('rect',{x:TX-22,y:TY-26,width:TW+44,height:30,rx:6,fill:'#0C2A1D'}));      // roof slab
+  s.appendChild(el('rect',{x:TX+TW-96,y:TY-92,width:34,height:66,fill:'#0C2A1D'}));           // rooftop plant
+  s.appendChild(el('rect',{x:TX+56,y:TY-150,width:6,height:124,fill:'#0C2A1D'}));             // mast
+  const beacon=el('circle',{id:'beacon',cx:TX+59,cy:TY-150,r:7,fill:'#FF6B5A'}); s.appendChild(beacon);
+
+  // rooftop sign
+  signBoard=el('rect',{x:TX+28,y:TY-116,width:TW-140,height:74,rx:10,
+    fill:'#082116',stroke:'#2F6B4C','stroke-width':3});
+  signGlow=el('rect',{x:TX+28,y:TY-116,width:TW-140,height:74,rx:10,fill:'#F5C842',opacity:0});
+  signText=el('text',{x:TX+28+(TW-140)/2,y:TY-64,'text-anchor':'middle','font-size':34,
+    'font-family':"'Bricolage Grotesque',sans-serif",'font-weight':800,
+    'letter-spacing':'2',fill:'#F5C842'});
+  signText.textContent='GRASS RESIDENCES';
+  s.append(signBoard,signGlow,signText);
+
+  // lobby
+  s.appendChild(el('rect',{x:TX+TW/2-92,y:1046,width:184,height:154,rx:8,fill:'#0A2418'}));
+  s.appendChild(el('rect',{x:TX+TW/2-74,y:1074,width:148,height:126,rx:6,fill:'url(#win)',opacity:.82}));
+  s.appendChild(el('rect',{x:TX+TW/2-110,y:1030,width:220,height:18,rx:8,fill:'#2ea877'}));
+
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const x=FX+c*(WW+GAPX), y=FY+r*(WH+GAPY);
-    const g=el('g');
-    g.appendChild(el('rect',{x,y,width:WW,height:WH,rx:14,fill:'#0a2c1c'}));
-    const glow=el('rect',{x,y,width:WW,height:WH,rx:14,fill:'url(#wing)'});
-    const em=el('text',{x:x+WW/2,y:y+WH/2+21,'text-anchor':'middle','font-size':56});
+    const x=FX+c*(WW+GAPX), y=FY+r*(WH+GAPY), g=el('g');
+    g.appendChild(el('rect',{x,y,width:WW,height:WH,rx:6,fill:'#071C13'}));
+    const glow=el('rect',{x,y,width:WW,height:WH,rx:6,fill:'url(#win)'});
+    const em=el('text',{x:x+WW/2,y:y+WH/2+19,'text-anchor':'middle','font-size':50});
     em.textContent=TRADES[(r*COLS+c)%TRADES.length];
     g.append(glow,em); s.appendChild(g);
     winCells.push({glow,em,d:Math.hypot(c-(COLS-1)/2,r-(ROWS-1)/2),
@@ -320,19 +353,79 @@ const winCells=[];
   }
 }
 
-/* ---- 2. the long way round ---- */
-let farRoute,farLen,farPin,farBlocks=[];
+/* ---- 2. GPS tracking map: roads, parks, traffic, live route ---- */
+let farRoute,farCasing,farLen,farPuck,farPin,cars=[],mapG;
 {
-  const s=$('cityfar');
-  for(let i=0;i<44;i++){
-    const b=el('rect',{x:40+rnd()*980,y:120+rnd()*820,width:40+rnd()*70,height:34+rnd()*70,
-      rx:8,fill:'#1b5a3d',opacity:.95});
-    s.appendChild(b); farBlocks.push(b);
+  const s=$('cityfar'), defs=el('defs');
+  const rg=el('linearGradient',{id:'routeg',x1:0,y1:1,x2:1,y2:0});
+  rg.append(el('stop',{offset:'0%','stop-color':'#F5C842'}),el('stop',{offset:'100%','stop-color':'#FFE9A8'}));
+  defs.appendChild(rg); s.appendChild(defs);
+  mapG=el('g',{id:'mapG'}); s.appendChild(mapG);
+
+  const VX=[70,250,430,610,790,970], HY=[120,320,520,720,920];
+
+  // river first — everything else sits on top of it
+  mapG.appendChild(el('path',{d:'M -40 250 C 220 300, 300 470, 560 520 S 900 640, 1120 610 L 1120 690 C 880 720, 640 600, 520 585 S 200 380, -40 330 Z',
+    fill:'#0E3350',opacity:.85}));
+
+  // parks
+  [[300,150,190,130],[700,330,180,150],[150,690,210,160],[790,760,200,140]].forEach(([x,y,w,h])=>{
+    mapG.appendChild(el('rect',{x,y,width:w,height:h,rx:26,fill:'#17512F',opacity:.9}));
+    mapG.appendChild(el('rect',{x:x+10,y:y+10,width:w-20,height:h-20,rx:20,fill:'#1C6138',opacity:.7}));
+  });
+
+  // building footprints, packed into the blocks between roads
+  for(let i=0;i<150;i++){
+    const bx=VX[i%5]+18+rnd()*130, by=HY[(i*3)%4]+18+rnd()*150;
+    mapG.appendChild(el('rect',{x:bx+3,y:by+4,width:16+rnd()*46,height:14+rnd()*40,rx:3,
+      fill:'#04120C',opacity:.55}));                                   // drop shadow
+    mapG.appendChild(el('rect',{x:bx,y:by,width:16+rnd()*46,height:14+rnd()*40,rx:3,
+      fill:rnd()<.18?'#2A6B49':'#20553C',opacity:.95}));
   }
-  farRoute=el('path',{d:'M 60 980 C 320 900, 180 620, 470 560 S 760 700, 700 430 S 520 300, 540 250',
-    fill:'none',stroke:'#F5C842','stroke-width':7,'stroke-linecap':'round'});
+
+  // road network — arterials read brighter than side streets
+  VX.forEach((x,i)=>{
+    mapG.appendChild(el('line',{x1:x,y1:-20,x2:x,y2:1120,stroke:'#0A2016','stroke-width':i%2?18:30}));
+    mapG.appendChild(el('line',{x1:x,y1:-20,x2:x,y2:1120,stroke:'#39694F','stroke-width':i%2?10:20,opacity:.55}));
+  });
+  HY.forEach((y,i)=>{
+    mapG.appendChild(el('line',{x1:-20,y1:y,x2:1120,y2:y,stroke:'#0A2016','stroke-width':i%2?18:30}));
+    mapG.appendChild(el('line',{x1:-20,y1:y,x2:1120,y2:y,stroke:'#39694F','stroke-width':i%2?10:20,opacity:.55}));
+  });
+
+  // traffic: each car runs one road, headlights pointing the way it travels
+  for(let i=0;i<34;i++){
+    const vert=i%2===0;
+    const lane=vert?VX[i%VX.length]:HY[i%HY.length];
+    const dir=rnd()<.5?1:-1, off=(rnd()<.5?-1:1)*(vert?5:5);
+    const g=el('g');
+    const head=el('ellipse',{rx:19,ry:7,fill:'#FFE9A8',opacity:.46});
+    const body=el('circle',{r:4.6,fill:i%5===0?'#FFD24A':'#EAF6EF'});
+    g.append(head,body); mapG.appendChild(g);
+    cars.push({g,head,body,vert,lane,dir,off,ph:rnd(),spd:0.05+rnd()*0.09});
+  }
+
+  // the live route, drawn like a rideshare ETA line
+  const RD='M 40 1010 L 250 1010 L 250 720 L 430 720 L 430 520 L 610 520 L 610 320 L 540 320 L 540 250';
+  farCasing=el('path',{d:RD,fill:'none',stroke:'#4A3200','stroke-width':19,
+    'stroke-linecap':'round','stroke-linejoin':'round',opacity:.85});
+  s.appendChild(farCasing);
+  farRoute=el('path',{d:RD,fill:'none',stroke:'url(#routeg)','stroke-width':11,
+    'stroke-linecap':'round','stroke-linejoin':'round'});
   s.appendChild(farRoute); farLen=farRoute.getTotalLength();
-  farPin=el('circle',{cx:540,cy:250,r:20,fill:'#F5C842'}); s.appendChild(farPin);
+
+  farPuck=el('g',{id:'puck'});
+  farPuck.append(el('circle',{r:22,fill:'#F5C842',opacity:.22}),
+                 el('circle',{r:13,fill:'#fff'}),
+                 el('circle',{r:7,fill:'#1A6B4A'}));
+  s.appendChild(farPuck);
+
+  farPin=el('g',{id:'destpin'});
+  farPin.append(el('circle',{cx:540,cy:250,r:34,fill:'#F5C842',opacity:.16}),
+                el('path',{d:'M540 214c-13 0-23 10-23 23 0 17 23 41 23 41s23-24 23-41c0-13-10-23-23-23z',
+                  fill:'#F5C842',stroke:'#7A5A00','stroke-width':2}),
+                el('circle',{cx:540,cy:237,r:8,fill:'#3A2A00'}));
+  s.appendChild(farPin);
 }
 
 /* ---- 4. step 1: three trades, three neighbours ---- */
@@ -444,17 +537,25 @@ function seek(t){
   /* 1 HOOK */
   const aH=alpha(t,S.hook,0,0.35); show($('l-hook'),aH);
   if(aH>0.002){
-    $('facade').style.transform=`scale(${lerp(1.1,1.0,easeOut(prog(t,0,3.8)))})`;
-    $('facade').style.transformOrigin='540px 460px';
+    $('facade').style.transform=`scale(${lerp(1.14,1.0,easeOut(prog(t,0,4.0)))})`;
+    $('facade').style.transformOrigin='540px 620px';
     winCells.forEach(w=>{
       const st=0.2+w.d*0.32, u=easeOut(prog(t,st,st+0.42));
       const flick=1-0.10*Math.sin((t-st)*9)*clamp(prog(t,st,st+0.26));
       w.glow.style.opacity=w.lit?u*0.94*flick:0;
       w.em.style.opacity=(w.lit&&w.trade)?easeOut(prog(t,st+0.24,st+0.62)):0;
     });
+    // the sign strikes like real neon: two stutters, then holds
+    const sp=prog(t,1.5,2.3);
+    const strike=sp<=0?0:(sp<0.22?(Math.floor(sp*26)%2?0.85:0.05)
+                        :(sp<0.38?(Math.floor(sp*16)%2?0.5:0.9):1));
+    signText.style.opacity=strike;
+    signGlow.style.opacity=strike*0.13;
+    signBoard.setAttribute('stroke',strike>0.6?'#4E8F6A':'#2F6B4C');
+    $('beacon').style.opacity=0.45+0.55*Math.abs(Math.sin(t*2.4));
     $('hook1').style.opacity=clamp(prog(t,0.1,0.36))*(1-prog(t,2.2,2.6));
     $('hook1').style.transform=`scale(${lerp(0.9,1,clamp(back(prog(t,0.12,0.6))))})`;
-    const h2=easeOut(prog(t,2.3,2.8));
+    const h2=easeOut(prog(t,2.4,2.9));
     $('hook2').style.opacity=h2*(1-prog(t,4.1,4.4));
     $('hook2').style.transform=`translateY(${lerp(32,0,h2)}px)`;
   }
@@ -463,15 +564,42 @@ function seek(t){
   const aP=alpha(t,S.prob); show($('l-prob'),aP);
   if(aP>0.002){
     $('prob1').style.opacity=easeOut(prog(t,4.4,4.9))*(1-prog(t,6.2,6.6));
-    const draw=easeInOut(prog(t,6.2,8.6));
+
+    // slow pull-back, like a map zooming out one level at a time
+    const z=lerp(1.55,1.0,easeInOut(prog(t,4.2,9.6)));
+    $('cityfar').style.transform=`scale(${z})`;
+    $('cityfar').style.transformOrigin='540px 300px';
+
+    // traffic keeps moving the whole time so the city reads as alive
+    cars.forEach(c=>{
+      const span=1200, p=((c.ph + t*c.spd)%1);
+      const along=c.dir>0 ? -60+p*span : 1140-p*span;
+      const x=c.vert? c.lane+c.off : along;
+      const y=c.vert? along : c.lane+c.off;
+      c.g.setAttribute('transform',`translate(${x} ${y})`);
+      c.head.setAttribute('transform',
+        c.vert?`rotate(90) translate(${c.dir>0?15:-15} 0)`:`translate(${c.dir>0?15:-15} 0)`);
+      c.g.style.opacity=clamp(prog(t,4.3,5.0))*(1-prog(t,9.2,9.6));
+    });
+
+    // the route draws the long way round, then the courier follows it
+    const draw=easeInOut(prog(t,5.6,8.0));
     farRoute.setAttribute('stroke-dasharray',farLen);
     farRoute.setAttribute('stroke-dashoffset',farLen*(1-draw));
-    farRoute.style.opacity=clamp(prog(t,6.2,6.5))*(1-prog(t,9.0,9.5));
-    farPin.style.opacity=clamp(prog(t,8.4,8.8));
-    farPin.setAttribute('r',20*lerp(0.94,1.3,Math.sin(clamp(prog(t,8.4,9.1))*Math.PI)));
-    farBlocks.forEach((b,i)=>{ b.style.opacity=0.95*(1-prog(t,9.0+((i%7)*0.02),9.6)); });
-    $('cityfar').style.transform=`scale(${lerp(1,1.12,easeInOut(prog(t,6.2,9.6)))})`;
-    $('cityfar').style.transformOrigin='540px 500px';
+    farCasing.setAttribute('stroke-dasharray',farLen);
+    farCasing.setAttribute('stroke-dashoffset',farLen*(1-draw));
+    const routeA=clamp(prog(t,5.5,5.9))*(1-prog(t,9.2,9.6));
+    farRoute.style.opacity=routeA; farCasing.style.opacity=routeA*.85;
+
+    const pu=prog(t,5.9,8.6);
+    const pt=farRoute.getPointAtLength(farLen*pu);
+    farPuck.setAttribute('transform',`translate(${pt.x} ${pt.y})`);
+    farPuck.style.opacity=clamp(prog(t,5.9,6.2))*(1-prog(t,9.0,9.5));
+
+    farPin.style.opacity=clamp(prog(t,5.4,5.9))*(1-prog(t,9.2,9.6));
+    const pulse=1+0.12*Math.sin(t*3.4);
+    farPin.setAttribute('transform',`translate(540 250) scale(${pulse}) translate(-540 -250)`);
+
     const p2=easeOut(prog(t,6.6,7.1));
     $('prob2').style.opacity=p2*(1-prog(t,9.3,9.6));
     $('prob2').style.transform=`translateY(${lerp(28,0,p2)}px)`;
