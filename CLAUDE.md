@@ -60,12 +60,15 @@ and give its vendors that `category`.
   Firebase SDK — no Firestore, no Firebase Auth are used.
 - `localStorage` is used only as a thin client-side cache (last ~100 order
   IDs, last placed order ID) — not a source of truth.
-- **Security note (unverified, flag before assuming safety):** the RTDB URL
-  is unauthenticated at the fetch layer (no ID token, no API key sent). Safety
-  depends entirely on Firebase RTDB security rules, which are not in this
-  repo and were not checked. Treat "who can read/write production order and
-  vendor data" as an open question, not a solved one — verify the actual
-  rules before making claims about data security.
+- **Security (v55):** the RTDB URL is unauthenticated at the fetch layer — no
+  ID token, no API key. Client-side PIN and admin-password checks are
+  conveniences, bypassable from devtools. **Firebase security rules are the
+  only real control.** `firebase-rules.json` in this repo is a ready-to-paste
+  ruleset; whether it has actually been published to the live project is NOT
+  verifiable from here, so confirm before claiming any data is protected.
+  The ruleset refuses an unfiltered read of `/orders` (only a `vendorId`
+  query or an exact-key read passes) and makes `/pinHashes` unreadable.
+  It requires `.indexOn: ["vendorId"]`, which it also declares.
 - Firebase is otherwise only used for **Cloud Messaging** (push
   notifications), loaded via the `firebase-app-compat` /
   `firebase-messaging-compat` CDN scripts — not for auth or data storage.
@@ -119,14 +122,48 @@ and give its vendors that `category`.
   code (`sparkle`, `freshnest`); no real cleaning vendor has been onboarded,
   and no cleaning booking has been placed by a real customer. Do not cite
   them as traction.
-- Vendor PINs are still stored in plain text in `VENDOR_PINS_PLAIN` and
-  synced to the RTDB. `VENDOR_PIN_HASHES` exists but is unused by
-  `vendorLogin()`. This is a known weakness, unchanged by v54.
+- **Credentials (v55).** Vendor PINs are salted SHA-256 in
+  `VENDOR_PIN_HASHES`, synced under `/pinHashes`; `VENDOR_PINS_PLAIN` is gone.
+  A legacy `/pins` node may still hold plaintext from before v55 — it is read
+  once, in memory, to migrate a vendor on their next login, and never
+  re-published. Delete that node once every vendor has signed in.
+  The six DEMO vendors' hashes are seeded in `index.html`, so those six
+  accounts are effectively public (a 4-digit PIN's hash is brute-forced
+  instantly) — rotate them before a real vendor uses one.
+  The admin password is a salted hash at `/adminAuth`, so a change now applies
+  on every device; it used to be plaintext in `localStorage` defaulting to
+  `admin1234`, which meant it could never really be changed at all.
+  **None of this is real auth.** Firebase Anonymous Auth is the next step.
 
-**Testing:** there is no test framework in the repo. v54 was verified with a
-throwaway Playwright harness that stubs the RTDB endpoint in-memory so tests
-never touch production data — if you re-verify, do the same. Never point a
-test run at the live `FB_URL`.
+**Testing:** `tests/` holds a Playwright suite — 126 checks across four files,
+driving the real `index.html` in headless Chromium with the RTDB stubbed in
+memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
+and after any change to `index.html`.
+
+The stub **rejects paths without a `.json` suffix**, exactly as the real REST
+API does. Keep it that way: an earlier, looser stub accepted them and returned
+`200`, which turned a silently-failing write into an apparently-successful one
+and caused a bug to be mis-diagnosed. Never point a test run at the live
+`FB_URL`.
+
+**Escaping (v55) — two functions, do not merge them:**
+- `esc(s)` — HTML entity escaping, for text going into `innerHTML`.
+- `escJs(s)` — JS-string escaping *then* HTML escaping, for a JS literal
+  inside an attribute, e.g. `onclick="f('${escJs(x)}')"`.
+
+The old single `esc()` escaped quotes but not `<`/`>`, which made every
+customer name, unit number and booking instruction a stored-XSS vector into
+the vendor's dashboard. Watch for handler strings built *outside* an
+attribute and interpolated in later (`_tapFor`, `buildHeroStrip`) — those need
+`escJs` too, and are easy to miss when grepping for `on*=`.
+
+**Sync (v55):** `syncFromCloud()` no longer reads the whole database. It uses
+`lfFetchScoped()`: catalog nodes for everyone, an indexed `vendorId` query for
+a signed-in vendor, exact-key reads for a customer's own orders, and a
+per-vendor fan-out for admin. The old full read ran every 3s on every device
+and re-downloaded every order ever placed plus every base64 menu photo.
+Orders are still only deleted by the admin **Archive old orders** control on
+the Insights page — there is no server to run a nightly job.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.

@@ -1,0 +1,8 @@
+{
+  "name": "lokalfinder-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Headless-browser tests for index.html. Firebase is stubbed in memory — these never touch production.",
+  "scripts": { "test": "./run.sh" },
+  "dependencies": { "playwright": "^1.56.0" }
+}

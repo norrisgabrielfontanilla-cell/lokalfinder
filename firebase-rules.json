@@ -1,0 +1,131 @@
+{
+  "//": "═══════════════════════════════════════════════════════════════════",
+  "// LOKAL FINDER — FIREBASE REALTIME DATABASE SECURITY RULES": "",
+  "//  ": "READ THIS BEFORE PASTING.",
+  "//   ": "",
+  "//    ": "The app has NO server and NO Firebase Auth. Every read and write is",
+  "//     ": "an unauthenticated REST call straight from the customer's browser.",
+  "//      ": "That means these rules are the ONLY thing standing between your",
+  "//       ": "production data and the open internet. Client-side PIN checks and",
+  "//        ": "the admin password screen are conveniences, not security — anyone",
+  "//         ": "can bypass them with devtools.",
+  "//          ": "",
+  "//           ": "HOW TO APPLY: Firebase console -> Realtime Database -> Rules ->",
+  "//            ": "paste -> Publish. Test with the Rules Playground first.",
+  "//             ": "",
+  "//              ": "WHAT THIS DOES:",
+  "//               ": "  - orders     : an UNFILTERED read is refused. Only a query",
+  "//                ": "                 filtered by vendorId passes, or a read of one",
+  "//                 ": "                 order by its exact key. So nobody can dump every",
+  "//                  ": "                 customer's name, unit and phone in one request.",
+  "//                   ": "  - pinHashes  : NOT readable. This is the big one.",
+  "//                    ": "  - vendors    : world-readable (it is a public directory),",
+  "//                     ": "                 with length caps on the text fields.",
+  "//                      ": "  - adminAuth  : readable (the login screen compares against it),",
+  "//                       ": "                 but it is a SALTED hash, never a password.",
+  "//                        ": "  - notifs     : per-recipient node, not enumerable.",
+  "//                      ": "",
+  "//                       ": "KNOWN LIMIT: without real auth, rules cannot tell one customer",
+  "//                        ": "from another. This blocks bulk scraping and deletion, which is",
+  "//                         ": "the realistic attack. It does NOT make the app multi-tenant safe.",
+  "//                          ": "Moving to Firebase Anonymous Auth is the next real step.",
+
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "lokalfinder_grass": {
+
+      "vendors": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren() || !newData.exists()",
+        "$vid": {
+          ".validate": "newData.hasChildren(['id','name'])",
+          "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "sub":  { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "desc": { ".validate": "newData.isString() && newData.val().length <= 500" },
+          "$other": { ".validate": true }
+        }
+      },
+
+      "menu": {
+        ".read": true,
+        ".write": true
+      },
+
+      "//pinHashes": "Salted hashes of vendor PINs. NOT readable — this is what stops someone lifting every vendor's credential. Note the app seeds the six DEMO vendors' hashes in index.html itself, so those six are public regardless; rotate them from the admin panel before a real vendor uses one.",
+      "pinHashes": {
+        ".read": false,
+        ".write": true
+      },
+
+      "//pins": "LEGACY plaintext PINs from before v55. Left writable so the app can clear it, but never readable again. Delete this node entirely once every vendor has signed in once and been migrated to pinHashes.",
+      "pins": {
+        ".read": false,
+        ".write": true
+      },
+
+      "//adminAuth": "Salted hash of the admin password. The in-app admin login reads this to compare, so it must stay readable — meaning the HASH is public. That is survivable because it is salted and you are told to use 8+ characters, but it is a real reason to move admin to Firebase Auth rather than trusting this screen.",
+      "adminAuth": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['salt','hash'])"
+      },
+
+      "//orders": "THE IMPORTANT ONE. Without Firebase Auth a rule cannot tell one customer from another, so it cannot say 'read only your own orders'. What it CAN do is refuse an UNFILTERED read: the .read below only passes for a query filtered by vendorId, which is exactly what a signed-in vendor's app sends. A plain GET /orders.json returns permission-denied, so nobody can dump every customer's name, unit and phone in one request. A customer reads their own orders by exact key via the $oid rule. NEXT STEP: switch to Firebase Anonymous Auth and key orders by uid — that is the only way to make this genuinely per-user.",
+      "orders": {
+        ".read": "query.orderByChild == 'vendorId' && query.equalTo != null",
+        ".indexOn": ["vendorId"],
+        ".write": false,
+        "$oid": {
+          ".read": true,
+          ".write": "!data.exists() || newData.exists()",
+          ".validate": "newData.hasChildren(['id','status','vendorId'])",
+          "name":         { ".validate": "newData.isString() && newData.val().length <= 80" },
+          "unit":         { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "building":     { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "instructions": { ".validate": "newData.isString() && newData.val().length <= 400" },
+          "phone":        { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "status":       { ".validate": "newData.isString() && newData.val().matches(/^(new|accepted|preparing|ready|delivered|declined|done)$/)" },
+          "total":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000" },
+          "$other": { ".validate": true }
+        }
+      },
+
+      "//notifs": "Per-recipient node. Not enumerable, so one customer cannot list another's alerts.",
+      "notifs": {
+        ".read": false,
+        ".write": false,
+        "$uid": {
+          ".read": true,
+          ".write": true,
+          "$nid": {
+            ".validate": "newData.hasChildren(['title','body'])",
+            "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "body":  { ".validate": "newData.isString() && newData.val().length <= 500" }
+          }
+        }
+      },
+
+      "chats": {
+        ".read": false,
+        ".write": false,
+        "$oid": {
+          ".read": true,
+          ".write": true,
+          "$mid": {
+            "text": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+            "$other": { ".validate": true }
+          }
+        }
+      },
+
+      "fcmTokens":      { ".read": false, ".write": true },
+      "deletedVendors": { ".read": true,  ".write": true },
+      "posts":          { ".read": true,  ".write": true },
+      "heroStats":      { ".read": true,  ".write": true },
+      "rev":            { ".read": true,  ".write": true }
+    }
+  }
+}
