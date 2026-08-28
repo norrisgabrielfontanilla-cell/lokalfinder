@@ -2,73 +2,71 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>LokalFinder — social film</title>
+<title>LokalFinder — how it works</title>
 <style>
   @font-face { font-family:'Fraunces';  src:url('fonts/Fraunces.woff2') format('woff2'); font-weight:100 900; font-display:block; }
   @font-face { font-family:'Plus Jakarta Sans'; src:url('fonts/PlusJakartaSans.woff2') format('woff2'); font-weight:100 900; font-display:block; }
   @font-face { font-family:'Bricolage Grotesque'; src:url('fonts/BricolageGrotesque.woff2') format('woff2'); font-weight:100 900; font-display:block; }
 
   :root{
-    /* pulled from the app's own tokens */
     --g:#0E8A5A; --gm:#12B76A; --gl:#E6F7EF; --gd:#0F4A32;
     --lgreen:#1A6B4A; --warm:#F59E0B; --gold:#F5C842;
     --t1:#0D2B1A; --t2:#2D4A38; --t3:#6B8F7A;
-    --lbg:#F0F7F3; --s3:#E2F0E9; --w:#fff;
-    --night:#0B2318; --night2:#0d3d27;
+    --lbg:#F0F7F3; --s3:#E2F0E9; --night:#0B2318;
+    --sh:0 2px 8px rgba(26,107,74,.08),0 12px 34px rgba(26,107,74,.12);
   }
-
   *{margin:0;padding:0;box-sizing:border-box}
-  /* every property is set per-frame; nothing may animate on its own */
   *,*::before,*::after{animation:none!important;transition:none!important}
-
   html,body{width:1080px;height:1920px;overflow:hidden;background:#000;
     font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
   #stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--lbg)}
 
   .layer{position:absolute;inset:0;will-change:transform,opacity}
-  .fill-night{background:var(--night)}
-  .fill-lbg{background:var(--lbg)}
-  .fill-green{background:var(--lgreen)}
-  .fill-white{background:#fff}
+  .f-night{background:var(--night)} .f-lbg{background:var(--lbg)}
+  .f-green{background:var(--lgreen)} .f-white{background:#fff}
 
-  /* ---- type ---- */
   .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
        letter-spacing:-.035em;line-height:.98;will-change:transform,opacity}
-  .ser{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.03em;line-height:1.02}
+  .ser{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.03em;line-height:1.03}
   .cap{position:absolute;left:0;right:0;text-align:center;padding:0 70px;will-change:transform,opacity}
 
-  .word{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;letter-spacing:-1.5px;line-height:1}
-  .word em{font-style:normal}
+  /* one consistent step system across the four how-it-works beats */
+  .badge{display:inline-flex;align-items:center;gap:14px;padding:14px 30px;border-radius:999px;
+    background:var(--lgreen);color:#fff;font-size:26px;font-weight:800;letter-spacing:.06em;
+    font-family:'Bricolage Grotesque',sans-serif}
+  .badge .dots{display:flex;gap:7px;margin-left:6px}
+  .badge .dots i{width:9px;height:9px;border-radius:99px;background:rgba(255,255,255,.35);display:block}
+  .badge .dots i.on{background:#F5C842}
 
-  /* ---- phone ---- */
-  #phone{position:absolute;left:50%;top:430px;margin-left:-310px;width:620px;height:1020px;
+  .card{background:#fff;border-radius:28px;box-shadow:var(--sh);border:1px solid rgba(26,107,74,.10)}
+
+  #phone{position:absolute;left:50%;margin-left:-305px;top:640px;width:610px;height:900px;
     border-radius:52px;background:#fff;border:1px solid rgba(26,107,74,.14);
-    box-shadow:0 40px 90px rgba(13,43,26,.18),0 6px 20px rgba(13,43,26,.08);
-    overflow:hidden;will-change:transform}
-  #ptop{display:flex;align-items:center;gap:12px;padding:34px 34px 26px;border-bottom:1px solid rgba(26,107,74,.10)}
-  #ptop span{font-size:21px;font-weight:600;color:var(--t2)}
-  .pst{position:absolute;left:30px;right:30px;top:130px;will-change:opacity,transform}
+    box-shadow:0 40px 90px rgba(13,43,26,.18);overflow:hidden;will-change:transform}
+  #ptop{display:flex;align-items:center;gap:12px;padding:32px 32px 24px;border-bottom:1px solid rgba(26,107,74,.10)}
+  #ptop span{font-size:20px;font-weight:600;color:var(--t2)}
+  .pst{position:absolute;left:28px;right:28px;top:126px;will-change:opacity,transform}
 
-  .sbar{display:flex;align-items:center;gap:14px;padding:24px 26px;border-radius:20px;
+  .sbar{display:flex;align-items:center;gap:14px;padding:22px 24px;border-radius:20px;
         background:var(--lbg);border:1px solid rgba(26,107,74,.12)}
-  .sbar .q{font-size:26px;font-weight:600;color:var(--t1)}
-  .caret{display:inline-block;width:3px;height:26px;background:var(--g);vertical-align:-4px}
+  .sbar .q{font-size:25px;font-weight:600;color:var(--t1)}
+  .caret{display:inline-block;width:3px;height:25px;background:var(--g);vertical-align:-4px}
 
-  .rcard{display:flex;align-items:center;gap:18px;padding:20px 22px;border-radius:22px;margin-bottom:14px;
+  .rcard{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:22px;margin-bottom:13px;
     background:#fff;border:1px solid rgba(26,107,74,.12);box-shadow:0 2px 10px rgba(26,107,74,.05);
     will-change:transform,opacity}
-  .rcard .em{width:74px;height:74px;border-radius:18px;background:var(--lbg);
-    display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0}
-  .rcard .n{font-size:25px;font-weight:700;color:var(--t1)}
-  .rcard .m{font-size:18px;color:var(--t3);margin-top:4px}
-  .rcard .pill{margin-left:auto;padding:8px 14px;border-radius:999px;background:var(--gl);
-    color:var(--lgreen);font-size:17px;font-weight:700;white-space:nowrap}
+  .rcard .em{width:70px;height:70px;border-radius:18px;background:var(--lbg);
+    display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0}
+  .rcard .n{font-size:24px;font-weight:700;color:var(--t1)}
+  .rcard .dist{font-size:19px;color:var(--lgreen);font-weight:700;margin-top:4px}
+  .rcard .pill{margin-left:auto;padding:7px 13px;border-radius:999px;background:var(--gl);
+    color:var(--lgreen);font-size:17px;font-weight:800;white-space:nowrap}
 
-  .cartbar{display:flex;align-items:center;justify-content:space-between;padding:24px 28px;
-    border-radius:22px;background:var(--lgreen);color:#fff;font-size:24px;font-weight:700}
+  .cartbar{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;
+    border-radius:22px;background:var(--lgreen);color:#fff;font-size:23px;font-weight:800}
 
   #vig{position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 60%,rgba(0,0,0,.10) 100%)}
+    background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 62%,rgba(0,0,0,.08) 100%)}
   #safe{position:absolute;inset:0;display:none;pointer-events:none}
   #safe.on{display:block}
   #safe .bar{position:absolute;left:0;right:0;height:250px;background:rgba(255,0,0,.16)}
@@ -77,95 +75,118 @@
 <body>
 <div id="stage">
 
-  <!-- 1 · HOOK — the building wakes up -->
-  <div class="layer fill-night" id="l-hook">
-    <svg id="facade" viewBox="0 0 1080 1500" style="position:absolute;left:0;top:400px;width:1080px;height:1500px"></svg>
-    <div class="cap kin" id="hook1" style="top:300px;font-size:132px;color:#fff">7<span style="font-size:64px">PM</span></div>
-    <div class="cap kin" id="hook2" style="top:1330px;font-size:74px;color:#fff">Your neighbours<br/>are cooking.</div>
+  <!-- 1 HOOK -->
+  <div class="layer f-night" id="l-hook">
+    <svg id="facade" viewBox="0 0 1080 1200" style="position:absolute;left:0;top:430px;width:1080px;height:1200px"></svg>
+    <div class="cap kin" id="hook1" style="top:290px;font-size:128px;color:#fff">7<span style="font-size:60px">PM</span></div>
+    <div class="cap kin" id="hook2" style="top:1360px;font-size:64px;color:#fff">The whole building<br/>is ordering dinner.</div>
   </div>
 
-  <!-- 2 · LOGO -->
-  <div class="layer fill-lbg" id="l-logo">
-    <div style="position:absolute;left:0;right:0;top:640px;display:flex;flex-direction:column;align-items:center">
-      <svg id="mark" viewBox="0 0 48 56" style="width:250px;height:292px"></svg>
-      <div class="word" id="logoword" style="margin-top:56px;font-size:88px;color:var(--t1)">Lokal<em style="color:var(--lgreen)">Finder</em></div>
-      <div id="logosub" style="margin-top:22px;font-size:28px;color:var(--t3);letter-spacing:.02em">Everything local. One place.</div>
+  <!-- 2 PROBLEM -->
+  <div class="layer f-night" id="l-prob">
+    <svg id="cityfar" viewBox="0 0 1080 1100" style="position:absolute;left:0;top:520px;width:1080px;height:1100px"></svg>
+    <div class="cap kin" id="prob1" style="top:300px;font-size:62px;color:#fff">So it comes from<br/>across the city.</div>
+    <div class="cap kin" id="prob2" style="top:300px;font-size:66px;color:#fff">But someone is cooking<br/><span style="color:#F5C842">one floor up.</span></div>
+  </div>
+
+  <!-- 3 LOGO -->
+  <div class="layer f-lbg" id="l-logo">
+    <div style="position:absolute;left:0;right:0;top:660px;display:flex;flex-direction:column;align-items:center">
+      <svg id="mark" viewBox="0 0 48 56" style="width:230px;height:268px"></svg>
+      <div class="kin" id="logoword" style="margin-top:50px;font-size:86px;color:var(--t1);letter-spacing:-1.5px">Lokal<span style="color:var(--lgreen)">Finder</span></div>
+      <div id="logosub" style="margin-top:20px;font-size:29px;color:var(--t3)">The store is already in your building.</div>
     </div>
   </div>
 
-  <!-- 3 · SEARCH + 4 · ORDER (one phone, two beats) -->
-  <div class="layer fill-lbg" id="l-phone">
-    <div class="cap kin" id="phcap" style="top:250px;font-size:66px;color:var(--t1)">Order from<br/>your building.</div>
+  <!-- 4 STEP 1 · neighbours open a store -->
+  <div class="layer f-lbg" id="l-s1">
+    <div class="cap" style="top:270px"><span class="badge" id="b1">STEP 1<span class="dots"><i class="on"></i><i></i><i></i><i></i></span></span></div>
+    <div class="cap kin" id="s1cap" style="top:370px;font-size:64px;color:var(--t1)">A neighbour opens<br/>a little store.</div>
+    <svg id="s1art" viewBox="0 0 1080 560" style="position:absolute;left:0;top:640px;width:1080px;height:560px"></svg>
+    <div class="card" id="s1card" style="position:absolute;left:170px;top:1210px;width:740px;padding:34px 38px;display:flex;align-items:center;gap:26px">
+      <div style="width:96px;height:96px;border-radius:24px;background:var(--lbg);display:flex;align-items:center;justify-content:center;font-size:52px">🍔</div>
+      <div style="flex:1">
+        <div style="font-size:32px;font-weight:800;color:var(--t1)" class="kin">Ate Bea's Kitchen</div>
+        <div style="font-size:23px;color:var(--t3);margin-top:6px">Tower 2 · 4th floor</div>
+      </div>
+      <div id="s1toggle" style="width:96px;height:52px;border-radius:999px;background:#D6E5DC;position:relative">
+        <div id="s1knob" style="position:absolute;top:5px;left:5px;width:42px;height:42px;border-radius:999px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18)"></div>
+      </div>
+    </div>
+    <div class="cap kin" id="s1open" style="top:1400px;font-size:34px;color:var(--lgreen)">Open for orders</div>
+  </div>
+
+  <!-- 5 STEP 2+3 · browse and order -->
+  <div class="layer f-lbg" id="l-phone">
+    <div class="cap" style="top:250px"><span class="badge" id="b2">STEP 2<span class="dots"><i></i><i class="on"></i><i></i><i></i></span></span></div>
+    <div class="cap kin" id="phcap" style="top:350px;font-size:62px;color:var(--t1)">You see who's<br/>cooking nearby.</div>
     <div id="phone">
       <div id="ptop">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0E8A5A" stroke-width="2.2">
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
-        </svg>
+        <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="#0E8A5A" stroke-width="2.2">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>GRASS Residences · Block C</span>
       </div>
       <div class="pst" id="st-search">
         <div class="sbar">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#6B8F7A" stroke-width="2.2">
+          <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="#6B8F7A" stroke-width="2.2">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <span class="q"><span id="typed"></span><span class="caret" id="caret"></span></span>
         </div>
-        <div id="results" style="margin-top:26px"></div>
+        <div id="results" style="margin-top:24px"></div>
       </div>
       <div class="pst" id="st-order" style="top:150px">
-        <div class="rcard" style="margin-bottom:26px">
+        <div class="rcard" style="margin-bottom:24px">
           <div class="em">🍔</div>
-          <div><div class="n">Classic Cheeseburger</div><div class="m">Ate Bea · 2 floors up</div></div>
+          <div><div class="n">Classic Cheeseburger</div><div class="dist">Ate Bea · 2 floors up</div></div>
           <div class="pill" id="addpill">+ Add</div>
         </div>
         <div class="cartbar" id="cartbar"><span>1 item</span><span>₱185</span></div>
-        <div id="placed" style="margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:22px">
-          <div id="checkring" style="width:150px;height:150px;border-radius:999px;background:var(--gl);
-               display:flex;align-items:center;justify-content:center;font-size:76px">💚</div>
-          <div style="font-size:30px;font-weight:800;color:var(--t1)" class="kin">Order placed</div>
-          <div style="font-size:23px;color:var(--t3)">Bea is cooking · 12 min away</div>
+        <div id="placed" style="margin-top:54px;display:flex;flex-direction:column;align-items:center;gap:20px">
+          <div id="checkring" style="width:140px;height:140px;border-radius:999px;background:var(--gl);
+               display:flex;align-items:center;justify-content:center;font-size:70px">💚</div>
+          <div class="kin" style="font-size:30px;color:var(--t1)">Order sent to Bea</div>
+          <div style="font-size:22px;color:var(--t3)">She's cooking it now</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 5 · DELIVERY walk -->
-  <div class="layer fill-lbg" id="l-walk">
-    <svg id="walkscene" viewBox="0 0 1080 1000" style="position:absolute;left:0;top:560px;width:1080px;height:1000px"></svg>
-    <div class="cap kin" id="walkcap" style="top:330px;font-size:70px;color:var(--t1)">No traffic.<br/>No city-wide detour.</div>
+  <!-- 6 STEP 4 · arrives in minutes -->
+  <div class="layer f-lbg" id="l-s4">
+    <div class="cap" style="top:250px"><span class="badge" id="b4">STEP 4<span class="dots"><i></i><i></i><i></i><i class="on"></i></span></span></div>
+    <div class="cap kin" id="s4cap" style="top:350px;font-size:62px;color:var(--t1)">It travels metres,<br/>not kilometres.</div>
+    <svg id="s4art" viewBox="0 0 1080 820" style="position:absolute;left:0;top:660px;width:1080px;height:820px"></svg>
+    <div class="cap kin" id="s4time" style="top:1500px;font-size:52px;color:var(--lgreen)">Still hot when it reaches you.</div>
   </div>
 
-  <!-- 6 · HANDOFF -->
-  <div class="layer fill-lbg" id="l-hand">
-    <svg id="handscene" viewBox="0 0 1080 900" style="position:absolute;left:0;top:520px;width:1080px;height:900px"></svg>
-    <div class="cap kin" id="handcap" style="top:340px;font-size:70px;color:var(--t1)">Just a neighbour<br/>at your door.</div>
+  <!-- 7 WHY IT MATTERS -->
+  <div class="layer f-lbg" id="l-why">
+    <div class="cap kin" id="whycap" style="top:300px;font-size:64px;color:var(--t1)">And the money<br/>never leaves.</div>
+    <svg id="whyart" viewBox="0 0 1080 800" style="position:absolute;left:0;top:620px;width:1080px;height:800px"></svg>
+    <div class="cap" id="whysub" style="top:1450px;font-size:34px;color:var(--t2);line-height:1.4;font-weight:600">
+      Every order pays a neighbour,<br/>not a city away.
+    </div>
   </div>
 
-  <!-- 7 · MAP -->
-  <div class="layer fill-lbg" id="l-map">
-    <svg id="city" viewBox="0 0 1080 1000" style="position:absolute;left:0;top:600px;width:1080px;height:1000px"></svg>
-    <div class="cap kin" id="mapcap" style="top:320px;font-size:70px;color:var(--t1)">All of it —<br/>already downstairs.</div>
+  <!-- 8 BEYOND FOOD -->
+  <div class="layer f-green" id="l-exp">
+    <div class="cap kin" id="expcap" style="top:300px;font-size:62px;color:#fff">And it isn't<br/>only dinner.</div>
+    <div id="grid" style="position:absolute;left:105px;top:640px;width:870px"></div>
   </div>
 
-  <!-- 8 · EXPANSION -->
-  <div class="layer fill-green" id="l-exp">
-    <div class="cap kin" id="expcap" style="top:330px;font-size:70px;color:#fff">It starts with food.</div>
-    <div id="grid" style="position:absolute;left:90px;top:700px;width:900px"></div>
-  </div>
-
-  <!-- 9 · COMMUNITY -->
-  <div class="layer fill-lbg" id="l-comm">
+  <!-- 9 COMMUNITY -->
+  <div class="layer f-lbg" id="l-comm">
     <svg id="crowd" viewBox="0 0 1080 800" style="position:absolute;left:0;top:700px;width:1080px;height:800px"></svg>
-    <div class="cap kin" id="commcap" style="top:400px;font-size:74px;color:var(--t1)">A whole community,<br/>one tap away.</div>
+    <div class="cap kin" id="commcap" style="top:380px;font-size:70px;color:var(--t1)">One building.<br/>One economy.</div>
   </div>
 
-  <!-- 10 · CTA -->
-  <div class="layer fill-green" id="l-cta">
-    <div style="position:absolute;left:0;right:0;top:610px;display:flex;flex-direction:column;align-items:center">
-      <svg id="mark2" viewBox="0 0 48 56" style="width:150px;height:175px"></svg>
-      <div class="word" id="ctaword" style="margin-top:40px;font-size:82px;color:#fff">Lokal<em style="color:#9df5c9">Finder</em></div>
-      <div class="ser" id="ctatag" style="margin-top:30px;font-size:52px;color:rgba(255,255,255,.92);text-align:center">Your community.<br/>Connected.</div>
-      <div id="ctabtn" style="margin-top:56px;padding:28px 66px;border-radius:999px;background:#fff;
-           color:var(--lgreen);font-size:32px;font-weight:800" class="kin">Get early access</div>
+  <!-- 10 CTA -->
+  <div class="layer f-green" id="l-cta">
+    <div style="position:absolute;left:0;right:0;top:600px;display:flex;flex-direction:column;align-items:center">
+      <svg id="mark2" viewBox="0 0 48 56" style="width:140px;height:163px"></svg>
+      <div class="kin" id="ctaword" style="margin-top:36px;font-size:80px;color:#fff;letter-spacing:-1.5px">Lokal<span style="color:#9df5c9">Finder</span></div>
+      <div class="ser" id="ctatag" style="margin-top:28px;font-size:50px;color:rgba(255,255,255,.94);text-align:center">Your community.<br/>Connected.</div>
+      <div class="kin" id="ctabtn" style="margin-top:52px;padding:28px 64px;border-radius:999px;background:#fff;color:var(--lgreen);font-size:32px">Get early access</div>
     </div>
   </div>
 
@@ -175,502 +196,436 @@
 
 <script>
 /* =====================================================================
-   Deterministic timeline. seek(t) derives the whole frame from t, so the
-   renderer can step frames exactly — no drift, reproducible output.
-   Paced for social: ~11 beats in 40s, nothing held longer than ~4s.
+   Explainer cut. seek(t) derives the whole frame from t so the renderer
+   can step frames exactly. Story order: hook -> problem -> brand ->
+   four numbered steps -> why it matters -> beyond food -> community -> CTA.
 ===================================================================== */
-const DUR = 40;
+const DUR = 52;
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
+const el = (n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
 
-const clamp = (v,a=0,b=1)=>Math.min(b,Math.max(a,v));
-const lerp  = (a,b,u)=>a+(b-a)*u;
-const prog  = (t,a,b)=>clamp((t-a)/(b-a));
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,u)=>a+(b-a)*u;
+const prog=(t,a,b)=>clamp((t-a)/(b-a));
 
 function cubicBezier(x1,y1,x2,y2){
-  const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx;
-  const cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx, cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
   const sx=u=>((ax*u+bx)*u+cx)*u, sy=u=>((ay*u+by)*u+cy)*u, dx=u=>(3*ax*u+2*bx)*u+cx;
-  return x=>{
-    if(x<=0)return 0; if(x>=1)return 1;
-    let u=x;
+  return x=>{ if(x<=0)return 0; if(x>=1)return 1; let u=x;
     for(let i=0;i<8;i++){const e=sx(u)-x; if(Math.abs(e)<1e-6)return sy(u);
       const d=dx(u); if(Math.abs(d)<1e-6)break; u-=e/d;}
     let lo=0,hi=1;u=x;
     for(let i=0;i<24;i++){const xv=sx(u); if(Math.abs(xv-x)<1e-6)break;
       if(x>xv)lo=u;else hi=u; u=(lo+hi)/2;}
-    return sy(u);
-  };
+    return sy(u); };
 }
-const easeOut   = cubicBezier(0.23,1,0.32,1);      // entrances / exits
-const easeInOut = cubicBezier(0.77,0,0.175,1);     // on-screen movement
-const back      = u=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(u-1,3)+c*Math.pow(u-1,2);};
+const easeOut=cubicBezier(0.23,1,0.32,1), easeInOut=cubicBezier(0.77,0,0.175,1);
+const back=u=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(u-1,3)+c*Math.pow(u-1,2);};
 
-let seed = 7;
-const rnd = ()=>((seed=(seed*9301+49297)%233280)/233280);
+let seed=11; const rnd=()=>((seed=(seed*9301+49297)%233280)/233280);
 
-/* ---------- scene windows (short holds, ~0.35s crossfades) ---------- */
-const S = {
-  hook : {in:0.0,  out:5.4},
-  logo : {in:5.2,  out:8.4},
-  phone: {in:8.2,  out:15.6},
-  walk : {in:15.4, out:19.4},
-  hand : {in:19.2, out:22.6},
-  map  : {in:22.4, out:27.0},
-  exp  : {in:26.8, out:31.6},
-  comm : {in:31.4, out:35.4},
-  cta  : {in:35.2, out:40.0},
+const S={
+  hook :{in:0.0,  out:4.2},
+  prob :{in:4.0,  out:9.8},
+  logo :{in:9.6,  out:12.4},
+  s1   :{in:12.2, out:17.4},
+  phone:{in:17.2, out:26.4},
+  s4   :{in:26.2, out:31.6},
+  why  :{in:31.4, out:37.0},
+  exp  :{in:36.8, out:42.2},
+  comm :{in:42.0, out:46.4},
+  cta  :{in:46.2, out:52.0},
 };
 const alpha=(t,s,fi=0.35,fo=0.35)=>Math.min(fi?clamp((t-s.in)/fi):1, fo?clamp((s.out-t)/fo):1);
+const show=(e,a)=>{e.style.opacity=a;e.style.display=a<=0.002?'none':'block';};
 
-/* ================= brand mark (the app's pin-house) ================= */
-function markSVG(pin, stroke, house, gold){
-  return `
-    <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z"
-          fill="${pin}" stroke="${stroke}" stroke-width="2"/>
-    <path class="roof" d="M14 27v-8l10-8 10 8v8" stroke="${stroke}" stroke-width="2.4"
-          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <path class="walls" d="M18 27v10h12V27" stroke="${house}" stroke-width="2.2"
-          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <rect x="21" y="30" width="6" height="7" rx="1" fill="${stroke}" opacity=".8"/>
-    <circle class="dot" cx="24" cy="20" r="2.5" fill="${gold}"/>`;
-}
-$('mark').innerHTML  = markSVG('#1a5438','#2ea877','#EFF7F2','#F5C842');
-$('mark2').innerHTML = markSVG('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
+/* ---- brand mark ---- */
+const markSVG=(pin,st,house,gold)=>`
+  <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="${pin}" stroke="${st}" stroke-width="2"/>
+  <path d="M14 27v-8l10-8 10 8v8" stroke="${st}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M18 27v10h12V27" stroke="${house}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect x="21" y="30" width="6" height="7" rx="1" fill="${st}" opacity=".8"/>
+  <circle class="dot" cx="24" cy="20" r="2.5" fill="${gold}"/>`;
+$('mark').innerHTML=markSVG('#1a5438','#2ea877','#EFF7F2','#F5C842');
+$('mark2').innerHTML=markSVG('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
 
-/* ================= cartoon people (matches the app's illustration) ==== */
-const SKIN  = ['#C4845A','#B8896A','#8B6040','#E0A878','#A9714B'];
-const HAIR  = ['#3d2010','#2a1a0a','#2a1810','#4a2c14'];
-const SHIRT = ['#2ea877','#5A7A5A','#3a6a5a','#F59E0B','#1A6B4A','#D97706'];
-
-/** Cartoon person, built from the same primitives the app's banner art uses. */
-function personSVG(i, {bag=false, wave=false} = {}){
-  const skin=SKIN[i%SKIN.length], hair=HAIR[i%HAIR.length], shirt=SHIRT[i%SHIRT.length];
-  return `
-  <g class="person">
+/* ---- cartoon people, same primitives as the app's banner art ---- */
+const SKIN=['#C4845A','#B8896A','#8B6040','#E0A878','#A9714B'];
+const HAIR=['#3d2010','#2a1a0a','#2a1810','#4a2c14'];
+const SHIRT=['#2ea877','#5A7A5A','#3a6a5a','#F59E0B','#1A6B4A','#D97706'];
+const personSVG=(i,{bag=false}={})=>{
+  const sk=SKIN[i%SKIN.length],ha=HAIR[i%HAIR.length],sh=SHIRT[i%SHIRT.length];
+  return `<g class="person">
     <g class="legs">
-      <path class="legL" d="M-7 40 L-8 62" stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>
-      <path class="legR" d="M7 40 L8 62"  stroke="${shirt}" stroke-width="9" stroke-linecap="round"/>
+      <path class="legL" d="M-7 40 L-8 62" stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
+      <path class="legR" d="M7 40 L8 62"  stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
     </g>
-    <ellipse class="body" cx="0" cy="22" rx="18" ry="22" fill="${shirt}"/>
-    ${bag?`<g class="bag"><rect x="16" y="14" width="26" height="26" rx="5" fill="#F5C842"/>
-        <path d="M23 14v-4a5 5 0 0 1 10 0v4" stroke="#B8860B" stroke-width="2.4" fill="none"/></g>`:''}
-    <path class="armR" d="M15 14 Q30 8 34 2" stroke="${skin}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <path class="armL" d="M-15 14 Q-28 20 -30 28" stroke="${skin}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <circle cx="0" cy="-8" r="16" fill="${skin}"/>
-    <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="${hair}"/>
-    <ellipse cx="0" cy="-18" rx="14" ry="8" fill="${hair}"/>
-    <circle cx="-5" cy="-8" r="1.9" fill="#2a1810"/>
-    <circle cx="5"  cy="-8" r="1.9" fill="#2a1810"/>
+    <ellipse cx="0" cy="22" rx="18" ry="22" fill="${sh}"/>
+    ${bag?`<g><rect x="16" y="14" width="26" height="26" rx="5" fill="#F5C842"/>
+      <path d="M23 14v-4a5 5 0 0 1 10 0v4" stroke="#B8860B" stroke-width="2.4" fill="none"/></g>`:''}
+    <path class="armR" d="M15 14 Q30 8 34 2" stroke="${sk}" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <path class="armL" d="M-15 14 Q-28 20 -30 28" stroke="${sk}" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <circle cx="0" cy="-8" r="16" fill="${sk}"/>
+    <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="${ha}"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="8" fill="${ha}"/>
+    <circle cx="-5" cy="-8" r="1.9" fill="#2a1810"/><circle cx="5" cy="-8" r="1.9" fill="#2a1810"/>
     <path d="M-6 -2 Q0 3 6 -2" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>
   </g>`;
-}
+};
 
-/* ---------- 1. facade: windows that light up with food ---------- */
-const COLS=5, ROWS=4, WW=118, WH=120, GAPX=42, GAPY=34;
-const FACADE_X=(1080-(COLS*WW+(COLS-1)*GAPX))/2, FACADE_Y=120;
+/* ---- 1. facade ---- */
+const COLS=5,ROWS=4,WW=118,WH=118,GAPX=42,GAPY=34;
+const FX=(1080-(COLS*WW+(COLS-1)*GAPX))/2, FY=110;
 const FOOD=['🍔','🍜','☕','🍗','🧋','🍰','🍕','🥟','🍚','🌮','🍳','🥘'];
 const winCells=[];
 {
-  const svg=$('facade');
-  const wall=document.createElementNS(NS,'rect');
-  wall.setAttribute('x',FACADE_X-56); wall.setAttribute('y',FACADE_Y-70);
-  wall.setAttribute('width',COLS*WW+(COLS-1)*GAPX+112);
-  wall.setAttribute('height',ROWS*WH+(ROWS-1)*GAPY+250);
-  wall.setAttribute('rx',34); wall.setAttribute('fill','#0d3d27');
-  svg.appendChild(wall);
-
-  const doorY=FACADE_Y+ROWS*WH+(ROWS-1)*GAPY+56;
-  const door=document.createElementNS(NS,'rect');
-  door.setAttribute('x',540-58); door.setAttribute('y',doorY);
-  door.setAttribute('width',116); door.setAttribute('height',118);
-  door.setAttribute('rx',10); door.setAttribute('fill','#F5C842'); door.setAttribute('opacity','.85');
-  svg.appendChild(door);
-  const awn=document.createElementNS(NS,'rect');
-  awn.setAttribute('x',540-84); awn.setAttribute('y',doorY-22);
-  awn.setAttribute('width',168); awn.setAttribute('height',24);
-  awn.setAttribute('rx',10); awn.setAttribute('fill','#2ea877');
-  svg.appendChild(awn);
-
+  const s=$('facade');
+  s.appendChild(el('rect',{x:FX-56,y:FY-70,width:COLS*WW+(COLS-1)*GAPX+112,
+    height:ROWS*WH+(ROWS-1)*GAPY+240,rx:34,fill:'#0d3d27'}));
+  const dy=FY+ROWS*WH+(ROWS-1)*GAPY+58;
+  s.appendChild(el('rect',{x:540-84,y:dy-22,width:168,height:24,rx:10,fill:'#2ea877'}));
+  s.appendChild(el('rect',{x:540-58,y:dy,width:116,height:116,rx:10,fill:'#F5C842',opacity:.85}));
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const x=FACADE_X+c*(WW+GAPX), y=FACADE_Y+r*(WH+GAPY);
-    const g=document.createElementNS(NS,'g');
-    const rect=document.createElementNS(NS,'rect');
-    rect.setAttribute('x',x); rect.setAttribute('y',y);
-    rect.setAttribute('width',WW); rect.setAttribute('height',WH);
-    rect.setAttribute('rx',14); rect.setAttribute('fill','#0a2c1c');
-    const glow=document.createElementNS(NS,'rect');
-    glow.setAttribute('x',x); glow.setAttribute('y',y);
-    glow.setAttribute('width',WW); glow.setAttribute('height',WH);
-    glow.setAttribute('rx',14); glow.setAttribute('fill','#F5C842');
-    const em=document.createElementNS(NS,'text');
-    em.setAttribute('x',x+WW/2); em.setAttribute('y',y+WH/2+22);
-    em.setAttribute('text-anchor','middle'); em.setAttribute('font-size','58');
+    const x=FX+c*(WW+GAPX), y=FY+r*(WH+GAPY);
+    const g=el('g');
+    g.appendChild(el('rect',{x,y,width:WW,height:WH,rx:14,fill:'#0a2c1c'}));
+    const glow=el('rect',{x,y,width:WW,height:WH,rx:14,fill:'#F5C842'});
+    const em=el('text',{x:x+WW/2,y:y+WH/2+21,'text-anchor':'middle','font-size':56});
     em.textContent=FOOD[(r*COLS+c)%FOOD.length];
-    g.append(rect,glow,em); svg.appendChild(g);
-    // centre window lights first, then it spreads outward
-    const d=Math.hypot(c-(COLS-1)/2, r-(ROWS-1)/2);
-    winCells.push({glow,em,d,hasFood:rnd()<0.62,lit:rnd()<0.86});
+    g.append(glow,em); s.appendChild(g);
+    winCells.push({glow,em,d:Math.hypot(c-(COLS-1)/2,r-(ROWS-1)/2),
+      food:rnd()<0.62, lit:rnd()<0.86});
   }
 }
 
-/* ---------- 3. search results ---------- */
+/* ---- 2. the long way round ---- */
+let farRoute, farLen, farPin, farBlocks=[];
+{
+  const s=$('cityfar');
+  for(let i=0;i<40;i++){
+    const w=40+rnd()*70,h=34+rnd()*70;
+    const b=el('rect',{x:40+rnd()*980,y:120+rnd()*820,width:w,height:h,rx:8,
+      fill:'#1b5a3d',opacity:.95});
+    s.appendChild(b); farBlocks.push(b);
+  }
+  farRoute=el('path',{d:'M 60 980 C 320 900, 180 620, 470 560 S 760 700, 700 430 S 520 300, 540 250',
+    fill:'none',stroke:'#F5C842','stroke-width':7,'stroke-linecap':'round'});
+  s.appendChild(farRoute);
+  farLen=farRoute.getTotalLength();
+  farPin=el('circle',{cx:540,cy:250,r:20,fill:'#F5C842'});
+  s.appendChild(farPin);
+}
+
+/* ---- 4. step 1 art: neighbour + their kitchen ---- */
+{
+  const s=$('s1art');
+  s.appendChild(el('rect',{x:610,y:170,width:300,height:300,rx:26,fill:'#E2F0E9'}));
+  const pan=el('text',{x:760,y:370,'text-anchor':'middle','font-size':150}); pan.textContent='🍳';
+  s.appendChild(pan);
+  const p=el('g',{id:'s1p'}); p.innerHTML=personSVG(3); s.appendChild(p);
+  const st=el('g',{id:'s1steam'});
+  [[720,150],[770,120],[810,150]].forEach(([cx,cy],i)=>
+    st.appendChild(el('circle',{cx,cy,r:11+i*3,fill:'#BFD8CA',class:'sp'})));
+  s.appendChild(st);
+}
+const s1steam=[...$('s1steam').children];
+
+/* ---- 5. results ---- */
 const RES=[
-  {em:'🍔', n:"Ate Bea's Burgers", m:'Tower 2 · 4.9 ★', p:'12 min'},
-  {em:'🍜', n:'Kuya Jun Ramen',    m:'Tower 1 · 4.8 ★', p:'9 min'},
-  {em:'🧋', n:'Milktea Corner',    m:'Lobby · 4.7 ★',   p:'6 min'},
+  {em:'🍔',n:"Ate Bea's Kitchen",d:'2 floors up',p:'12 min'},
+  {em:'🍜',n:'Kuya Jun Ramen',   d:'Tower 1',    p:'9 min'},
+  {em:'🧋',n:'Milktea Corner',   d:'Lobby',      p:'6 min'},
 ];
 RES.forEach(r=>{
-  const d=document.createElement('div');
-  d.className='rcard';
-  d.innerHTML=`<div class="em">${r.em}</div>
-    <div><div class="n">${r.n}</div><div class="m">${r.m}</div></div>
-    <div class="pill">${r.p}</div>`;
+  const d=document.createElement('div'); d.className='rcard';
+  d.innerHTML=`<div class="em">${r.em}</div><div><div class="n">${r.n}</div>
+    <div class="dist">${r.d}</div></div><div class="pill">${r.p}</div>`;
   $('results').appendChild(d);
 });
 const resEls=[...$('results').children];
 
-/* ---------- 5. walk scene ---------- */
+/* ---- 6. step 4 art: short hop between two towers ---- */
+let hopPath, hopLen;
 {
-  const s=$('walkscene');
-  // street + buildings behind
-  for(let i=0;i<7;i++){
-    const h=180+rnd()*260, w=120+rnd()*60, x=40+i*150;
-    const b=document.createElementNS(NS,'rect');
-    b.setAttribute('x',x); b.setAttribute('y',560-h); b.setAttribute('width',w);
-    b.setAttribute('height',h); b.setAttribute('rx',16);
-    b.setAttribute('fill', i%2?'#DCEBE2':'#CFE3D8');
-    s.appendChild(b);
-    for(let k=0;k<3;k++){
-      const win=document.createElementNS(NS,'rect');
-      win.setAttribute('x',x+18); win.setAttribute('y',560-h+34+k*54);
-      win.setAttribute('width',w-36); win.setAttribute('height',30);
-      win.setAttribute('rx',7); win.setAttribute('fill','#F5C842'); win.setAttribute('opacity','.5');
-      s.appendChild(win);
-    }
-  }
-  const road=document.createElementNS(NS,'rect');
-  road.setAttribute('x',0); road.setAttribute('y',560); road.setAttribute('width',1080);
-  road.setAttribute('height',26); road.setAttribute('fill','#C3DACB');
-  s.appendChild(road);
-
-  const walker=document.createElementNS(NS,'g');
-  walker.setAttribute('id','walker');
-  walker.innerHTML=personSVG(0,{bag:true});
-  s.appendChild(walker);
-}
-const walker=$('walker');
-const wLegL=walker.querySelector('.legL'), wLegR=walker.querySelector('.legR');
-
-/* ---------- 6. handoff scene ---------- */
-{
-  const s=$('handscene');
-  const door=document.createElementNS(NS,'rect');
-  door.setAttribute('x',640); door.setAttribute('y',120); door.setAttribute('width',300);
-  door.setAttribute('height',620); door.setAttribute('rx',20); door.setAttribute('fill','#CFE3D8');
-  s.appendChild(door);
-  const dIn=document.createElementNS(NS,'rect');
-  dIn.setAttribute('x',668); dIn.setAttribute('y',150); dIn.setAttribute('width',244);
-  dIn.setAttribute('height',590); dIn.setAttribute('rx',14); dIn.setAttribute('fill','#BFD8CA');
-  s.appendChild(dIn);
-  const knob=document.createElementNS(NS,'circle');
-  knob.setAttribute('cx',690); knob.setAttribute('cy',450); knob.setAttribute('r',11);
-  knob.setAttribute('fill','#8FB3A0'); s.appendChild(knob);
-  // potted plant — the app's illustrations always carry foliage
-  const pot=document.createElementNS(NS,'rect');
-  pot.setAttribute('x',960); pot.setAttribute('y',640); pot.setAttribute('width',80);
-  pot.setAttribute('height',86); pot.setAttribute('rx',10); pot.setAttribute('fill','#C98A5B');
-  s.appendChild(pot);
-  [[1000,560,52,74],[962,596,40,58],[1038,596,40,58]].forEach(([cx,cy,rx,ry])=>{
-    const e=document.createElementNS(NS,'ellipse');
-    e.setAttribute('cx',cx);e.setAttribute('cy',cy);e.setAttribute('rx',rx);e.setAttribute('ry',ry);
-    e.setAttribute('fill','#1a5a30');e.setAttribute('opacity','.75');s.appendChild(e);});
-  const g1=document.createElementNS(NS,'g'); g1.setAttribute('id','hp1');
-  g1.innerHTML=personSVG(1,{bag:true}); s.appendChild(g1);
-  const g2=document.createElementNS(NS,'g'); g2.setAttribute('id','hp2');
-  g2.innerHTML=personSVG(3); s.appendChild(g2);
-  const heart=document.createElementNS(NS,'text');
-  heart.setAttribute('id','hheart'); heart.setAttribute('text-anchor','middle');
-  heart.setAttribute('font-size','120'); heart.textContent='💚';
-  s.appendChild(heart);
-}
-
-/* ---------- 7. map pins ---------- */
-const PIN=[
-  {x:250,y:300,e:'🍔'},{x:520,y:210,e:'☕'},{x:800,y:320,e:'🧺'},
-  {x:330,y:520,e:'🍜'},{x:640,y:470,e:'🧹'},{x:880,y:600,e:'🛒'},
-  {x:200,y:700,e:'🧋'},{x:520,y:730,e:'🍰'},{x:790,y:840,e:'🔧'},
-];
-const pinEls=[];
-{
-  const s=$('city');
-  const base=document.createElementNS(NS,'ellipse');
-  base.setAttribute('cx',540); base.setAttribute('cy',560); base.setAttribute('rx',470);
-  base.setAttribute('ry',330); base.setAttribute('fill','#E2F0E9');
-  s.appendChild(base);
-  for(let i=0;i<11;i++){
-    const w=90+rnd()*70,h=70+rnd()*90;
-    const b=document.createElementNS(NS,'rect');
-    b.setAttribute('x',120+rnd()*820); b.setAttribute('y',260+rnd()*520);
-    b.setAttribute('width',w); b.setAttribute('height',h); b.setAttribute('rx',14);
-    b.setAttribute('fill','#CFE3D8'); s.appendChild(b);
-  }
-  PIN.forEach(p=>{
-    const g=document.createElementNS(NS,'g');
-    const c=document.createElementNS(NS,'circle');
-    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',46);
-    c.setAttribute('fill','#fff'); c.setAttribute('stroke','#1A6B4A'); c.setAttribute('stroke-width','4');
-    const tx=document.createElementNS(NS,'text');
-    tx.setAttribute('x',p.x); tx.setAttribute('y',p.y+16); tx.setAttribute('text-anchor','middle');
-    tx.setAttribute('font-size','42'); tx.textContent=p.e;
-    g.append(c,tx); s.appendChild(g); pinEls.push(g);
+  const s=$('s4art');
+  [[150,240,240,470],[690,180,240,530]].forEach(([x,y,w,h])=>{
+    s.appendChild(el('rect',{x,y,width:w,height:h,rx:20,fill:'#CFE3D8'}));
+    for(let r=0;r<4;r++)for(let c=0;c<2;c++)
+      s.appendChild(el('rect',{x:x+30+c*110,y:y+34+r*110,width:80,height:66,rx:9,
+        fill:'#F5C842',opacity:.55}));
   });
+  hopPath=el('path',{d:'M 300 300 Q 540 90 800 250',fill:'none',stroke:'#1A6B4A',
+    'stroke-width':8,'stroke-linecap':'round','stroke-dasharray':'2 16'});
+  s.appendChild(hopPath); hopLen=hopPath.getTotalLength();
+  const w=el('g',{id:'s4walk'}); w.innerHTML=personSVG(0,{bag:true}); s.appendChild(w);
 }
 
-/* ---------- 8. expansion grid ---------- */
-const CATS=[['🍔','Food'],['🧺','Laundry'],['🧹','Cleaning'],['🏠','Housekeeping'],['🔧','Services'],['🛒','Local shops']];
-CATS.forEach(([e,label])=>{
+/* ---- 7. why: money stays ---- */
+const coinEls=[];
+{
+  const s=$('whyart');
+  const a=el('g',{id:'whyA'}); a.innerHTML=personSVG(2); s.appendChild(a);
+  const b=el('g',{id:'whyB'}); b.innerHTML=personSVG(3); s.appendChild(b);
+  for(let i=0;i<5;i++){
+    const g=el('g',{class:'coin'});
+    g.appendChild(el('circle',{r:40,fill:'#F5C842',stroke:'#D9A400','stroke-width':4}));
+    const tx=el('text',{'text-anchor':'middle',y:14,'font-size':42,'font-weight':'800',fill:'#7A5A00'});
+    tx.textContent='₱'; g.appendChild(tx);
+    s.appendChild(g); coinEls.push(g);
+  }
+}
+
+/* ---- 8. beyond food ---- */
+const CATS=[['🍔','Food'],['🧺','Laundry'],['🧹','Cleaning'],['🏠','Housekeeping'],['🔧','Repairs'],['🛒','Sari-sari']];
+CATS.forEach(([e,l])=>{
   const d=document.createElement('div');
-  d.style.cssText='position:absolute;width:270px;display:flex;flex-direction:column;align-items:center;gap:16px;will-change:transform,opacity';
-  d.innerHTML=`<div style="width:150px;height:150px;border-radius:40px;background:rgba(255,255,255,.14);
-      display:flex;align-items:center;justify-content:center;font-size:72px">${e}</div>
-    <div style="font-size:28px;font-weight:700;color:rgba(255,255,255,.9)" class="kin">${label}</div>`;
+  d.style.cssText='position:absolute;width:260px;display:flex;flex-direction:column;align-items:center;gap:14px;will-change:transform,opacity';
+  d.innerHTML=`<div style="width:148px;height:148px;border-radius:40px;background:rgba(255,255,255,.14);
+    display:flex;align-items:center;justify-content:center;font-size:70px">${e}</div>
+    <div class="kin" style="font-size:27px;color:rgba(255,255,255,.92)">${l}</div>`;
   $('grid').appendChild(d);
 });
 const catEls=[...$('grid').children];
 
-/* ---------- 9. crowd ---------- */
-const crowdEls=[];
+/* ---- 9. crowd ---- */
+const crowdEls=[],heartEls=[];
 {
   const s=$('crowd');
-  const glow=document.createElementNS(NS,'ellipse');
-  glow.setAttribute('cx',540); glow.setAttribute('cy',600); glow.setAttribute('rx',480);
-  glow.setAttribute('ry',100); glow.setAttribute('fill','#D7EADF');
-  s.appendChild(glow);
-  for(let i=0;i<6;i++){
-    const g=document.createElementNS(NS,'g');
-    g.innerHTML=personSVG(i,{wave:i%2===0});
-    s.appendChild(g); crowdEls.push(g);
-  }
+  s.appendChild(el('ellipse',{cx:540,cy:600,rx:480,ry:100,fill:'#D7EADF'}));
+  for(let i=0;i<6;i++){const g=el('g'); g.innerHTML=personSVG(i); s.appendChild(g); crowdEls.push(g);}
   for(let i=0;i<5;i++){
-    const h=document.createElementNS(NS,'text');
-    h.setAttribute('text-anchor','middle'); h.setAttribute('font-size','66');
-    h.textContent=i%2?'💚':'✨';
-    h.setAttribute('class','cheart'); s.appendChild(h);
+    const h=el('text',{'text-anchor':'middle','font-size':66});
+    h.textContent=i%2?'💚':'✨'; s.appendChild(h); heartEls.push(h);
   }
 }
-const heartEls=[...$('crowd').querySelectorAll('.cheart')];
 
 /* ================= per-frame ================= */
-function show(el,a){ el.style.opacity=a; el.style.display=a<=0.002?'none':'block'; }
-
 function seek(t){
   t=clamp(t,0,DUR);
 
-  /* ---- 1 HOOK ---- */
+  /* 1 HOOK */
   const aH=alpha(t,S.hook,0,0.35); show($('l-hook'),aH);
   if(aH>0.002){
-    const push=lerp(1.12,1.0,easeOut(prog(t,0,4.6)));
-    $('facade').style.transform=`scale(${push})`;
-    $('facade').style.transformOrigin='540px 500px';
-
+    $('facade').style.transform=`scale(${lerp(1.1,1.0,easeOut(prog(t,0,3.6)))})`;
+    $('facade').style.transformOrigin='540px 460px';
     winCells.forEach(w=>{
-      // one window first, then the building spreads awake
-      const st=0.25+w.d*0.42;
-      const u=easeOut(prog(t,st,st+0.5));
-      const flicker=1-0.10*Math.sin((t-st)*9)*clamp(prog(t,st,st+0.28));
-      w.glow.style.opacity=w.lit?u*0.92*flicker:0;
-      w.em.style.opacity=(w.lit&&w.hasFood)?easeOut(prog(t,st+0.28,st+0.7)):0;
+      const st=0.2+w.d*0.34, u=easeOut(prog(t,st,st+0.45));
+      const flick=1-0.10*Math.sin((t-st)*9)*clamp(prog(t,st,st+0.26));
+      w.glow.style.opacity=w.lit?u*0.92*flick:0;
+      w.em.style.opacity=(w.lit&&w.food)?easeOut(prog(t,st+0.26,st+0.66)):0;
     });
-
-    const h1=back(prog(t,0.15,0.65));
-    $('hook1').style.opacity=clamp(prog(t,0.12,0.4))*(1-prog(t,2.5,2.9));
-    $('hook1').style.transform=`scale(${lerp(0.9,1,clamp(h1))})`;
-
-    const h2=easeOut(prog(t,2.55,3.05));
-    $('hook2').style.opacity=h2*(1-prog(t,5.0,5.4));
-    $('hook2').style.transform=`translateY(${lerp(34,0,h2)}px)`;
+    $('hook1').style.opacity=clamp(prog(t,0.1,0.36))*(1-prog(t,2.2,2.6));
+    $('hook1').style.transform=`scale(${lerp(0.9,1,clamp(back(prog(t,0.12,0.6))))})`;
+    const h2=easeOut(prog(t,2.3,2.8));
+    $('hook2').style.opacity=h2*(1-prog(t,3.9,4.2));
+    $('hook2').style.transform=`translateY(${lerp(32,0,h2)}px)`;
   }
 
-  /* ---- 2 LOGO ---- */
+  /* 2 PROBLEM */
+  const aP=alpha(t,S.prob); show($('l-prob'),aP);
+  if(aP>0.002){
+    // the long haul draws slowly — that slowness is the point
+    const draw=easeInOut(prog(t,4.4,7.4));
+    farRoute.setAttribute('stroke-dasharray',farLen);
+    farRoute.setAttribute('stroke-dashoffset',farLen*(1-draw));
+    farPin.style.opacity=clamp(prog(t,7.2,7.6));
+    farPin.setAttribute('r',20*lerp(0.94,1.25,Math.sin(clamp(prog(t,7.2,7.9))*Math.PI)));
+    farBlocks.forEach((b,i)=>{ b.style.opacity=0.9*(1-prog(t,7.9+((i%7)*0.02),8.6)); });
+    $('cityfar').style.transform=`scale(${lerp(1,1.5,easeInOut(prog(t,7.9,9.4)))})`;
+    $('cityfar').style.transformOrigin='540px 250px';
+    farRoute.style.opacity=1-prog(t,7.9,8.5);
+
+    $('prob1').style.opacity=easeOut(prog(t,4.3,4.8))*(1-prog(t,7.5,7.9));
+    const p2=easeOut(prog(t,8.0,8.6));
+    $('prob2').style.opacity=p2*(1-prog(t,9.5,9.8));
+    $('prob2').style.transform=`translateY(${lerp(30,0,p2)}px)`;
+  }
+
+  /* 3 LOGO */
   const aL=alpha(t,S.logo); show($('l-logo'),aL);
   if(aL>0.002){
-    const u=easeOut(prog(t,5.3,6.1));
-    const drop=lerp(-70,0,u);
-    const sc=lerp(0.9,1,back(clamp(prog(t,5.3,6.15))));
-    $('mark').style.transform=`translateY(${drop}px) scale(${sc})`;
+    const u=easeOut(prog(t,9.7,10.4));
     $('mark').style.opacity=u;
-    // gold dot pings after the mark lands
-    const dot=$('mark').querySelector('.dot');
-    const dp=prog(t,6.0,6.45);
-    dot.setAttribute('r', 2.5*lerp(1,1.9,Math.sin(dp*Math.PI)));
-    const wu=easeOut(prog(t,5.95,6.6));
+    $('mark').style.transform=`translateY(${lerp(-56,0,u)}px) scale(${lerp(0.92,1,back(clamp(prog(t,9.7,10.5))))})`;
+    const dp=prog(t,10.35,10.75);
+    $('mark').querySelector('.dot').setAttribute('r',2.5*lerp(1,1.9,Math.sin(dp*Math.PI)));
+    const wu=easeOut(prog(t,10.3,10.9));
     $('logoword').style.opacity=wu;
-    $('logoword').style.transform=`translateY(${lerp(26,0,wu)}px)`;
-    const su=easeOut(prog(t,6.35,7.0));
-    $('logosub').style.opacity=su*0.95;
-    $('logosub').style.transform=`translateY(${lerp(18,0,su)}px)`;
+    $('logoword').style.transform=`translateY(${lerp(24,0,wu)}px)`;
+    const su=easeOut(prog(t,10.7,11.3));
+    $('logosub').style.opacity=su; $('logosub').style.transform=`translateY(${lerp(16,0,su)}px)`;
   }
 
-  /* ---- 3+4 PHONE ---- */
-  const aP=alpha(t,S.phone); show($('l-phone'),aP);
-  if(aP>0.002){
-    const rise=easeOut(prog(t,8.3,9.2));
-    const out=easeInOut(prog(t,15.0,15.6));
-    $('phone').style.transform=`translateY(${lerp(120,0,rise)+lerp(0,-70,out)}px) scale(${lerp(0.94,1,rise)*lerp(1,0.94,out)})`;
-    const cu=easeOut(prog(t,8.5,9.3));
-    $('phcap').style.opacity=cu*(1-prog(t,14.6,15.2));
-    $('phcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+  /* 4 STEP 1 */
+  const a1=alpha(t,S.s1); show($('l-s1'),a1);
+  if(a1>0.002){
+    const bu=easeOut(prog(t,12.3,12.8));
+    $('b1').style.opacity=bu; $('b1').style.transform=`translateY(${lerp(18,0,bu)}px)`;
+    const cu=easeOut(prog(t,12.5,13.1));
+    $('s1cap').style.opacity=cu; $('s1cap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+    const pu=easeOut(prog(t,13.0,13.7));
+    $('s1p').setAttribute('transform',`translate(${lerp(240,330,pu)} 330) scale(3.4)`);
+    $('s1p').style.opacity=pu;
+    s1steam.forEach((sp,i)=>{
+      const u=prog(t,13.6+i*0.22,15.0+i*0.22);
+      sp.setAttribute('transform',`translate(0 ${lerp(0,-70,u)})`);
+      sp.style.opacity=Math.sin(clamp(u)*Math.PI)*0.75;
+    });
+    const ku=easeOut(prog(t,14.4,15.0));
+    $('s1card').style.opacity=ku; $('s1card').style.transform=`translateY(${lerp(34,0,ku)}px)`;
+    // the toggle flipping is the "store is now open" beat
+    const tg=easeOut(prog(t,15.3,15.7));
+    $('s1knob').style.transform=`translateX(${lerp(0,44,tg)}px)`;
+    $('s1toggle').style.background=tg>0.5?'#1A6B4A':'#D6E5DC';
+    const ou=easeOut(prog(t,15.6,16.1));
+    $('s1open').style.opacity=ou*(1-prog(t,17.0,17.4));
+    $('s1open').style.transform=`translateY(${lerp(14,0,ou)}px)`;
+  }
 
-    const searchA=Math.min(clamp((t-9.0)/0.3),clamp((11.9-t)/0.3));
-    const orderA =Math.min(clamp((t-11.8)/0.3),clamp((15.6-t)/0.3));
-    show($('st-search'),searchA); show($('st-order'),orderA);
+  /* 5 STEP 2 + 3 */
+  const aPh=alpha(t,S.phone); show($('l-phone'),aPh);
+  if(aPh>0.002){
+    const rise=easeOut(prog(t,17.3,18.1));
+    const out=easeInOut(prog(t,25.8,26.4));
+    $('phone').style.transform=`translateY(${lerp(110,0,rise)+lerp(0,-60,out)}px) scale(${lerp(0.95,1,rise)*lerp(1,0.95,out)})`;
+
+    // badge + headline swap from step 2 to step 3 mid-scene
+    const isStep3 = t>=21.6;
+    $('b2').innerHTML = isStep3
+      ? 'STEP 3<span class="dots"><i></i><i></i><i class="on"></i><i></i></span>'
+      : 'STEP 2<span class="dots"><i></i><i class="on"></i><i></i><i></i></span>';
+    $('phcap').innerHTML = isStep3 ? 'Tap once.<br/>She starts cooking.' : "You see who's<br/>cooking nearby.";
+    const swap = isStep3 ? easeOut(prog(t,21.6,22.1)) : easeOut(prog(t,17.5,18.1));
+    $('b2').style.opacity=swap; $('phcap').style.opacity=swap*(1-prog(t,25.6,26.2));
+    $('phcap').style.transform=`translateY(${lerp(20,0,swap)}px)`;
+
+    const sA=Math.min(clamp((t-18.0)/0.3),clamp((21.7-t)/0.3));
+    const oA=Math.min(clamp((t-21.6)/0.3),clamp((26.4-t)/0.3));
+    show($('st-search'),sA); show($('st-order'),oA);
 
     const word='Burger';
-    const n=Math.round(lerp(0,word.length,clamp(prog(t,9.25,10.05))));
-    $('typed').textContent=word.slice(0,n);
-    $('caret').style.opacity=(t<10.3&&Math.floor(t*3)%2===0)?1:0;
-
-    resEls.forEach((el,i)=>{
-      const u=easeOut(prog(t,10.25+i*0.07,10.8+i*0.07));
-      el.style.opacity=u;
-      el.style.transform=`translateY(${lerp(26,0,u)}px) scale(${lerp(0.96,1,u)})`;
+    $('typed').textContent=word.slice(0,Math.round(lerp(0,word.length,clamp(prog(t,18.2,19.0)))));
+    $('caret').style.opacity=(t<19.3&&Math.floor(t*3)%2===0)?1:0;
+    resEls.forEach((r,i)=>{
+      const u=easeOut(prog(t,19.15+i*0.07,19.7+i*0.07));
+      r.style.opacity=u; r.style.transform=`translateY(${lerp(24,0,u)}px) scale(${lerp(0.96,1,u)})`;
     });
 
-    // tap "+ Add" → cart → placed
-    const tap=prog(t,12.35,12.7);
+    const tap=prog(t,22.5,22.85);
     $('addpill').style.transform=`scale(${lerp(1,0.9,Math.sin(tap*Math.PI))})`;
-    const cb=easeOut(prog(t,12.6,13.0));
-    $('cartbar').style.opacity=cb;
-    $('cartbar').style.transform=`translateY(${lerp(20,0,cb)}px)`;
-    const pl=easeOut(prog(t,13.5,14.0));
-    $('placed').style.opacity=pl;
-    $('placed').style.transform=`translateY(${lerp(24,0,pl)}px)`;
-    $('checkring').style.transform=`scale(${lerp(0.9,1,back(clamp(prog(t,13.55,14.15))))})`;
+    const cb=easeOut(prog(t,22.8,23.2));
+    $('cartbar').style.opacity=cb; $('cartbar').style.transform=`translateY(${lerp(18,0,cb)}px)`;
+    const pl=easeOut(prog(t,23.9,24.4));
+    $('placed').style.opacity=pl; $('placed').style.transform=`translateY(${lerp(22,0,pl)}px)`;
+    $('checkring').style.transform=`scale(${lerp(0.9,1,back(clamp(prog(t,23.95,24.55))))})`;
   }
 
-  /* ---- 5 WALK ---- */
-  const aW=alpha(t,S.walk); show($('l-walk'),aW);
-  if(aW>0.002){
-    const u=prog(t,15.5,19.1);
-    const x=lerp(-120,1200,u);
-    const bob=Math.abs(Math.sin(t*7))*7;
-    walker.setAttribute('transform',`translate(${x} ${374-bob}) scale(3)`);
+  /* 6 STEP 4 */
+  const a4=alpha(t,S.s4); show($('l-s4'),a4);
+  if(a4>0.002){
+    const bu=easeOut(prog(t,26.3,26.8));
+    $('b4').style.opacity=bu; $('b4').style.transform=`translateY(${lerp(18,0,bu)}px)`;
+    const cu=easeOut(prog(t,26.5,27.1));
+    $('s4cap').style.opacity=cu; $('s4cap').style.transform=`translateY(${lerp(22,0,cu)}px)`;
+
+    const d=easeOut(prog(t,27.2,28.4));
+    hopPath.setAttribute('stroke-dasharray',hopLen);
+    hopPath.setAttribute('stroke-dashoffset',hopLen*(1-d));
+    // walker rides the same curve the dashes just drew
+    const wu=prog(t,27.4,29.9);
+    const pt=hopPath.getPointAtLength(hopLen*wu);
+    const bob=Math.abs(Math.sin(t*7))*6;
+    const w=$('s4walk');
+    w.setAttribute('transform',`translate(${pt.x} ${pt.y-bob+40}) scale(2.1)`);
+    w.style.opacity=clamp(prog(t,27.4,27.7));
     const sw=Math.sin(t*7)*22;
-    wLegL.setAttribute('transform',`rotate(${sw} -7 40)`);
-    wLegR.setAttribute('transform',`rotate(${-sw} 7 40)`);
-    const cu=easeOut(prog(t,15.6,16.2));
-    $('walkcap').style.opacity=cu*(1-prog(t,18.7,19.3));
-    $('walkcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+    w.querySelector('.legL').setAttribute('transform',`rotate(${sw} -7 40)`);
+    w.querySelector('.legR').setAttribute('transform',`rotate(${-sw} 7 40)`);
+
+    const tu=easeOut(prog(t,29.8,30.3));
+    $('s4time').style.opacity=tu*(1-prog(t,31.2,31.6));
+    $('s4time').style.transform=`translateY(${lerp(18,0,tu)}px)`;
   }
 
-  /* ---- 6 HANDOFF ---- */
-  const aHo=alpha(t,S.hand); show($('l-hand'),aHo);
-  if(aHo>0.002){
-    const app=easeOut(prog(t,19.4,20.3));
-    $('hp1').setAttribute('transform',`translate(${lerp(120,400,app)} 480) scale(4)`);
-    $('hp2').setAttribute('transform',`translate(790 480) scale(4)`);
-    const give=prog(t,20.5,21.2);
-    const arm=$('hp1').querySelector('.armR');
-    arm.setAttribute('transform',`rotate(${lerp(0,-26,easeOut(give))} 15 14)`);
-    const hp=prog(t,21.0,22.2);
-    $('hheart').setAttribute('x',595);
-    $('hheart').setAttribute('y',lerp(300,140,easeOut(hp)));
-    $('hheart').style.opacity=Math.sin(clamp(hp)*Math.PI);
-    const cu=easeOut(prog(t,19.5,20.1));
-    $('handcap').style.opacity=cu*(1-prog(t,21.9,22.5));
-    $('handcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
-  }
-
-  /* ---- 7 MAP ---- */
-  const aM=alpha(t,S.map); show($('l-map'),aM);
-  if(aM>0.002){
-    $('city').style.transform=`scale(${lerp(0.97,1.05,prog(t,22.4,27.0))})`;
-    $('city').style.transformOrigin='540px 520px';
-    pinEls.forEach((g,i)=>{
-      const st=22.9+i*0.09;
-      const u=clamp(back(clamp(prog(t,st,st+0.42))));
-      const float=Math.sin((t-st)*2.4+i)*5*clamp(prog(t,st+0.4,st+0.9));
-      g.style.opacity=clamp(prog(t,st,st+0.22));
-      g.setAttribute('transform',`translate(0 ${float}) scale(${lerp(0.9,1,u)})`);
-      g.style.transformOrigin=`${PIN[i].x}px ${PIN[i].y}px`;
+  /* 7 WHY */
+  const aW=alpha(t,S.why); show($('l-why'),aW);
+  if(aW>0.002){
+    const cu=easeOut(prog(t,31.5,32.1));
+    $('whycap').style.opacity=cu; $('whycap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+    const pu=easeOut(prog(t,31.9,32.6));
+    $('whyA').setAttribute('transform',`translate(250 470) scale(3.4)`);
+    $('whyB').setAttribute('transform',`translate(830 470) scale(3.4)`);
+    $('whyA').style.opacity=pu; $('whyB').style.opacity=pu;
+    coinEls.forEach((c,i)=>{
+      const st=32.7+i*0.30, u=prog(t,st,st+1.15);
+      const arc=Math.sin(clamp(u)*Math.PI)*210;
+      c.setAttribute('transform',`translate(${lerp(300,780,easeInOut(clamp(u)))} ${430-arc})`);
+      c.style.opacity=clamp(u)>0.98?0:Math.sin(clamp(u)*Math.PI)*1.1;
     });
-    const cu=easeOut(prog(t,22.6,23.2));
-    $('mapcap').style.opacity=cu*(1-prog(t,26.4,27.0));
-    $('mapcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+    const su=easeOut(prog(t,34.6,35.2));
+    $('whysub').style.opacity=su*(1-prog(t,36.6,37.0));
+    $('whysub').style.transform=`translateY(${lerp(18,0,su)}px)`;
   }
 
-  /* ---- 8 EXPANSION ---- */
+  /* 8 BEYOND FOOD */
   const aE=alpha(t,S.exp); show($('l-exp'),aE);
   if(aE>0.002){
-    const cu=easeOut(prog(t,26.9,27.5));
-    $('expcap').style.opacity=cu;
-    $('expcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
-    catEls.forEach((el,i)=>{
-      const st=27.3+i*0.20;                    // quick cascade, not a slow orbit
-      const u=easeOut(clamp(prog(t,st,st+0.5)));
-      el.style.left=(i%3)*310+'px';
-      el.style.top=Math.floor(i/3)*310+'px';
-      el.style.opacity=u;
-      el.style.transform=`translateY(${lerp(40,0,u)}px) scale(${lerp(0.94,1,u)})`;
+    const cu=easeOut(prog(t,36.9,37.5));
+    $('expcap').style.opacity=cu; $('expcap').style.transform=`translateY(${lerp(22,0,cu)}px)`;
+    catEls.forEach((c,i)=>{
+      const st=37.3+i*0.19, u=easeOut(clamp(prog(t,st,st+0.5)));
+      c.style.left=(i%3)*305+'px'; c.style.top=Math.floor(i/3)*300+'px';
+      c.style.opacity=u;
+      c.style.transform=`translateY(${lerp(38,0,u)}px) scale(${lerp(0.94,1,u)})`;
     });
   }
 
-  /* ---- 9 COMMUNITY ---- */
+  /* 9 COMMUNITY */
   const aC=alpha(t,S.comm); show($('l-comm'),aC);
   if(aC>0.002){
     crowdEls.forEach((g,i)=>{
-      const st=31.6+i*0.08;
-      const u=easeOut(clamp(prog(t,st,st+0.5)));
-      const x=125+i*166, bob=Math.sin(t*2.6+i*0.8)*10;
+      const st=42.2+i*0.08, u=easeOut(clamp(prog(t,st,st+0.5)));
+      const bob=Math.sin(t*2.6+i*0.8)*10;
       g.style.opacity=u;
-      g.setAttribute('transform',`translate(${x} ${lerp(500,420,u)+bob}) scale(2.5)`);
-      const arm=g.querySelector('.armR');
-      if(i%2===0) arm.setAttribute('transform',`rotate(${Math.sin(t*5+i)*20} 15 14)`);
+      g.setAttribute('transform',`translate(${125+i*166} ${lerp(500,420,u)+bob}) scale(2.5)`);
+      if(i%2===0) g.querySelector('.armR').setAttribute('transform',`rotate(${Math.sin(t*5+i)*20} 15 14)`);
     });
     heartEls.forEach((h,i)=>{
-      const st=32.3+i*0.28;
-      const u=prog(t,st,st+1.6);
+      const st=42.9+i*0.26, u=prog(t,st,st+1.5);
       h.setAttribute('x',170+i*190);
       h.setAttribute('y',lerp(400,170,easeOut(u)));
       h.style.opacity=Math.sin(clamp(u)*Math.PI)*0.95;
     });
-    const cu=easeOut(prog(t,31.6,32.2));
-    $('commcap').style.opacity=cu*(1-prog(t,34.9,35.4));
-    $('commcap').style.transform=`translateY(${lerp(26,0,cu)}px)`;
+    const cu=easeOut(prog(t,42.2,42.8));
+    $('commcap').style.opacity=cu*(1-prog(t,45.9,46.4));
+    $('commcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
   }
 
-  /* ---- 10 CTA ---- */
+  /* 10 CTA */
   const aT=alpha(t,S.cta,0.35,0); show($('l-cta'),aT);
   if(aT>0.002){
-    const u=easeOut(prog(t,35.4,36.2));
+    const u=easeOut(prog(t,46.4,47.1));
     $('mark2').style.opacity=u;
-    $('mark2').style.transform=`scale(${lerp(0.92,1,back(clamp(prog(t,35.4,36.3))))})`;
-    const wu=easeOut(prog(t,35.9,36.6));
-    $('ctaword').style.opacity=wu;
-    $('ctaword').style.transform=`translateY(${lerp(24,0,wu)}px)`;
-    const tu=easeOut(prog(t,36.3,37.0));
-    $('ctatag').style.opacity=tu;
-    $('ctatag').style.transform=`translateY(${lerp(20,0,tu)}px)`;
-    const bu=easeOut(prog(t,36.8,37.5));
+    $('mark2').style.transform=`scale(${lerp(0.92,1,back(clamp(prog(t,46.4,47.2))))})`;
+    const wu=easeOut(prog(t,46.9,47.6));
+    $('ctaword').style.opacity=wu; $('ctaword').style.transform=`translateY(${lerp(22,0,wu)}px)`;
+    const tu=easeOut(prog(t,47.3,48.0));
+    $('ctatag').style.opacity=tu; $('ctatag').style.transform=`translateY(${lerp(18,0,tu)}px)`;
+    const bu=easeOut(prog(t,47.8,48.5));
     $('ctabtn').style.opacity=bu;
-    $('ctabtn').style.transform=`translateY(${lerp(18,0,bu)}px) scale(${lerp(0.96,1,bu)})`;
+    $('ctabtn').style.transform=`translateY(${lerp(16,0,bu)}px) scale(${lerp(0.96,1,bu)})`;
   }
 }
 
 window.seek=seek; window.FILM={DUR};
 seek(0);
-
-/* Force every face to load before capture starts. document.fonts.ready alone
-   is not enough: a face used only inside a scene that is hidden at t=0 would
-   otherwise stream in mid-render and a few frames would fall back. */
 Promise.all([
   document.fonts.load("800 100px 'Bricolage Grotesque'"),
   document.fonts.load("400 100px 'Fraunces'"),
   document.fonts.load("600 100px 'Plus Jakarta Sans'"),
 ]).then(()=>document.fonts.ready).then(()=>{ window.__filmReady=true; });
 
-/* preview only — kept off the capture path so renders stay deterministic */
 if(new URLSearchParams(location.search).has('preview')){
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let playing=!reduce,t0=performance.now(),acc=0;
