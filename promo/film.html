@@ -265,28 +265,91 @@ $('mark2').innerHTML=markSVG('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
 const SKIN=['#C4845A','#B8896A','#8B6040','#E0A878','#A9714B'];
 const HAIR=['#3d2010','#2a1a0a','#2a1810','#4a2c14'];
 const SHIRT=['#2ea877','#5A7A5A','#3a6a5a','#F59E0B','#1A6B4A','#D97706'];
+
+/** lighten (amt>0) or darken (amt<0) a hex colour */
+function shade(hex,amt){
+  const n=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+  const f=c=>Math.max(0,Math.min(255,Math.round(amt>=0?c+(255-c)*amt:c*(1+amt))));
+  return '#'+n.map(v=>f(v).toString(16).padStart(2,'0')).join('');
+}
+
+/* Clay-render figures: every form carries its own light. A single key from
+   the upper-left gives each mass a lit side and a terminator, contact
+   shadows sit under the chin and feet, and a rim light separates the head
+   from the background — the same cues a soft-3D render produces, drawn
+   as gradients so it stays cheap to rasterise. */
+let _pid=0;
 function personSVG(i,{bag=false,apron=false,cap=false}={}){
-  const sk=SKIN[i%SKIN.length],ha=HAIR[i%HAIR.length],sh=SHIRT[i%SHIRT.length];
+  const id='pp'+(_pid++);
+  const sk=SKIN[i%SKIN.length], ha=HAIR[i%HAIR.length], sh=SHIRT[i%SHIRT.length];
   return `<g class="person">
-    <ellipse class="shadow" cx="0" cy="66" rx="30" ry="7" fill="#0D2B1A" opacity=".13"/>
+    <defs>
+      <radialGradient id="${id}sk" cx="34%" cy="26%" r="82%">
+        <stop offset="0%" stop-color="${shade(sk,.34)}"/>
+        <stop offset="55%" stop-color="${sk}"/>
+        <stop offset="100%" stop-color="${shade(sk,-.30)}"/>
+      </radialGradient>
+      <radialGradient id="${id}bd" cx="32%" cy="20%" r="88%">
+        <stop offset="0%" stop-color="${shade(sh,.30)}"/>
+        <stop offset="52%" stop-color="${sh}"/>
+        <stop offset="100%" stop-color="${shade(sh,-.34)}"/>
+      </radialGradient>
+      <linearGradient id="${id}ar" x1="0" y1="0" x2="0.7" y2="1">
+        <stop offset="0%" stop-color="${shade(sk,.20)}"/>
+        <stop offset="100%" stop-color="${shade(sk,-.24)}"/>
+      </linearGradient>
+      <linearGradient id="${id}lg" x1="0" y1="0" x2="0.6" y2="1">
+        <stop offset="0%" stop-color="${shade(sh,.10)}"/>
+        <stop offset="100%" stop-color="${shade(sh,-.40)}"/>
+      </linearGradient>
+      <radialGradient id="${id}ao" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#0D2B1A" stop-opacity=".40"/>
+        <stop offset="100%" stop-color="#0D2B1A" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="${id}gs" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#0D2B1A" stop-opacity=".26"/>
+        <stop offset="100%" stop-color="#0D2B1A" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="${id}hr" cx="34%" cy="22%" r="80%">
+        <stop offset="0%" stop-color="${shade(ha,.34)}"/>
+        <stop offset="100%" stop-color="${ha}"/>
+      </radialGradient>
+    </defs>
+
+    <ellipse class="shadow" cx="2" cy="68" rx="40" ry="12" fill="url(#${id}gs)"/>
     <g class="legs">
-      <path class="legL" d="M-7 40 L-8 62" stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
-      <path class="legR" d="M7 40 L8 62"  stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
+      <path class="legL" d="M-7 40 L-8 62" stroke="url(#${id}lg)" stroke-width="10" stroke-linecap="round"/>
+      <path class="legR" d="M7 40 L8 62"  stroke="url(#${id}lg)" stroke-width="10" stroke-linecap="round"/>
     </g>
-    <ellipse cx="0" cy="22" rx="18" ry="22" fill="${sh}"/>
-    ${apron?`<path d="M-11 8 h22 v20 a11 11 0 0 1-22 0 z" fill="#EFF7F2" opacity=".92"/>
-             <path d="M-6 8 L-3 0 M6 8 L3 0" stroke="#EFF7F2" stroke-width="2.4" stroke-linecap="round"/>`:''}
-    ${bag?`<g><rect x="16" y="14" width="26" height="26" rx="5" fill="#F5C842"/>
+
+    <ellipse cx="0" cy="22" rx="18" ry="22" fill="url(#${id}bd)"/>
+    <path d="M-14 8 Q-17 22 -12 36" stroke="${shade(sh,.42)}" stroke-width="2.6"
+          fill="none" stroke-linecap="round" opacity=".55"/>
+    ${apron?`<path d="M-11 8 h22 v20 a11 11 0 0 1-22 0 z" fill="#F3FAF5"/>
+             <path d="M-11 8 h22 v5 h-22 z" fill="#D8E8DE"/>
+             <path d="M-6 8 L-3 0 M6 8 L3 0" stroke="#F3FAF5" stroke-width="2.4" stroke-linecap="round"/>`:''}
+    ${bag?`<g><rect x="16" y="14" width="26" height="26" rx="6" fill="#F5C842"/>
+      <rect x="16" y="14" width="26" height="9" rx="5" fill="#FFDE7A"/>
+      <rect x="16" y="33" width="26" height="7" rx="4" fill="#D9A400" opacity=".7"/>
       <path d="M23 14v-4a5 5 0 0 1 10 0v4" stroke="#B8860B" stroke-width="2.4" fill="none"/></g>`:''}
-    <path class="armR" d="M15 14 Q30 8 34 2" stroke="${sk}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <path class="armL" d="M-15 14 Q-28 20 -30 28" stroke="${sk}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <circle cx="0" cy="-8" r="16" fill="${sk}"/>
-    <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="${ha}"/>
-    <ellipse cx="0" cy="-18" rx="14" ry="8" fill="${ha}"/>
-    ${cap?`<path d="M-17 -18 a17 12 0 0 1 34 0 z" fill="#1A6B4A"/>
-           <path d="M-17 -18 h-8 a3 3 0 0 0 0 5 h8 z" fill="#12533A"/>`:''}
-    <circle cx="-5" cy="-8" r="1.9" fill="#2a1810"/><circle cx="5" cy="-8" r="1.9" fill="#2a1810"/>
-    <path d="M-6 -2 Q0 3 6 -2" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <path class="armR" d="M15 14 Q30 8 34 2" stroke="url(#${id}ar)" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path class="armL" d="M-15 14 Q-28 20 -30 28" stroke="url(#${id}ar)" stroke-width="9" stroke-linecap="round" fill="none"/>
+
+    <ellipse cx="0" cy="10" rx="17" ry="9" fill="url(#${id}ao)"/>
+    <circle cx="0" cy="-8" r="16" fill="url(#${id}sk)"/>
+    <path d="M-15 -14 A16 16 0 0 1 -2 -23" stroke="${shade(sk,.55)}" stroke-width="2.2"
+          fill="none" stroke-linecap="round" opacity=".75"/>
+    <ellipse cx="-6" cy="-15" rx="4" ry="2.6" fill="#fff" opacity=".22"/>
+    <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="url(#${id}hr)"/>
+    <ellipse cx="0" cy="-18" rx="14" ry="8" fill="url(#${id}hr)"/>
+    ${cap?`<path d="M-17 -18 a17 12 0 0 1 34 0 z" fill="#1F7A55"/>
+           <path d="M-17 -18 a17 12 0 0 1 12 -11 l0 11 z" fill="#2A9268"/>
+           <path d="M-17 -18 h-8 a3 3 0 0 0 0 5 h8 z" fill="#14563C"/>`:''}
+    <circle cx="-5" cy="-8" r="2" fill="#2a1810"/><circle cx="5" cy="-8" r="2" fill="#2a1810"/>
+    <circle cx="-4.3" cy="-8.8" r=".7" fill="#fff" opacity=".8"/>
+    <circle cx="5.7" cy="-8.8" r=".7" fill="#fff" opacity=".8"/>
+    <path d="M-6 -2 Q0 3.5 6 -2" stroke="#2a1810" stroke-width="2.1" fill="none" stroke-linecap="round"/>
   </g>`;
 }
 
