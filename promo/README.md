@@ -1,18 +1,24 @@
 # LokalFinder — social film
 
-A 52-second vertical (1080×1920) explainer for TikTok / Reels / Stories, built
+A 54-second vertical (1080×1920) explainer for TikTok / Reels / Stories, built
 from the app's own brand: the real pin-house logo mark, the Lokal*Finder*
 wordmark in Bricolage Grotesque, the warm green-and-amber palette, and cartoon
 neighbours drawn in the same style as the app's community illustration.
 
-It is structured as an argument, not a montage: set up the problem, name the
-insight, then walk four numbered steps — including the merchant side, which is
-what most people miss — and close on why it matters. The step badges carry
-progress dots so a viewer always knows where they are.
+It is structured as an argument, not a montage: the building is *already* full
+of small businesses, you just can't see them — then four numbered steps
+(including the merchant side, which is what most people miss), a nine-service
+centrepiece, and a close on why it matters. The step badges carry progress dots
+so a viewer always knows where they are.
+
+The film deliberately leads with trades rather than food: the lit windows in the
+opening carry laundry, tools, brooms and sewing as well as cooking, the search
+results mix a laundry, a home kitchen and a repair, and the order that gets
+placed on screen is a wash-and-fold, not a burger.
 
 | | |
 |---|---|
-| Output | `lokalfinder-how-it-works-52s.mp4` — 1080×1920, 30fps, H.264 |
+| Output | `lokalfinder-services-54s.mp4` — 1080×1920, 30fps, H.264 |
 | Source | `film.html` — the entire film, in one file |
 | Render | `render.mjs` — frame capture + encode |
 | Audio | none (see below) |
@@ -37,8 +43,13 @@ node render.mjs                                        # → lokal-finder-60s.mp
 ```
 
 Options: `--fps 30`, `--out path.mp4`, `--scale 1` (use `--scale 2` for a
-2160×3840 master; render time roughly quadruples). A full 40s render takes
-about two minutes.
+2160×3840 master; render time roughly quadruples).
+
+A full 54s render takes roughly fifteen minutes. Most of that is the `#grain`
+overlay: `mix-blend-mode: multiply` across the full frame forces a compositing
+pass on every screenshot, which costs about 5× the per-frame time. It is worth
+it for the texture, but if you are iterating on timing rather than looks, set
+`#grain { display:none }` for a much faster preview render.
 
 ## Previewing without rendering
 
@@ -55,17 +66,17 @@ capture path stays deterministic. It does not autoplay under
 
 | Time | Beat |
 |---|---|
-| 0:00–0:04 | 7PM — the building wakes up, food behind every lit window |
-| 0:04–0:10 | The problem — a long haul across the city, then: someone is cooking one floor up |
+| 0:00–0:04 | 7PM — windows light up on every kind of small trade |
+| 0:04–0:10 | You can't see them, so everything comes from across the city |
 | 0:10–0:12 | LokalFinder |
-| 0:12–0:17 | **Step 1** — a neighbour opens a store, and flips it open for orders |
-| 0:17–0:22 | **Step 2** — you see who's cooking nearby, listed by *distance* |
-| 0:22–0:26 | **Step 3** — one tap, and she starts cooking |
-| 0:26–0:32 | **Step 4** — it travels metres, not kilometres |
-| 0:32–0:37 | Why it matters — the money stays in the building |
-| 0:37–0:42 | Beyond food — laundry, cleaning, repairs, sari-sari |
-| 0:42–0:46 | One building, one economy |
-| 0:46–0:52 | Logo, "Your community. Connected.", Get early access |
+| 0:12–0:18 | **Step 1** — three neighbours, three trades, all open |
+| 0:18–0:22 | **Step 2** — search "Laundry", results ranked by how close they are |
+| 0:22–0:27 | **Step 3** — book it in one tap |
+| 0:27–0:32 | **Step 4** — it travels metres, not kilometres |
+| 0:32–0:39 | Nine services — kitchens, laundry, cleaning, repairs, sari-sari, baking, salon, plants, errands |
+| 0:39–0:44 | Why it matters — the money stays in the building |
+| 0:44–0:48 | One building, one economy |
+| 0:48–0:54 | Logo, "Your community. Connected.", Get early access |
 
 ## Two things to know before publishing
 

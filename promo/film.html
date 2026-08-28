@@ -13,7 +13,7 @@
     --lgreen:#1A6B4A; --warm:#F59E0B; --gold:#F5C842;
     --t1:#0D2B1A; --t2:#2D4A38; --t3:#6B8F7A;
     --lbg:#F0F7F3; --s3:#E2F0E9; --night:#0B2318;
-    --sh:0 2px 8px rgba(26,107,74,.08),0 12px 34px rgba(26,107,74,.12);
+    --sh:0 2px 8px rgba(26,107,74,.08),0 14px 40px rgba(26,107,74,.14);
   }
   *{margin:0;padding:0;box-sizing:border-box}
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -22,27 +22,35 @@
   #stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--lbg)}
 
   .layer{position:absolute;inset:0;will-change:transform,opacity}
-  .f-night{background:var(--night)} .f-lbg{background:var(--lbg)}
-  .f-green{background:var(--lgreen)} .f-white{background:#fff}
+  /* soft warm ground under the light scenes instead of a flat wash */
+  .f-lbg{background:radial-gradient(ellipse 90% 60% at 50% 38%,#FBFDFB 0%,#F0F7F3 55%,#E4EFE8 100%)}
+  .f-night{background:radial-gradient(ellipse 80% 55% at 50% 42%,#123726 0%,#0B2318 60%,#071A12 100%)}
+  .f-green{background:radial-gradient(ellipse 85% 60% at 50% 40%,#22815A 0%,#1A6B4A 55%,#125237 100%)}
 
   .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
        letter-spacing:-.035em;line-height:.98;will-change:transform,opacity}
   .ser{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.03em;line-height:1.03}
   .cap{position:absolute;left:0;right:0;text-align:center;padding:0 70px;will-change:transform,opacity}
+  .hl{color:var(--gold)}
 
-  /* one consistent step system across the four how-it-works beats */
   .badge{display:inline-flex;align-items:center;gap:14px;padding:14px 30px;border-radius:999px;
     background:var(--lgreen);color:#fff;font-size:26px;font-weight:800;letter-spacing:.06em;
-    font-family:'Bricolage Grotesque',sans-serif}
+    font-family:'Bricolage Grotesque',sans-serif;box-shadow:0 8px 22px rgba(26,107,74,.28)}
   .badge .dots{display:flex;gap:7px;margin-left:6px}
   .badge .dots i{width:9px;height:9px;border-radius:99px;background:rgba(255,255,255,.35);display:block}
-  .badge .dots i.on{background:#F5C842}
+  .badge .dots i.on{background:var(--gold)}
 
-  .card{background:#fff;border-radius:28px;box-shadow:var(--sh);border:1px solid rgba(26,107,74,.10)}
+  .card{background:linear-gradient(180deg,#fff 0%,#FAFDFB 100%);border-radius:28px;
+        box-shadow:var(--sh);border:1px solid rgba(26,107,74,.10)}
+
+  /* service tile — gradient + inner highlight reads more crafted than a flat square */
+  .tile{border-radius:34px;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(160deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.12) 100%);
+        box-shadow:inset 0 2px 0 rgba(255,255,255,.28),0 14px 34px rgba(0,0,0,.16)}
 
   #phone{position:absolute;left:50%;margin-left:-305px;top:640px;width:610px;height:900px;
     border-radius:52px;background:#fff;border:1px solid rgba(26,107,74,.14);
-    box-shadow:0 40px 90px rgba(13,43,26,.18);overflow:hidden;will-change:transform}
+    box-shadow:0 46px 100px rgba(13,43,26,.22),0 4px 12px rgba(13,43,26,.10);overflow:hidden;will-change:transform}
   #ptop{display:flex;align-items:center;gap:12px;padding:32px 32px 24px;border-bottom:1px solid rgba(26,107,74,.10)}
   #ptop span{font-size:20px;font-weight:600;color:var(--t2)}
   .pst{position:absolute;left:28px;right:28px;top:126px;will-change:opacity,transform}
@@ -53,7 +61,7 @@
   .caret{display:inline-block;width:3px;height:25px;background:var(--g);vertical-align:-4px}
 
   .rcard{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:22px;margin-bottom:13px;
-    background:#fff;border:1px solid rgba(26,107,74,.12);box-shadow:0 2px 10px rgba(26,107,74,.05);
+    background:#fff;border:1px solid rgba(26,107,74,.12);box-shadow:0 3px 14px rgba(26,107,74,.07);
     will-change:transform,opacity}
   .rcard .em{width:70px;height:70px;border-radius:18px;background:var(--lbg);
     display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0}
@@ -65,8 +73,11 @@
   .cartbar{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;
     border-radius:22px;background:var(--lgreen);color:#fff;font-size:23px;font-weight:800}
 
+  /* rasterised once by the browser — adds tooth without a per-frame filter */
+  #grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
   #vig{position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 62%,rgba(0,0,0,.08) 100%)}
+    background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 60%,rgba(0,0,0,.11) 100%)}
   #safe{position:absolute;inset:0;display:none;pointer-events:none}
   #safe.on{display:block}
   #safe .bar{position:absolute;left:0;right:0;height:250px;background:rgba(255,0,0,.16)}
@@ -75,18 +86,18 @@
 <body>
 <div id="stage">
 
-  <!-- 1 HOOK -->
+  <!-- 1 HOOK — the building is full of small businesses -->
   <div class="layer f-night" id="l-hook">
     <svg id="facade" viewBox="0 0 1080 1200" style="position:absolute;left:0;top:430px;width:1080px;height:1200px"></svg>
     <div class="cap kin" id="hook1" style="top:290px;font-size:128px;color:#fff">7<span style="font-size:60px">PM</span></div>
-    <div class="cap kin" id="hook2" style="top:1360px;font-size:64px;color:#fff">The whole building<br/>is ordering dinner.</div>
+    <div class="cap kin" id="hook2" style="top:1350px;font-size:60px;color:#fff">Your building is full of<br/><span class="hl">people who do things.</span></div>
   </div>
 
   <!-- 2 PROBLEM -->
   <div class="layer f-night" id="l-prob">
     <svg id="cityfar" viewBox="0 0 1080 1100" style="position:absolute;left:0;top:520px;width:1080px;height:1100px"></svg>
-    <div class="cap kin" id="prob1" style="top:300px;font-size:62px;color:#fff">So it comes from<br/>across the city.</div>
-    <div class="cap kin" id="prob2" style="top:300px;font-size:66px;color:#fff">But someone is cooking<br/><span style="color:#F5C842">one floor up.</span></div>
+    <div class="cap kin" id="prob1" style="top:300px;font-size:60px;color:#fff">You just don't<br/>know who they are.</div>
+    <div class="cap kin" id="prob2" style="top:300px;font-size:60px;color:#fff">So everything comes<br/>from <span class="hl">across the city.</span></div>
   </div>
 
   <!-- 3 LOGO -->
@@ -94,32 +105,22 @@
     <div style="position:absolute;left:0;right:0;top:660px;display:flex;flex-direction:column;align-items:center">
       <svg id="mark" viewBox="0 0 48 56" style="width:230px;height:268px"></svg>
       <div class="kin" id="logoword" style="margin-top:50px;font-size:86px;color:var(--t1);letter-spacing:-1.5px">Lokal<span style="color:var(--lgreen)">Finder</span></div>
-      <div id="logosub" style="margin-top:20px;font-size:29px;color:var(--t3)">The store is already in your building.</div>
+      <div id="logosub" style="margin-top:20px;font-size:29px;color:var(--t3)">Everything you need is already here.</div>
     </div>
   </div>
 
-  <!-- 4 STEP 1 · neighbours open a store -->
+  <!-- 4 STEP 1 — three neighbours, three trades -->
   <div class="layer f-lbg" id="l-s1">
-    <div class="cap" style="top:270px"><span class="badge" id="b1">STEP 1<span class="dots"><i class="on"></i><i></i><i></i><i></i></span></span></div>
-    <div class="cap kin" id="s1cap" style="top:370px;font-size:64px;color:var(--t1)">A neighbour opens<br/>a little store.</div>
-    <svg id="s1art" viewBox="0 0 1080 560" style="position:absolute;left:0;top:640px;width:1080px;height:560px"></svg>
-    <div class="card" id="s1card" style="position:absolute;left:170px;top:1210px;width:740px;padding:34px 38px;display:flex;align-items:center;gap:26px">
-      <div style="width:96px;height:96px;border-radius:24px;background:var(--lbg);display:flex;align-items:center;justify-content:center;font-size:52px">🍔</div>
-      <div style="flex:1">
-        <div style="font-size:32px;font-weight:800;color:var(--t1)" class="kin">Ate Bea's Kitchen</div>
-        <div style="font-size:23px;color:var(--t3);margin-top:6px">Tower 2 · 4th floor</div>
-      </div>
-      <div id="s1toggle" style="width:96px;height:52px;border-radius:999px;background:#D6E5DC;position:relative">
-        <div id="s1knob" style="position:absolute;top:5px;left:5px;width:42px;height:42px;border-radius:999px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18)"></div>
-      </div>
-    </div>
-    <div class="cap kin" id="s1open" style="top:1400px;font-size:34px;color:var(--lgreen)">Open for orders</div>
+    <div class="cap" style="top:300px"><span class="badge" id="b1">STEP 1<span class="dots"><i class="on"></i><i></i><i></i><i></i></span></span></div>
+    <div class="cap kin" id="s1cap" style="top:400px;font-size:62px;color:var(--t1)">Neighbours open<br/>little businesses.</div>
+    <svg id="s1art" viewBox="0 0 1080 520" style="position:absolute;left:0;top:620px;width:1080px;height:520px"></svg>
+    <div id="s1cards" style="position:absolute;left:120px;top:1180px;width:840px"></div>
   </div>
 
-  <!-- 5 STEP 2+3 · browse and order -->
+  <!-- 5 STEP 2+3 -->
   <div class="layer f-lbg" id="l-phone">
     <div class="cap" style="top:250px"><span class="badge" id="b2">STEP 2<span class="dots"><i></i><i class="on"></i><i></i><i></i></span></span></div>
-    <div class="cap kin" id="phcap" style="top:350px;font-size:62px;color:var(--t1)">You see who's<br/>cooking nearby.</div>
+    <div class="cap kin" id="phcap" style="top:350px;font-size:60px;color:var(--t1)">You see who's<br/>open right now.</div>
     <div id="phone">
       <div id="ptop">
         <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="#0E8A5A" stroke-width="2.2">
@@ -136,48 +137,48 @@
       </div>
       <div class="pst" id="st-order" style="top:150px">
         <div class="rcard" style="margin-bottom:24px">
-          <div class="em">🍔</div>
-          <div><div class="n">Classic Cheeseburger</div><div class="dist">Ate Bea · 2 floors up</div></div>
-          <div class="pill" id="addpill">+ Add</div>
+          <div class="em">🧺</div>
+          <div><div class="n">Wash &amp; fold, 5kg</div><div class="dist">Kuya Ron · Tower 1</div></div>
+          <div class="pill" id="addpill">Book</div>
         </div>
-        <div class="cartbar" id="cartbar"><span>1 item</span><span>₱185</span></div>
+        <div class="cartbar" id="cartbar"><span>Pickup 7:30PM</span><span>₱240</span></div>
         <div id="placed" style="margin-top:54px;display:flex;flex-direction:column;align-items:center;gap:20px">
           <div id="checkring" style="width:140px;height:140px;border-radius:999px;background:var(--gl);
                display:flex;align-items:center;justify-content:center;font-size:70px">💚</div>
-          <div class="kin" style="font-size:30px;color:var(--t1)">Order sent to Bea</div>
-          <div style="font-size:22px;color:var(--t3)">She's cooking it now</div>
+          <div class="kin" style="font-size:30px;color:var(--t1)">Booked with Ron</div>
+          <div style="font-size:22px;color:var(--t3)">He's on his way up</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 6 STEP 4 · arrives in minutes -->
+  <!-- 6 STEP 4 -->
   <div class="layer f-lbg" id="l-s4">
-    <div class="cap" style="top:250px"><span class="badge" id="b4">STEP 4<span class="dots"><i></i><i></i><i></i><i class="on"></i></span></span></div>
-    <div class="cap kin" id="s4cap" style="top:350px;font-size:62px;color:var(--t1)">It travels metres,<br/>not kilometres.</div>
+    <div class="cap" style="top:300px"><span class="badge" id="b4">STEP 4<span class="dots"><i></i><i></i><i></i><i class="on"></i></span></span></div>
+    <div class="cap kin" id="s4cap" style="top:398px;font-size:60px;color:var(--t1)">It travels metres,<br/>not kilometres.</div>
     <svg id="s4art" viewBox="0 0 1080 820" style="position:absolute;left:0;top:660px;width:1080px;height:820px"></svg>
-    <div class="cap kin" id="s4time" style="top:1500px;font-size:52px;color:var(--lgreen)">Still hot when it reaches you.</div>
+    <div class="cap kin" id="s4time" style="top:1490px;font-size:48px;color:var(--lgreen)">Minutes. Not an hour.</div>
   </div>
 
-  <!-- 7 WHY IT MATTERS -->
+  <!-- 7 SERVICES — the centrepiece -->
+  <div class="layer f-green" id="l-serv">
+    <div class="cap kin" id="servcap" style="top:280px;font-size:62px;color:#fff">Not just dinner.<br/><span class="hl">Everything.</span></div>
+    <div id="svgrid" style="position:absolute;left:0;right:0;top:620px;height:1000px"></div>
+  </div>
+
+  <!-- 8 WHY -->
   <div class="layer f-lbg" id="l-why">
-    <div class="cap kin" id="whycap" style="top:300px;font-size:64px;color:var(--t1)">And the money<br/>never leaves.</div>
+    <div class="cap kin" id="whycap" style="top:300px;font-size:62px;color:var(--t1)">And the money<br/>never leaves.</div>
     <svg id="whyart" viewBox="0 0 1080 800" style="position:absolute;left:0;top:620px;width:1080px;height:800px"></svg>
-    <div class="cap" id="whysub" style="top:1450px;font-size:34px;color:var(--t2);line-height:1.4;font-weight:600">
+    <div class="cap" id="whysub" style="top:1440px;font-size:33px;color:var(--t2);line-height:1.4;font-weight:600">
       Every order pays a neighbour,<br/>not a city away.
     </div>
-  </div>
-
-  <!-- 8 BEYOND FOOD -->
-  <div class="layer f-green" id="l-exp">
-    <div class="cap kin" id="expcap" style="top:300px;font-size:62px;color:#fff">And it isn't<br/>only dinner.</div>
-    <div id="grid" style="position:absolute;left:105px;top:640px;width:870px"></div>
   </div>
 
   <!-- 9 COMMUNITY -->
   <div class="layer f-lbg" id="l-comm">
     <svg id="crowd" viewBox="0 0 1080 800" style="position:absolute;left:0;top:700px;width:1080px;height:800px"></svg>
-    <div class="cap kin" id="commcap" style="top:380px;font-size:70px;color:var(--t1)">One building.<br/>One economy.</div>
+    <div class="cap kin" id="commcap" style="top:380px;font-size:68px;color:var(--t1)">One building.<br/>One economy.</div>
   </div>
 
   <!-- 10 CTA -->
@@ -186,21 +187,22 @@
       <svg id="mark2" viewBox="0 0 48 56" style="width:140px;height:163px"></svg>
       <div class="kin" id="ctaword" style="margin-top:36px;font-size:80px;color:#fff;letter-spacing:-1.5px">Lokal<span style="color:#9df5c9">Finder</span></div>
       <div class="ser" id="ctatag" style="margin-top:28px;font-size:50px;color:rgba(255,255,255,.94);text-align:center">Your community.<br/>Connected.</div>
-      <div class="kin" id="ctabtn" style="margin-top:52px;padding:28px 64px;border-radius:999px;background:#fff;color:var(--lgreen);font-size:32px">Get early access</div>
+      <div class="kin" id="ctabtn" style="margin-top:52px;padding:28px 64px;border-radius:999px;background:#fff;color:var(--lgreen);font-size:32px;box-shadow:0 16px 40px rgba(0,0,0,.22)">Get early access</div>
     </div>
   </div>
 
+  <div id="grain"></div>
   <div id="vig"></div>
   <div id="safe"><div class="bar" style="top:0"></div><div class="bar" style="bottom:0"></div></div>
 </div>
 
 <script>
 /* =====================================================================
-   Explainer cut. seek(t) derives the whole frame from t so the renderer
-   can step frames exactly. Story order: hook -> problem -> brand ->
-   four numbered steps -> why it matters -> beyond food -> community -> CTA.
+   seek(t) derives the whole frame from t — frame-exact, reproducible.
+   Story: the building is already full of small businesses -> you can't
+   see them -> LokalFinder -> four steps -> every service -> why it matters.
 ===================================================================== */
-const DUR = 52;
+const DUR = 54;
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 const el = (n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
@@ -222,23 +224,30 @@ function cubicBezier(x1,y1,x2,y2){
 }
 const easeOut=cubicBezier(0.23,1,0.32,1), easeInOut=cubicBezier(0.77,0,0.175,1);
 const back=u=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(u-1,3)+c*Math.pow(u-1,2);};
+/** squash/stretch companion to a pop — scaleY leads, scaleX follows */
+const squash=u=>{const s=Math.sin(clamp(u)*Math.PI); return {x:1+s*0.06, y:1-s*0.05};};
 
 let seed=11; const rnd=()=>((seed=(seed*9301+49297)%233280)/233280);
 
 const S={
-  hook :{in:0.0,  out:4.2},
-  prob :{in:4.0,  out:9.8},
-  logo :{in:9.6,  out:12.4},
-  s1   :{in:12.2, out:17.4},
-  phone:{in:17.2, out:26.4},
-  s4   :{in:26.2, out:31.6},
-  why  :{in:31.4, out:37.0},
-  exp  :{in:36.8, out:42.2},
-  comm :{in:42.0, out:46.4},
-  cta  :{in:46.2, out:52.0},
+  hook :{in:0.0,  out:4.4},
+  prob :{in:4.2,  out:9.6},
+  logo :{in:9.4,  out:12.0},
+  s1   :{in:11.8, out:17.6},
+  phone:{in:17.4, out:26.6},
+  s4   :{in:26.4, out:31.8},
+  serv :{in:31.6, out:38.6},
+  why  :{in:38.4, out:43.8},
+  comm :{in:43.6, out:47.8},
+  cta  :{in:47.6, out:54.0},
 };
 const alpha=(t,s,fi=0.35,fo=0.35)=>Math.min(fi?clamp((t-s.in)/fi):1, fo?clamp((s.out-t)/fo):1);
 const show=(e,a)=>{e.style.opacity=a;e.style.display=a<=0.002?'none':'block';};
+/** every scene gets a slow drift so nothing sits perfectly still */
+function drift(layer,t,s,dy=-26,z=0.03){
+  const u=prog(t,s.in,s.out);
+  layer.style.transform=`translateY(${lerp(0,dy,u)}px) scale(${lerp(1,1+z,u)})`;
+}
 
 /* ---- brand mark ---- */
 const markSVG=(pin,st,house,gold)=>`
@@ -250,18 +259,21 @@ const markSVG=(pin,st,house,gold)=>`
 $('mark').innerHTML=markSVG('#1a5438','#2ea877','#EFF7F2','#F5C842');
 $('mark2').innerHTML=markSVG('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
 
-/* ---- cartoon people, same primitives as the app's banner art ---- */
+/* ---- people: same primitives as the app's banner art, plus props ---- */
 const SKIN=['#C4845A','#B8896A','#8B6040','#E0A878','#A9714B'];
 const HAIR=['#3d2010','#2a1a0a','#2a1810','#4a2c14'];
 const SHIRT=['#2ea877','#5A7A5A','#3a6a5a','#F59E0B','#1A6B4A','#D97706'];
-const personSVG=(i,{bag=false}={})=>{
+function personSVG(i,{bag=false,apron=false,cap=false}={}){
   const sk=SKIN[i%SKIN.length],ha=HAIR[i%HAIR.length],sh=SHIRT[i%SHIRT.length];
   return `<g class="person">
+    <ellipse class="shadow" cx="0" cy="66" rx="30" ry="7" fill="#0D2B1A" opacity=".13"/>
     <g class="legs">
       <path class="legL" d="M-7 40 L-8 62" stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
       <path class="legR" d="M7 40 L8 62"  stroke="${sh}" stroke-width="9" stroke-linecap="round"/>
     </g>
     <ellipse cx="0" cy="22" rx="18" ry="22" fill="${sh}"/>
+    ${apron?`<path d="M-11 8 h22 v20 a11 11 0 0 1-22 0 z" fill="#EFF7F2" opacity=".92"/>
+             <path d="M-6 8 L-3 0 M6 8 L3 0" stroke="#EFF7F2" stroke-width="2.4" stroke-linecap="round"/>`:''}
     ${bag?`<g><rect x="16" y="14" width="26" height="26" rx="5" fill="#F5C842"/>
       <path d="M23 14v-4a5 5 0 0 1 10 0v4" stroke="#B8860B" stroke-width="2.4" fill="none"/></g>`:''}
     <path class="armR" d="M15 14 Q30 8 34 2" stroke="${sk}" stroke-width="8" stroke-linecap="round" fill="none"/>
@@ -269,73 +281,91 @@ const personSVG=(i,{bag=false}={})=>{
     <circle cx="0" cy="-8" r="16" fill="${sk}"/>
     <path d="M-16 -8 Q-12 -18 0 -19 Q12 -18 16 -8" fill="${ha}"/>
     <ellipse cx="0" cy="-18" rx="14" ry="8" fill="${ha}"/>
+    ${cap?`<path d="M-17 -18 a17 12 0 0 1 34 0 z" fill="#1A6B4A"/>
+           <path d="M-17 -18 h-8 a3 3 0 0 0 0 5 h8 z" fill="#12533A"/>`:''}
     <circle cx="-5" cy="-8" r="1.9" fill="#2a1810"/><circle cx="5" cy="-8" r="1.9" fill="#2a1810"/>
     <path d="M-6 -2 Q0 3 6 -2" stroke="#2a1810" stroke-width="2" fill="none" stroke-linecap="round"/>
   </g>`;
-};
+}
 
-/* ---- 1. facade ---- */
+/* ---- 1. facade: every kind of small business, not just kitchens ---- */
 const COLS=5,ROWS=4,WW=118,WH=118,GAPX=42,GAPY=34;
 const FX=(1080-(COLS*WW+(COLS-1)*GAPX))/2, FY=110;
-const FOOD=['🍔','🍜','☕','🍗','🧋','🍰','🍕','🥟','🍚','🌮','🍳','🥘'];
+const TRADES=['🍔','🧺','🔧','☕','🧹','🛒','🍜','🧵','💇','🧋','🔨','🎂','🪴','📦','🧼','🍰','🚿','🧰','🍳','🧴'];
 const winCells=[];
 {
   const s=$('facade');
+  const defs=el('defs');
+  const lg=el('linearGradient',{id:'wallg',x1:0,y1:0,x2:0,y2:1});
+  lg.append(el('stop',{offset:'0%','stop-color':'#14522f'}),el('stop',{offset:'100%','stop-color':'#0b3421'}));
+  const wg=el('linearGradient',{id:'wing',x1:0,y1:0,x2:0,y2:1});
+  wg.append(el('stop',{offset:'0%','stop-color':'#FFDD6B'}),el('stop',{offset:'100%','stop-color':'#F0B429'}));
+  defs.append(lg,wg); s.appendChild(defs);
+
   s.appendChild(el('rect',{x:FX-56,y:FY-70,width:COLS*WW+(COLS-1)*GAPX+112,
-    height:ROWS*WH+(ROWS-1)*GAPY+240,rx:34,fill:'#0d3d27'}));
+    height:ROWS*WH+(ROWS-1)*GAPY+240,rx:34,fill:'url(#wallg)'}));
   const dy=FY+ROWS*WH+(ROWS-1)*GAPY+58;
   s.appendChild(el('rect',{x:540-84,y:dy-22,width:168,height:24,rx:10,fill:'#2ea877'}));
-  s.appendChild(el('rect',{x:540-58,y:dy,width:116,height:116,rx:10,fill:'#F5C842',opacity:.85}));
+  s.appendChild(el('rect',{x:540-58,y:dy,width:116,height:116,rx:10,fill:'url(#wing)',opacity:.9}));
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const x=FX+c*(WW+GAPX), y=FY+r*(WH+GAPY);
     const g=el('g');
     g.appendChild(el('rect',{x,y,width:WW,height:WH,rx:14,fill:'#0a2c1c'}));
-    const glow=el('rect',{x,y,width:WW,height:WH,rx:14,fill:'#F5C842'});
+    const glow=el('rect',{x,y,width:WW,height:WH,rx:14,fill:'url(#wing)'});
     const em=el('text',{x:x+WW/2,y:y+WH/2+21,'text-anchor':'middle','font-size':56});
-    em.textContent=FOOD[(r*COLS+c)%FOOD.length];
+    em.textContent=TRADES[(r*COLS+c)%TRADES.length];
     g.append(glow,em); s.appendChild(g);
     winCells.push({glow,em,d:Math.hypot(c-(COLS-1)/2,r-(ROWS-1)/2),
-      food:rnd()<0.62, lit:rnd()<0.86});
+      trade:rnd()<0.72, lit:rnd()<0.88});
   }
 }
 
 /* ---- 2. the long way round ---- */
-let farRoute, farLen, farPin, farBlocks=[];
+let farRoute,farLen,farPin,farBlocks=[];
 {
   const s=$('cityfar');
-  for(let i=0;i<40;i++){
-    const w=40+rnd()*70,h=34+rnd()*70;
-    const b=el('rect',{x:40+rnd()*980,y:120+rnd()*820,width:w,height:h,rx:8,
-      fill:'#1b5a3d',opacity:.95});
+  for(let i=0;i<44;i++){
+    const b=el('rect',{x:40+rnd()*980,y:120+rnd()*820,width:40+rnd()*70,height:34+rnd()*70,
+      rx:8,fill:'#1b5a3d',opacity:.95});
     s.appendChild(b); farBlocks.push(b);
   }
   farRoute=el('path',{d:'M 60 980 C 320 900, 180 620, 470 560 S 760 700, 700 430 S 520 300, 540 250',
     fill:'none',stroke:'#F5C842','stroke-width':7,'stroke-linecap':'round'});
-  s.appendChild(farRoute);
-  farLen=farRoute.getTotalLength();
-  farPin=el('circle',{cx:540,cy:250,r:20,fill:'#F5C842'});
-  s.appendChild(farPin);
+  s.appendChild(farRoute); farLen=farRoute.getTotalLength();
+  farPin=el('circle',{cx:540,cy:250,r:20,fill:'#F5C842'}); s.appendChild(farPin);
 }
 
-/* ---- 4. step 1 art: neighbour + their kitchen ---- */
+/* ---- 4. step 1: three trades, three neighbours ---- */
+const TRADERS=[
+  {em:'🍔',n:"Ate Bea's Kitchen",  sub:'Tower 2 · 4th floor', apron:true},
+  {em:'🧺',n:'Kuya Ron Laundry',   sub:'Tower 1 · Ground',    cap:true},
+  {em:'🔧',n:'Mang Tony Repairs',  sub:'Tower 2 · 9th floor', apron:false},
+];
 {
   const s=$('s1art');
-  s.appendChild(el('rect',{x:610,y:170,width:300,height:300,rx:26,fill:'#E2F0E9'}));
-  const pan=el('text',{x:760,y:370,'text-anchor':'middle','font-size':150}); pan.textContent='🍳';
-  s.appendChild(pan);
-  const p=el('g',{id:'s1p'}); p.innerHTML=personSVG(3); s.appendChild(p);
-  const st=el('g',{id:'s1steam'});
-  [[720,150],[770,120],[810,150]].forEach(([cx,cy],i)=>
-    st.appendChild(el('circle',{cx,cy,r:11+i*3,fill:'#BFD8CA',class:'sp'})));
-  s.appendChild(st);
+  TRADERS.forEach((tr,i)=>{
+    const g=el('g',{id:'s1p'+i});
+    g.innerHTML=personSVG(i+1,{apron:tr.apron,cap:tr.cap});
+    s.appendChild(g);
+  });
 }
-const s1steam=[...$('s1steam').children];
+TRADERS.forEach((tr,i)=>{
+  const d=document.createElement('div');
+  d.className='card';
+  d.style.cssText='position:absolute;left:0;width:840px;padding:22px 28px;display:flex;align-items:center;gap:22px;will-change:transform,opacity';
+  d.innerHTML=`<div style="width:78px;height:78px;border-radius:20px;background:var(--lbg);display:flex;align-items:center;justify-content:center;font-size:42px">${tr.em}</div>
+    <div style="flex:1"><div class="kin" style="font-size:29px;color:var(--t1)">${tr.n}</div>
+    <div style="font-size:21px;color:var(--t3);margin-top:5px">${tr.sub}</div></div>
+    <div class="kin" style="padding:9px 20px;border-radius:999px;background:var(--gl);color:var(--lgreen);font-size:20px">Open</div>`;
+  $('s1cards').appendChild(d);
+});
+const s1cards=[...$('s1cards').children];
 
-/* ---- 5. results ---- */
+/* ---- 5. results: mixed trades, sorted by how close they are ---- */
 const RES=[
-  {em:'🍔',n:"Ate Bea's Kitchen",d:'2 floors up',p:'12 min'},
-  {em:'🍜',n:'Kuya Jun Ramen',   d:'Tower 1',    p:'9 min'},
-  {em:'🧋',n:'Milktea Corner',   d:'Lobby',      p:'6 min'},
+  {em:'🧺',n:'Kuya Ron Laundry', d:'Tower 1 · Ground', p:'Now'},
+  {em:'🍜',n:'Tita Let Lutong Bahay', d:'3 floors up', p:'15 min'},
+  {em:'🔧',n:'Mang Tony Repairs', d:'Same tower', p:'Today'},
 ];
 RES.forEach(r=>{
   const d=document.createElement('div'); d.className='rcard';
@@ -345,55 +375,62 @@ RES.forEach(r=>{
 });
 const resEls=[...$('results').children];
 
-/* ---- 6. step 4 art: short hop between two towers ---- */
-let hopPath, hopLen;
+/* ---- 6. step 4: the short hop ---- */
+let hopPath,hopLen;
 {
   const s=$('s4art');
+  const dg=el('defs');
+  const bg=el('linearGradient',{id:'bldg',x1:0,y1:0,x2:0,y2:1});
+  bg.append(el('stop',{offset:'0%','stop-color':'#DCEBE2'}),el('stop',{offset:'100%','stop-color':'#C2D8CB'}));
+  dg.appendChild(bg); s.appendChild(dg);
   [[150,240,240,470],[690,180,240,530]].forEach(([x,y,w,h])=>{
-    s.appendChild(el('rect',{x,y,width:w,height:h,rx:20,fill:'#CFE3D8'}));
+    s.appendChild(el('rect',{x,y,width:w,height:h,rx:20,fill:'url(#bldg)'}));
     for(let r=0;r<4;r++)for(let c=0;c<2;c++)
-      s.appendChild(el('rect',{x:x+30+c*110,y:y+34+r*110,width:80,height:66,rx:9,
-        fill:'#F5C842',opacity:.55}));
+      s.appendChild(el('rect',{x:x+30+c*110,y:y+34+r*110,width:80,height:66,rx:9,fill:'#F5C842',opacity:.55}));
   });
   hopPath=el('path',{d:'M 300 300 Q 540 90 800 250',fill:'none',stroke:'#1A6B4A',
     'stroke-width':8,'stroke-linecap':'round','stroke-dasharray':'2 16'});
   s.appendChild(hopPath); hopLen=hopPath.getTotalLength();
-  const w=el('g',{id:'s4walk'}); w.innerHTML=personSVG(0,{bag:true}); s.appendChild(w);
+  const w=el('g',{id:'s4walk'}); w.innerHTML=personSVG(0,{bag:true,cap:true}); s.appendChild(w);
 }
 
-/* ---- 7. why: money stays ---- */
+/* ---- 7. services centrepiece ---- */
+const SERVICES=[
+  ['🍔','Home kitchens'],['🧺','Laundry'],['🧹','Cleaning'],
+  ['🔧','Repairs'],['🛒','Sari-sari'],['🎂','Baking'],
+  ['💇','Salon'],['🪴','Plants'],['📦','Errands'],
+];
+SERVICES.forEach(([e,l])=>{
+  const d=document.createElement('div');
+  d.style.cssText='position:absolute;width:300px;display:flex;flex-direction:column;align-items:center;gap:14px;will-change:transform,opacity';
+  d.innerHTML=`<div class="tile" style="width:158px;height:158px;font-size:74px">${e}</div>
+    <div class="kin" style="font-size:26px;color:rgba(255,255,255,.94);white-space:nowrap">${l}</div>`;
+  $('svgrid').appendChild(d);
+});
+const servEls=[...$('svgrid').children];
+
+/* ---- 8. why ---- */
 const coinEls=[];
 {
   const s=$('whyart');
   const a=el('g',{id:'whyA'}); a.innerHTML=personSVG(2); s.appendChild(a);
-  const b=el('g',{id:'whyB'}); b.innerHTML=personSVG(3); s.appendChild(b);
+  const b=el('g',{id:'whyB'}); b.innerHTML=personSVG(3,{apron:true}); s.appendChild(b);
   for(let i=0;i<5;i++){
     const g=el('g',{class:'coin'});
     g.appendChild(el('circle',{r:40,fill:'#F5C842',stroke:'#D9A400','stroke-width':4}));
     const tx=el('text',{'text-anchor':'middle',y:14,'font-size':42,'font-weight':'800',fill:'#7A5A00'});
-    tx.textContent='₱'; g.appendChild(tx);
-    s.appendChild(g); coinEls.push(g);
+    tx.textContent='₱'; g.appendChild(tx); s.appendChild(g); coinEls.push(g);
   }
 }
-
-/* ---- 8. beyond food ---- */
-const CATS=[['🍔','Food'],['🧺','Laundry'],['🧹','Cleaning'],['🏠','Housekeeping'],['🔧','Repairs'],['🛒','Sari-sari']];
-CATS.forEach(([e,l])=>{
-  const d=document.createElement('div');
-  d.style.cssText='position:absolute;width:260px;display:flex;flex-direction:column;align-items:center;gap:14px;will-change:transform,opacity';
-  d.innerHTML=`<div style="width:148px;height:148px;border-radius:40px;background:rgba(255,255,255,.14);
-    display:flex;align-items:center;justify-content:center;font-size:70px">${e}</div>
-    <div class="kin" style="font-size:27px;color:rgba(255,255,255,.92)">${l}</div>`;
-  $('grid').appendChild(d);
-});
-const catEls=[...$('grid').children];
 
 /* ---- 9. crowd ---- */
 const crowdEls=[],heartEls=[];
 {
   const s=$('crowd');
   s.appendChild(el('ellipse',{cx:540,cy:600,rx:480,ry:100,fill:'#D7EADF'}));
-  for(let i=0;i<6;i++){const g=el('g'); g.innerHTML=personSVG(i); s.appendChild(g); crowdEls.push(g);}
+  for(let i=0;i<6;i++){
+    const g=el('g'); g.innerHTML=personSVG(i,{apron:i===1,cap:i===4}); s.appendChild(g); crowdEls.push(g);
+  }
   for(let i=0;i<5;i++){
     const h=el('text',{'text-anchor':'middle','font-size':66});
     h.textContent=i%2?'💚':'✨'; s.appendChild(h); heartEls.push(h);
@@ -407,212 +444,220 @@ function seek(t){
   /* 1 HOOK */
   const aH=alpha(t,S.hook,0,0.35); show($('l-hook'),aH);
   if(aH>0.002){
-    $('facade').style.transform=`scale(${lerp(1.1,1.0,easeOut(prog(t,0,3.6)))})`;
+    $('facade').style.transform=`scale(${lerp(1.1,1.0,easeOut(prog(t,0,3.8)))})`;
     $('facade').style.transformOrigin='540px 460px';
     winCells.forEach(w=>{
-      const st=0.2+w.d*0.34, u=easeOut(prog(t,st,st+0.45));
+      const st=0.2+w.d*0.32, u=easeOut(prog(t,st,st+0.42));
       const flick=1-0.10*Math.sin((t-st)*9)*clamp(prog(t,st,st+0.26));
-      w.glow.style.opacity=w.lit?u*0.92*flick:0;
-      w.em.style.opacity=(w.lit&&w.food)?easeOut(prog(t,st+0.26,st+0.66)):0;
+      w.glow.style.opacity=w.lit?u*0.94*flick:0;
+      w.em.style.opacity=(w.lit&&w.trade)?easeOut(prog(t,st+0.24,st+0.62)):0;
     });
     $('hook1').style.opacity=clamp(prog(t,0.1,0.36))*(1-prog(t,2.2,2.6));
     $('hook1').style.transform=`scale(${lerp(0.9,1,clamp(back(prog(t,0.12,0.6))))})`;
     const h2=easeOut(prog(t,2.3,2.8));
-    $('hook2').style.opacity=h2*(1-prog(t,3.9,4.2));
+    $('hook2').style.opacity=h2*(1-prog(t,4.1,4.4));
     $('hook2').style.transform=`translateY(${lerp(32,0,h2)}px)`;
   }
 
   /* 2 PROBLEM */
   const aP=alpha(t,S.prob); show($('l-prob'),aP);
   if(aP>0.002){
-    // the long haul draws slowly — that slowness is the point
-    const draw=easeInOut(prog(t,4.4,7.4));
+    $('prob1').style.opacity=easeOut(prog(t,4.4,4.9))*(1-prog(t,6.2,6.6));
+    const draw=easeInOut(prog(t,6.2,8.6));
     farRoute.setAttribute('stroke-dasharray',farLen);
     farRoute.setAttribute('stroke-dashoffset',farLen*(1-draw));
-    farPin.style.opacity=clamp(prog(t,7.2,7.6));
-    farPin.setAttribute('r',20*lerp(0.94,1.25,Math.sin(clamp(prog(t,7.2,7.9))*Math.PI)));
-    farBlocks.forEach((b,i)=>{ b.style.opacity=0.9*(1-prog(t,7.9+((i%7)*0.02),8.6)); });
-    $('cityfar').style.transform=`scale(${lerp(1,1.5,easeInOut(prog(t,7.9,9.4)))})`;
-    $('cityfar').style.transformOrigin='540px 250px';
-    farRoute.style.opacity=1-prog(t,7.9,8.5);
-
-    $('prob1').style.opacity=easeOut(prog(t,4.3,4.8))*(1-prog(t,7.5,7.9));
-    const p2=easeOut(prog(t,8.0,8.6));
-    $('prob2').style.opacity=p2*(1-prog(t,9.5,9.8));
-    $('prob2').style.transform=`translateY(${lerp(30,0,p2)}px)`;
+    farRoute.style.opacity=clamp(prog(t,6.2,6.5))*(1-prog(t,9.0,9.5));
+    farPin.style.opacity=clamp(prog(t,8.4,8.8));
+    farPin.setAttribute('r',20*lerp(0.94,1.3,Math.sin(clamp(prog(t,8.4,9.1))*Math.PI)));
+    farBlocks.forEach((b,i)=>{ b.style.opacity=0.95*(1-prog(t,9.0+((i%7)*0.02),9.6)); });
+    $('cityfar').style.transform=`scale(${lerp(1,1.12,easeInOut(prog(t,6.2,9.6)))})`;
+    $('cityfar').style.transformOrigin='540px 500px';
+    const p2=easeOut(prog(t,6.6,7.1));
+    $('prob2').style.opacity=p2*(1-prog(t,9.3,9.6));
+    $('prob2').style.transform=`translateY(${lerp(28,0,p2)}px)`;
   }
 
   /* 3 LOGO */
   const aL=alpha(t,S.logo); show($('l-logo'),aL);
   if(aL>0.002){
-    const u=easeOut(prog(t,9.7,10.4));
+    const u=easeOut(prog(t,9.5,10.2));
+    const sq=squash(prog(t,9.5,10.4));
     $('mark').style.opacity=u;
-    $('mark').style.transform=`translateY(${lerp(-56,0,u)}px) scale(${lerp(0.92,1,back(clamp(prog(t,9.7,10.5))))})`;
-    const dp=prog(t,10.35,10.75);
-    $('mark').querySelector('.dot').setAttribute('r',2.5*lerp(1,1.9,Math.sin(dp*Math.PI)));
-    const wu=easeOut(prog(t,10.3,10.9));
-    $('logoword').style.opacity=wu;
-    $('logoword').style.transform=`translateY(${lerp(24,0,wu)}px)`;
-    const su=easeOut(prog(t,10.7,11.3));
+    $('mark').style.transform=`translateY(${lerp(-56,0,u)}px) scale(${sq.x*lerp(0.92,1,back(clamp(prog(t,9.5,10.3))))},${sq.y*lerp(0.92,1,back(clamp(prog(t,9.5,10.3))))})`;
+    const dp=prog(t,10.15,10.55);
+    $('mark').querySelector('.dot').setAttribute('r',2.5*lerp(1,2.0,Math.sin(dp*Math.PI)));
+    const wu=easeOut(prog(t,10.1,10.7));
+    $('logoword').style.opacity=wu; $('logoword').style.transform=`translateY(${lerp(24,0,wu)}px)`;
+    const su=easeOut(prog(t,10.5,11.1));
     $('logosub').style.opacity=su; $('logosub').style.transform=`translateY(${lerp(16,0,su)}px)`;
   }
 
   /* 4 STEP 1 */
   const a1=alpha(t,S.s1); show($('l-s1'),a1);
   if(a1>0.002){
-    const bu=easeOut(prog(t,12.3,12.8));
+    drift($('l-s1'),t,S.s1,-22,0.02);
+    const bu=easeOut(prog(t,11.9,12.4));
     $('b1').style.opacity=bu; $('b1').style.transform=`translateY(${lerp(18,0,bu)}px)`;
-    const cu=easeOut(prog(t,12.5,13.1));
+    const cu=easeOut(prog(t,12.1,12.7));
     $('s1cap').style.opacity=cu; $('s1cap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
-    const pu=easeOut(prog(t,13.0,13.7));
-    $('s1p').setAttribute('transform',`translate(${lerp(240,330,pu)} 330) scale(3.4)`);
-    $('s1p').style.opacity=pu;
-    s1steam.forEach((sp,i)=>{
-      const u=prog(t,13.6+i*0.22,15.0+i*0.22);
-      sp.setAttribute('transform',`translate(0 ${lerp(0,-70,u)})`);
-      sp.style.opacity=Math.sin(clamp(u)*Math.PI)*0.75;
+    TRADERS.forEach((_,i)=>{
+      const st=12.6+i*0.34, u=easeOut(clamp(prog(t,st,st+0.55)));
+      const g=$('s1p'+i);
+      const bob=Math.sin(t*2.2+i*1.3)*6;
+      g.setAttribute('transform',`translate(${230+i*310} ${lerp(400,320,u)+bob}) scale(2.6)`);
+      g.style.opacity=u;
+      // each trader waves once as their card lands
+      const wv=Math.sin(clamp(prog(t,st+0.5,st+1.4))*Math.PI*2)*22;
+      g.querySelector('.armR').setAttribute('transform',`rotate(${wv} 15 14)`);
     });
-    const ku=easeOut(prog(t,14.4,15.0));
-    $('s1card').style.opacity=ku; $('s1card').style.transform=`translateY(${lerp(34,0,ku)}px)`;
-    // the toggle flipping is the "store is now open" beat
-    const tg=easeOut(prog(t,15.3,15.7));
-    $('s1knob').style.transform=`translateX(${lerp(0,44,tg)}px)`;
-    $('s1toggle').style.background=tg>0.5?'#1A6B4A':'#D6E5DC';
-    const ou=easeOut(prog(t,15.6,16.1));
-    $('s1open').style.opacity=ou*(1-prog(t,17.0,17.4));
-    $('s1open').style.transform=`translateY(${lerp(14,0,ou)}px)`;
+    s1cards.forEach((c,i)=>{
+      const st=13.4+i*0.36, u=easeOut(clamp(prog(t,st,st+0.5)));
+      const sq=squash(prog(t,st,st+0.7));
+      c.style.top=i*128+'px';
+      c.style.opacity=u;
+      c.style.transform=`translateY(${lerp(40,0,u)}px) scale(${sq.x},${sq.y})`;
+    });
   }
 
   /* 5 STEP 2 + 3 */
   const aPh=alpha(t,S.phone); show($('l-phone'),aPh);
   if(aPh>0.002){
-    const rise=easeOut(prog(t,17.3,18.1));
-    const out=easeInOut(prog(t,25.8,26.4));
+    const rise=easeOut(prog(t,17.5,18.3));
+    const out=easeInOut(prog(t,26.0,26.6));
     $('phone').style.transform=`translateY(${lerp(110,0,rise)+lerp(0,-60,out)}px) scale(${lerp(0.95,1,rise)*lerp(1,0.95,out)})`;
 
-    // badge + headline swap from step 2 to step 3 mid-scene
-    const isStep3 = t>=21.6;
+    const isStep3 = t>=21.9;
     $('b2').innerHTML = isStep3
       ? 'STEP 3<span class="dots"><i></i><i></i><i class="on"></i><i></i></span>'
       : 'STEP 2<span class="dots"><i></i><i class="on"></i><i></i><i></i></span>';
-    $('phcap').innerHTML = isStep3 ? 'Tap once.<br/>She starts cooking.' : "You see who's<br/>cooking nearby.";
-    const swap = isStep3 ? easeOut(prog(t,21.6,22.1)) : easeOut(prog(t,17.5,18.1));
-    $('b2').style.opacity=swap; $('phcap').style.opacity=swap*(1-prog(t,25.6,26.2));
+    $('phcap').innerHTML = isStep3 ? 'Book it in<br/>one tap.' : "You see who's<br/>open right now.";
+    const swap = isStep3 ? easeOut(prog(t,21.9,22.4)) : easeOut(prog(t,17.7,18.3));
+    $('b2').style.opacity=swap; $('phcap').style.opacity=swap*(1-prog(t,25.8,26.4));
     $('phcap').style.transform=`translateY(${lerp(20,0,swap)}px)`;
 
-    const sA=Math.min(clamp((t-18.0)/0.3),clamp((21.7-t)/0.3));
-    const oA=Math.min(clamp((t-21.6)/0.3),clamp((26.4-t)/0.3));
+    const sA=Math.min(clamp((t-18.2)/0.3),clamp((22.0-t)/0.3));
+    const oA=Math.min(clamp((t-21.9)/0.3),clamp((26.6-t)/0.3));
     show($('st-search'),sA); show($('st-order'),oA);
 
-    const word='Burger';
-    $('typed').textContent=word.slice(0,Math.round(lerp(0,word.length,clamp(prog(t,18.2,19.0)))));
-    $('caret').style.opacity=(t<19.3&&Math.floor(t*3)%2===0)?1:0;
+    const word='Laundry';
+    $('typed').textContent=word.slice(0,Math.round(lerp(0,word.length,clamp(prog(t,18.4,19.4)))));
+    $('caret').style.opacity=(t<19.7&&Math.floor(t*3)%2===0)?1:0;
     resEls.forEach((r,i)=>{
-      const u=easeOut(prog(t,19.15+i*0.07,19.7+i*0.07));
-      r.style.opacity=u; r.style.transform=`translateY(${lerp(24,0,u)}px) scale(${lerp(0.96,1,u)})`;
+      const u=easeOut(prog(t,19.5+i*0.07,20.05+i*0.07));
+      const sq=squash(prog(t,19.5+i*0.07,20.2+i*0.07));
+      r.style.opacity=u;
+      r.style.transform=`translateY(${lerp(24,0,u)}px) scale(${sq.x*lerp(0.96,1,u)},${sq.y*lerp(0.96,1,u)})`;
     });
 
-    const tap=prog(t,22.5,22.85);
-    $('addpill').style.transform=`scale(${lerp(1,0.9,Math.sin(tap*Math.PI))})`;
-    const cb=easeOut(prog(t,22.8,23.2));
+    const tap=prog(t,22.8,23.15);
+    $('addpill').style.transform=`scale(${lerp(1,0.88,Math.sin(tap*Math.PI))})`;
+    const cb=easeOut(prog(t,23.1,23.5));
     $('cartbar').style.opacity=cb; $('cartbar').style.transform=`translateY(${lerp(18,0,cb)}px)`;
-    const pl=easeOut(prog(t,23.9,24.4));
+    const pl=easeOut(prog(t,24.2,24.7));
     $('placed').style.opacity=pl; $('placed').style.transform=`translateY(${lerp(22,0,pl)}px)`;
-    $('checkring').style.transform=`scale(${lerp(0.9,1,back(clamp(prog(t,23.95,24.55))))})`;
+    const csq=squash(prog(t,24.25,24.95));
+    $('checkring').style.transform=`scale(${csq.x*lerp(0.9,1,back(clamp(prog(t,24.25,24.85))))},${csq.y*lerp(0.9,1,back(clamp(prog(t,24.25,24.85))))})`;
   }
 
   /* 6 STEP 4 */
   const a4=alpha(t,S.s4); show($('l-s4'),a4);
   if(a4>0.002){
-    const bu=easeOut(prog(t,26.3,26.8));
+    drift($('l-s4'),t,S.s4,-20,0.02);
+    const bu=easeOut(prog(t,26.5,27.0));
     $('b4').style.opacity=bu; $('b4').style.transform=`translateY(${lerp(18,0,bu)}px)`;
-    const cu=easeOut(prog(t,26.5,27.1));
+    const cu=easeOut(prog(t,26.7,27.3));
     $('s4cap').style.opacity=cu; $('s4cap').style.transform=`translateY(${lerp(22,0,cu)}px)`;
-
-    const d=easeOut(prog(t,27.2,28.4));
+    const d=easeOut(prog(t,27.4,28.6));
     hopPath.setAttribute('stroke-dasharray',hopLen);
     hopPath.setAttribute('stroke-dashoffset',hopLen*(1-d));
-    // walker rides the same curve the dashes just drew
-    const wu=prog(t,27.4,29.9);
+    const wu=prog(t,27.6,30.1);
     const pt=hopPath.getPointAtLength(hopLen*wu);
     const bob=Math.abs(Math.sin(t*7))*6;
     const w=$('s4walk');
     w.setAttribute('transform',`translate(${pt.x} ${pt.y-bob+40}) scale(2.1)`);
-    w.style.opacity=clamp(prog(t,27.4,27.7));
+    w.style.opacity=clamp(prog(t,27.6,27.9));
     const sw=Math.sin(t*7)*22;
     w.querySelector('.legL').setAttribute('transform',`rotate(${sw} -7 40)`);
     w.querySelector('.legR').setAttribute('transform',`rotate(${-sw} 7 40)`);
-
-    const tu=easeOut(prog(t,29.8,30.3));
-    $('s4time').style.opacity=tu*(1-prog(t,31.2,31.6));
+    const tu=easeOut(prog(t,30.0,30.5));
+    $('s4time').style.opacity=tu*(1-prog(t,31.4,31.8));
     $('s4time').style.transform=`translateY(${lerp(18,0,tu)}px)`;
   }
 
-  /* 7 WHY */
-  const aW=alpha(t,S.why); show($('l-why'),aW);
-  if(aW>0.002){
-    const cu=easeOut(prog(t,31.5,32.1));
-    $('whycap').style.opacity=cu; $('whycap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
-    const pu=easeOut(prog(t,31.9,32.6));
-    $('whyA').setAttribute('transform',`translate(250 470) scale(3.4)`);
-    $('whyB').setAttribute('transform',`translate(830 470) scale(3.4)`);
-    $('whyA').style.opacity=pu; $('whyB').style.opacity=pu;
-    coinEls.forEach((c,i)=>{
-      const st=32.7+i*0.30, u=prog(t,st,st+1.15);
-      const arc=Math.sin(clamp(u)*Math.PI)*210;
-      c.setAttribute('transform',`translate(${lerp(300,780,easeInOut(clamp(u)))} ${430-arc})`);
-      c.style.opacity=clamp(u)>0.98?0:Math.sin(clamp(u)*Math.PI)*1.1;
+  /* 7 SERVICES */
+  const aS=alpha(t,S.serv); show($('l-serv'),aS);
+  if(aS>0.002){
+    const cu=easeOut(prog(t,31.7,32.3));
+    $('servcap').style.opacity=cu; $('servcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+    servEls.forEach((c,i)=>{
+      const col=i%3, row=Math.floor(i/3);
+      const st=32.2+ (row*0.30) + (col*0.11);      // reads row by row
+      const u=easeOut(clamp(prog(t,st,st+0.55)));
+      const sq=squash(prog(t,st,st+0.75));
+      const float=Math.sin((t-st)*1.7+i)*6*clamp(prog(t,st+0.5,st+1.1));
+      c.style.left=(90+col*300)+'px';
+      c.style.top=(row*300)+'px';
+      c.style.opacity=u;
+      c.style.transform=`translateY(${lerp(48,0,u)+float}px) scale(${sq.x*lerp(0.92,1,u)},${sq.y*lerp(0.92,1,u)})`;
     });
-    const su=easeOut(prog(t,34.6,35.2));
-    $('whysub').style.opacity=su*(1-prog(t,36.6,37.0));
-    $('whysub').style.transform=`translateY(${lerp(18,0,su)}px)`;
+    $('svgrid').style.transform=`scale(${lerp(0.97,1.02,prog(t,32.2,38.6))})`;
+    $('svgrid').style.transformOrigin='540px 480px';
   }
 
-  /* 8 BEYOND FOOD */
-  const aE=alpha(t,S.exp); show($('l-exp'),aE);
-  if(aE>0.002){
-    const cu=easeOut(prog(t,36.9,37.5));
-    $('expcap').style.opacity=cu; $('expcap').style.transform=`translateY(${lerp(22,0,cu)}px)`;
-    catEls.forEach((c,i)=>{
-      const st=37.3+i*0.19, u=easeOut(clamp(prog(t,st,st+0.5)));
-      c.style.left=(i%3)*305+'px'; c.style.top=Math.floor(i/3)*300+'px';
-      c.style.opacity=u;
-      c.style.transform=`translateY(${lerp(38,0,u)}px) scale(${lerp(0.94,1,u)})`;
+  /* 8 WHY */
+  const aW=alpha(t,S.why); show($('l-why'),aW);
+  if(aW>0.002){
+    drift($('l-why'),t,S.why,-18,0.02);
+    const cu=easeOut(prog(t,38.5,39.1));
+    $('whycap').style.opacity=cu; $('whycap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
+    const pu=easeOut(prog(t,38.9,39.6));
+    $('whyA').setAttribute('transform','translate(250 470) scale(3.4)');
+    $('whyB').setAttribute('transform','translate(830 470) scale(3.4)');
+    $('whyA').style.opacity=pu; $('whyB').style.opacity=pu;
+    coinEls.forEach((c,i)=>{
+      const st=39.6+i*0.28, u=prog(t,st,st+1.1);
+      const arc=Math.sin(clamp(u)*Math.PI)*210;
+      c.setAttribute('transform',`translate(${lerp(300,780,easeInOut(clamp(u)))} ${430-arc}) rotate(${lerp(0,180,clamp(u))})`);
+      c.style.opacity=clamp(u)>0.98?0:Math.sin(clamp(u)*Math.PI)*1.1;
     });
+    const su=easeOut(prog(t,41.4,42.0));
+    $('whysub').style.opacity=su*(1-prog(t,43.4,43.8));
+    $('whysub').style.transform=`translateY(${lerp(18,0,su)}px)`;
   }
 
   /* 9 COMMUNITY */
   const aC=alpha(t,S.comm); show($('l-comm'),aC);
   if(aC>0.002){
     crowdEls.forEach((g,i)=>{
-      const st=42.2+i*0.08, u=easeOut(clamp(prog(t,st,st+0.5)));
+      const st=43.8+i*0.08, u=easeOut(clamp(prog(t,st,st+0.5)));
       const bob=Math.sin(t*2.6+i*0.8)*10;
       g.style.opacity=u;
       g.setAttribute('transform',`translate(${125+i*166} ${lerp(500,420,u)+bob}) scale(2.5)`);
       if(i%2===0) g.querySelector('.armR').setAttribute('transform',`rotate(${Math.sin(t*5+i)*20} 15 14)`);
     });
     heartEls.forEach((h,i)=>{
-      const st=42.9+i*0.26, u=prog(t,st,st+1.5);
+      const st=44.4+i*0.26, u=prog(t,st,st+1.5);
       h.setAttribute('x',170+i*190);
       h.setAttribute('y',lerp(400,170,easeOut(u)));
       h.style.opacity=Math.sin(clamp(u)*Math.PI)*0.95;
     });
-    const cu=easeOut(prog(t,42.2,42.8));
-    $('commcap').style.opacity=cu*(1-prog(t,45.9,46.4));
+    const cu=easeOut(prog(t,43.8,44.4));
+    $('commcap').style.opacity=cu*(1-prog(t,47.4,47.8));
     $('commcap').style.transform=`translateY(${lerp(24,0,cu)}px)`;
   }
 
   /* 10 CTA */
   const aT=alpha(t,S.cta,0.35,0); show($('l-cta'),aT);
   if(aT>0.002){
-    const u=easeOut(prog(t,46.4,47.1));
+    const u=easeOut(prog(t,47.8,48.5));
+    const sq=squash(prog(t,47.8,48.6));
     $('mark2').style.opacity=u;
-    $('mark2').style.transform=`scale(${lerp(0.92,1,back(clamp(prog(t,46.4,47.2))))})`;
-    const wu=easeOut(prog(t,46.9,47.6));
+    $('mark2').style.transform=`scale(${sq.x*lerp(0.92,1,back(clamp(prog(t,47.8,48.6))))},${sq.y*lerp(0.92,1,back(clamp(prog(t,47.8,48.6))))})`;
+    const wu=easeOut(prog(t,48.3,49.0));
     $('ctaword').style.opacity=wu; $('ctaword').style.transform=`translateY(${lerp(22,0,wu)}px)`;
-    const tu=easeOut(prog(t,47.3,48.0));
+    const tu=easeOut(prog(t,48.7,49.4));
     $('ctatag').style.opacity=tu; $('ctatag').style.transform=`translateY(${lerp(18,0,tu)}px)`;
-    const bu=easeOut(prog(t,47.8,48.5));
+    const bu=easeOut(prog(t,49.2,49.9));
     $('ctabtn').style.opacity=bu;
     $('ctabtn').style.transform=`translateY(${lerp(16,0,bu)}px) scale(${lerp(0.96,1,bu)})`;
   }
