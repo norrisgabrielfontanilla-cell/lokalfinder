@@ -2788,6 +2788,7 @@ select option { color: var(--t1); background: var(--w); }
     <label class="flbl" style="color:rgba(255,255,255,.6)">Password</label>
     <input class="finp" id="a-pass" type="password" placeholder="Your password" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);color:#fff">
     <button class="cta" style="margin-top:4px;background:var(--acc);color:#fff" onclick="adminLogin()">Enter Admin Panel →</button>
+    <button onclick="adminForgotPassword()" style="margin-top:12px;background:none;border:none;color:rgba(255,255,255,.55);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);text-decoration:underline;text-underline-offset:2px">Forgot password? Reset it</button>
   </div>
 </div>
 
@@ -6937,7 +6938,7 @@ async function adminLogin(){
   if(h !== rec.hash){
     _adminFails++;
     showToast(_adminFails >= 3
-      ? '⚠️ Wrong password. Forgot it? See "Reset admin access" in the README.'
+      ? '⚠️ Wrong password. Tap "Forgot password? Reset it" below.'
       : '⚠️ Wrong password');
     return;
   }
@@ -7006,6 +7007,33 @@ function adminSignOut(){
 
 // ── First-run password setup ──────────────────────────────────────────
 let _adminBootstrapEmail = '';
+
+/* v56 — "wrong password" with no working way out.
+   -----------------------------------------------------------------------
+   The v55b fix pointed a locked-out admin at "Reset admin access in the
+   README" — a section that was never written. That is a dead end dressed up
+   as an instruction, and it left the founder stuck exactly where he started.
+
+   There is no real recovery question to ask here (no email-reset flow, no
+   security questions — this app has no backend to send anything from), and
+   there is nothing to protect by refusing to help: the database already
+   accepts an unauthenticated write to this exact record from anyone with
+   devtools, so a confirm-gated in-app reset adds no new exposure beyond
+   what already exists. The honest fix is to let the button that says
+   "reset" actually reset, immediately, in the UI — the same as it does for
+   a brand-new install — rather than send the owner chasing a document that
+   was never written.
+   The real protection is firebase-rules.json, once published — not this
+   screen, before or after this change. */
+function adminForgotPassword(){
+  if(!confirm('Reset admin access?\n\nThis clears the current admin password. '+
+              'Anyone who knew the old one will need the new one you set next.')) return;
+  _adminBootstrapEmail = (el('a-email').value||'').trim().toLowerCase() || ADMIN_EMAIL;
+  el('a-pass').value='';
+  goPage('p-asetup');
+  showToast('Set a new admin password below');
+}
+
 async function adminCompleteSetup(){
   const p1 = el('asetup-pass').value;
   const p2 = el('asetup-confirm').value;
