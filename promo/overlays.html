@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LokalFinder — overlay pack</title>
+<style>
+  @font-face { font-family:'Fraunces';  src:url('fonts/Fraunces.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+  @font-face { font-family:'Plus Jakarta Sans'; src:url('fonts/PlusJakartaSans.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+  @font-face { font-family:'Bricolage Grotesque'; src:url('fonts/BricolageGrotesque.woff2') format('woff2'); font-weight:100 900; font-display:block; }
+
+  :root{ --lgreen:#1A6B4A; --gold:#F5C842; --mint:#9df5c9; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+
+  /* transparent by default — the renderer screenshots with omitBackground
+     so these composite straight over footage */
+  html,body{width:1080px;height:1920px;overflow:hidden;background:transparent;
+    font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+  #stage{position:relative;width:1080px;height:1920px;overflow:hidden}
+  #stage.solid{background:#1A6B4A}
+
+  .kin{font-family:'Bricolage Grotesque','Plus Jakarta Sans',sans-serif;font-weight:800;
+       letter-spacing:-.035em;line-height:1.02;will-change:transform,opacity}
+  .ser{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.03em}
+
+  /* scrim keeps white type legible over unpredictable footage */
+  #scrim{position:absolute;left:0;right:0;bottom:0;height:900px;will-change:opacity;
+    background:linear-gradient(to top,rgba(6,20,14,.86) 0%,rgba(6,20,14,.62) 38%,rgba(6,20,14,0) 100%)}
+
+  #cap{position:absolute;left:0;right:0;bottom:300px;padding:0 80px;text-align:center;color:#fff}
+  .line{overflow:hidden;display:block}
+  .line > span{display:block;will-change:transform}
+
+  #card{position:absolute;inset:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:0}
+  #badges{display:flex;gap:22px;margin-top:44px}
+  .badge{display:flex;align-items:center;gap:14px;padding:20px 34px;border-radius:16px;
+    background:#0D2B1A;border:1px solid rgba(255,255,255,.22);color:#fff;will-change:transform,opacity}
+  .badge .sm{font-size:17px;opacity:.72;line-height:1}
+  .badge .lg{font-size:26px;font-weight:700;line-height:1.15;font-family:'Bricolage Grotesque',sans-serif}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scrim"></div>
+  <div id="cap" class="kin"></div>
+
+  <div id="card" style="display:none">
+    <svg id="mark" viewBox="0 0 48 56" style="width:180px;height:210px"></svg>
+    <div class="kin" id="word" style="margin-top:44px;font-size:88px;color:#fff;letter-spacing:-1.6px">Lokal<span style="color:var(--mint)">Finder</span></div>
+    <div class="ser" id="tag" style="margin-top:30px;font-size:44px;color:rgba(255,255,255,.94);text-align:center;line-height:1.15">Hyperlocal. Hyper-real.<br/>Hyper-human.</div>
+    <div id="cta" class="kin" style="margin-top:52px;padding:26px 62px;border-radius:999px;background:#fff;color:var(--lgreen);font-size:31px">Get early access</div>
+    <div id="badges"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Overlay pack. One asset per render, chosen with ?asset=<name>.
+   Everything is derived from seek(t) so the frames step exactly, same as
+   the main film. Background stays transparent: the renderer screenshots
+   with omitBackground and encodes to ProRes 4444 / VP9 with alpha.
+===================================================================== */
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,u)=>a+(b-a)*u;
+const prog=(t,a,b)=>clamp((t-a)/(b-a));
+function cubicBezier(x1,y1,x2,y2){
+  const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx, cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const sx=u=>((ax*u+bx)*u+cx)*u, sy=u=>((ay*u+by)*u+cy)*u, dx=u=>(3*ax*u+2*bx)*u+cx;
+  return x=>{ if(x<=0)return 0; if(x>=1)return 1; let u=x;
+    for(let i=0;i<8;i++){const e=sx(u)-x; if(Math.abs(e)<1e-6)return sy(u);
+      const d=dx(u); if(Math.abs(d)<1e-6)break; u-=e/d;}
+    return sy(u); };
+}
+const easeOut=cubicBezier(0.23,1,0.32,1);
+const back=u=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(u-1,3)+c*Math.pow(u-1,2);};
+
+const LOGO=(pin,st,house,gold)=>`
+  <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="${pin}" stroke="${st}" stroke-width="2"/>
+  <path d="M14 27v-8l10-8 10 8v8" stroke="${st}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M18 27v10h12V27" stroke="${house}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect x="21" y="30" width="6" height="7" rx="1" fill="${st}" opacity=".8"/>
+  <circle class="dot" cx="24" cy="20" r="2.5" fill="${gold}"/>`;
+
+/* ---------------- asset definitions ---------------- */
+const ASSETS = {
+  'cap-1' : {dur:3.4, size:70, lines:[["You just don't know","who they are."]]},
+  'cap-2' : {dur:4.0, size:60, lines:[["Meet your neighbours.","The ones making,","selling, delivering."]]},
+  'cap-3' : {dur:3.4, size:70, lines:[["Discover. Connect.","Support."]]},
+  // three statements in sequence, one overlay
+  'cap-4' : {dur:6.4, size:70, seq:[["Support local."],["Know your makers."],["Your neighbourhood,","connected."]]},
+  'endcard'      : {dur:4.6, card:true},
+  'endcard-solid': {dur:4.6, card:true, solid:true},
+};
+
+const NAME = q.get('asset') || 'cap-1';
+const A = ASSETS[NAME];
+if(!A) throw new Error('unknown asset: '+NAME);
+const DUR = A.dur;
+
+if(A.solid) $('stage').classList.add('solid');
+
+/* build DOM for this asset */
+let lineEls=[];
+function buildLines(groups){
+  $('cap').innerHTML = groups.map(g=>
+    `<div class="grp">${g.map(l=>`<span class="line"><span>${l}</span></span>`).join('')}</div>`
+  ).join('');
+  $('cap').style.fontSize = A.size+'px';
+  return [...$('cap').querySelectorAll('.grp')];
+}
+
+if(A.card){
+  $('scrim').style.display='none';
+  $('cap').style.display='none';
+  $('card').style.display='flex';
+  $('mark').innerHTML = LOGO('#0d3d27','#7fe3b4','#EFF7F2','#F5C842');
+  // app-store badges are only honest once the app is actually listed;
+  // kept out of the default card for that reason (see hero-video-brief.md)
+  if(q.get('badges')==='1'){
+    $('badges').innerHTML =
+      ['App Store','Google Play'].map(s=>
+        `<div class="badge"><div><div class="sm">Download on the</div><div class="lg">${s}</div></div></div>`
+      ).join('');
+  }
+} else {
+  lineEls = buildLines(A.seq ? A.seq : A.lines);
+}
+const badgeEls=[...document.querySelectorAll('.badge')];
+
+/* ---------------- per-frame ---------------- */
+function seek(t){
+  t=clamp(t,0,DUR);
+  const outStart = DUR-0.55;
+
+  if(A.card){
+    const u=easeOut(prog(t,0.10,0.85));
+    const bk=back(clamp(prog(t,0.10,0.95)));
+    $('mark').style.opacity=u;
+    $('mark').style.transform=`scale(${lerp(0.92,1,bk)})`;
+    const dp=prog(t,0.70,1.10);
+    $('mark').querySelector('.dot').setAttribute('r',2.5*lerp(1,2.0,Math.sin(dp*Math.PI)));
+
+    const wu=easeOut(prog(t,0.55,1.25));
+    $('word').style.opacity=wu;
+    $('word').style.transform=`translateY(${lerp(26,0,wu)}px)`;
+
+    const tu=easeOut(prog(t,0.95,1.70));
+    $('tag').style.opacity=tu;
+    $('tag').style.transform=`translateY(${lerp(20,0,tu)}px)`;
+
+    const cu=easeOut(prog(t,1.45,2.20));
+    $('cta').style.opacity=cu;
+    $('cta').style.transform=`translateY(${lerp(18,0,cu)}px) scale(${lerp(0.96,1,cu)})`;
+
+    badgeEls.forEach((b,i)=>{
+      const bu=easeOut(prog(t,1.85+i*0.12,2.55+i*0.12));
+      b.style.opacity=bu;
+      b.style.transform=`translateY(${lerp(16,0,bu)}px) scale(${lerp(0.96,1,bu)})`;
+    });
+
+    const fade=1-prog(t,outStart,DUR);
+    $('card').style.opacity=fade;
+    return;
+  }
+
+  /* captions */
+  const scrimU=easeOut(prog(t,0,0.45))*(1-prog(t,outStart,DUR));
+  $('scrim').style.opacity=scrimU*0.96;
+
+  if(A.seq){
+    // each statement gets an equal slot, with a short overlap
+    const slot=DUR/lineEls.length;
+    lineEls.forEach((g,i)=>{
+      const s0=i*slot, s1=s0+slot;
+      const inU=easeOut(prog(t,s0,s0+0.45));
+      const outU=1-prog(t,s1-0.35,s1);
+      const a=Math.min(inU,outU)*(1-prog(t,outStart,DUR));
+      g.style.opacity=a;
+      [...g.querySelectorAll('.line > span')].forEach((sp,j)=>{
+        const u=easeOut(prog(t,s0+j*0.07,s0+0.5+j*0.07));
+        sp.style.transform=`translateY(${lerp(112,0,u)}%)`;
+      });
+    });
+  } else {
+    const g=lineEls[0];
+    g.style.opacity=1-prog(t,outStart,DUR);
+    [...g.querySelectorAll('.line > span')].forEach((sp,j)=>{
+      const u=easeOut(prog(t,0.12+j*0.09,0.72+j*0.09));
+      sp.style.transform=`translateY(${lerp(112,0,u)}%)`;
+    });
+  }
+}
+
+window.seek=seek;
+window.FILM={DUR,NAME};
+seek(0);
+Promise.all([
+  document.fonts.load("800 100px 'Bricolage Grotesque'"),
+  document.fonts.load("400 100px 'Fraunces'"),
+  document.fonts.load("600 100px 'Plus Jakarta Sans'"),
+]).then(()=>document.fonts.ready).then(()=>{ window.__filmReady=true; });
+</script>
+</body>
+</html>

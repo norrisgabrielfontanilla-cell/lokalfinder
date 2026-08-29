@@ -214,15 +214,41 @@ Set in Bricolage Grotesque 800, the app's own wordmark face.
 
 ---
 
-## What this repo supplies for the edit
+## The overlay pack — built, in `overlays/`
 
-Already built in the real brand, cutting in at 1080×1920 / 30fps:
+Rendered and verified. 1080×1920 / 30fps, transparent background, ready to sit
+on a track above whatever footage the shoot produces.
 
-- **End card** — pin-house mark, Lokal*Finder* wordmark, tagline, CTA
-- **Lower-third captions** for every line above, in Bricolage Grotesque
-- **Alpha-channel overlays** of either, to sit over footage
+| Asset | Content | Length |
+|---|---|---|
+| `cap-1` | "You just don't know who they are." | 3.4s |
+| `cap-2` | "Meet your neighbours. The ones making, selling, delivering." | 4.0s |
+| `cap-3` | "Discover. Connect. Support." | 3.4s |
+| `cap-4` | "Support local." → "Know your makers." → "Your neighbourhood, connected." | 6.4s |
+| `endcard` | Logo, wordmark, tagline, CTA — transparent | 4.6s |
+| `endcard-solid` | Same on brand green, opaque — usable as a finished shot | 4.6s |
 
-Ask and they render as separate files.
+Each caption ships as **`.mov`** (PNG-in-QuickTime, lossless RGBA — Premiere, AE,
+FCP, Resolve) and **`.webm`** (VP9 alpha, ~20× smaller, for web and CapCut).
+`endcard-solid` is H.264 `.mp4`.
+
+Captions carry a soft bottom scrim so white type survives over unpredictable
+footage. All type sits inside the 250–1670px safe band.
+
+Regenerate with `node render-overlays.mjs`; copy and timing live in the `ASSETS`
+object at the top of `overlays.html`.
+
+### One trap worth knowing
+
+**ProRes 4444 was the obvious choice and it silently produced garbage.** This
+ffmpeg build's `prores_ks` encoder accepts the alpha input, exits 0, and writes
+an 88 MB file whose alpha channel is *entirely zero* — a broken asset that looks
+completely fine until it hits a timeline. Verified with `alphaextract`; `qtrle`
+and PNG-in-MOV both handle the same frames correctly.
+
+`render-overlays.mjs` now decodes a mid-clip frame of every output and refuses to
+report success unless real alpha is present. If you re-encode these in another
+tool, check the alpha before trusting it — an exit code proves nothing here.
 
 ---
 
