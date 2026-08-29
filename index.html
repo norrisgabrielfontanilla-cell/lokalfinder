@@ -1181,6 +1181,177 @@ select option { color: var(--t1); background: var(--w); }
   .lf-float{animation:none !important;display:none}
   #lf-pulse span{animation:none !important}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v58 — MOTION SYSTEM + ORDER-SUCCESS SIGNATURE MOMENT
+   -----------------------------------------------------------------------
+   Additive. Nothing above this block is deleted; this layer introduces
+   shared motion tokens (so timing stops being copied per-rule) and the
+   order-success stage. Every animation here is disabled wholesale by the
+   reduced-motion block at the bottom of this section.
+═══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* Easing: decelerate on arrival, accelerate on exit, spring for tactile
+     confirmations, linear only for constant-rate progress. */
+  --e-out:cubic-bezier(.22,.61,.36,1);
+  --e-in:cubic-bezier(.55,.06,.68,.19);
+  --e-spring:cubic-bezier(.34,1.46,.64,1);
+  --e-std:cubic-bezier(.4,0,.2,1);
+  /* Duration: matched to distance + purpose, not one value everywhere. */
+  --d-tap:110ms;   /* immediate press feedback   */
+  --d-ui:200ms;    /* colour / opacity / small UI */
+  --d-move:320ms;  /* element travels a distance  */
+  --d-stage:520ms; /* hero + celebratory beats    */
+}
+
+/* ═══ CTA BUSY STATE ═══
+   The primary action must visibly own the whole round-trip: it cannot be
+   pressed twice, and it says what it is doing. */
+.cta{position:relative}
+.cta.is-busy{pointer-events:none;opacity:.92;transform:none !important}
+.cta.is-busy .cta-label{opacity:.86}
+.cta-spin{
+  width:15px;height:15px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.32);border-top-color:#fff;
+  animation:lfSpin .7s linear infinite; /* linear: constant-rate progress */
+}
+@keyframes lfSpin{to{transform:rotate(360deg)}}
+.cta:active:not(.is-busy){transform:scale(.975)}
+
+/* ═══ ORDER-SUCCESS STAGE ═══
+   Sits above the app shell but below the toast layer (9999) so a toast can
+   still surface over it. Pointer-events are on so nothing behind is tappable
+   mid-sequence. */
+#lf-success-stage{
+  position:fixed;inset:0;z-index:9998;display:none;
+  align-items:center;justify-content:center;
+  background:radial-gradient(120% 90% at 50% 42%,#F3FBF7 0%,#E4F4EC 46%,#D6EDE1 100%);
+}
+#lf-success-stage.on{display:flex;animation:lfStageIn .28s var(--e-out) both}
+#lf-success-stage.out{animation:lfStageOut .34s var(--e-in) both}
+@keyframes lfStageIn{from{opacity:0}to{opacity:1}}
+@keyframes lfStageOut{from{opacity:1}to{opacity:0;transform:scale(1.015)}}
+
+.lf-suc-wrap{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center}
+
+/* Ground ripple — one soft ring, not a fireworks show. */
+.lf-suc-ring{
+  position:absolute;width:96px;height:96px;border-radius:50%;
+  border:1.5px solid rgba(14,138,90,.42);opacity:0;
+}
+#lf-success-stage.on .lf-suc-ring{animation:lfSucRing 1.5s var(--e-out) .34s both}
+#lf-success-stage.on .lf-suc-ring.r2{animation-delay:.52s}
+@keyframes lfSucRing{
+  0%{transform:scale(.5);opacity:0}
+  22%{opacity:.55}
+  100%{transform:scale(2.5);opacity:0}
+}
+
+/* The pin builds itself: outline strokes on, then the interior settles in. */
+.lf-suc-pin{position:relative;width:104px;height:118px;z-index:2}
+.lf-suc-pin svg{width:100%;height:100%;overflow:visible}
+.lf-suc-pin .pin-body{
+  stroke-dasharray:230;stroke-dashoffset:230;
+  fill-opacity:0;
+}
+#lf-success-stage.on .pin-body{animation:lfPinDraw .72s var(--e-out) .06s forwards,lfPinFill .5s var(--e-out) .62s forwards}
+@keyframes lfPinDraw{to{stroke-dashoffset:0}}
+@keyframes lfPinFill{to{fill-opacity:1}}
+.lf-suc-pin .pin-roof,.lf-suc-pin .pin-wall{stroke-dasharray:64;stroke-dashoffset:64}
+#lf-success-stage.on .pin-roof{animation:lfPinDraw .42s var(--e-out) .58s forwards}
+#lf-success-stage.on .pin-wall{animation:lfPinDraw .42s var(--e-out) .70s forwards}
+.lf-suc-pin .pin-spark{opacity:0;transform-origin:center}
+#lf-success-stage.on .pin-spark{animation:lfPop .44s var(--e-spring) .86s both}
+@keyframes lfPop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+
+/* The check is drawn, not dropped in — it reads as "confirmed", not "popped". */
+.lf-suc-check{
+  position:absolute;right:6px;bottom:16px;width:46px;height:46px;border-radius:50%;
+  background:var(--g);display:flex;align-items:center;justify-content:center;z-index:3;
+  box-shadow:0 6px 18px rgba(14,138,90,.36);opacity:0;transform:scale(.4);
+}
+#lf-success-stage.on .lf-suc-check{animation:lfPop .46s var(--e-spring) 1.02s both}
+.lf-suc-check svg{width:24px;height:24px}
+.lf-suc-check path{stroke-dasharray:30;stroke-dashoffset:30}
+#lf-success-stage.on .lf-suc-check path{animation:lfPinDraw .34s var(--e-out) 1.24s forwards}
+
+/* Restrained burst: six dots, once. Not confetti. */
+.lf-suc-burst{position:absolute;inset:0;pointer-events:none;z-index:1}
+.lf-suc-burst i{
+  position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;
+  background:var(--gm);opacity:0;
+}
+#lf-success-stage.on .lf-suc-burst i{animation:lfBurst .82s var(--e-out) 1.1s both}
+.lf-suc-burst i:nth-child(1){--bx:-64px;--by:-52px;background:var(--acc)}
+.lf-suc-burst i:nth-child(2){--bx:62px;--by:-46px}
+.lf-suc-burst i:nth-child(3){--bx:-74px;--by:26px}
+.lf-suc-burst i:nth-child(4){--bx:70px;--by:34px;background:var(--acc)}
+.lf-suc-burst i:nth-child(5){--bx:-26px;--by:-78px}
+.lf-suc-burst i:nth-child(6){--bx:30px;--by:74px}
+@keyframes lfBurst{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  28%{opacity:.9}
+  100%{opacity:0;transform:translate(calc(-50% + var(--bx)),calc(-50% + var(--by))) scale(.5)}
+}
+
+/* Copy under the mark. */
+.lf-suc-copy{position:absolute;left:0;right:0;top:calc(50% + 132px);text-align:center;padding:0 28px}
+.lf-suc-ttl{font-family:var(--ffl);font-size:23px;font-weight:800;color:var(--t1);letter-spacing:-.4px;opacity:0}
+.lf-suc-sub{font-size:13.5px;color:var(--t2);margin-top:7px;line-height:1.5;opacity:0}
+#lf-success-stage.on .lf-suc-ttl{animation:lfRise .5s var(--e-out) 1.18s both}
+#lf-success-stage.on .lf-suc-sub{animation:lfRise .5s var(--e-out) 1.30s both}
+@keyframes lfRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ═══ ORDER-FAILURE STATE ═══
+   A failed order is a designed screen, not a broken one. The cart is intact
+   behind it and the copy says so. */
+#lf-order-error{
+  position:fixed;inset:0;z-index:9998;display:none;
+  align-items:center;justify-content:center;padding:26px;
+  background:rgba(13,43,26,.52);backdrop-filter:blur(7px);
+}
+#lf-order-error.on{display:flex;animation:lfStageIn .24s var(--e-out) both}
+.lf-err-sheet{
+  background:#fff;border-radius:24px;padding:26px 22px 20px;width:100%;max-width:340px;
+  text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.26);
+  animation:lfErrIn .38s var(--e-spring) both;
+}
+@keyframes lfErrIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+.lf-err-ico{
+  width:62px;height:62px;border-radius:50%;background:var(--rl);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 15px;
+}
+.lf-err-ico svg{width:29px;height:29px;stroke:var(--red);stroke-width:2;fill:none;stroke-linecap:round}
+.lf-err-ttl{font-size:18.5px;font-weight:800;color:var(--t1);margin-bottom:6px;letter-spacing:-.2px}
+.lf-err-sub{font-size:13px;color:var(--t2);line-height:1.55;margin-bottom:8px}
+.lf-err-keep{
+  font-size:12px;color:var(--gd);background:var(--gl);border-radius:10px;
+  padding:9px 12px;line-height:1.5;margin-bottom:16px;
+}
+.lf-err-acts{display:flex;flex-direction:column;gap:9px}
+.lf-err-acts button{
+  width:100%;padding:14px;border-radius:14px;font-family:var(--ff);
+  font-size:14px;font-weight:800;cursor:pointer;border:none;
+  transition:transform var(--d-tap) var(--e-out);
+}
+.lf-err-acts button:active{transform:scale(.97)}
+.lf-err-retry{background:var(--gg);color:#fff;box-shadow:var(--shg)}
+.lf-err-back{background:#F1F5F3;color:var(--t1);border:1px solid #E2E8E5 !important}
+
+/* ═══ REDUCED MOTION ═══
+   Everything above collapses to its end state. The information is identical;
+   only the choreography is dropped. */
+@media(prefers-reduced-motion:reduce){
+  #lf-success-stage.on,#lf-success-stage.out,#lf-order-error.on,.lf-err-sheet{animation:none !important}
+  #lf-success-stage.on .lf-suc-ring,#lf-success-stage.on .lf-suc-burst i{animation:none !important;display:none}
+  #lf-success-stage.on .pin-body{animation:none !important;stroke-dashoffset:0;fill-opacity:1}
+  #lf-success-stage.on .pin-roof,#lf-success-stage.on .pin-wall{animation:none !important;stroke-dashoffset:0}
+  #lf-success-stage.on .pin-spark{animation:none !important;opacity:1}
+  #lf-success-stage.on .lf-suc-check{animation:none !important;opacity:1;transform:none}
+  #lf-success-stage.on .lf-suc-check path{animation:none !important;stroke-dashoffset:0}
+  #lf-success-stage.on .lf-suc-ttl,#lf-success-stage.on .lf-suc-sub{animation:none !important;opacity:1;transform:none}
+  .cta-spin{animation:none !important;border-top-color:rgba(255,255,255,.32)}
+}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -3154,6 +3325,62 @@ select option { color: var(--t1); background: var(--w); }
 
 <div id="toast"></div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════
+     v58 — ORDER SUCCESS STAGE
+     Shown ONLY after the backend write for the order has actually resolved.
+     lfPlaySuccessStage() is the single entry point; it never fires on its own.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="lf-success-stage" aria-live="polite" role="status">
+  <div class="lf-suc-wrap">
+    <div class="lf-suc-ring"></div>
+    <div class="lf-suc-ring r2"></div>
+    <div class="lf-suc-burst"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="lf-suc-pin">
+      <svg viewBox="0 0 104 118" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="pin-body" d="M52 6C29.9 6 12 23.9 12 46c0 30 40 66 40 66s40-36 40-66C92 23.9 74.1 6 52 6Z"
+              fill="#0E8A5A" stroke="#12B76A" stroke-width="3.4" stroke-linejoin="round"/>
+        <path class="pin-roof" d="M32 56V39l20-16 20 16v17" stroke="#12B76A" stroke-width="3.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="pin-wall" d="M40 56v22h24V56" stroke="#EFF7F2" stroke-width="3.4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <circle class="pin-spark" cx="52" cy="44" r="5.4" fill="#F5C842"/>
+      </svg>
+    </div>
+    <div class="lf-suc-check">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m5 12.5 4.6 4.6L19 7.7" stroke="#fff" stroke-width="2.9"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="lf-suc-copy">
+      <div class="lf-suc-ttl" id="lf-suc-ttl">Order confirmed</div>
+      <div class="lf-suc-sub" id="lf-suc-sub">Sent to the vendor</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ v58 — ORDER FAILURE SHEET ═══
+     The cart is deliberately still intact behind this. Retry re-uses the same
+     order id, so a retry after a write that actually landed overwrites the
+     same record instead of creating a duplicate order. -->
+<div id="lf-order-error" role="alertdialog" aria-modal="true" aria-labelledby="lf-err-ttl">
+  <div class="lf-err-sheet">
+    <div class="lf-err-ico">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 8v5"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/>
+        <path d="M10.3 3.9 2.5 17.4A2 2 0 0 0 4.2 20.4h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+      </svg>
+    </div>
+    <div class="lf-err-ttl" id="lf-err-ttl">Your order wasn't placed</div>
+    <div class="lf-err-sub" id="lf-err-sub">We couldn't reach the vendor just now. Nothing was charged and nothing was sent.</div>
+    <div class="lf-err-keep">Your cart is exactly as you left it — nothing was lost.</div>
+    <div class="lf-err-acts">
+      <button class="lf-err-retry" id="lf-err-retry" onclick="lfRetryOrder()">Try again</button>
+      <button class="lf-err-back" onclick="lfDismissOrderError()">Back to my cart</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── FLOATING NOTIFICATION PANEL ── -->
 <div id="notif-panel" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--w);border-top:1px solid var(--bd);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.12);z-index:9998;flex-direction:column;max-height:75vh">
   <div style="padding:12px 16px;border-bottom:.5px solid var(--bd);display:flex;align-items:center;gap:10px">
@@ -4365,7 +4592,108 @@ function setPay(m){
   document.getElementById('pay-c').classList.toggle('on',m==='cash');
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   v58 — ORDER SUBMISSION: CONFIRM ONLY AFTER THE BACKEND SAYS SO
+   -----------------------------------------------------------------------
+   Before v58 the success screen was shown immediately and the write was
+   fired afterwards. pushOrders() swallows its own errors, so finalizeOrder's
+   catch could never run for a failed write: the customer saw "Order Placed!"
+   and a live tracker while the vendor never received the order.
+
+   Now the write is awaited FIRST, via pushOrderStrict() which propagates
+   failure. Only a resolved write reaches the success stage. A failure rolls
+   the optimistic local state back, keeps the cart, and offers a retry that
+   REUSES the same order id — so retrying after a write that actually landed
+   overwrites the same record instead of creating a second order.
+═══════════════════════════════════════════════════════════════════════ */
+
+let _lfSubmitting = false;   // duplicate-submit guard for the food flow
+let _lfErrCtx     = null;    // { retry, back, backLabel, keepMsg } for the failure sheet
+
+/* Same write as pushOrders(), but it throws. pushOrders() keeps its lenient
+   behaviour for every other caller (status updates, background re-syncs)
+   where a swallowed failure is genuinely the right call. */
+async function pushOrderStrict(oid){
+  const o = orders.find(x=>x.id===oid);
+  if(!o) throw new Error('order not found locally: '+oid);
+  const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+  await fbSet(ROOM_KEY+'/orders/'+key,
+    {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+}
+
+function lfCtaBusy(btn, label){
+  if(!btn) return null;
+  const prev = btn.innerHTML;
+  btn.classList.add('is-busy');
+  btn.setAttribute('aria-busy','true');
+  btn.innerHTML = '<span class="cta-spin"></span><span class="cta-label">'+esc(label)+'</span>';
+  return prev;
+}
+function lfCtaRestore(btn, prev){
+  if(!btn || prev===null || prev===undefined) return;
+  btn.classList.remove('is-busy');
+  btn.removeAttribute('aria-busy');
+  btn.innerHTML = prev;
+}
+
+/* Plays the success choreography. Resolves once the stage has cleared, so the
+   caller can await it. Reduced motion collapses the timeline to a short hold —
+   the wording shown is identical either way. */
+function lfPlaySuccessStage(order){
+  return new Promise(resolve=>{
+    const stage = el('lf-success-stage');
+    if(!stage){ resolve(); return; }
+    const clean = orderKind(order)==='cleaning';
+    const vname = (VENDORS[order.vendorId] && VENDORS[order.vendorId].name) || '';
+    const t = el('lf-suc-ttl'), s = el('lf-suc-sub');
+    if(t) t.textContent = clean ? 'Booking confirmed' : 'Order confirmed';
+    if(s) s.textContent = vname ? ('Sent to '+vname)
+                                : (clean ? 'Sent to the provider' : 'Sent to the vendor');
+    let reduced = false;
+    try{ reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+    stage.classList.remove('out');
+    stage.classList.add('on');
+    setTimeout(()=>{
+      stage.classList.add('out');
+      setTimeout(()=>{ stage.classList.remove('on'); stage.classList.remove('out'); resolve(); },
+                 reduced ? 0 : 340);
+    }, reduced ? 850 : 2150);
+  });
+}
+
+/* The failure sheet serves both the food and the cleaning flow, so what
+   "try again" and "go back" mean is supplied by the caller rather than
+   hard-coded to the cart. */
+function lfShowOrderError(detail, ctx){
+  if(ctx) _lfErrCtx = ctx;
+  const sub = el('lf-err-sub');
+  if(sub) sub.textContent = detail ||
+    "We couldn't reach the vendor just now. Nothing was charged and nothing was sent.";
+  const keep = el('lf-err-keep');
+  if(keep) keep.textContent = (_lfErrCtx && _lfErrCtx.keepMsg) ||
+    'Your cart is exactly as you left it \u2014 nothing was lost.';
+  const back = el('lf-err-back');
+  if(back) back.textContent = (_lfErrCtx && _lfErrCtx.backLabel) || 'Back to my cart';
+  const e = el('lf-order-error');
+  if(e) e.classList.add('on');
+}
+function lfDismissOrderError(){
+  const e = el('lf-order-error');
+  if(e) e.classList.remove('on');
+  const back = (_lfErrCtx && _lfErrCtx.back) || 'p-ccart';
+  _lfErrCtx = null;
+  goPage(back);
+}
+function lfRetryOrder(){
+  const e = el('lf-order-error');
+  if(e) e.classList.remove('on');
+  const c = _lfErrCtx;
+  if(!c || typeof c.retry !== 'function'){ goPage('p-ccart'); return; }
+  c.retry();
+}
+
 function placeOrder(){
+  if(_lfSubmitting) return;                        // guard: re-entry / double tap
   if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
   // v49 gate 2: the cart was filled minutes ago. Re-check right now, at the
   // moment of paying — the store may have closed, or the vendor may have
@@ -4381,7 +4709,9 @@ function placeOrder(){
   const total=sub+df;
   document.getElementById('s-unit').textContent='Unit '+unit;
   document.getElementById('s-total').textContent='₱'+total;
-  pendingOid=genOrderId();
+  // v58: reuse an id already minted for this checkout attempt, so a retry
+  // after a write that actually landed overwrites the same record.
+  if(!pendingOid) pendingOid=genOrderId();
   const oid=pendingOid;
   document.getElementById('s-oid').textContent=oid;
   if(payMethod==='gcash'){
@@ -4406,10 +4736,18 @@ function confirmGcash(){
   const df=getCartDeliveryFee();
   const total=sub+df;
   const oid=pendingOid||genOrderId();
-  finalizeOrder(name,unit,phone,total,oid,'gcash',ref,sub,df);
+  return finalizeOrder(name,unit,phone,total,oid,'gcash',ref,sub,df);
 }
 
 async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deliveryFee){
+  if(_lfSubmitting) return;
+  _lfSubmitting = true;
+  // Which button owns this round-trip depends on the screen we came from.
+  const btn = (method==='gcash')
+    ? document.querySelector('#p-cgcash .cta')
+    : document.querySelector('#checkout-form .cta');
+  const prevHTML = lfCtaBusy(btn, 'Placing order…');
+
   const items=[];
   Object.entries(cart).forEach(([vid,vc])=>vc.items.forEach(i=>items.push({...i,vendorId:vid,vendorName:vc.name})));
   // Backward-compatible defaults: if caller didn't pass subAmt/deliveryFee, derive them so
@@ -4427,32 +4765,62 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
     customerFcmToken: _custToken || '',
     onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
   };
+
+  // What a retry would need to repeat — captured before anything can throw.
+  _lfErrCtx = {
+    retry: ()=>finalizeOrder(name,unit,phone,total,oid,method,ref,subAmt,deliveryFee),
+    back: 'p-ccart', backLabel: 'Back to my cart'
+  };
+
+  // Optimistic local commit: notifOnStatusChange, the dashboards and the
+  // tracker all read the order back out of `orders`. Rolled back on failure.
   orders.push(order);
   knownOrderIds.add(order.id);
-  lastPlacedOrderId=order.id;
   myOrderIds.push(order.id);
+
+  try{
+    // ── the real backend confirmation. Nothing celebratory before this. ──
+    await pushOrderStrict(order.id);
+  }catch(e){
+    console.error('Order write failed:', e);
+    // Roll back, so no phantom order survives in local state or history.
+    const i = orders.findIndex(x=>x.id===order.id);
+    if(i>-1) orders.splice(i,1);
+    knownOrderIds.delete(order.id);
+    const j = myOrderIds.indexOf(order.id);
+    if(j>-1) myOrderIds.splice(j,1);
+    // pendingOid is deliberately NOT cleared — the retry reuses this id.
+    _lfSubmitting = false;
+    lfCtaRestore(btn, prevHTML);
+    lfShowOrderError();
+    return;
+  }
+
+  // Confirmed by the backend. Only past this line is any of it true.
+  lastPlacedOrderId=order.id;
   pendingOid=null;
   saveLocal();
-  // Navigate immediately so user sees success screen
   updateAdminStats();
   updateVendorDash(order.vendorId);
   renderOrderHistory();
-  goPage('p-csuccess');
   loadCustomerVendorContact(order.id);
+  lfCtaRestore(btn, prevHTML);
+  _lfSubmitting = false;
+  _lfErrCtx = null;
+
+  // Stage plays over the top while the confirmation screen paints underneath,
+  // so the fade-out reveals a screen that has already settled.
+  const staged = lfPlaySuccessStage(order);
+  goPage('p-csuccess');
   updateTrackerFromStatus();
-  // Push to Firebase and notify vendor — awaited so it definitely lands
+
+  // Best-effort follow-ups: a hiccup here must not undo a placed order.
   try{
-    await pushOrders(order.id);
     await notifOnStatusChange(order, 'new');
     refreshBadge();
-    showToast('✅ Order sent to vendor!');
-    // Immediately poll so vendor sees it right away
     setTimeout(syncFromCloud, 500);
-  }catch(e){
-    console.error('Order push failed:', e);
-    showToast('⚠️ Order saved, retrying sync…');
-    setTimeout(()=>pushOrders(order.id), 3000);
-  }
+  }catch(e){ console.error('post-order notify failed:', e); }
+  await staged;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -4686,31 +5054,57 @@ async function submitBooking(){
       onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
     };
 
+    // Optimistic local commit — the renderers below read the booking back out
+    // of `orders`. Rolled back if the write does not land.
     orders.push(order);
     knownOrderIds.add(order.id);
-    lastPlacedOrderId = order.id;
     myOrderIds.push(order.id);
-    saveLocal();
 
+    // v58: the provider's copy has to exist before the customer is told it
+    // does. Previously the confirmation screen was shown first and the write
+    // fired afterwards through the error-swallowing pushOrders().
+    try{
+      await pushOrderStrict(order.id);
+    }catch(err){
+      const i = orders.findIndex(x=>x.id===order.id);
+      if(i>-1) orders.splice(i,1);
+      knownOrderIds.delete(order.id);
+      const j = myOrderIds.indexOf(order.id);
+      if(j>-1) myOrderIds.splice(j,1);
+      console.error('Booking write failed:', err);
+      lfShowOrderError("We couldn't reach "+v.name+" just now. Your booking wasn't sent.", {
+        retry: submitBooking, back: 'p-cbook', backLabel: 'Back to my booking',
+        keepMsg: 'Your booking details are exactly as you left them \u2014 nothing was lost.'
+      });
+      return;
+    }
+
+    lastPlacedOrderId = order.id;
+    saveLocal();
     updateAdminStats();
     updateVendorDash(order.vendorId);
     renderOrderHistory();
-    goPage('p-csuccess');
     loadCustomerVendorContact(order.id);
+
+    // Stage plays over the top while the confirmation paints underneath.
+    const staged = lfPlaySuccessStage(order);
+    goPage('p-csuccess');
     updateTrackerFromStatus();
 
-    await pushOrders(order.id);
-    await notifOnStatusChange(order, 'new');
-    refreshBadge();
-    showToast('✅ Booking sent to '+v.name+'!');
-    setTimeout(syncFromCloud, 500);
+    // Best-effort follow-ups: a hiccup here must not undo a placed booking.
+    try{
+      await notifOnStatusChange(order, 'new');
+      refreshBadge();
+      setTimeout(syncFromCloud, 500);
+    }catch(err){ console.error('post-booking notify failed:', err); }
 
     booking = null;
     if(el('bk-notes')) el('bk-notes').value='';
+    _lfErrCtx = null;
+    await staged;
   }catch(e){
     console.error('Booking failed:', e);
-    showToast('⚠️ Booking saved, retrying sync…');
-    if(lastPlacedOrderId) setTimeout(()=>pushOrders(lastPlacedOrderId), 3000);
+    showToast('\u26A0\uFE0F Something went wrong \u2014 your booking was not sent');
   }finally{
     _bkSubmitting = false;
     if(btn){ btn.disabled=false; btn.style.opacity=''; btn.textContent=btnTxt; }
