@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lokal Finder — Building the digital layer for residential communities</title>
+<meta name="description" content="Lokal Finder is building the digital marketplace for residential communities. Start with one community. Then repeat.">
+<meta name="theme-color" content="#06110B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230A1D13'/%3E%3Cpath d='M50 12C29 12 20 27 20 41c0 26 30 47 30 47s30-21 30-47c0-14-9-29-30-29Z' fill='%231a5438' stroke='%232ea877' stroke-width='4'/%3E%3Ccircle cx='50' cy='40' r='7' fill='%23F5C842'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   LOKAL FINDER — KEYNOTE
+   Design system derived from the live product (index.html):
+   forest greens, lit-window amber, Bricolage / Fraunces / Jakarta.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  /* Dark ground — taken from the app's night-community hero */
+  --ink:#06110B; --forest:#0A1D13; --forest2:#102A1C; --deep:#0F4A32;
+  /* Brand greens — exactly the app's tokens */
+  --g:#0E8A5A; --gm:#12B76A; --glow:#2ea877; --gl:#E6F7EF; --gd:#0F4A32;
+  /* Lit window amber — the app's window-glow gradient */
+  --amb:#F5C842; --amb2:#E8973A;
+  /* Light ground */
+  --paper:#F4F9F6; --sage:#E2F0E9; --sage2:#EFF7F2; --white:#fff;
+  /* Text */
+  --t1:#0D2B1A; --t2:#33513F; --t3:#7A9887;
+  --dt1:#F2FBF6; --dt2:rgba(233,247,240,.72); --dt3:rgba(233,247,240,.42);
+  --line-d:rgba(46,168,119,.20); --line-l:rgba(13,43,26,.10);
+  --ff:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  --fd:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;
+  --fs:'Fraunces',Georgia,serif;
+  --ease:cubic-bezier(.16,.84,.34,1);
+  --pad:clamp(24px,5vw,84px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--ff); background:var(--ink); color:var(--dt1);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overflow:hidden;
+}
+::selection{background:var(--amb);color:var(--ink)}
+
+/* ── DECK SHELL ─────────────────────────────────────────────── */
+#deck{
+  height:100vh; height:100dvh; overflow-y:scroll; overflow-x:hidden;
+  scroll-snap-type:y mandatory; scroll-behavior:smooth;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+#deck::-webkit-scrollbar{display:none}
+.slide{
+  height:100vh; height:100dvh; scroll-snap-align:start; scroll-snap-stop:always;
+  position:relative; overflow:hidden; display:flex; flex-direction:column;
+  justify-content:center; padding:clamp(56px,7vh,90px) var(--pad) clamp(64px,9vh,104px);
+  isolation:isolate;
+}
+.slide.dark{background:var(--ink);color:var(--dt1)}
+.slide.light{background:var(--paper);color:var(--t1)}
+.wrap{width:100%;max-width:1240px;margin:0 auto;position:relative;z-index:2}
+.wrap.narrow{max-width:1020px}
+
+/* ── REVEAL CHOREOGRAPHY ────────────────────────────────────── */
+.r{opacity:0;transform:translateY(26px);transition:opacity .85s var(--ease),transform .85s var(--ease);transition-delay:var(--d,0s)}
+.slide.in .r{opacity:1;transform:none}
+.r.blur{filter:blur(10px)}
+.slide.in .r.blur{filter:none}
+.r.sc{transform:translateY(30px) scale(.965)}
+.slide.in .r.sc{transform:none}
+.r.lft{transform:translateX(-28px)}
+.slide.in .r.lft{transform:none}
+.wipe{position:relative;overflow:hidden}
+.wipe>i{position:absolute;inset:0;background:var(--ink);transform-origin:right;transition:transform 1s var(--ease);transition-delay:var(--d,0s)}
+.slide.in .wipe>i{transform:scaleX(0)}
+.light .wipe>i{background:var(--paper)}
+
+/* ── TYPE SCALE ─────────────────────────────────────────────── */
+.kick{
+  font-size:clamp(10px,.78vw,12px); font-weight:800; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--glow); display:flex; align-items:center;
+  gap:12px; margin-bottom:clamp(18px,2.4vh,30px);
+}
+.light .kick{color:var(--g)}
+.kick::before{content:'';width:26px;height:1px;background:currentColor;opacity:.6;flex:none}
+h1{
+  font-family:var(--fd); font-weight:700; letter-spacing:-.038em; line-height:.94;
+  font-size:clamp(36px,6vw,94px);
+}
+h2{
+  font-family:var(--fd); font-weight:700; letter-spacing:-.034em; line-height:1.02;
+  font-size:clamp(28px,4.1vw,60px);
+}
+h3{font-family:var(--fd);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-size:clamp(19px,1.7vw,26px)}
+em.s{font-family:var(--fs);font-style:italic;font-weight:400;letter-spacing:-.02em}
+.dim{color:var(--dt3)}
+.light .dim{color:var(--t3)}
+.sub{
+  font-size:clamp(15px,1.32vw,20px); line-height:1.55; color:var(--dt2);
+  max-width:60ch; font-weight:500;
+}
+.light .sub{color:var(--t2)}
+.tiny{font-size:clamp(11.5px,.86vw,13.5px);line-height:1.6;color:var(--dt3);font-weight:500}
+.light .tiny{color:var(--t3)}
+.amb{color:var(--amb)}
+.grn{color:var(--gm)}
+.light .grn{color:var(--g)}
+
+/* ── ATMOSPHERE ─────────────────────────────────────────────── */
+.aura{position:absolute;border-radius:50%;pointer-events:none;z-index:0;filter:blur(2px)}
+.grain{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+}
+.hair{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--line-d),transparent);z-index:1}
+.light .hair{background:linear-gradient(90deg,transparent,var(--line-l),transparent)}
+
+/* ── BRAND MARK ─────────────────────────────────────────────── */
+.brand{display:flex;align-items:center;gap:13px}
+.brand svg{flex:none;display:block}
+.word{font-family:var(--fd);font-weight:700;font-size:clamp(17px,1.5vw,22px);letter-spacing:-.03em;line-height:1}
+.word em{font-family:var(--fs);font-style:italic;font-weight:600;color:var(--gm)}
+.light .word em{color:var(--g)}
+.word+.wsub{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dt3);margin-top:5px}
+.light .word+.wsub{color:var(--t3)}
+
+/* ── DECK CHROME ────────────────────────────────────────────── */
+#bar{position:fixed;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.08);z-index:60}
+#bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--g),var(--gm),var(--amb));transition:width .5s var(--ease)}
+body.on-light #bar{background:rgba(13,43,26,.08)}
+#chrome{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;padding:22px clamp(18px,3.4vw,40px) clamp(16px,2.4vh,26px);
+  pointer-events:none;transition:opacity .4s var(--ease);
+  background:linear-gradient(180deg,rgba(6,17,11,0),rgba(6,17,11,.72) 62%,rgba(6,17,11,.9));
+}
+body.on-light #chrome{background:linear-gradient(180deg,rgba(244,249,246,0),rgba(244,249,246,.82) 58%,rgba(244,249,246,.96))}
+#chrome>*{pointer-events:auto}
+.count{
+  font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:.1em;
+  color:var(--dt3);display:flex;align-items:baseline;gap:5px;font-variant-numeric:tabular-nums;
+}
+body.on-light .count{color:var(--t3)}
+.count b{font-size:16px;color:var(--dt1);font-weight:700}
+body.on-light .count b{color:var(--t1)}
+.ctrl{display:flex;align-items:center;gap:8px}
+.ctrl button{
+  width:38px;height:38px;border-radius:50%;border:1px solid var(--line-d);
+  background:rgba(255,255,255,.045);color:var(--dt2);cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:.24s var(--ease);backdrop-filter:blur(10px);
+}
+body.on-light .ctrl button{border-color:var(--line-l);background:rgba(13,43,26,.035);color:var(--t2)}
+.ctrl button:hover{background:var(--g);border-color:var(--g);color:#fff;transform:translateY(-2px)}
+.ctrl button svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.1;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.hint{
+  font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dt3);display:none;align-items:center;gap:8px;
+}
+body.on-light .hint{color:var(--t3)}
+@media(min-width:900px){.hint{display:flex}}
+.hint kbd{
+  font-family:var(--ff);border:1px solid var(--line-d);border-radius:5px;padding:2px 6px;
+  font-size:10px;letter-spacing:0;
+}
+body.on-light .hint kbd{border-color:var(--line-l)}
+#rail{
+  position:fixed;right:clamp(12px,1.7vw,22px);top:50%;transform:translateY(-50%);z-index:60;
+  display:none;flex-direction:column;gap:9px;
+}
+@media(min-width:1080px){#rail{display:flex}}
+#rail button{
+  width:22px;height:12px;border:none;background:none;cursor:pointer;display:flex;
+  align-items:center;justify-content:flex-end;padding:0;
+}
+#rail button i{display:block;width:9px;height:2px;border-radius:2px;background:var(--dt3);opacity:.42;transition:.3s var(--ease)}
+body.on-light #rail button i{background:var(--t3)}
+#rail button:hover i{opacity:.9;width:14px}
+#rail button.on i{width:22px;opacity:1;background:var(--gm)}
+body.on-light #rail button.on i{background:var(--g)}
+body.zen #chrome,body.zen #rail{opacity:0;pointer-events:none}
+
+/* ═══ SLIDE 1 — OPENING ═════════════════════════════════════ */
+#s1{justify-content:flex-end;padding-bottom:clamp(72px,11vh,120px)}
+#s1 h1{font-size:clamp(38px,6.5vw,102px);letter-spacing:-.045em;line-height:.94}
+.s1-top{position:absolute;top:clamp(30px,4.6vh,52px);left:var(--pad);right:var(--pad);display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
+/* lit-window skyline, drawn from the app's window-glow palette */
+.sky{position:absolute;inset:0;z-index:0;opacity:.9}
+.sky svg{width:100%;height:100%;display:block}
+.veil{position:absolute;inset:0;z-index:1;background:
+  radial-gradient(125% 80% at 50% 112%,rgba(6,17,11,.05) 0%,rgba(6,17,11,.68) 50%,rgba(6,17,11,.94) 86%),
+  linear-gradient(180deg,rgba(6,17,11,.55) 0%,transparent 34%);}
+
+/* ═══ SLIDE 2 — FRAGMENTATION ═══════════════════════════════ */
+.frag{position:relative;height:clamp(220px,34vh,380px);width:100%}
+.chipf{
+  position:absolute;background:rgba(255,255,255,.05);border:1px solid var(--line-d);
+  border-radius:13px;padding:11px 15px;font-size:clamp(11px,.92vw,14px);font-weight:600;
+  color:var(--dt2);backdrop-filter:blur(8px);white-space:nowrap;display:flex;align-items:center;gap:9px;
+  opacity:0;transform:translateY(16px) scale(.94);
+  transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--d,0s);
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.slide.in .chipf{opacity:1;transform:none}
+.chipf span.dot{width:6px;height:6px;border-radius:50%;background:var(--dt3);flex:none}
+.chipf.hot{border-color:rgba(245,200,66,.34);color:var(--amb);background:rgba(245,200,66,.07)}
+.chipf.hot span.dot{background:var(--amb);box-shadow:0 0 10px var(--amb)}
+.frag-x{position:absolute;inset:0;z-index:0}
+.frag-x path{stroke:var(--line-d);stroke-width:1;fill:none;stroke-dasharray:5 7;
+  stroke-dashoffset:200;transition:stroke-dashoffset 2.4s var(--ease) .5s}
+.slide.in .frag-x path{stroke-dashoffset:0}
+.verdict{
+  border-left:2px solid var(--amb);padding-left:clamp(16px,1.8vw,26px);
+  font-family:var(--fd);font-weight:700;letter-spacing:-.03em;line-height:1.06;
+  font-size:clamp(24px,3.5vw,52px);
+}
+
+/* ═══ SLIDE 3 — NETWORK ═════════════════════════════════════ */
+.net{width:100%;height:clamp(250px,44vh,470px)}
+.net .edge{stroke:var(--line-d);stroke-width:1;fill:none;
+  stroke-dasharray:var(--len,300);stroke-dashoffset:var(--len,300);
+  transition:stroke-dashoffset 1.5s var(--ease);transition-delay:var(--d,0s)}
+.slide.in .net .edge{stroke-dashoffset:0}
+.net .nd{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(0);
+  transition:opacity .6s var(--ease),transform .7s cubic-bezier(.34,1.56,.64,1);transition-delay:var(--d,0s)}
+.slide.in .net .nd{opacity:1;transform:scale(1)}
+.net text{font-family:var(--ff);font-size:11px;font-weight:700;fill:var(--dt3);letter-spacing:.04em}
+
+/* ═══ PHONE MOCKUP — rebuilt from the real app UI ═══════════ */
+.phone{
+  width:var(--pw,282px);flex:none;border-radius:38px;padding:9px;position:relative;
+  background:linear-gradient(160deg,#1b2f24,#0b1a12);
+  box-shadow:0 40px 90px rgba(0,0,0,.55),0 8px 26px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(46,168,119,.28);
+}
+.light .phone{box-shadow:0 34px 70px rgba(13,74,50,.22),0 6px 20px rgba(13,74,50,.12),inset 0 0 0 1px rgba(13,74,50,.3)}
+.phone>.scr{
+  border-radius:30px;overflow:hidden;background:#E8F5EE;position:relative;
+  aspect-ratio:264/545;display:flex;flex-direction:column;
+  font-size:calc(var(--pw,282px)/26.4); /* everything below scales with the phone */
+  color:#0D2B1A;
+}
+.phone .notch{
+  height:2.1em;background:#fff;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 1.4em .45em;font-size:.72em;font-weight:800;flex:none;
+}
+.phone .notch i{display:inline-block;width:1.5em;height:.72em;border:1px solid #0D2B1A;border-radius:.2em;opacity:.7}
+.phone .head{background:#fff;padding:.7em 1.1em .9em;flex:none}
+.phone .hrow{display:flex;align-items:center;justify-content:space-between;gap:.6em}
+.phone .hbrand{display:flex;align-items:center;gap:.5em}
+.phone .hbrand .w{font-family:var(--fd);font-weight:700;font-size:1.02em;letter-spacing:-.03em;line-height:1.05}
+.phone .hbrand .w em{font-family:var(--fs);font-style:italic;color:#0E8A5A}
+.phone .hbrand .s{font-size:.6em;color:#7A9887;font-weight:700;margin-top:.15em}
+.phone .pill{
+  background:#0E8A5A;color:#fff;font-size:.62em;font-weight:800;padding:.55em .85em;border-radius:.7em;
+}
+.phone .circ{width:2em;height:2em;border-radius:50%;background:#F1F5F3;border:1px solid #E2E8E5;
+  display:flex;align-items:center;justify-content:center;font-size:.8em}
+.phone .search{
+  margin-top:.85em;background:#fff;border:1px solid #E2E8E5;border-radius:.85em;padding:.72em .9em;
+  display:flex;align-items:center;gap:.55em;font-size:.78em;color:#9aa5a0;font-weight:500;
+  box-shadow:0 .35em 1.1em rgba(13,61,39,.09);
+}
+.phone .pulse{
+  margin-top:.7em;background:#E6F7EF;border-radius:.65em;padding:.55em .7em;display:flex;
+  align-items:center;justify-content:space-between;gap:.5em;font-size:.7em;font-weight:800;color:#0F4A32;
+}
+.phone .pulse .free{background:#fff;color:#0E8A5A;padding:.35em .6em;border-radius:.5em;font-size:.92em}
+.phone .pulse .dt{width:.42em;height:.42em;border-radius:50%;background:#12B76A;box-shadow:0 0 .6em #12B76A;
+  display:inline-block;margin-right:.4em;animation:pd 1.6s ease-in-out infinite}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
+.phone .body{flex:1;overflow:hidden;padding:.8em 0 0}
+.phone .tabs{display:flex;gap:.45em;padding:0 1.1em .7em}
+.phone .tab{font-size:.7em;font-weight:800;padding:.5em .85em;border-radius:.65em;background:#fff;
+  border:1px solid #E2E8E5;color:#33513F;white-space:nowrap}
+.phone .tab.on{background:#0D2B1A;border-color:#0D2B1A;color:#fff}
+.phone .cats{display:flex;gap:.8em;padding:0 1.1em .85em;overflow:hidden}
+.phone .cat{display:flex;flex-direction:column;align-items:center;gap:.32em;flex:none;width:3.1em}
+.phone .cat .ic{width:2.5em;height:2.5em;border-radius:.75em;display:flex;align-items:center;
+  justify-content:center;font-size:1.1em}
+.phone .cat .lb{font-size:.58em;font-weight:700;color:#33513F;text-align:center;line-height:1.15}
+.phone .cat.on .lb{color:#0E8A5A}
+.phone .sechd{padding:0 1.1em .55em;display:flex;justify-content:space-between;align-items:baseline}
+.phone .sechd b{font-family:var(--fd);font-size:.86em;letter-spacing:-.02em}
+.phone .sechd s{font-size:.62em;color:#0E8A5A;font-weight:800;text-decoration:none}
+.phone .vcard{
+  margin:0 1.1em .6em;background:#fff;border:1px solid #EEF2F0;border-radius:.9em;padding:.7em .8em;
+  display:flex;align-items:center;gap:.7em;box-shadow:0 .25em .8em rgba(13,40,28,.05);
+}
+.phone .vcard .th{width:2.7em;height:2.7em;border-radius:.7em;display:flex;align-items:center;
+  justify-content:center;font-size:1.35em;flex:none}
+.phone .vcard>span:nth-child(2),.phone .mrow>span:nth-child(2),.phone .trkr>span:nth-child(2){min-width:0;flex:1}
+.phone .vcard .nm{display:block;font-size:.8em;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.phone .vcard .mt{display:block;font-size:.63em;color:#7A9887;font-weight:600;margin-top:.2em}
+.phone .vcard .rt{font-size:.62em;font-weight:800;color:#0F4A32;background:#E6F7EF;padding:.3em .5em;
+  border-radius:.45em;margin-left:auto;flex:none}
+.phone .nav{
+  background:#fff;border-top:1px solid rgba(26,107,74,.1);display:flex;padding:.6em 0 .9em;flex:none;
+}
+.phone .nav div{flex:1;text-align:center;font-size:.58em;font-weight:700;color:#7A9887}
+.phone .nav div.on{color:#0E8A5A}
+.phone .nav div b{display:block;font-size:1.5em;line-height:1;margin-bottom:.25em;font-weight:400}
+/* vendor / tracker / chat screens */
+.phone .vhero{background:linear-gradient(160deg,#0d1a0f,#1A6B4A);padding:1.1em 1.1em 1.2em;flex:none;color:#fff}
+.phone .vhero .k{font-size:.6em;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.55}
+.phone .vhero .t{font-family:var(--fd);font-size:1.28em;letter-spacing:-.03em;margin-top:.25em}
+.phone .vhero .m{font-size:.66em;opacity:.72;margin-top:.3em;font-weight:600}
+.phone .mrow{
+  margin:0 1.1em .55em;background:#fff;border:1px solid #EEF2F0;border-radius:.8em;padding:.6em .7em;
+  display:flex;align-items:center;gap:.6em;
+}
+.phone .mrow .e{width:2.2em;height:2.2em;border-radius:.6em;background:#FFF4E0;display:flex;
+  align-items:center;justify-content:center;font-size:1.1em;flex:none}
+.phone .mrow .n{display:block;font-size:.74em;font-weight:800;line-height:1.2}
+.phone .mrow .d{display:block;font-size:.6em;color:#7A9887;margin-top:.15em;font-weight:500}
+.phone .mrow .p{margin-left:auto;font-size:.78em;font-weight:800;color:#0E8A5A;flex:none}
+.phone .badge{display:inline-block;font-size:.55em;font-weight:800;padding:.2em .45em;border-radius:.35em;
+  background:#FEF3C7;color:#92400E;margin-left:.4em;vertical-align:middle}
+.phone .trk{padding:.4em 1.1em 0}
+.phone .trkr{display:flex;gap:.7em;align-items:flex-start;position:relative;padding-bottom:1.05em}
+.phone .trkr::before{content:'';position:absolute;left:.62em;top:1.35em;bottom:-.15em;width:1.5px;background:#DCE7E1}
+.phone .trkr:last-child::before{display:none}
+.phone .trkr .k{width:1.3em;height:1.3em;border-radius:50%;background:#DCE7E1;flex:none;display:flex;
+  align-items:center;justify-content:center;font-size:.62em;color:#fff;font-weight:800;position:relative;z-index:1}
+.phone .trkr.ok .k{background:#0E8A5A}
+.phone .trkr.now .k{background:#F59E0B;box-shadow:0 0 0 .28em rgba(245,158,11,.18)}
+.phone .trkr .tt{display:block;font-size:.76em;font-weight:800;line-height:1.2}
+.phone .trkr .ts{display:block;font-size:.62em;color:#7A9887;margin-top:.15em;font-weight:500}
+.phone .trkr.off .tt,.phone .trkr.off .ts{opacity:.4}
+.phone .bub{max-width:76%;padding:.55em .75em;border-radius:.9em;font-size:.7em;line-height:1.35;
+  font-weight:500;margin-bottom:.45em}
+.phone .bub.them{background:#fff;border:1px solid #EEF2F0;border-bottom-left-radius:.25em}
+.phone .bub.me{background:#0E8A5A;color:#fff;margin-left:auto;border-bottom-right-radius:.25em}
+.phone .inp{margin:.5em 1.1em .2em;background:#fff;border:1px solid #E2E8E5;border-radius:1.4em;
+  padding:.6em .9em;font-size:.7em;color:#9aa5a0;display:flex;align-items:center;justify-content:space-between}
+.phone .inp b{width:1.5em;height:1.5em;border-radius:50%;background:#0E8A5A;color:#fff;display:flex;
+  align-items:center;justify-content:center;font-size:.9em;font-weight:400}
+.phone .rvw{margin:.7em 1.1em 0;background:#fff;border:1px solid #EEF2F0;border-radius:.9em;padding:.75em .8em;text-align:center}
+.phone .rvw .st{font-size:1.3em;letter-spacing:.1em}
+.phone .rvw .lb{font-size:.66em;font-weight:800;margin-bottom:.35em}
+/* the float-in of the phones */
+.phones{display:flex;gap:clamp(12px,1.9vw,30px);justify-content:center;align-items:flex-end;flex-wrap:nowrap}
+
+/* ═══ STEP LABELS (product journey) ═════════════════════════ */
+.catgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:1024px){.catgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cg{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;
+  border:1px solid var(--line-d);border-radius:11px;padding:11px 13px;line-height:1.25;
+  font-size:clamp(11.5px,.88vw,13.5px);font-weight:700;color:var(--dt2);
+}
+.cg i{flex:none;white-space:nowrap;font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dt3);border:1px solid var(--line-d);border-radius:5px;padding:2px 6px}
+.cg.on{border-color:rgba(46,168,119,.42);background:rgba(46,168,119,.07);color:var(--dt1)}
+.cg.on i{color:#0A1D13;background:var(--gm);border-color:var(--gm)}
+.jstep{text-align:center;margin-top:clamp(14px,2vh,22px)}
+.jstep b{
+  display:block;font-family:var(--fd);font-size:clamp(13px,1.15vw,17px);font-weight:700;
+  letter-spacing:.02em;
+}
+.jstep i{
+  font-style:normal;font-size:clamp(10px,.8vw,12px);color:var(--dt3);font-weight:600;
+  display:block;margin-top:5px;line-height:1.4;
+}
+.light .jstep i{color:var(--t3)}
+.jnum{
+  font-family:var(--fd);font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--glow);
+  display:block;margin-bottom:6px;
+}
+.light .jnum{color:var(--g)}
+
+/* ═══ GENERIC LAYOUT HELPERS ════════════════════════════════ */
+.split{display:grid;gap:clamp(26px,4vw,72px);align-items:center}
+.split.c2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.split.c53{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
+.split.c37{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+.stack-lg{display:flex;flex-direction:column;gap:clamp(18px,2.6vh,34px)}
+.rowg{display:grid;gap:clamp(12px,1.5vw,20px)}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.c5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.c6{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* cards */
+.card{
+  border:1px solid var(--line-d);border-radius:18px;padding:clamp(16px,1.7vw,26px);
+  background:rgba(255,255,255,.032);backdrop-filter:blur(6px);position:relative;overflow:hidden;
+  transition:border-color .4s var(--ease),background .4s var(--ease),transform .4s var(--ease);
+}
+.light .card{border-color:var(--line-l);background:var(--white);box-shadow:0 2px 10px rgba(13,43,26,.04)}
+.card:hover{border-color:rgba(46,168,119,.42);background:rgba(255,255,255,.055);transform:translateY(-3px)}
+.light .card:hover{border-color:rgba(14,138,90,.35);box-shadow:0 12px 34px rgba(13,74,50,.09)}
+.card .no{
+  font-family:var(--fd);font-size:clamp(11px,.85vw,13px);font-weight:800;letter-spacing:.14em;
+  color:var(--glow);margin-bottom:clamp(10px,1.3vh,16px);display:block;
+}
+.light .card .no{color:var(--g)}
+.card h3{margin-bottom:8px}
+.card p{font-size:clamp(11.5px,.88vw,13.5px);line-height:1.62;color:var(--dt2);font-weight:500}
+.light .card p{color:var(--t2)}
+
+/* stat block */
+.stat b{
+  display:block;font-family:var(--fd);font-weight:700;letter-spacing:-.035em;line-height:.95;
+  font-size:clamp(30px,3.6vw,58px);
+}
+.stat span{display:block;margin-top:10px;font-size:clamp(11px,.85vw,13px);font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dt3)}
+.light .stat span{color:var(--t3)}
+
+/* ═══ SLIDE 6 — LADDER ══════════════════════════════════════ */
+.ladder{display:flex;align-items:stretch;gap:0;width:100%;flex-wrap:nowrap}
+.rung{
+  flex:1;padding:clamp(16px,1.8vw,26px) clamp(12px,1.3vw,20px);border-left:1px solid var(--line-l);
+  position:relative;display:flex;flex-direction:column;
+}
+.dark .rung{border-color:var(--line-d)}
+.rung:first-child{border-left:none;padding-left:0}
+.rung .st{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+.rung .nm{font-family:var(--fd);font-weight:700;letter-spacing:-.02em;font-size:clamp(15px,1.5vw,23px);line-height:1.12}
+.rung .ds{font-size:clamp(11px,.85vw,13px);color:var(--t3);margin-top:8px;line-height:1.5;font-weight:500}
+.rung.live .nm{color:var(--g)}
+.rung.live .st{color:var(--g)}
+.rung .tagl{
+  display:inline-block;align-self:flex-start;margin-top:auto;padding-top:0;font-size:9.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;padding:4px 8px;border-radius:5px;
+}
+.tag-live{background:#E6F7EF;color:#0E8A5A}
+.tag-next{background:rgba(13,43,26,.05);color:var(--t3)}
+
+/* ═══ SLIDE 7 — DENSITY ═════════════════════════════════════ */
+.dens{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:clamp(14px,2.4vw,42px);align-items:center}
+.dmap{
+  border:1px solid var(--line-d);border-radius:20px;height:clamp(190px,32vh,320px);position:relative;
+  overflow:hidden;background:rgba(255,255,255,.022);
+}
+.dmap.hot{border-color:rgba(46,168,119,.42);background:rgba(46,168,119,.05)}
+.dmap svg{position:absolute;inset:0;width:100%;height:100%}
+.dmap .lbl{
+  position:absolute;top:14px;left:16px;font-size:10px;font-weight:800;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--dt3);z-index:2;
+}
+.dmap.hot .lbl{color:var(--glow)}
+.dmap .foot{
+  position:absolute;bottom:13px;left:16px;right:16px;display:flex;justify-content:space-between;
+  font-size:11px;font-weight:700;color:var(--dt3);z-index:2;
+}
+.dmap.hot .foot{color:var(--dt2)}
+.vs{font-family:var(--fs);font-style:italic;font-size:clamp(14px,1.3vw,20px);color:var(--dt3)}
+.dline{stroke:var(--line-d);stroke-width:1;fill:none;stroke-dasharray:4 5}
+.dline.hot{stroke:rgba(46,168,119,.55);stroke-dasharray:none;stroke-width:1.2}
+
+/* ═══ SLIDE 8 — FLYWHEEL ════════════════════════════════════ */
+.fly{position:relative;width:min(100%,clamp(270px,40vh,380px));aspect-ratio:1;margin:0 auto}
+.fly svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fly .ring{fill:none;stroke:var(--line-d);stroke-width:1}
+.fly .arc{
+  fill:none;stroke:url(#flyg);stroke-width:2.5;stroke-linecap:round;
+  stroke-dasharray:96 760;animation:spin 7s linear infinite;transform-origin:center;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fly .fn{
+  opacity:0;transform:scale(.7);transform-box:fill-box;transform-origin:center;
+  transition:opacity .6s var(--ease),transform .7s cubic-bezier(.34,1.56,.64,1);transition-delay:var(--d,0s);
+}
+.slide.in .fly .fn{opacity:1;transform:scale(1)}
+.fly .fl{position:absolute;transform:translate(-50%,-50%);width:min(26vw,132px);text-align:center;
+  opacity:0;transition:opacity .7s var(--ease);transition-delay:var(--d,0s)}
+.slide.in .fly .fl{opacity:1}
+.fly .fl b{display:block;font-family:var(--fd);font-size:clamp(11.5px,.96vw,14.5px);font-weight:700;letter-spacing:-.01em;line-height:1.25}
+.fly .fl i{font-style:normal;font-size:clamp(9.5px,.72vw,11px);color:var(--dt3);font-weight:700;letter-spacing:.1em;display:block;margin-bottom:5px}
+.fly .core{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:44%;
+}
+.fly .core b{display:block;font-family:var(--fs);font-style:italic;font-size:clamp(15px,1.7vw,25px);line-height:1.15;color:var(--dt1)}
+
+/* ═══ SLIDE 10 — STAGES ═════════════════════════════════════ */
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;position:relative}
+.stg{padding:0 clamp(10px,1.2vw,20px) 0 0;position:relative}
+.stg .n{
+  font-family:var(--fd);font-size:clamp(28px,3.4vw,54px);font-weight:700;letter-spacing:-.04em;
+  color:var(--line-l);line-height:1;
+}
+.dark .stg .n{color:rgba(46,168,119,.22)}
+.stg.live .n{color:var(--g)}
+.stg .t{font-family:var(--fd);font-weight:700;font-size:clamp(13px,1.18vw,18px);letter-spacing:-.02em;
+  line-height:1.2;margin-top:14px;min-height:2.4em}
+.stg .d{font-size:clamp(10.5px,.82vw,12.5px);line-height:1.55;color:var(--t3);margin-top:8px;font-weight:500}
+.dark .stg .d{color:var(--dt3)}
+.track{height:1px;background:var(--line-l);position:relative;margin:clamp(16px,2.2vh,26px) 0}
+.dark .track{background:var(--line-d)}
+.track i{position:absolute;left:0;top:-1px;height:3px;width:20%;background:linear-gradient(90deg,var(--g),var(--gm));
+  transform-origin:left;transform:scaleX(0);transition:transform 1.4s var(--ease) .35s}
+.slide.in .track i{transform:scaleX(1)}
+.track b{position:absolute;top:-3.5px;width:8px;height:8px;border-radius:50%;background:var(--line-l);transform:translateX(-50%)}
+.dark .track b{background:rgba(46,168,119,.3)}
+.track b.on{background:var(--g);box-shadow:0 0 0 4px rgba(14,138,90,.14)}
+
+/* ═══ SLIDE 11 — ZOOM ═══════════════════════════════════════ */
+.zoom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(10px,1.5vw,24px);align-items:end}
+.zm{text-align:center}
+.zm .box{
+  border:1px solid var(--line-d);border-radius:12px;aspect-ratio:1;display:grid;place-items:center;
+  background:rgba(255,255,255,.02);overflow:hidden;position:relative;
+}
+.zm.hot .box{border-color:rgba(245,200,66,.4);background:rgba(245,200,66,.045)}
+.zm .box svg{width:100%;height:100%;display:block}
+.zm .cap{margin-top:12px;font-size:clamp(10.5px,.84vw,13px);font-weight:700;color:var(--dt2);letter-spacing:-.01em}
+.zm .sc{font-size:clamp(9.5px,.72vw,11px);color:var(--dt3);margin-top:4px;font-weight:600}
+.zm.hot .cap{color:var(--amb)}
+
+/* ═══ SLIDE 13 — REALITY ════════════════════════════════════ */
+.reality{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:clamp(24px,3.4vw,56px)}
+.rlist{display:flex;flex-direction:column}
+.rli{
+  display:flex;gap:clamp(12px,1.3vw,18px);align-items:flex-start;padding:clamp(11px,1.5vh,17px) 0;
+  border-bottom:1px solid var(--line-l);
+}
+.dark .rli{border-color:var(--line-d)}
+.rli:last-child{border-bottom:none}
+.rli .ck{
+  width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;margin-top:1px;
+  background:#E6F7EF;
+}
+.rli .ck svg{width:10px;height:10px;stroke:#0E8A5A;stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rli.no .ck{background:rgba(13,43,26,.06)}
+.rli.no .ck svg{stroke:var(--t3);stroke-width:2.4}
+.rli .tx b{display:block;font-size:clamp(12.5px,.98vw,15px);font-weight:800;letter-spacing:-.01em;line-height:1.3}
+.rli .tx span{display:block;font-size:clamp(11px,.82vw,12.5px);color:var(--t3);margin-top:4px;line-height:1.5;font-weight:500}
+.dark .rli .tx span{color:var(--dt3)}
+.rli.no .tx b{color:var(--t2)}
+.honest{
+  border-radius:18px;padding:clamp(18px,2vw,30px);background:var(--white);border:1px solid var(--line-l);
+}
+.honest .hd{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);margin-bottom:16px}
+
+/* ═══ CLOSING ═══════════════════════════════════════════════ */
+#s16{align-items:center;text-align:center;justify-content:center}
+#s16 h1{font-size:clamp(34px,5.8vw,88px);letter-spacing:-.045em;line-height:1}
+.rule{height:1px;width:clamp(60px,7vw,110px);background:var(--line-d);margin:clamp(26px,4.4vh,56px) auto}
+
+/* ═══ RESPONSIVE ════════════════════════════════════════════ */
+@media(max-width:1024px){
+  .split.c2,.split.c53,.split.c37{grid-template-columns:minmax(0,1fr)}
+  .c4,.c5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .c3{grid-template-columns:minmax(0,1fr)}
+  .c6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reality{grid-template-columns:minmax(0,1fr)}
+  .stages,.zoom{grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,3vw,22px)}
+  .stg{padding-bottom:14px}
+  .track{display:none}
+  .ladder{flex-wrap:wrap}
+  .rung{flex:1 1 45%;border-left:none;border-top:1px solid var(--line-l);padding-left:0;padding-top:16px}
+  .dark .rung{border-color:var(--line-d)}
+  .dens{grid-template-columns:minmax(0,1fr);gap:16px}
+  .vs{text-align:center}
+}
+@media(max-width:820px){
+  .slide{height:auto;min-height:100vh;min-height:100dvh;scroll-snap-align:start;
+    padding:clamp(70px,10vh,90px) var(--pad) clamp(80px,11vh,100px)}
+  #deck{scroll-snap-type:y proximity}
+  .phones{flex-wrap:wrap;gap:22px}
+  .phone{--pw:230px}
+  .frag{height:auto;min-height:300px}
+  .zoom,.stages{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media(max-width:560px){
+  .c4,.c5,.c6{grid-template-columns:minmax(0,1fr)}
+  .rung{flex:1 1 100%}
+  #chrome{padding-bottom:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+  html,#deck{scroll-behavior:auto}
+  .r,.chipf,.fly .fn,.fly .fl,.net .nd{opacity:1!important;transform:none!important;filter:none!important}
+  .net .edge{stroke-dashoffset:0!important}
+}
+@media print{
+  body,#deck{overflow:visible;height:auto}
+  .slide{height:auto;min-height:auto;page-break-after:always;padding:40px}
+  #chrome,#rail,#bar{display:none}
+  .r{opacity:1!important;transform:none!important;filter:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="bar"><i></i></div>
+
+<div id="deck">
+
+<!-- ═══════════════════════════════════════════════════════════
+     01 — OPENING
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" id="s1" data-theme="dark" data-label="Opening">
+  <div class="sky">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="skyg" cx="52%" cy="4%" r="96%">
+          <stop offset="0%" stop-color="#12281B"/><stop offset="55%" stop-color="#0A1B12"/>
+          <stop offset="100%" stop-color="#06110B"/>
+        </radialGradient>
+        <radialGradient id="amb"><stop offset="0%" stop-color="#F5C842" stop-opacity=".30"/><stop offset="100%" stop-color="#F5C842" stop-opacity="0"/></radialGradient>
+        <linearGradient id="twr" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#12291C"/><stop offset="100%" stop-color="#0A1810"/>
+        </linearGradient>
+        <filter id="wg" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="1440" height="900" fill="url(#skyg)"/>
+      <g id="stars" opacity=".65"></g>
+      <ellipse cx="720" cy="720" rx="620" ry="230" fill="url(#amb)" opacity=".55"/>
+      <g id="skyline"></g>
+    </svg>
+  </div>
+  <div class="veil"></div>
+  <div class="grain"></div>
+
+  <div class="s1-top">
+    <div class="brand r" style="--d:.05s">
+      <svg viewBox="0 0 48 56" width="34" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
+        <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="21" y="30" width="6" height="7" rx="1" fill="#2ea877" opacity=".7"/>
+        <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+      </svg>
+      <div>
+        <div class="word">Lokal<em>Finder</em></div>
+        <div class="wsub">GRASS Residences · Quezon City</div>
+      </div>
+    </div>
+    <div class="tiny r" style="--d:.15s;text-align:right">2026 · Pilot community</div>
+  </div>
+
+  <div class="wrap">
+    <h1 class="r blur" style="--d:.35s">Everything you need.</h1>
+    <h1 class="r blur" style="--d:.5s"><em class="s amb">Closer than you think.</em></h1>
+    <p class="sub r" style="--d:.75s;margin-top:clamp(20px,3.2vh,38px)">
+      Lokal Finder is building the digital marketplace for residential communities.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     02 — THE PROBLEM
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="The problem">
+  <div class="aura" style="width:44vw;height:44vw;top:-14vw;left:-10vw;background:radial-gradient(circle,rgba(232,151,58,.09),transparent 68%)"></div>
+  <div class="wrap">
+    <div class="kick r">01 — The problem</div>
+    <div class="split c53">
+      <div class="stack-lg">
+        <h2 class="r" style="--d:.08s">A thousand neighbors.<br><em class="s dim">No way to find each other.</em></h2>
+        <p class="sub r" style="--d:.18s">
+          Inside a single residential tower there is already a working economy — home
+          kitchens, coffee brewers, cleaners, small sellers. Residents find them by
+          accident, or not at all.
+        </p>
+        <div class="verdict r" style="--d:.3s">
+          The problem isn't<br>lack of supply.<br><span class="amb">It's discoverability.</span>
+        </div>
+      </div>
+
+      <div class="frag">
+        <svg class="frag-x" viewBox="0 0 500 360" preserveAspectRatio="none">
+          <path d="M110 60 C 200 120, 120 210, 260 250"/>
+          <path d="M330 40 C 260 130, 380 170, 300 300"/>
+          <path d="M60 180 C 180 200, 200 120, 400 130"/>
+          <path d="M150 320 C 240 260, 320 300, 420 240"/>
+        </svg>
+        <div class="chipf" style="--d:.30s;top:2%;left:0">💬 <span>“Sino may pares dito?”</span></div>
+        <div class="chipf" style="--d:.42s;top:20%;right:2%">📘 <span>Facebook group, 4,000 posts deep</span></div>
+        <div class="chipf hot" style="--d:.54s;top:41%;left:6%"><span class="dot"></span> Seller two floors up. Never found.</div>
+        <div class="chipf" style="--d:.66s;top:60%;right:8%">💸 <span>₱99 delivery fee, 45 min away</span></div>
+        <div class="chipf" style="--d:.78s;top:79%;left:0">📱 <span>Five chat threads, three unanswered</span></div>
+        <div class="chipf" style="--d:.9s;bottom:0;right:0">🚪 <span>“Ask the guard, baka alam niya”</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     03 — THE INSIGHT
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="The insight">
+  <div class="aura" style="width:52vw;height:52vw;bottom:-22vw;right:-14vw;background:radial-gradient(circle,rgba(46,168,119,.10),transparent 68%)"></div>
+  <div class="wrap">
+    <div class="kick r">02 — The insight</div>
+    <div class="split c37">
+      <div class="stack-lg">
+        <h2 class="r" style="--d:.08s">Communities already<br>have everything.<br><em class="s grn">They just aren't connected.</em></h2>
+        <p class="sub r" style="--d:.2s">
+          Demand, supply and proximity already sit in the same building. What's
+          missing is the layer that lets them see each other.
+        </p>
+      </div>
+      <div class="r sc" style="--d:.15s">
+        <svg class="net" viewBox="0 0 620 420" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="hub"><stop offset="0%" stop-color="#12B76A"/><stop offset="100%" stop-color="#0E8A5A"/></radialGradient>
+            <filter id="ng" x="-90%" y="-90%" width="280%" height="280%">
+              <feGaussianBlur stdDeviation="7"/>
+            </filter>
+          </defs>
+          <g id="netEdges"></g>
+          <g id="netNodes"></g>
+          <circle cx="310" cy="210" r="34" fill="url(#hub)" opacity=".22" filter="url(#ng)" class="nd" style="--d:.9s"/>
+          <circle cx="310" cy="210" r="17" fill="url(#hub)" class="nd" style="--d:.95s"/>
+          <path d="M303 214v-7l7-6 7 6v7M306 214v7h8v-7" stroke="#04140C" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" class="nd" style="--d:1.05s"/>
+        </svg>
+      </div>
+    </div>
+    <div class="rowg c4" style="margin-top:clamp(20px,3vh,40px)">
+      <div class="stat r" style="--d:.5s"><b>1</b><span>Building</span></div>
+      <div class="stat r" style="--d:.58s"><b class="grn">Minutes</b><span>Not kilometres</span></div>
+      <div class="stat r" style="--d:.66s"><b>0</b><span>Fleet required</span></div>
+      <div class="stat r" style="--d:.74s"><b class="amb">Zero</b><span>Digital layer today</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     04 — MEET LOKAL FINDER
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Meet Lokal Finder">
+  <div class="wrap">
+    <div class="split c53">
+      <div class="stack-lg">
+        <div class="brand r">
+          <svg viewBox="0 0 48 56" width="40" height="47" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#0F4A32" stroke="#0E8A5A" stroke-width="2"/>
+            <path d="M14 27v-8l10-8 10 8v8" stroke="#0E8A5A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="21" y="30" width="6" height="7" rx="1" fill="#0E8A5A" opacity=".7"/>
+            <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+          </svg>
+        </div>
+        <h2 class="r" style="--d:.08s">Meet <em class="s" style="color:var(--g)">Lokal Finder</em>.</h2>
+        <p class="sub r" style="--d:.16s">
+          One place to discover what your community has to offer — the food, the
+          services and the sellers that are already a two-minute walk away.
+        </p>
+        <div class="rowg c2 r" style="--d:.28s;grid-template-columns:1fr 1fr;gap:14px;max-width:520px">
+          <div class="card"><span class="no">🍽️ Live</span><h3>Food</h3><p>Home kitchens, silog, siomai, coffee and dessert from inside the towers.</p></div>
+          <div class="card"><span class="no">🧹 Live</span><h3>Cleaning</h3><p>Scheduled home services booked by date and time slot, not by chat.</p></div>
+        </div>
+        <p class="tiny r" style="--d:.38s">
+          Both verticals run on the same marketplace engine. Adding the next one is a
+          registry entry, not a rebuild.
+        </p>
+      </div>
+
+      <div class="r sc" style="--d:.2s;display:flex;justify-content:center">
+        <div class="phone" style="--pw:clamp(230px,25vw,320px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="head">
+              <div class="hrow">
+                <div class="hbrand">
+                  <svg viewBox="0 0 48 56" width="22" height="26" fill="none">
+                    <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
+                    <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+                  </svg>
+                  <div>
+                    <div class="w">Lokal<em>Finder</em></div>
+                    <div class="s">GRASS Residences · Quezon City</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:.4em;align-items:center">
+                  <span class="pill">Vendor</span>
+                  <span class="circ">🛒</span>
+                </div>
+              </div>
+              <div class="search">🔍 Search food inside GRASS…</div>
+              <div class="pulse">
+                <span><span class="dt"></span>🔥 21 dishes available today</span>
+                <span class="free">🛵 Free pickup</span>
+              </div>
+            </div>
+            <div class="body">
+              <div class="tabs"><span class="tab on">All</span><span class="tab">🍽️ Food</span><span class="tab">🧹 Cleaning</span></div>
+              <div class="cats">
+                <div class="cat on"><span class="ic" style="background:#274A2E;color:#fff">▦</span><span class="lb">All</span></div>
+                <div class="cat"><span class="ic" style="background:#FCEACB">🍚</span><span class="lb">Rice</span></div>
+                <div class="cat"><span class="ic" style="background:#FBDDE3">☕</span><span class="lb">Coffee</span></div>
+                <div class="cat"><span class="ic" style="background:#FCDCC5">🍢</span><span class="lb">Snacks</span></div>
+                <div class="cat"><span class="ic" style="background:#E7DFF7">🎂</span><span class="lb">Sweets</span></div>
+              </div>
+              <div class="sechd"><b>Open now</b><s>See all</s></div>
+              <div class="vcard"><span class="th" style="background:#FFF4E0">🍲</span><span><span class="nm">Finest Pares &amp; Goto</span><span class="mt">Tower 2 · Filipino · til 12AM</span></span><span class="rt">⭐ 4.9</span></div>
+              <div class="vcard"><span class="th" style="background:#F0FBF5">🥟</span><span><span class="nm">Pau's Homemade Siomai</span><span class="mt">Tower 1 · Dimsum · til 9PM</span></span><span class="rt">⭐ 4.8</span></div>
+              <div class="vcard"><span class="th" style="background:#FFF8F0">☕</span><span><span class="nm">Kape At Ikaw</span><span class="mt">Tower 3 · Coffee · til 10PM</span></span><span class="rt">⭐ 4.7</span></div>
+              <div class="vcard"><span class="th" style="background:#E8F1FF">🧼</span><span><span class="nm">Sparkle Home Cleaning</span><span class="mt">GRASS · Residential cleaning</span></span><span class="rt">⭐ 4.9</span></div>
+              <div class="vcard"><span class="th" style="background:#F5F0FF">🍳</span><span><span class="nm">ADBUNS</span><span class="mt">Tower 1 · Silog · til 11PM</span></span><span class="rt">⭐ 4.6</span></div>
+              <div class="vcard"><span class="th" style="background:#EAFBF3">🧽</span><span><span class="nm">FreshNest Cleaners</span><span class="mt">GRASS · Deep clean specialists</span></span><span class="rt">⭐ 4.7</span></div>
+            </div>
+            <div class="nav"><div class="on"><b>⌂</b>Home</div><div><b>▦</b>Feed</div><div><b>⛒</b>Cart</div><div><b>≡</b>Orders</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     05 — PRODUCT EXPERIENCE
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Product experience">
+  <div class="wrap" style="max-width:1340px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:clamp(18px,3vh,34px)">
+      <div>
+        <div class="kick r">03 — The product</div>
+        <h2 class="r" style="--d:.06s">Four taps from<br><em class="s" style="color:var(--g)">curious to ordered.</em></h2>
+      </div>
+      <p class="tiny r" style="--d:.14s;max-width:34ch;text-align:right">
+        Every screen below is the shipped interface — not a concept render.
+      </p>
+    </div>
+
+    <div class="phones">
+      <!-- DISCOVER -->
+      <div class="r sc" style="--d:.2s">
+        <div class="phone" style="--pw:clamp(180px,17.5vw,248px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="head">
+              <div class="hrow">
+                <div class="hbrand"><div><div class="w">Lokal<em>Finder</em></div><div class="s">GRASS Residences</div></div></div>
+                <span class="circ">🛒</span>
+              </div>
+              <div class="search">🔍 Search food inside GRASS…</div>
+              <div class="pulse"><span><span class="dt"></span>🔥 21 dishes today</span><span class="free">Free pickup</span></div>
+            </div>
+            <div class="body">
+              <div class="tabs"><span class="tab on">All</span><span class="tab">🍽️ Food</span><span class="tab">🧹 Cleaning</span></div>
+              <div class="cats">
+                <div class="cat on"><span class="ic" style="background:#274A2E;color:#fff">▦</span><span class="lb">All</span></div>
+                <div class="cat"><span class="ic" style="background:#FCEACB">🍚</span><span class="lb">Rice</span></div>
+                <div class="cat"><span class="ic" style="background:#FBDDE3">☕</span><span class="lb">Coffee</span></div>
+                <div class="cat"><span class="ic" style="background:#FCDCC5">🍢</span><span class="lb">Snacks</span></div>
+              </div>
+              <div class="vcard"><span class="th" style="background:#FFF4E0">🍲</span><span><span class="nm">Finest Pares</span><span class="mt">Tower 2 · til 12AM</span></span><span class="rt">4.9</span></div>
+              <div class="vcard"><span class="th" style="background:#F0FBF5">🥟</span><span><span class="nm">Pau's Siomai</span><span class="mt">Tower 1 · til 9PM</span></span><span class="rt">4.8</span></div>
+              <div class="vcard"><span class="th" style="background:#F5F0FF">🍳</span><span><span class="nm">ADBUNS</span><span class="mt">Tower 1 · Silog</span></span><span class="rt">4.6</span></div>
+              <div class="vcard"><span class="th" style="background:#FFF8F0">☕</span><span><span class="nm">Kape At Ikaw</span><span class="mt">Tower 3 · til 10PM</span></span><span class="rt">4.7</span></div>
+              <div class="vcard"><span class="th" style="background:#E8F1FF">🧼</span><span><span class="nm">Sparkle Cleaning</span><span class="mt">Slot open 2:00 PM</span></span><span class="rt">4.9</span></div>
+            </div>
+            <div class="nav"><div class="on"><b>⌂</b>Home</div><div><b>▦</b>Feed</div><div><b>⛒</b>Cart</div><div><b>≡</b>Orders</div></div>
+          </div>
+        </div>
+        <div class="jstep"><span class="jnum">01</span><b>DISCOVER</b><i>Everything open inside the community, right now.</i></div>
+      </div>
+
+      <!-- EXPLORE -->
+      <div class="r sc" style="--d:.32s">
+        <div class="phone" style="--pw:clamp(180px,17.5vw,248px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="vhero">
+              <div class="k">Tower 2 · Filipino</div>
+              <div class="t">Finest Pares &amp; Goto</div>
+              <div class="m">⭐ 4.9 · Min ₱45 · Open til 12AM</div>
+            </div>
+            <div class="body">
+              <div class="sechd" style="padding-top:.3em"><b>Menu</b><s>5 items</s></div>
+              <div class="mrow"><span class="e">🍲</span><span><span class="n">Pares Overload<span class="badge">BEST</span></span><span class="d">Rich beef broth, extra serving</span></span><span class="p">₱100</span></div>
+              <div class="mrow"><span class="e">🍲</span><span><span class="n">Regular Pares</span><span class="d">Classic pares with rice</span></span><span class="p">₱60</span></div>
+              <div class="mrow"><span class="e">🥣</span><span><span class="n">Goto Bata</span><span class="d">Thick rice porridge</span></span><span class="p">₱55</span></div>
+              <div class="mrow"><span class="e">🍱</span><span><span class="n">Pares + Goto Combo</span><span class="d">Best of both worlds</span></span><span class="p">₱120</span></div>
+              <div class="mrow"><span class="e">🍚</span><span><span class="n">Extra Rice</span><span class="d">Plain steamed rice</span></span><span class="p">₱15</span></div>
+              <div class="sechd" style="padding-top:.5em"><b>Store info</b></div>
+              <div class="mrow" style="flex-direction:column;align-items:flex-start;gap:.4em">
+                <div style="font-size:.66em;color:#33513F;font-weight:600;line-height:1.45">GCash only 💙 · Delivery ₱20 within Tower 1–2, ₱30 for Tower 3–5 · Pre-order before 10AM for lunch</div>
+                <div style="display:flex;gap:.4em;flex-wrap:wrap">
+                  <span style="font-size:.58em;font-weight:800;background:#E6F7EF;color:#0E8A5A;padding:.3em .55em;border-radius:.4em">📱 GCash</span>
+                  <span style="font-size:.58em;font-weight:800;background:#F1F5F3;color:#33513F;padding:.3em .55em;border-radius:.4em">💵 Cash</span>
+                  <span style="font-size:.58em;font-weight:800;background:#FEF3C7;color:#92400E;padding:.3em .55em;border-radius:.4em">🟢 Open now</span>
+                </div>
+              </div>
+            </div>
+            <div class="nav" style="background:#0E8A5A;border:none"><div class="on" style="color:#fff;flex:1;font-size:.72em;font-weight:800;padding:.25em 0">View Order · 2 items · ₱160</div></div>
+          </div>
+        </div>
+        <div class="jstep"><span class="jnum">02</span><b>EXPLORE</b><i>A real storefront — hours, prices, photos, stock.</i></div>
+      </div>
+
+      <!-- ORDER -->
+      <div class="r sc" style="--d:.44s">
+        <div class="phone" style="--pw:clamp(180px,17.5vw,248px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="head" style="text-align:center;padding-bottom:.7em">
+              <div style="font-size:1.9em">🎉</div>
+              <div style="font-family:var(--fd);font-size:1.05em;font-weight:800;margin-top:.2em">Order Placed!</div>
+              <div style="font-size:.66em;color:#7A9887;font-weight:700;margin-top:.2em">#LF-4821 · Tower 2, Unit 1408 · 📱 GCash ✓</div>
+            </div>
+            <div class="body">
+              <div class="trk">
+                <div class="trkr ok"><span class="k">✓</span><span><span class="tt">Order Placed</span><span class="ts">Sent to Finest Pares &amp; Goto</span></span></div>
+                <div class="trkr ok"><span class="k">✓</span><span><span class="tt">Vendor Accepted</span><span class="ts">Confirmed in 40 seconds</span></span></div>
+                <div class="trkr now"><span class="k">●</span><span><span class="tt">Preparing</span><span class="ts">Your food is being made</span></span></div>
+                <div class="trkr off"><span class="k">3</span><span><span class="tt">Out for Delivery</span><span class="ts">On the way to your unit</span></span></div>
+                <div class="trkr off"><span class="k">4</span><span><span class="tt">Delivered</span><span class="ts">Enjoy!</span></span></div>
+              </div>
+              <div class="mrow" style="align-items:flex-start;flex-direction:column;gap:.35em">
+                <div style="display:flex;width:100%;font-size:.68em;font-weight:600;color:#33513F"><span>1× Pares Overload</span><span style="margin-left:auto;font-weight:800">₱100</span></div>
+                <div style="display:flex;width:100%;font-size:.68em;font-weight:600;color:#33513F"><span>1× Regular Pares</span><span style="margin-left:auto;font-weight:800">₱60</span></div>
+                <div style="display:flex;width:100%;padding-top:.35em;border-top:1px solid #EEF2F0;font-size:.74em;font-weight:800"><span>Total</span><span style="margin-left:auto;color:#0E8A5A">₱160</span></div>
+              </div>
+              <div class="vcard" style="margin-top:.55em"><span class="th" style="background:#FFF4E0">🍲</span><span><span class="nm">Finest Pares &amp; Goto</span><span class="mt">Tower 2 · 0917 ••• 4412</span></span><span class="rt">💬 Chat</span></div>
+              <div style="margin:.5em 1.1em 0;font-size:.6em;color:#7A9887;font-weight:700;text-align:center"><span class="dt" style="display:inline-block"></span>Updating live — no need to refresh</div>
+            </div>
+            <div class="nav"><div><b>⌂</b>Home</div><div><b>▦</b>Feed</div><div><b>⛒</b>Cart</div><div class="on"><b>≡</b>Orders</div></div>
+          </div>
+        </div>
+        <div class="jstep"><span class="jnum">03</span><b>ORDER</b><i>Live five-step tracking, from placed to delivered.</i></div>
+      </div>
+
+      <!-- CONNECT -->
+      <div class="r sc" style="--d:.56s">
+        <div class="phone" style="--pw:clamp(180px,17.5vw,248px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="vhero" style="padding:.9em 1.1em">
+              <div class="k">Chat · Live</div>
+              <div class="t" style="font-size:1.05em">Finest Pares &amp; Goto</div>
+            </div>
+            <div class="body" style="padding:.9em 1.1em 0;display:flex;flex-direction:column">
+              <div style="flex:1"></div>
+              <div style="text-align:center;font-size:.58em;color:#7A9887;font-weight:700;margin-bottom:.6em">Today · Order #LF-4821</div>
+              <div class="bub them">Hi po! Extra sabaw ba?</div>
+              <div class="bub me">Yes please 🙏 Unit 1408</div>
+              <div class="bub them">Noted po — 10 mins, baba na ako.</div>
+              <div class="inp" style="margin-left:0;margin-right:0">Type a message… <b>↑</b></div>
+              <div class="rvw" style="margin-left:0;margin-right:0">
+                <div class="lb">Rate your order</div>
+                <div class="st">⭐⭐⭐⭐⭐</div>
+                <div style="font-size:.6em;color:#7A9887;margin-top:.3em;font-weight:600">Your review is posted to the community feed</div>
+              </div>
+            </div>
+            <div class="nav"><div><b>⌂</b>Home</div><div class="on"><b>▦</b>Feed</div><div><b>⛒</b>Cart</div><div><b>≡</b>Orders</div></div>
+          </div>
+        </div>
+        <div class="jstep"><span class="jnum">04</span><b>CONNECT</b><i>Chat with the seller. Reviews feed back to neighbors.</i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     06 — STARTING WITH FOOD
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Starting with food">
+  <div class="wrap">
+    <div class="kick r">04 — The wedge</div>
+    <div class="split c2" style="align-items:flex-start">
+      <h2 class="r" style="--d:.06s">Start with what people<br>need <em class="s" style="color:var(--g)">every day.</em></h2>
+      <p class="sub r" style="--d:.14s">
+        Food is the only category in a residential building with daily, repeatable,
+        emotionally-driven demand. It buys the habit — and the habit is what makes
+        every category after it cheap to launch.
+      </p>
+    </div>
+
+    <div class="rowg c4" style="margin-top:clamp(22px,3.6vh,46px)">
+      <div class="card r" style="--d:.2s"><span class="no">01</span><h3>Frequency</h3><p>People eat several times a day. Nothing else in the building repeats like that.</p></div>
+      <div class="card r" style="--d:.28s"><span class="no">02</span><h3>Habit</h3><p>Repeat purchases turn an app into a reflex — the hardest thing to buy with marketing.</p></div>
+      <div class="card r" style="--d:.36s"><span class="no">03</span><h3>Fast validation</h3><p>An order either arrives hot in ten minutes or it doesn't. Feedback loops are same-day.</p></div>
+      <div class="card r" style="--d:.44s"><span class="no">04</span><h3>Supply is already there</h3><p>Home kitchens exist in every tower and are already selling — through chat threads.</p></div>
+    </div>
+
+    <div class="r" style="--d:.5s;margin-top:clamp(24px,4vh,52px);margin-bottom:clamp(4px,1vh,10px);height:1px;background:linear-gradient(90deg,var(--g),rgba(14,138,90,.35) 38%,var(--line-l))"></div>
+    <div class="ladder">
+      <div class="rung live r" style="--d:.56s">
+        <div class="st">Live today</div>
+        <div class="nm">Food</div>
+        <div class="ds">Four seeded storefronts across three towers, full order loop.</div>
+        <span class="tagl tag-live">Shipped</span>
+      </div>
+      <div class="rung live r" style="--d:.64s">
+        <div class="st">Live today</div>
+        <div class="nm">Cleaning</div>
+        <div class="ds">Scheduled bookings with date, time slot and duration-aware conflicts.</div>
+        <span class="tagl tag-live">Shipped</span>
+      </div>
+      <div class="rung r" style="--d:.72s">
+        <div class="st">Next</div>
+        <div class="nm">Services</div>
+        <div class="ds">Laundry, repairs, beauty — each is one registry entry on the same engine.</div>
+        <span class="tagl tag-next">Planned</span>
+      </div>
+      <div class="rung r" style="--d:.8s">
+        <div class="st">Then</div>
+        <div class="nm">Community commerce</div>
+        <div class="ds">Groceries, convenience, resident-to-resident selling.</div>
+        <span class="tagl tag-next">Vision</span>
+      </div>
+      <div class="rung r" style="--d:.88s">
+        <div class="st">Long term</div>
+        <div class="nm">Residential OS</div>
+        <div class="ds">The default commerce layer for the place people live.</div>
+        <span class="tagl tag-next">Vision</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     07 — WHY DENSITY MATTERS
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="Why density matters">
+  <div class="aura" style="width:50vw;height:50vw;top:-16vw;right:-14vw;background:radial-gradient(circle,rgba(46,168,119,.10),transparent 68%)"></div>
+  <div class="wrap">
+    <div class="kick r">05 — The advantage</div>
+    <div class="split c2" style="align-items:flex-end;margin-bottom:clamp(18px,3vh,34px)">
+      <h2 class="r" style="--d:.06s">Density changes<br><em class="s grn">everything.</em></h2>
+      <p class="sub r" style="--d:.14s">
+        City-wide platforms spend their margin moving things across a metro. Inside one
+        community, the distance is a lift ride — so the same order costs less, arrives
+        faster, and doesn't need a fleet to exist.
+      </p>
+    </div>
+
+    <div class="dens">
+      <div class="dmap r" style="--d:.24s">
+        <span class="lbl">City-wide marketplace</span>
+        <svg viewBox="0 0 420 300" preserveAspectRatio="none">
+          <g id="cityLines"></g><g id="cityDots"></g>
+        </svg>
+        <div class="foot"><span>4–14 km per order</span><span>30–60 min</span></div>
+      </div>
+      <div class="vs r" style="--d:.3s">vs</div>
+      <div class="dmap hot r" style="--d:.36s">
+        <span class="lbl">Hyperlocal community marketplace</span>
+        <svg viewBox="0 0 420 300" preserveAspectRatio="none">
+          <g id="towerLines"></g><g id="towerDots"></g>
+        </svg>
+        <div class="foot"><span>Same address</span><span>Minutes, on foot</span></div>
+      </div>
+    </div>
+
+    <div class="rowg c4" style="margin-top:clamp(20px,3.2vh,42px)">
+      <div class="r" style="--d:.5s"><h3>Shorter distance</h3><p class="tiny" style="margin-top:8px">Seller and buyer share a lobby. Fulfilment is a walk, not a route.</p></div>
+      <div class="r" style="--d:.58s"><h3>Lower friction</h3><p class="tiny" style="margin-top:8px">No fleet, no zones, no surge — the cost structure that eats delivery margins never appears.</p></div>
+      <div class="r" style="--d:.66s"><h3>Faster fulfilment</h3><p class="tiny" style="margin-top:8px">Food arrives hot. The experience the big platforms can't buy at any price.</p></div>
+      <div class="r" style="--d:.74s"><h3>Real network effects</h3><p class="tiny" style="margin-top:8px">Neighbors talk. Word of mouth compounds inside a closed community instead of leaking into a city.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     08 — FLYWHEEL
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="The flywheel">
+  <div class="wrap">
+    <div class="split c53">
+      <div class="stack-lg">
+        <div class="kick r">06 — Network effects</div>
+        <h2 class="r" style="--d:.06s">Every new participant<br>makes the network<br><em class="s grn">stronger.</em></h2>
+        <p class="sub r" style="--d:.16s">
+          A marketplace only compounds when both sides pull each other forward. Inside a
+          single community the loop closes fast — one satisfied resident is three
+          neighbors away from the next order.
+        </p>
+        <p class="tiny r" style="--d:.26s">
+          This is the mechanism the business rests on. It is a model of how the
+          marketplace should behave — not a measured result. Proving the loop actually
+          turns in one community is the current job.
+        </p>
+      </div>
+
+      <div class="fly r sc" style="--d:.2s">
+        <svg viewBox="0 0 400 400">
+          <defs>
+            <linearGradient id="flyg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#12B76A"/><stop offset="60%" stop-color="#F5C842"/><stop offset="100%" stop-color="#12B76A" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring" cx="200" cy="200" r="120"/>
+          <circle class="arc" cx="200" cy="200" r="120"/>
+          <g id="flyNodes"></g>
+        </svg>
+        <div class="core"><b>The loop</b></div>
+        <div class="fl" style="--d:.5s;top:1.5%;left:50%"><i>01</i><b>Residents discover local sellers</b></div>
+        <div class="fl" style="--d:.6s;top:28.1%;left:87.9%"><i>02</i><b>More transactions</b></div>
+        <div class="fl" style="--d:.7s;top:71.9%;left:87.9%"><i>03</i><b>More merchants join</b></div>
+        <div class="fl" style="--d:.8s;top:98.5%;left:50%"><i>04</i><b>More selection</b></div>
+        <div class="fl" style="--d:.9s;top:71.9%;left:12.1%"><i>05</i><b>Better resident experience</b></div>
+        <div class="fl" style="--d:1s;top:28.1%;left:12.1%"><i>06</i><b>More residents use Lokal Finder</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     09 — BUSINESS MODEL
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Business model">
+  <div class="wrap">
+    <div class="split c2" style="align-items:flex-end;margin-bottom:clamp(20px,3.2vh,42px)">
+      <div>
+        <div class="kick r">07 — Business model</div>
+        <h2 class="r" style="--d:.06s">Build the network first.<br><em class="s" style="color:var(--g)">Monetize the ecosystem.</em></h2>
+      </div>
+      <p class="sub r" style="--d:.14s">
+        Today the platform charges nothing — the service fee in the product is set to
+        zero, deliberately, while supply and habit are still forming. These are the
+        layers that become available as community activity grows.
+      </p>
+    </div>
+
+    <div class="rowg c6">
+      <div class="card r" style="--d:.2s"><span class="no">01</span><h3>Transaction commission</h3><p>A small percentage per completed order, once volume justifies it.</p></div>
+      <div class="card r" style="--d:.26s"><span class="no">02</span><h3>Merchant subscriptions</h3><p>Predictable monthly fee for storefront tooling, analytics and priority support.</p></div>
+      <div class="card r" style="--d:.32s"><span class="no">03</span><h3>Featured listings</h3><p>Placement inside a community where attention is scarce and highly qualified.</p></div>
+      <div class="card r" style="--d:.38s"><span class="no">04</span><h3>Promotional placements</h3><p>Campaigns from brands that want to reach a specific building, not a city.</p></div>
+      <div class="card r" style="--d:.44s"><span class="no">05</span><h3>Community partnerships</h3><p>Agreements with property managers and developers who benefit from resident amenity.</p></div>
+      <div class="card r" style="--d:.5s"><span class="no">06</span><h3>Service &amp; logistics fees</h3><p>Optional fulfilment layers for categories that need them. Future.</p></div>
+    </div>
+
+    <p class="tiny r" style="--d:.6s;margin-top:clamp(16px,2.6vh,30px);max-width:78ch">
+      No revenue projections are shown here. Lokal Finder has not yet processed
+      commercial volume, so any forecast would be an assumption dressed as a number.
+      The honest claim is structural: multiple monetization layers become available
+      once the loop turns — not that they are earning today.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     10 — EXPANSION
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Expansion strategy">
+  <div class="wrap">
+    <div class="split c2" style="align-items:flex-end;margin-bottom:clamp(22px,3.6vh,48px)">
+      <div>
+        <div class="kick r">08 — Expansion</div>
+        <h2 class="r" style="--d:.06s">Win one community.<br><em class="s" style="color:var(--g)">Then repeat.</em></h2>
+      </div>
+      <p class="sub r" style="--d:.14s">
+        Each community is a self-contained marketplace. That means the model can be
+        proven once, at small cost, and replicated as a playbook rather than as a
+        city-sized capital commitment.
+      </p>
+    </div>
+
+    <div class="track r" style="--d:.3s">
+      <i></i>
+      <b class="on" style="left:0%"></b><b style="left:25%"></b><b style="left:50%"></b><b style="left:75%"></b><b style="left:100%"></b>
+    </div>
+
+    <div class="stages">
+      <div class="stg live r" style="--d:.36s">
+        <div class="n">01</div>
+        <div class="t">Prove it in one community</div>
+        <div class="d">GRASS Residences, Quezon City. Real vendors, real repeat orders, working unit economics.</div>
+      </div>
+      <div class="stg r" style="--d:.44s">
+        <div class="n">02</div>
+        <div class="t">Neighboring communities</div>
+        <div class="d">Copy the playbook into the towers next door, where the same sellers can serve both.</div>
+      </div>
+      <div class="stg r" style="--d:.52s">
+        <div class="n">03</div>
+        <div class="t">City-level density</div>
+        <div class="d">Enough adjacent communities that supply, brand and trust start to overlap.</div>
+      </div>
+      <div class="stg r" style="--d:.6s">
+        <div class="n">04</div>
+        <div class="t">Major metro markets</div>
+        <div class="d">Metro Manila first — one of the densest vertical-living markets in the world.</div>
+      </div>
+      <div class="stg r" style="--d:.68s">
+        <div class="n">05</div>
+        <div class="t">Infrastructure</div>
+        <div class="d">The default commerce layer new residential developments plug into on day one.</div>
+      </div>
+    </div>
+
+    <p class="tiny r" style="--d:.8s;margin-top:clamp(18px,3vh,36px)">
+      Stage 01 is where Lokal Finder is now. Everything after it is strategy, not status.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     11 — THE BIGGER VISION
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="The bigger vision">
+  <div class="aura" style="width:60vw;height:40vw;bottom:-18vw;left:20vw;background:radial-gradient(circle,rgba(245,200,66,.08),transparent 65%)"></div>
+  <div class="wrap">
+    <div class="kick r">09 — The opportunity</div>
+    <h2 class="r" style="--d:.06s;max-width:20ch">What if every community had its <em class="s amb">own digital marketplace?</em></h2>
+
+    <div class="zoom" style="margin-top:clamp(24px,4vh,52px)">
+      <div class="zm r" style="--d:.24s"><div class="box"><svg viewBox="0 0 100 100" data-grid="1"></svg></div><div class="cap">One unit</div><div class="sc">A single kitchen</div></div>
+      <div class="zm r" style="--d:.34s"><div class="box"><svg viewBox="0 0 100 100" data-grid="2"></svg></div><div class="cap">One tower</div><div class="sc">~500 households</div></div>
+      <div class="zm r" style="--d:.44s"><div class="box"><svg viewBox="0 0 100 100" data-grid="3"></svg></div><div class="cap">One community</div><div class="sc">Several towers</div></div>
+      <div class="zm r" style="--d:.54s"><div class="box"><svg viewBox="0 0 100 100" data-grid="4"></svg></div><div class="cap">One city</div><div class="sc">Hundreds of communities</div></div>
+      <div class="zm hot r" style="--d:.64s"><div class="box"><svg viewBox="0 0 100 100" data-grid="5"></svg></div><div class="cap">Everywhere people live</div><div class="sc">The same playbook, repeated</div></div>
+    </div>
+
+    <p class="sub r" style="--d:.8s;margin-top:clamp(20px,3.4vh,42px);max-width:74ch">
+      Vertical living is how a growing share of the world's urban population already
+      lives. Every one of those buildings is a market with its own supply, its own
+      demand and no software connecting them. Lokal Finder is a bet that this layer
+      gets built — and that it is built community by community, not city by city.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     12 — WHY NOW
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="Why now">
+  <div class="wrap">
+    <div class="kick r">10 — Timing</div>
+    <div class="split c2" style="align-items:flex-start">
+      <div class="stack-lg">
+        <h2 class="r" style="--d:.06s">Communities are physical.<br>Commerce is becoming digital.</h2>
+        <p class="sub r" style="--d:.16s">
+          Residents already expect instant discovery, digital ordering and mobile-first
+          convenience — they learned it from the platforms that don't serve their
+          building well. The expectation arrived before the infrastructure did.
+        </p>
+      </div>
+      <div class="rowg" style="gap:0">
+        <div class="rli r" style="--d:.24s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Behaviour is already digital</b><span>Ordering, paying and tracking on a phone is the default, not the novelty.</span></span></div>
+        <div class="rli r" style="--d:.32s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Digital payments are mainstream here</b><span>GCash and cash-on-delivery both work today inside the product.</span></span></div>
+        <div class="rli r" style="--d:.4s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Micro-entrepreneurship is normal</b><span>Home kitchens and small services already sell — through chat threads and Facebook groups.</span></span></div>
+        <div class="rli r" style="--d:.48s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Vertical living keeps growing</b><span>More people live in dense residential communities every year.</span></span></div>
+        <div class="rli r" style="--d:.56s"><span class="ck" style="background:rgba(245,200,66,.16)"><svg viewBox="0 0 24 24" style="stroke:#F5C842"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span><span class="tx"><b class="amb">Yet the building itself has no software</b><span>The one place with the highest density of matched supply and demand is the least connected.</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     13 — CURRENT REALITY
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide light" data-theme="light" data-label="Where we are">
+  <div class="wrap">
+    <div class="split c2" style="align-items:flex-end;margin-bottom:clamp(18px,3vh,36px)">
+      <div>
+        <div class="kick r">11 — Where we actually are</div>
+        <h2 class="r" style="--d:.06s">Built. Tested.<br><em class="s" style="color:var(--g)">Now proving the model.</em></h2>
+      </div>
+      <p class="sub r" style="--d:.14s">
+        Lokal Finder is early, and the honest version is more useful than the impressive
+        one. Here is exactly what exists — and what does not.
+      </p>
+    </div>
+
+    <div class="reality">
+      <div class="rlist">
+        <div class="rli r" style="--d:.22s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>A working product, deployed</b><span>A complete single-page application shipped continuously to production — 60 released versions to date.</span></span></div>
+        <div class="rli r" style="--d:.3s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>The full three-sided loop</b><span>Customer app, vendor portal (storefront, hours, menu, orders, earnings) and admin console with per-store insights.</span></span></div>
+        <div class="rli r" style="--d:.38s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Two verticals on one engine</b><span>Food and Cleaning. The second was added without a second data store, status machine or dashboard — the architecture holds.</span></span></div>
+        <div class="rli r" style="--d:.46s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>Real product depth</b><span>Live order tracking, in-app chat, community feed with reviews, GCash and cash checkout, push notification plumbing, scheduled bookings with conflict detection.</span></span></div>
+        <div class="rli r" style="--d:.54s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>126 automated end-to-end checks</b><span>Both verticals plus a dedicated security suite, run against the real interface in headless Chromium before every change.</span></span></div>
+        <div class="rli r" style="--d:.62s"><span class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span class="tx"><b>A named pilot community</b><span>GRASS Residences, Quezon City — a single, concentrated, high-density starting point.</span></span></div>
+      </div>
+
+      <div class="honest r" style="--d:.5s">
+        <div class="hd">Not yet true</div>
+        <div class="rli no"><span class="ck"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span><span class="tx"><b>No commercial traction to report</b><span>Order volume, GMV and retention are not yet instrumented. We will not quote numbers we cannot stand behind.</span></span></div>
+        <div class="rli no"><span class="ck"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span><span class="tx"><b>Vendors in the build are fixtures</b><span>The storefronts shown are seeded demo data. Onboarding real merchants is the immediate next step.</span></span></div>
+        <div class="rli no"><span class="ck"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span><span class="tx"><b>Payments settle outside the app</b><span>GCash reference and cash today. In-app payment processing is not built.</span></span></div>
+        <div class="rli no"><span class="ck"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></span><span class="tx"><b>Authentication is still lightweight</b><span>Hashed vendor and admin credentials; full identity is on the roadmap, not shipped.</span></span></div>
+      </div>
+    </div>
+
+    <p class="tiny r" style="--d:.75s;margin-top:clamp(14px,2.4vh,26px)">
+      The next milestone is singular and measurable: real merchants, real residents,
+      and a repeat-order rate inside one building.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     14 — THE MOAT
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="Defensibility">
+  <div class="aura" style="width:46vw;height:46vw;top:-16vw;left:-12vw;background:radial-gradient(circle,rgba(46,168,119,.09),transparent 68%)"></div>
+  <div class="wrap">
+    <div class="split c2" style="align-items:flex-end;margin-bottom:clamp(20px,3.2vh,42px)">
+      <div>
+        <div class="kick r">12 — Defensibility</div>
+        <h2 class="r" style="--d:.06s">The strongest marketplaces<br>become part of<br><em class="s grn">everyday behavior.</em></h2>
+      </div>
+      <p class="sub r" style="--d:.14s">
+        None of these are moats yet. They are the advantages that compound with scale —
+        and each one is the direct consequence of choosing density over reach.
+      </p>
+    </div>
+
+    <div class="rowg c6">
+      <div class="card r" style="--d:.22s"><span class="no">01</span><h3>Community density</h3><p>A competitor has to win a building, not a city — and there is little room for a second app in the same lobby.</p></div>
+      <div class="card r" style="--d:.28s"><span class="no">02</span><h3>Merchant relationships</h3><p>These sellers are neighbors. Relationships are personal and don't transfer with a discount code.</p></div>
+      <div class="card r" style="--d:.34s"><span class="no">03</span><h3>Community-specific data</h3><p>What a specific tower orders, when, and from whom — knowledge that generalises to the next tower.</p></div>
+      <div class="card r" style="--d:.4s"><span class="no">04</span><h3>Resident behaviour insight</h3><p>Peak hours, price tolerance, category mix per building type — the replication playbook itself.</p></div>
+      <div class="card r" style="--d:.46s"><span class="no">05</span><h3>Local network effects</h3><p>Word of mouth compounds fastest in a closed community. The same property makes it hard to dislodge.</p></div>
+      <div class="card r" style="--d:.52s"><span class="no">06</span><h3>Trust inside the building</h3><p>Ordering from a neighbor is a different transaction than ordering from a stranger. Trust is the product.</p></div>
+    </div>
+
+    <p class="tiny r" style="--d:.64s;margin-top:clamp(16px,2.6vh,32px)">
+      Stated plainly: today Lokal Finder has no moat. It has a position from which one
+      can be built, and that position is only available to whoever gets density first.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     15 — THE FUTURE
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" data-theme="dark" data-label="The future">
+  <div class="aura" style="width:52vw;height:52vw;top:8vh;right:-18vw;background:radial-gradient(circle,rgba(245,200,66,.09),transparent 66%)"></div>
+  <div class="wrap">
+    <div class="split c53" style="align-items:center">
+      <div class="stack-lg">
+        <div class="kick r">13 — The future</div>
+        <h2 class="r" style="--d:.06s">Your community.<br><em class="s amb">One platform.</em></h2>
+        <p class="sub r" style="--d:.16s">
+          One app on a resident's home screen that answers everything the building can
+          already provide — and the building's sellers finally reachable in one tap.
+        </p>
+        <div class="catgrid r" style="--d:.3s">
+          <span class="cg on">🍽️ Food<i>live</i></span>
+          <span class="cg on">🧹 Cleaning<i>live</i></span>
+          <span class="cg">🧺 Laundry<i>next</i></span>
+          <span class="cg">🛒 Groceries<i>next</i></span>
+          <span class="cg">🔧 Home services<i>next</i></span>
+          <span class="cg">💇 Personal services<i>next</i></span>
+        </div>
+        <p class="tiny r" style="--d:.42s">Food and Cleaning are shipped. The rest is the roadmap, clearly labelled as such.</p>
+      </div>
+
+      <div class="r sc" style="--d:.24s;display:flex;justify-content:center">
+        <div class="phone" style="--pw:clamp(215px,22vw,290px)">
+          <div class="scr">
+            <div class="notch"><span>9:41</span><span><i></i></span></div>
+            <div class="head">
+              <div class="hrow">
+                <div class="hbrand">
+                  <svg viewBox="0 0 48 56" width="22" height="26" fill="none">
+                    <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
+                    <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+                  </svg>
+                  <div><div class="w">Good evening, Mara</div><div class="s">Tower 2 · Unit 1408</div></div>
+                </div>
+                <span class="circ">🔔</span>
+              </div>
+              <div class="search">🔍 What do you need tonight?</div>
+            </div>
+            <div class="body">
+              <div class="sechd"><b>Your community</b><s>GRASS</s></div>
+              <div class="cats" style="flex-wrap:wrap;gap:.55em;padding-bottom:.9em">
+                <div class="cat" style="width:31%"><span class="ic" style="background:#FCEACB;width:100%;height:2.9em">🍽️</span><span class="lb">Food</span></div>
+                <div class="cat" style="width:31%"><span class="ic" style="background:#E8F1FF;width:100%;height:2.9em">🧹</span><span class="lb">Cleaning</span></div>
+                <div class="cat" style="width:31%"><span class="ic" style="background:#EFF7F2;width:100%;height:2.9em">🧺</span><span class="lb">Laundry</span></div>
+                <div class="cat" style="width:31%"><span class="ic" style="background:#FBDDE3;width:100%;height:2.9em">🛒</span><span class="lb">Grocery</span></div>
+                <div class="cat" style="width:31%"><span class="ic" style="background:#E7DFF7;width:100%;height:2.9em">🔧</span><span class="lb">Repairs</span></div>
+                <div class="cat" style="width:31%"><span class="ic" style="background:#FCDCC5;width:100%;height:2.9em">💇</span><span class="lb">Beauty</span></div>
+              </div>
+              <div class="sechd"><b>Open now, near you</b><s>4</s></div>
+              <div class="vcard"><span class="th" style="background:#FFF4E0">🍲</span><span><span class="nm">Finest Pares &amp; Goto</span><span class="mt">Tower 2 · 6 min</span></span><span class="rt">⭐ 4.9</span></div>
+              <div class="vcard"><span class="th" style="background:#E8F1FF">🧼</span><span><span class="nm">Sparkle Home Cleaning</span><span class="mt">Slot open 2:00 PM</span></span><span class="rt">⭐ 4.9</span></div>
+              <div class="vcard"><span class="th" style="background:#F0FBF5">🥟</span><span><span class="nm">Pau's Homemade Siomai</span><span class="mt">Tower 1 · 4 min</span></span><span class="rt">⭐ 4.8</span></div>
+              <div class="sechd" style="padding-top:.3em"><b>Order again</b><s>2</s></div>
+              <div class="vcard"><span class="th" style="background:#FFF8F0">☕</span><span><span class="nm">Iced Matcha Latte</span><span class="mt">Kape At Ikaw · ₱110</span></span><span class="rt">↻</span></div>
+            </div>
+            <div class="nav"><div class="on"><b>⌂</b>Home</div><div><b>▦</b>Feed</div><div><b>⛒</b>Cart</div><div><b>≡</b>Orders</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     16 — CLOSING
+     ═══════════════════════════════════════════════════════════ -->
+<section class="slide dark" id="s16" data-theme="dark" data-label="Closing">
+  <div class="sky" style="opacity:.55">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1440" height="900" fill="url(#skyg2)"/>
+      <defs>
+        <radialGradient id="skyg2" cx="50%" cy="10%" r="90%">
+          <stop offset="0%" stop-color="#10251A"/><stop offset="60%" stop-color="#081710"/><stop offset="100%" stop-color="#06110B"/>
+        </radialGradient>
+      </defs>
+      <g id="skyline2"></g>
+    </svg>
+  </div>
+  <div class="veil" style="background:radial-gradient(110% 70% at 50% 100%,rgba(6,17,11,.2),rgba(6,17,11,.9) 60%,var(--ink))"></div>
+  <div class="grain"></div>
+  <div class="wrap narrow">
+    <h1 class="r blur" style="--d:.1s">Local is everywhere.</h1>
+    <h1 class="r blur" style="--d:.28s"><em class="s amb">We're making it discoverable.</em></h1>
+    <div class="rule r" style="--d:.5s"></div>
+    <div class="brand r" style="--d:.6s;justify-content:center">
+      <svg viewBox="0 0 48 56" width="38" height="45" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
+        <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="21" y="30" width="6" height="7" rx="1" fill="#2ea877" opacity=".7"/>
+        <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
+      </svg>
+      <div style="text-align:left">
+        <div class="word" style="font-size:clamp(20px,2.2vw,30px)">Lokal<em>Finder</em></div>
+      </div>
+    </div>
+    <p class="sub r" style="--d:.7s;margin:18px auto 0;text-align:center">
+      Building the digital layer for residential communities.
+    </p>
+    <p class="tiny r" style="--d:.85s;margin-top:clamp(22px,4vh,44px)">
+      GRASS Residences · Quezon City · <span class="grn">Pilot community 01</span>
+    </p>
+  </div>
+</section>
+
+</div><!-- /#deck -->
+
+<div id="rail"></div>
+
+<div id="chrome">
+  <div class="count"><b id="cNow">01</b><span>/</span><span id="cAll">16</span><span id="cLbl" style="margin-left:12px;letter-spacing:.06em"></span></div>
+  <div class="hint"><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>F</kbd> fullscreen <kbd>P</kbd> presenter</div>
+  <div class="ctrl">
+    <button id="bPrev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></button>
+    <button id="bNext" aria-label="Next slide"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button id="bFull" aria-label="Toggle fullscreen"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var deck   = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var bar    = document.querySelector('#bar i');
+  var cNow   = document.getElementById('cNow');
+  var cAll   = document.getElementById('cAll');
+  var cLbl   = document.getElementById('cLbl');
+  var rail   = document.getElementById('rail');
+  var idx    = 0;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── generated artwork ────────────────────────────────────── */
+  var NS = 'http://www.w3.org/2000/svg';
+  function mk(t,a){ var e=document.createElementNS(NS,t); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  // deterministic pseudo-random so the art is identical on every load
+  var seed = 20260829;
+  function rnd(){ seed = (seed*1664525 + 1013904223) % 4294967296; return seed/4294967296; }
+
+  /* Slide 1 + 16 — the lit-window skyline (the app's night-community motif) */
+  function skyline(host, opts){
+    if(!host) return;
+    var towers = opts.towers, base = 900, litRate = opts.lit;
+    var x = -40;
+    for(var t=0;t<towers;t++){
+      var w = 70 + Math.round(rnd()*80);
+      var h = opts.minH + Math.round(rnd()*opts.varH);
+      var y = base - h;
+      host.appendChild(mk('rect',{x:x,y:y,width:w,height:h,fill:'url(#twr)',opacity:0.92}));
+      host.appendChild(mk('rect',{x:x,y:y,width:w,height:1.2,fill:'#2ea877',opacity:.16}));
+      // windows
+      var cols = Math.max(2,Math.floor(w/22)), rows = Math.floor(h/26);
+      for(var c=0;c<cols;c++){
+        for(var r=0;r<rows;r++){
+          var wx = x + 10 + c*((w-16)/cols), wy = y + 16 + r*24;
+          if(wy > base-14) continue;
+          var lit = rnd() < litRate;
+          var el = mk('rect',{x:wx.toFixed(1),y:wy.toFixed(1),width:7,height:10,rx:1.4,
+            fill: lit ? '#F5C842' : '#0B1C13',
+            opacity: lit ? (0.42+rnd()*0.5).toFixed(2) : 0.85});
+          if(lit){
+            el.setAttribute('filter','url(#wg)');
+            if(!reduce && rnd()<0.12){
+              var an = mk('animate',{attributeName:'opacity',values:'.85;.25;.85',
+                dur:(3.5+rnd()*4).toFixed(1)+'s',repeatCount:'indefinite'});
+              el.appendChild(an);
+            }
+          }
+          host.appendChild(el);
+        }
+      }
+      x += w + 12 + Math.round(rnd()*26);
+      if(x > 1480) break;
+    }
+  }
+  function stars(host){
+    if(!host) return;
+    for(var i=0;i<46;i++){
+      var s = mk('circle',{cx:(rnd()*1440).toFixed(0),cy:(rnd()*330).toFixed(0),
+        r:(0.7+rnd()*1.2).toFixed(1),fill:'#fff',opacity:(0.2+rnd()*0.6).toFixed(2)});
+      if(!reduce) s.appendChild(mk('animate',{attributeName:'opacity',
+        values:'.15;.9;.15',dur:(1.6+rnd()*2.6).toFixed(1)+'s',repeatCount:'indefinite'}));
+      host.appendChild(s);
+    }
+  }
+  stars(document.getElementById('stars'));
+  skyline(document.getElementById('skyline'),  {towers:14, minH:190, varH:420, lit:.36});
+  seed = 771102;
+  skyline(document.getElementById('skyline2'), {towers:14, minH:150, varH:300, lit:.30});
+
+  /* Slide 3 — the community network */
+  (function(){
+    var E = document.getElementById('netEdges'), N = document.getElementById('netNodes');
+    if(!E) return;
+    var cx=310, cy=210;
+    var pts = [];
+    // inner ring: the sellers already inside the building
+    for(var i=0;i<8;i++){ var a=(i/8)*Math.PI*2-0.32;
+      pts.push([cx+Math.cos(a)*108, cy+Math.sin(a)*74, 1]); }
+    // outer ring: the residents around them
+    for(var j=0;j<14;j++){ var b=(j/14)*Math.PI*2+0.22;
+      pts.push([cx+Math.cos(b)*(198+rnd()*14), cy+Math.sin(b)*(132+rnd()*10), 0]); }
+    pts.forEach(function(p,k){
+      var d = 'M'+cx+' '+cy+' Q'+((cx+p[0])/2 + (rnd()-.5)*40)+' '+((cy+p[1])/2 + (rnd()-.5)*40)+' '+p[0].toFixed(0)+' '+p[1].toFixed(0);
+      var path = mk('path',{d:d,class:'edge'});
+      path.style.setProperty('--len', 420);
+      path.style.setProperty('--d', (0.25 + k*0.045).toFixed(2)+'s');
+      E.appendChild(path);
+      var inner = p[2]===1;
+      var c = mk('circle',{cx:p[0].toFixed(0),cy:p[1].toFixed(0),r: inner?6.5:3.4,
+        fill: inner ? '#2ea877' : 'rgba(233,247,240,.55)', class:'nd'});
+      c.style.setProperty('--d',(0.5 + k*0.045).toFixed(2)+'s');
+      N.appendChild(c);
+      if(inner){
+        var h = mk('circle',{cx:p[0].toFixed(0),cy:p[1].toFixed(0),r:13,fill:'#2ea877',opacity:.14,class:'nd'});
+        h.style.setProperty('--d',(0.5 + k*0.045).toFixed(2)+'s');
+        N.appendChild(h);
+      }
+    });
+  })();
+
+  /* Slide 7 — density comparison maps */
+  (function(){
+    var cL=document.getElementById('cityLines'), cD=document.getElementById('cityDots');
+    var tL=document.getElementById('towerLines'), tD=document.getElementById('towerDots');
+    if(!cL) return;
+    // city: hub at centre, sellers scattered far
+    cD.appendChild(mk('circle',{cx:210,cy:150,r:5,fill:'rgba(233,247,240,.7)'}));
+    for(var i=0;i<13;i++){
+      var x=25+rnd()*370, y=22+rnd()*256;
+      cL.appendChild(mk('path',{d:'M210 150 L'+x.toFixed(0)+' '+y.toFixed(0),class:'dline'}));
+      cD.appendChild(mk('circle',{cx:x.toFixed(0),cy:y.toFixed(0),r:2.6,fill:'rgba(233,247,240,.34)'}));
+    }
+    // community: one tower footprint, everything inside it
+    tD.appendChild(mk('rect',{x:150,y:52,width:120,height:200,rx:8,fill:'rgba(46,168,119,.07)',stroke:'rgba(46,168,119,.35)','stroke-width':1}));
+    tD.appendChild(mk('circle',{cx:210,cy:150,r:5,fill:'#12B76A'}));
+    for(var j=0;j<13;j++){
+      var a=(j/13)*Math.PI*2, rr=32+rnd()*54;
+      var px=210+Math.cos(a)*rr*0.78, py=150+Math.sin(a)*rr*1.28;
+      tL.appendChild(mk('path',{d:'M210 150 L'+px.toFixed(0)+' '+py.toFixed(0),class:'dline hot'}));
+      tD.appendChild(mk('circle',{cx:px.toFixed(0),cy:py.toFixed(0),r:2.9,fill:'rgba(245,200,66,.85)'}));
+    }
+  })();
+
+  /* Slide 8 — flywheel nodes */
+  (function(){
+    var host = document.getElementById('flyNodes');
+    if(!host) return;
+    for(var m=0;m<6;m++){
+      var am = ((m+0.5)/6)*Math.PI*2 - Math.PI/2;
+      var mx = 200+Math.cos(am)*120, my = 200+Math.sin(am)*120;
+      var deg = am*180/Math.PI + 90;
+      var ch = mk('path',{d:'M-4.5 -3.4 L0 0 L-4.5 3.4',fill:'none',stroke:'#F5C842',
+        'stroke-width':1.6,'stroke-linecap':'round','stroke-linejoin':'round',opacity:.75,
+        transform:'translate('+mx.toFixed(1)+','+my.toFixed(1)+') rotate('+deg.toFixed(1)+')',class:'fn'});
+      ch.style.setProperty('--d',(0.8+m*0.08).toFixed(2)+'s');
+      host.appendChild(ch);
+    }
+    for(var i=0;i<6;i++){
+      var a = (i/6)*Math.PI*2 - Math.PI/2;
+      var x = 200+Math.cos(a)*120, y = 200+Math.sin(a)*120;
+      var halo = mk('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:15,fill:'#12B76A',opacity:.12,class:'fn'});
+      var dot  = mk('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:6.5,fill:'#12B76A',class:'fn'});
+      halo.style.setProperty('--d',(0.45+i*0.1).toFixed(2)+'s');
+      dot.style.setProperty('--d',(0.45+i*0.1).toFixed(2)+'s');
+      host.appendChild(halo); host.appendChild(dot);
+    }
+  })();
+
+  /* Slide 11 — the zoom grid: progressively more lit windows */
+  (function(){
+    var confs = {1:{n:1,c:1},2:{n:1,c:4},3:{n:4,c:4},4:{n:9,c:6},5:{n:36,c:9}};
+    Array.prototype.forEach.call(document.querySelectorAll('.zm svg[data-grid]'), function(svg){
+      var cfg = confs[svg.getAttribute('data-grid')];
+      var blocks = Math.round(Math.sqrt(cfg.n)), cell = 100/blocks, pad = blocks>3 ? 1 : 6;
+      for(var bx=0;bx<blocks;bx++){
+        for(var by=0;by<blocks;by++){
+          var ox = bx*cell+pad, oy = by*cell+pad, sz = cell-pad*2;
+          svg.appendChild(mk('rect',{x:ox.toFixed(1),y:oy.toFixed(1),width:sz.toFixed(1),height:sz.toFixed(1),
+            rx:(blocks>3?0.8:2).toFixed(1),fill:'rgba(46,168,119,.07)',stroke:'rgba(46,168,119,.25)','stroke-width':.5}));
+          var g = Math.max(1,Math.floor(cfg.c/(blocks>2?1:1)));
+          var step = sz/g;
+          for(var i=0;i<g;i++) for(var j=0;j<g;j++){
+            if(step < 1.4) continue;
+            var lit = rnd() < .55;
+            svg.appendChild(mk('rect',{
+              x:(ox+i*step+step*0.22).toFixed(2), y:(oy+j*step+step*0.22).toFixed(2),
+              width:(step*0.5).toFixed(2), height:(step*0.56).toFixed(2), rx:.3,
+              fill: lit ? '#F5C842' : '#123021', opacity: lit ? (0.5+rnd()*0.5).toFixed(2) : .55 }));
+          }
+        }
+      }
+    });
+  })();
+
+  /* ── navigation ───────────────────────────────────────────── */
+  cAll.textContent = String(slides.length).padStart(2,'0');
+
+  slides.forEach(function(s,i){
+    var b = document.createElement('button');
+    b.innerHTML = '<i></i>';
+    b.title = (i+1)+'. '+(s.dataset.label||'');
+    b.setAttribute('aria-label','Go to slide '+(i+1));
+    b.addEventListener('click',function(){ go(i); });
+    rail.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(rail.children);
+
+  function go(i){
+    i = Math.max(0, Math.min(slides.length-1, i));
+    slides[i].scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'});
+  }
+  function setActive(i){
+    if(i === idx) return;
+    idx = i;
+    cNow.textContent = String(i+1).padStart(2,'0');
+    cLbl.textContent = slides[i].dataset.label || '';
+    bar.style.width = (((i+1)/slides.length)*100)+'%';
+    dots.forEach(function(d,k){ d.classList.toggle('on', k===i); });
+    document.body.classList.toggle('on-light', slides[i].dataset.theme === 'light');
+  }
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        if(e.intersectionRatio > 0.5) setActive(slides.indexOf(e.target));
+      }
+    });
+  },{threshold:[0.25,0.55]});
+  slides.forEach(function(s){ io.observe(s); });
+
+  document.getElementById('bNext').addEventListener('click',function(){ go(idx+1); });
+  document.getElementById('bPrev').addEventListener('click',function(){ go(idx-1); });
+  document.getElementById('bFull').addEventListener('click',toggleFull);
+
+  function toggleFull(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  document.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k = e.key;
+    if(k==='ArrowDown'||k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'){ e.preventDefault(); go(idx+1); }
+    else if(k==='ArrowUp'||k==='ArrowLeft'||k==='PageUp'||k==='Backspace'){ e.preventDefault(); go(idx-1); }
+    else if(k==='Home'){ e.preventDefault(); go(0); }
+    else if(k==='End'){ e.preventDefault(); go(slides.length-1); }
+    else if(k==='f'||k==='F'){ e.preventDefault(); toggleFull(); }
+    else if(k==='p'||k==='P'){ e.preventDefault(); document.body.classList.toggle('zen'); }
+    else if(/^[1-9]$/.test(k)){ e.preventDefault(); go(parseInt(k,10)-1); }
+  });
+
+  /* click-to-advance — ignores chrome and anything interactive */
+  deck.addEventListener('click',function(e){
+    if(e.target.closest('button, a, input, .phone')) return;
+    go(idx+1);
+  });
+
+  /* pointer swipe (touch + trackpad-free tablets) */
+  var y0=null;
+  deck.addEventListener('touchstart',function(e){ y0 = e.touches[0].clientY; },{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(y0===null) return;
+    var dy = e.changedTouches[0].clientY - y0;
+    y0 = null;
+    if(Math.abs(dy) < 60) return;
+    /* native snap handles most of this; only nudge when it stalls */
+  },{passive:true});
+
+  /* first paint */
+  requestAnimationFrame(function(){
+    slides[0].classList.add('in');
+    idx = -1; setActive(0);
+  });
+})();
+</script>
+</body>
+</html>

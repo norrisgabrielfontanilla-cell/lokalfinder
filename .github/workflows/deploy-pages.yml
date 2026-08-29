@@ -40,6 +40,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html version.json OneSignalSDKWorker.js firebase-messaging-sw.js _site/
+          cp presentation.html _site/
           mkdir -p _site/landing
           cp -r landing/dist/. _site/landing/
 
