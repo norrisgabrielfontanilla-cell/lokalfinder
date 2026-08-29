@@ -3,3 +3,4 @@ node_modules/
 .frames-ov/
 overlays/
 *.mp4
+*.zip
