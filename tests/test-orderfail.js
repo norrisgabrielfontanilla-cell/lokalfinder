@@ -120,7 +120,12 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   const bkFail = await page.evaluate(async () => {
     const d=new Date(); d.setDate(d.getDate()+1);
     const key = lfDateKey(d);
-    VENDORS.sparkle.closedDays=[];
+    // Pin the provider open, as the cleaning suite does. Sparkle's seeded
+    // hours are 08:00-18:00, so without this the run passes in the afternoon
+    // and fails in the evening on a closed store.
+    VENDORS.sparkle.openTime='00:00'; VENDORS.sparkle.closeTime='23:59';
+    VENDORS.sparkle.closedDays=[]; VENDORS.sparkle.active=true;
+    VENDORS.sparkle.suspended=false; VENDORS.sparkle.manualOverride=false;
     startBooking('sparkle','sp1'); bkPickDate(key);
     const slots = lfSlotsFor(VENDORS.sparkle, key, 120).filter(s=>!s.taken);
     if(slots.length) bkPickTime(slots[0].time);

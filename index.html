@@ -292,145 +292,176 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 /* ═══════════════════════════════════════════════════════════════════════
-   App-open splash — v59 "the pin lands"
+   App-open splash — v60 "the pin lands", 3-second cut
    -----------------------------------------------------------------------
-   A location pin's natural motion is arrival, so the sequence is a landing:
-   the mark approaches through Z-space, plants itself, lights up, then
-   resolves to the flat 2D logo. Built on CSS 3D transforms only — no
-   library, no build step, nothing extra to download before the app opens.
+   Deliberately slow. The screen starts near-black and the light comes up
+   with the mark, which travels a long way through Z before planting. The
+   drama is carried by distance and by the pauses between beats, not by
+   scale — the mark itself is smaller than the v59 cut.
 
-   Performance: every keyframe animates transform / opacity / filter only,
-   so the compositor handles it and layout is never touched. The one paint
-   property used (stroke-dashoffset, for the draw-on) runs on a 48x56 SVG
-   where the repaint area is negligible.
+   Beats:  0.0s  dark, a glow begins
+           0.3s  the mark approaches, far off and turned away
+           1.5s  it plants — hard stop, rings burst
+           1.8s  the house builds inside
+           2.1s  the dot ignites, light blooms across the screen
+           2.2s  the wordmark resolves out of wide tracking
+           2.9s  perspective flattens to the 2D logo
+
+   Performance: transform and opacity throughout, so the compositor owns
+   the whole sequence. Two exceptions, both deliberate and both cheap —
+   stroke-dashoffset on a 48x56 SVG, and letter-spacing on one short
+   wordmark. Everything collapses to a static logo under reduced motion.
 ═══════════════════════════════════════════════════════════════════════ */
 #lf-splash{
   position:fixed;inset:0;z-index:100000;
-  background:
-    radial-gradient(115% 78% at 50% 36%, #167e56 0%, #0E8A5A 26%, #0d3d27 82%, #08301e 100%);
+  background:#06120c;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:opacity .55s ease;
+  transition:opacity .6s ease;
   overflow:hidden;
 }
 #lf-splash.lf-splash-hide{opacity:0;pointer-events:none}
 
-/* ── The 3D stage. Perspective lives here; children move in its space. ── */
-.lf-sp-stage{
-  position:relative;width:250px;height:196px;
-  display:flex;align-items:center;justify-content:center;
-  perspective:620px;perspective-origin:50% 46%;
-  transition:perspective .5s linear;
+/* The lights come up with the mark rather than being on from frame one. */
+#lf-splash::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(115% 78% at 50% 38%, #167e56 0%, #0E8A5A 26%, #0d3d27 80%, #08301e 100%);
+  opacity:0;animation:lfSpLights 1.5s cubic-bezier(.33,.7,.36,1) .18s both;
+}
+@keyframes lfSpLights{to{opacity:1}}
+
+/* A cinematic vignette so the centre carries the eye. */
+#lf-splash::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 44%, transparent 40%, rgba(0,0,0,.34) 100%);
 }
 
-/* Ambient bloom behind the mark — the light it arrives with. */
+.lf-sp-stage{
+  position:relative;width:230px;height:170px;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  perspective:560px;perspective-origin:50% 46%;
+}
+
+/* Ambient bloom — arrives ahead of the mark, as its light would. */
 .lf-sp-glow{
-  position:absolute;width:250px;height:250px;border-radius:50%;
+  position:absolute;width:210px;height:210px;border-radius:50%;
   background:radial-gradient(circle,rgba(127,227,180,.34) 0%,rgba(127,227,180,.10) 42%,transparent 70%);
-  opacity:0;transform:scale(.4);
-  animation:lfSpGlow 1.5s cubic-bezier(.16,.84,.32,1) .30s both;
+  opacity:0;transform:scale(.3);
+  animation:lfSpGlow 2.3s cubic-bezier(.33,.7,.36,1) .22s both;
 }
 @keyframes lfSpGlow{
-  0%{opacity:0;transform:scale(.4)}
-  46%{opacity:1;transform:scale(1.04)}
-  100%{opacity:.52;transform:scale(1)}
+  0%{opacity:0;transform:scale(.3)}
+  62%{opacity:1;transform:scale(1.05)}
+  100%{opacity:.5;transform:scale(1)}
 }
 
-/* Floor ripple — confirms the landing on the ground plane. */
+/* The flash at ignition — the one loud moment in the sequence. */
+.lf-sp-flash{
+  position:absolute;width:300px;height:300px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,240,190,.85) 0%,rgba(245,200,66,.35) 30%,transparent 66%);
+  opacity:0;transform:scale(.35);
+  animation:lfSpFlash .95s cubic-bezier(.16,.84,.32,1) 1.98s both;
+}
+@keyframes lfSpFlash{
+  0%{opacity:0;transform:scale(.35)}
+  18%{opacity:.95;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.5)}
+}
+
+/* Floor rings — slower and further than the v59 cut, so the landing lands. */
 .lf-sp-ring{
-  position:absolute;width:128px;height:128px;border-radius:50%;
+  position:absolute;width:108px;height:108px;border-radius:50%;
   border:1.8px solid rgba(157,245,201,.55);
-  opacity:0;transform:rotateX(74deg) scale(.35);
-  animation:lfSpRing 1.25s cubic-bezier(.16,.84,.32,1) .92s both;
+  opacity:0;transform:rotateX(74deg) scale(.3);
+  animation:lfSpRing 1.7s cubic-bezier(.16,.84,.32,1) 1.50s both;
 }
-.lf-sp-ring.r2{animation-delay:1.10s;border-color:rgba(157,245,201,.32)}
+.lf-sp-ring.r2{animation-delay:1.78s;border-color:rgba(157,245,201,.3)}
 @keyframes lfSpRing{
-  0%{opacity:0;transform:rotateX(74deg) scale(.35)}
-  26%{opacity:.85}
-  100%{opacity:0;transform:rotateX(74deg) scale(2.5)}
+  0%{opacity:0;transform:rotateX(74deg) scale(.3)}
+  20%{opacity:.9}
+  100%{opacity:0;transform:rotateX(74deg) scale(3)}
 }
 
-/* ── The mark itself: travels in Z, turns to face front, then settles. ── */
+/* ── The mark: a long, weighted approach, then a hard plant. ── */
 #lf-splash-mark{
   position:relative;transform-style:preserve-3d;will-change:transform,opacity;
   opacity:0;
-  animation:lfSpArrive .78s cubic-bezier(.16,.84,.32,1) .10s both,
-            lfSpSettle .42s cubic-bezier(.34,1.4,.64,1) .88s both;
+  animation:lfSpArrive 1.25s cubic-bezier(.30,.72,.30,1) .30s both,
+            lfSpPlant  .58s cubic-bezier(.30,1.34,.52,1) 1.50s both;
 }
 @keyframes lfSpArrive{
-  0%{opacity:0;transform:translateZ(-430px) rotateY(-38deg) rotateX(15deg)}
-  55%{opacity:1}
+  0%{opacity:0;transform:translateZ(-820px) rotateY(-62deg) rotateX(22deg)}
+  38%{opacity:1}
   100%{opacity:1;transform:translateZ(0) rotateY(0deg) rotateX(0deg)}
 }
-/* A pin plants itself: a small compression, then rest. Not a bounce. */
-@keyframes lfSpSettle{
+/* Compress into the ground, then rest. */
+@keyframes lfSpPlant{
   0%{transform:translateZ(0) scale(1)}
-  38%{transform:translateZ(14px) scale(1.055)}
+  30%{transform:translateZ(18px) scale(1.075)}
   100%{transform:translateZ(0) scale(1)}
 }
 #lf-splash-mark svg{display:block;overflow:visible}
 
-/* Outline draws itself as the shell resolves. */
-#lf-splash-mark .sp-body{stroke-dasharray:230;stroke-dashoffset:230;animation:lfSpDraw .62s cubic-bezier(.16,.84,.32,1) .34s forwards}
-#lf-splash-mark .sp-roof{stroke-dasharray:64;stroke-dashoffset:64;animation:lfSpDraw .40s cubic-bezier(.16,.84,.32,1) .86s forwards}
-#lf-splash-mark .sp-wall{stroke-dasharray:64;stroke-dashoffset:64;animation:lfSpDraw .40s cubic-bezier(.16,.84,.32,1) .98s forwards}
+/* Shell outline draws as it closes the distance. */
+#lf-splash-mark .sp-body{stroke-dasharray:230;stroke-dashoffset:230;animation:lfSpDraw .95s cubic-bezier(.33,.7,.36,1) .68s forwards}
+#lf-splash-mark .sp-roof{stroke-dasharray:64;stroke-dashoffset:64;animation:lfSpDraw .46s cubic-bezier(.33,.7,.36,1) 1.62s forwards}
+#lf-splash-mark .sp-wall{stroke-dasharray:64;stroke-dashoffset:64;animation:lfSpDraw .46s cubic-bezier(.33,.7,.36,1) 1.76s forwards}
 @keyframes lfSpDraw{to{stroke-dashoffset:0}}
-#lf-splash-mark .sp-door{opacity:0;animation:lfSpFade .34s ease 1.12s forwards}
+#lf-splash-mark .sp-door{opacity:0;animation:lfSpFade .40s ease 1.94s forwards}
 @keyframes lfSpFade{to{opacity:.8}}
 
-/* The gold dot ignites — the one emissive element in the composition. */
-#lf-splash-mark .sp-dot{opacity:0;transform-origin:24px 20px;animation:lfSpIgnite .52s cubic-bezier(.34,1.4,.64,1) 1.16s both}
+/* The dot ignites on the flash. */
+#lf-splash-mark .sp-dot{opacity:0;transform-origin:24px 20px;animation:lfSpIgnite .70s cubic-bezier(.30,1.34,.52,1) 1.98s both}
 @keyframes lfSpIgnite{
-  0%{opacity:0;transform:scale(.2)}
-  60%{opacity:1;transform:scale(1.5)}
+  0%{opacity:0;transform:scale(.15)}
+  42%{opacity:1;transform:scale(1.9)}
   100%{opacity:1;transform:scale(1)}
 }
 
-/* Specular sweep — a light band crossing the shell as it turns to face us.
-   Clipped to the pin body inside the SVG: as a plain overlay its rectangular
-   edges showed outside the teardrop. */
-#lf-splash-mark .sp-sheen{opacity:0;animation:lfSpSheen .85s cubic-bezier(.16,.84,.32,1) .58s both}
+/* Specular sweep, clipped to the pin body inside the SVG. */
+#lf-splash-mark .sp-sheen{opacity:0;animation:lfSpSheen 1.15s cubic-bezier(.33,.7,.36,1) .92s both}
 @keyframes lfSpSheen{
   0%{opacity:0;transform:translateX(0) skewX(-12deg)}
-  22%{opacity:1}
-  100%{opacity:0;transform:translateX(80px) skewX(-12deg)}
+  20%{opacity:1}
+  100%{opacity:0;transform:translateX(72px) skewX(-12deg)}
 }
 
-/* ── Wordmark rises from slightly behind the pin's plane. ── */
+/* ── Wordmark resolves out of wide tracking. ── */
 #lf-splash-word{
-  margin-top:8px;font-family:var(--ffl);font-weight:800;font-size:37px;
-  letter-spacing:-1px;color:#fff;opacity:0;
-  transform:translateY(14px) translateZ(-60px);
-  animation:lfSplashWord .62s cubic-bezier(.16,.84,.32,1) 1.02s forwards;
+  margin-top:8px;font-family:var(--ffl);font-weight:800;font-size:33px;
+  color:#fff;opacity:0;letter-spacing:14px;
+  transform:translateY(16px);
+  animation:lfSplashWord .82s cubic-bezier(.22,.61,.36,1) 2.06s forwards;
+  z-index:1;
 }
 #lf-splash-word em{color:#9df5c9;font-style:normal}
-@keyframes lfSplashWord{to{opacity:1;transform:translateY(0) translateZ(0)}}
+@keyframes lfSplashWord{to{opacity:1;letter-spacing:-1px;transform:translateY(0)}}
 
-#lf-splash-dots{margin-top:22px;display:flex;gap:7px;opacity:0;animation:fadeIn .5s ease 1.34s forwards}
+#lf-splash-dots{margin-top:22px;display:flex;gap:7px;opacity:0;animation:fadeIn .5s ease 2.62s forwards;z-index:1}
 #lf-splash-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.7);animation:lfSplashDot 1s ease-in-out infinite}
 #lf-splash-dots span:nth-child(2){animation-delay:.2s}
 #lf-splash-dots span:nth-child(3){animation-delay:.4s}
 @keyframes lfSplashDot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
 
-/* ── Phase 4: the 3D resolves to flat 2D. Added by the controller, either
-      on schedule or the moment boot finishes — whichever comes first, so a
-      fast open is never held back by the choreography. ── */
+/* ── Resolve: 3D flattens to the 2D logo. Added by the controller on
+      schedule, or the moment boot finishes — whichever comes first. ── */
 #lf-splash.lf-sp-flat .lf-sp-stage{perspective:2600px}
-#lf-splash.lf-sp-flat .lf-sp-glow{opacity:.24;transition:opacity .45s ease}
+#lf-splash.lf-sp-flat .lf-sp-glow{opacity:.22;transition:opacity .5s ease}
 #lf-splash.lf-sp-flat #lf-splash-mark{
-  animation:none;opacity:1;transform:none;filter:none;
-  transition:transform .45s cubic-bezier(.22,.61,.36,1);
+  animation:none;opacity:1;transform:none;
+  transition:transform .5s cubic-bezier(.22,.61,.36,1);
 }
-#lf-splash.lf-sp-flat .lf-sp-ring{display:none}
+#lf-splash.lf-sp-flat .lf-sp-ring,#lf-splash.lf-sp-flat .lf-sp-flash{display:none}
 
 @media(prefers-reduced-motion:reduce){
-  #lf-splash-mark,.lf-sp-glow,.lf-sp-ring,#lf-splash-word,#lf-splash-dots span,
-  #lf-splash-mark .sp-sheen{animation:none !important}
-  #lf-splash-mark{opacity:1;transform:none;filter:none}
+  #lf-splash::before{animation:none !important;opacity:1}
+  #lf-splash-mark,.lf-sp-glow,.lf-sp-ring,.lf-sp-flash,#lf-splash-word,
+  #lf-splash-dots,#lf-splash-dots span,#lf-splash-mark .sp-sheen{animation:none !important}
+  #lf-splash-mark{opacity:1;transform:none}
   #lf-splash-mark .sp-body,#lf-splash-mark .sp-roof,#lf-splash-mark .sp-wall{stroke-dashoffset:0}
   #lf-splash-mark .sp-dot,#lf-splash-mark .sp-door{opacity:1;transform:none}
-  #lf-splash-mark .sp-sheen{opacity:0}
+  #lf-splash-mark .sp-sheen,.lf-sp-ring,.lf-sp-flash{opacity:0}
   .lf-sp-glow{opacity:.5;transform:none}
-  #lf-splash-word{opacity:1;transform:none}
+  #lf-splash-word{opacity:1;transform:none;letter-spacing:-1px}
   #lf-splash-dots{opacity:1}
 }
 @keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
@@ -1494,10 +1525,11 @@ select option { color: var(--t1); background: var(--w); }
 <div id="lf-splash" aria-hidden="true">
   <div class="lf-sp-stage">
     <div class="lf-sp-glow"></div>
+    <div class="lf-sp-flash"></div>
     <div class="lf-sp-ring"></div>
     <div class="lf-sp-ring r2"></div>
     <div id="lf-splash-mark">
-      <svg viewBox="0 0 48 56" width="126" height="146" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 48 56" width="104" height="121" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <clipPath id="lfSpClip">
             <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z"/>
@@ -1530,8 +1562,8 @@ select option { color: var(--t1); background: var(--w); }
    fast open is never held hostage to the animation, and a slow one still gets
    the full sequence instead of a jump cut. */
 (function(){
-  var LAND     = 1650;  // the sequence has made its point by here
-  var minShown = 1900;  // ...and reads as finished by here
+  var LAND     = 2900;  // the sequence has made its point by here
+  var minShown = 3050;  // ...and reads as finished by here
   var t0 = Date.now();
   var done = false, flattened = false;
 
@@ -1547,18 +1579,24 @@ select option { color: var(--t1); background: var(--w); }
     if(done) return; done = true;
     var el = document.getElementById('lf-splash');
     if(!el) return;
-    flatten();                                   // always resolve before leaving
+    // Boot usually finishes in a few hundred milliseconds, long before the
+    // sequence has played. Flattening here killed the animation almost
+    // immediately and left a frozen logo on screen for the rest of the hold —
+    // so the resolve now happens at the END of the wait, not the start.
     var wait = Math.max(0, minShown - (Date.now() - t0));
     setTimeout(function(){
-      el.classList.add('lf-splash-hide');
+      flatten();                                 // resolve, then leave
       setTimeout(function(){
-        if(el && el.parentNode) el.parentNode.removeChild(el);
-      }, 650);
+        el.classList.add('lf-splash-hide');
+        setTimeout(function(){
+          if(el && el.parentNode) el.parentNode.removeChild(el);
+        }, 700);
+      }, 140);
     }, wait);
   }
   window.lfHideSplash = hide;
   // Hard safety net: the splash can never stick, whatever else fails.
-  setTimeout(hide, 4500);
+  setTimeout(hide, 6000);
 })();
 </script>
 
@@ -10157,7 +10195,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 61; // ← bump this each release (and version.json)
+  const APP_VERSION = 62; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
