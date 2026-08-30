@@ -1223,7 +1223,7 @@ select option { color: var(--t1); background: var(--w); }
    still surface over it. Pointer-events are on so nothing behind is tappable
    mid-sequence. */
 #lf-success-stage{
-  position:fixed;inset:0;z-index:9998;display:none;
+  position:fixed;inset:0;z-index:9998;display:none;cursor:pointer;
   align-items:center;justify-content:center;
   background:radial-gradient(120% 90% at 50% 42%,#F3FBF7 0%,#E4F4EC 46%,#D6EDE1 100%);
 }
@@ -1295,7 +1295,10 @@ select option { color: var(--t1); background: var(--w); }
 }
 
 /* Copy under the mark. */
-.lf-suc-copy{position:absolute;left:0;right:0;top:calc(50% + 132px);text-align:center;padding:0 28px}
+/* Positioned against the stage, not the 220px pin wrapper — anchoring it to
+   the wrapper squeezed the copy into 164px and wrapped "Order confirmed". */
+.lf-suc-copy{position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(50% + 132px);width:min(360px,88vw);text-align:center}
 .lf-suc-ttl{font-family:var(--ffl);font-size:23px;font-weight:800;color:var(--t1);letter-spacing:-.4px;opacity:0}
 .lf-suc-sub{font-size:13.5px;color:var(--t2);margin-top:7px;line-height:1.5;opacity:0}
 #lf-success-stage.on .lf-suc-ttl{animation:lfRise .5s var(--e-out) 1.18s both}
@@ -3363,7 +3366,9 @@ select option { color: var(--t1); background: var(--w); }
      The cart is deliberately still intact behind this. Retry re-uses the same
      order id, so a retry after a write that actually landed overwrites the
      same record instead of creating a duplicate order. -->
-<div id="lf-order-error" role="alertdialog" aria-modal="true" aria-labelledby="lf-err-ttl">
+<!-- ids deliberately avoid the substring "-err-": a global admin rule
+     ([id*="-err-"]) force-paints anything matching it dark maroon. -->
+<div id="lf-order-error" role="alertdialog" aria-modal="true" aria-labelledby="lf-fail-ttl">
   <div class="lf-err-sheet">
     <div class="lf-err-ico">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -3371,12 +3376,12 @@ select option { color: var(--t1); background: var(--w); }
         <path d="M10.3 3.9 2.5 17.4A2 2 0 0 0 4.2 20.4h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
       </svg>
     </div>
-    <div class="lf-err-ttl" id="lf-err-ttl">Your order wasn't placed</div>
-    <div class="lf-err-sub" id="lf-err-sub">We couldn't reach the vendor just now. Nothing was charged and nothing was sent.</div>
-    <div class="lf-err-keep">Your cart is exactly as you left it — nothing was lost.</div>
+    <div class="lf-err-ttl" id="lf-fail-ttl">Your order wasn't placed</div>
+    <div class="lf-err-sub" id="lf-fail-sub">We couldn't reach the vendor just now. Nothing was charged and nothing was sent.</div>
+    <div class="lf-err-keep" id="lf-fail-keep">Your cart is exactly as you left it — nothing was lost.</div>
     <div class="lf-err-acts">
-      <button class="lf-err-retry" id="lf-err-retry" onclick="lfRetryOrder()">Try again</button>
-      <button class="lf-err-back" onclick="lfDismissOrderError()">Back to my cart</button>
+      <button class="lf-err-retry" id="lf-fail-retry" onclick="lfRetryOrder()">Try again</button>
+      <button class="lf-err-back" id="lf-fail-back" onclick="lfDismissOrderError()">Back to my cart</button>
     </div>
   </div>
 </div>
@@ -4651,28 +4656,45 @@ function lfPlaySuccessStage(order){
                                 : (clean ? 'Sent to the provider' : 'Sent to the vendor');
     let reduced = false;
     try{ reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+    // A celebration must never become a cage: the stage covers the screen, so
+    // it is tappable to skip, and every timer is tracked so finish() can only
+    // ever run once no matter which path gets there first.
+    let done=false, tHold=null, tFade=null;
+    function finish(){
+      if(done) return;
+      done = true;
+      clearTimeout(tHold); clearTimeout(tFade);
+      stage.removeEventListener('click', skip);
+      stage.classList.remove('on');
+      stage.classList.remove('out');
+      resolve();
+    }
+    function skip(){
+      if(done) return;
+      clearTimeout(tHold); clearTimeout(tFade);
+      stage.classList.add('out');
+      tFade = setTimeout(finish, reduced ? 0 : 200);
+    }
+    stage.addEventListener('click', skip);
     stage.classList.remove('out');
     stage.classList.add('on');
-    setTimeout(()=>{
+    tHold = setTimeout(()=>{
       stage.classList.add('out');
-      setTimeout(()=>{ stage.classList.remove('on'); stage.classList.remove('out'); resolve(); },
-                 reduced ? 0 : 340);
+      tFade = setTimeout(finish, reduced ? 0 : 340);
     }, reduced ? 850 : 2150);
   });
 }
 
-/* The failure sheet serves both the food and the cleaning flow, so what
-   "try again" and "go back" mean is supplied by the caller rather than
-   hard-coded to the cart. */
 function lfShowOrderError(detail, ctx){
   if(ctx) _lfErrCtx = ctx;
-  const sub = el('lf-err-sub');
+  const sub = el('lf-fail-sub');
   if(sub) sub.textContent = detail ||
     "We couldn't reach the vendor just now. Nothing was charged and nothing was sent.";
-  const keep = el('lf-err-keep');
+  const keep = el('lf-fail-keep');
   if(keep) keep.textContent = (_lfErrCtx && _lfErrCtx.keepMsg) ||
     'Your cart is exactly as you left it \u2014 nothing was lost.';
-  const back = el('lf-err-back');
+  const back = el('lf-fail-back');
   if(back) back.textContent = (_lfErrCtx && _lfErrCtx.backLabel) || 'Back to my cart';
   const e = el('lf-order-error');
   if(e) e.classList.add('on');
@@ -4769,7 +4791,8 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
   // What a retry would need to repeat — captured before anything can throw.
   _lfErrCtx = {
     retry: ()=>finalizeOrder(name,unit,phone,total,oid,method,ref,subAmt,deliveryFee),
-    back: 'p-ccart', backLabel: 'Back to my cart'
+    back: method==='gcash' ? 'p-cgcash' : 'p-ccart',
+    backLabel: method==='gcash' ? 'Back to payment' : 'Back to my cart'
   };
 
   // Optimistic local commit: notifOnStatusChange, the dashboards and the
@@ -4832,6 +4855,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
    svcTime, building and instructions, and skips the cart entirely.
 ═══════════════════════════════════════════════════════════════════════ */
 let booking = null;          // { vid, itemId, date, time }
+let _bkPendingOid = null;    // reused across retries so a retry can't double-book
 let _bkSubmitting = false;   // duplicate-submit guard (see submitBooking)
 
 function startBooking(vid, itemId){
@@ -5030,7 +5054,10 @@ async function submitBooking(){
     try{ await requestNotifPermission(); }catch(e){}
     try{ _custToken = await fcmCustomerToken(); }catch(e){}
 
-    const oid = genOrderId();
+    // Reused across retries: a PUT to the same key overwrites, so retrying
+    // after a write that actually landed cannot create a second booking.
+    if(!_bkPendingOid) _bkPendingOid = genOrderId();
+    const oid = _bkPendingOid;
     const order = {
       id: oid, name, unit, phone,
       total: svc.price, subtotal: svc.price, deliveryFee: 0, fee: 0,
@@ -5099,6 +5126,7 @@ async function submitBooking(){
     }catch(err){ console.error('post-booking notify failed:', err); }
 
     booking = null;
+    _bkPendingOid = null;
     if(el('bk-notes')) el('bk-notes').value='';
     _lfErrCtx = null;
     await staged;
