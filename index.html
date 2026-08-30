@@ -4787,8 +4787,8 @@ async function pushOrderStrict(oid){
   const o = orders.find(x=>x.id===oid);
   if(!o) throw new Error('order not found locally: '+oid);
   const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-  await fbSet(ROOM_KEY+'/orders/'+key,
-    {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+  await lfTrackedWrite(()=>fbSet(ROOM_KEY+'/orders/'+key,
+    {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp}));
 }
 
 function lfCtaBusy(btn, label){
@@ -8427,6 +8427,21 @@ const FCM_VAPID_KEY = "BHVBhKO4tetrlLAFk6HlVCvLTyRNgR2fASioVwop4Fwd9gjWEM2-ml-EV
 
 let _fcmApp = null, _fcmMessaging = null, _fcmToken = null;
 
+/* v59: the FCM step-by-step toasts were added to debug push on iPhone and
+   were left switched on, so every customer saw them mid-checkout — including
+   a red "permission not granted" landing on top of the order confirmation.
+   They are kept, but off by default. Turn them on for a debugging session
+   with  localStorage.setItem('lf-fcm-diag','1')  or by adding #fcmdiag to
+   the URL; console.log still records every step either way. */
+function lfFcmDiag(msg){
+  try{
+    var on = (location.hash||'').indexOf('fcmdiag') > -1 ||
+             localStorage.getItem('lf-fcm-diag') === '1';
+    console.log('[FCM] ' + msg);
+    if(on) showToast(msg);
+  }catch(e){}
+}
+
 function _fcmInit(){
   try{
     if(_fcmMessaging) return true;
@@ -8444,27 +8459,27 @@ async function fcmGetToken(){
   // iOS: OneSignal owns push. Skip FCM so it never competes for the single
   // iOS push slot. (Android/desktop continue through FCM as before.)
   if(window.LF_IS_IOS && window.LF_IS_IOS()){
-    try{ showToast('ℹ️ iOS: using OneSignal for push (FCM off)'); }catch(e){}
+    lfFcmDiag('ℹ️ iOS: using OneSignal for push (FCM off)');
     return null;
   }
   // DIAG: show each step on screen so we can see where it fails on iPhone.
-  try{ showToast('🔎 FCM step 1: starting'); }catch(e){}
+  lfFcmDiag('🔎 FCM step 1: starting');
   try{
-    if(!('serviceWorker' in navigator)){ try{ showToast('❌ FCM: no serviceWorker support'); }catch(e){} return null; }
-    if(!('Notification' in window) || Notification.permission !== 'granted'){ try{ showToast('❌ FCM: permission not granted (is '+ (typeof Notification!=='undefined'?Notification.permission:'none') +')'); }catch(e){} return null; }
-    try{ showToast('🔎 FCM step 2: init'); }catch(e){}
-    if(!_fcmInit()){ try{ showToast('❌ FCM: _fcmInit() failed'); }catch(e){} return null; }
-    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ try{ showToast('❌ FCM: VAPID key not set'); }catch(e){} return null; }
-    try{ showToast('🔎 FCM step 3: registering service worker'); }catch(e){}
+    if(!('serviceWorker' in navigator)){ lfFcmDiag('❌ FCM: no serviceWorker support'); return null; }
+    if(!('Notification' in window) || Notification.permission !== 'granted'){ lfFcmDiag('❌ FCM: permission not granted (is '+ (typeof Notification!=='undefined'?Notification.permission:'none') +')'); return null; }
+    lfFcmDiag('🔎 FCM step 2: init');
+    if(!_fcmInit()){ lfFcmDiag('❌ FCM: _fcmInit() failed'); return null; }
+    if(FCM_VAPID_KEY.indexOf('PASTE_') === 0){ lfFcmDiag('❌ FCM: VAPID key not set'); return null; }
+    lfFcmDiag('🔎 FCM step 3: registering service worker');
     const _fcmT0 = Date.now();
     const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-    try{ showToast('✅ FCM: SW registered in '+(Date.now()-_fcmT0)+'ms'); }catch(e){}
-    try{ showToast('🔎 FCM step 4: getting token'); }catch(e){}
+    lfFcmDiag('✅ FCM: SW registered in '+(Date.now()-_fcmT0)+'ms');
+    lfFcmDiag('🔎 FCM step 4: getting token');
     const token = await _fcmMessaging.getToken({
       vapidKey: FCM_VAPID_KEY,
       serviceWorkerRegistration: reg
     });
-    if(token){ try{ showToast('✅ FCM: got token! len='+token.length); }catch(e){} }
+    if(token){ lfFcmDiag('✅ FCM: got token! len='+token.length); }
     else { try{ showToast('⚠️ FCM: getToken returned empty'); }catch(e){} }
     _fcmToken = token || null;
     return _fcmToken;
@@ -9000,19 +9015,39 @@ function applyData(d){
   refreshVisible();
 }
 
+/* v59: order writes now get the same in-flight tracking pushState has had
+   since v48. Without it, a sync read issued BEFORE a status change could
+   return AFTER it, and applyData — which lets the cloud copy win — would
+   overwrite the fresh local status with the stale one. In practice that is a
+   vendor tapping Accept and watching the badge revert to Pending until the
+   next poll three seconds later. The guard in syncFromCloud was always the
+   right mechanism; it simply never covered order writes. */
+async function lfTrackedWrite(fn){
+  _pendingWrites++;
+  syncPausedUntil = Date.now() + LF_PENDING_MS;
+  try{ return await fn(); }
+  finally{
+    _pendingWrites = Math.max(0, _pendingWrites - 1);
+    _lastWriteDoneAt = Date.now();
+    if(_pendingWrites === 0) syncPausedUntil = Date.now() + 700;
+  }
+}
+
 async function pushOrders(oid=null){
   try{
     if(oid){
       const o = orders.find(x=>x.id===oid);
       if(!o) return;
       const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-      await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+      await lfTrackedWrite(()=>fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp}));
       return;
     }
-    for(const o of orders){
-      const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
-      await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
-    }
+    await lfTrackedWrite(async ()=>{
+      for(const o of orders){
+        const key = o.id.replace(/[^a-zA-Z0-9]/g,'_');
+        await fbSet(ROOM_KEY+'/orders/'+key, {...o, timestamp: o.timestamp instanceof Date ? o.timestamp.toISOString() : o.timestamp});
+      }
+    });
   }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
 }
 

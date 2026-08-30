@@ -135,7 +135,7 @@ and give its vendors that `category`.
   `admin1234`, which meant it could never really be changed at all.
   **None of this is real auth.** Firebase Anonymous Auth is the next step.
 
-**Testing:** `tests/` holds a Playwright suite — 126 checks across four files,
+**Testing:** `tests/` holds a Playwright suite — 197 checks across six files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -145,6 +145,41 @@ API does. Keep it that way: an earlier, looser stub accepted them and returned
 `200`, which turned a silently-failing write into an apparently-successful one
 and caused a bug to be mis-diagnosed. Never point a test run at the live
 `FB_URL`.
+
+**Order submission (v58/v59) — the success screen is never shown on faith:**
+`finalizeOrder()` and `submitBooking()` await the write BEFORE confirming
+anything. They use `pushOrderStrict()`, which propagates failure; plain
+`pushOrders()` still swallows errors, which is correct for its other callers
+(status updates, background re-syncs) but was fatal here — the old code showed
+the success screen first and fired the write afterwards, so a failed write
+still produced "Order Placed!", a live tracker and a green toast while the
+vendor received nothing.
+
+On failure the optimistic local state is rolled back, the cart is preserved,
+and the retry reuses the same order id (`pendingOid` for food, `_bkPendingOid`
+for bookings) so a retry after a write that actually landed overwrites that
+record instead of creating a second order. `test-orderfail.js` drives all of
+this by aborting the write mid-flight.
+
+Two naming traps worth knowing. The failure sheet's ids are `lf-fail-*`, not
+`lf-err-*`: an admin rule, `[id*="-err-"]{background:#2a1010 !important}`,
+force-paints anything matching that substring. And ids ending `-err` are
+caught by a second rule at `[id$="-err"]`.
+
+**Write tracking (v59):** `_pendingWrites` / `_lastWriteDoneAt` guard
+`syncFromCloud()` against applying a read that raced a local write. That guard
+existed from v48 but covered only `pushState()`; order writes had none, so a
+vendor's Accept could be reverted by an in-flight sync until the next poll —
+`applyData()` lets the cloud copy win unconditionally, with no `updatedAt`
+comparison. Order writes now go through `lfTrackedWrite()`. `applyData()`
+itself is unchanged: making it prefer the newer copy would introduce
+cross-device clock-skew risk for a case the guard already closes.
+
+**FCM diagnostics (v59):** the step-by-step push toasts are gated behind
+`lfFcmDiag()` — off unless `localStorage['lf-fcm-diag']==='1'` or the URL
+carries `#fcmdiag`. They used to fire on every checkout, so customers saw
+"FCM step 1: starting" and a red "permission not granted" over their order
+confirmation. `console.log` still records every step.
 
 **Escaping (v55) — two functions, do not merge them:**
 - `esc(s)` — HTML entity escaping, for text going into `innerHTML`.
