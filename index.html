@@ -10157,7 +10157,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 53; // ← bump this each release (and version.json)
+  const APP_VERSION = 61; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -10205,7 +10205,12 @@ setInterval(updateClock,15000);
       const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
       if(!r.ok) return;
       const data = await r.json();
-      if(data && typeof data.v === 'number' && data.v > APP_VERSION){
+      // Accept either key: the file has long shipped {"version": N} while this
+      // only ever read `v`, so the banner could never fire and devices stayed
+      // pinned to whatever build they first loaded.
+      const remote = data && (typeof data.v === 'number' ? data.v
+                    : typeof data.version === 'number' ? data.version : null);
+      if(remote !== null && remote > APP_VERSION){
         showUpdateBanner();
       }
     }catch(e){ /* offline or missing file — do nothing */ }
