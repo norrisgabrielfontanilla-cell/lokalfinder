@@ -1,0 +1,54 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Resident Flyer \u2014 A5",
+      "x": 0,
+      "y": 0,
+      "w": 559,
+      "h": 794
+    },
+    {
+      "file": "VendorFlyer.dc.html",
+      "title": "Vendor Flyer \u2014 A4",
+      "x": 679,
+      "y": 0,
+      "w": 794,
+      "h": 1123
+    },
+    {
+      "file": "LobbyPoster.dc.html",
+      "title": "Lift-Lobby Poster \u2014 A3",
+      "x": 1593,
+      "y": 0,
+      "w": 1123,
+      "h": 1587
+    }
+  ],
+  "annotations": [
+    {
+      "id": "swap-vendors",
+      "x": 0,
+      "y": -150,
+      "w": 559,
+      "text": "Sample content.\nThe five storefronts shown are the demo fixtures seeded in index.html \u2014 swap in real vendors before this goes to print."
+    },
+    {
+      "id": "vendor-contact",
+      "x": 679,
+      "y": -150,
+      "w": 794,
+      "text": "[YOUR CONTACT NUMBER] is the one thing left blank \u2014 the app has no vendor self-signup, so an admin creates the store. Put the number or Messenger handle you want sellers to reach."
+    },
+    {
+      "id": "poster-headline",
+      "x": 1593,
+      "y": -150,
+      "w": 1123,
+      "text": "Headline is the question residents actually ask in the group chat.\nEnglish alternate if you prefer: \u201cYour neighbors are cooking.\u201d / \u201cTower 2. Ten minutes. \u20b160.\u201d\nQR is the verified code from index.html \u2014 it resolves to the live app."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

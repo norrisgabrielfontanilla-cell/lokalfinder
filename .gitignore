@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+
+# Seeded design-canvas output — 2.5 MB of vendored editor payload wrapped
+# around pamphlets/*.dc.html. Regenerate it, don't commit it (see pamphlets/README.md).
+pamphlets/lokal-finder-pamphlets.html
