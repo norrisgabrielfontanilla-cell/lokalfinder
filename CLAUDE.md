@@ -135,7 +135,39 @@ and give its vendors that `category`.
   `admin1234`, which meant it could never really be changed at all.
   **None of this is real auth.** Firebase Anonymous Auth is the next step.
 
-**Testing:** `tests/` holds a Playwright suite — 197 checks across six files,
+- **Vendor sessions (v56).** A vendor signs in once and stays signed in for 30
+  days (sliding). The session lives in `localStorage` under `lf-vsess` and
+  holds the vendor id, their salted `{salt,hash}` record, a small display card
+  (name/sub/emoji/logo/category) and an expiry — **no PIN**. Before v56 the
+  raw PIN was stored and re-verified on every app open, which failed two ways,
+  both reproduced in `tests/test-session.js`: an app opened with no
+  connectivity couldn't find the hash (an admin-created vendor's hash lives
+  only in `/pinHashes`), read that as "wrong PIN", and **deleted the session**;
+  and the restore ran after `await tryBoot()`, so on a slow link the vendor
+  watched the customer home for 7s+ before the dashboard appeared.
+
+  Rules that must hold: restore happens **before** any network call and works
+  fully offline; only a *definitive* answer ends a session (the synced hash
+  differs → PIN rotated, or the vendor is tombstoned) — a failed fetch never
+  does; `lfSaveVendorSession()` **merges**, because refreshing the expiry
+  offline would otherwise blank the stored hash and silently disable
+  revocation. `lfEnterVendorPortal()` is the single path into the portal —
+  login and restore were hand-copied before, and the restore copy had lost
+  `applyVendorChrome()`, so a cleaning provider reopening the app got a
+  portal labelled "Vendor Portal / Incoming Orders / My Menu".
+
+  This is still a local flag, not auth — `lf-vsess` is writable from devtools,
+  exactly like the PIN screen it replaces. What it buys is that the vendor's
+  reusable credential is no longer on disk in plaintext, and that rotating a
+  PIN now actually signs old devices out.
+
+  **Open, unrelated to the above:** once `firebase-rules.json` is published,
+  `/pinHashes` becomes unreadable, so an admin-created vendor cannot be
+  verified on a *fresh* device at all — first login would break. Restored
+  sessions survive (they carry their own copy), but real login needs Firebase
+  Auth. Verify this before publishing the rules.
+
+**Testing:** `tests/` holds a Playwright suite — 231 checks across seven files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.

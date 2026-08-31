@@ -264,20 +264,30 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   check('Archive: recent/live orders are NOT touched', purge.recentKept, String(purge.recentKept));
 
   // ── 7. Vendor session restore across a reload ─────────────────────
-  await page.evaluate(() => { adminSignOut(); localStorage.setItem('lf-vendorId','pares'); localStorage.setItem('lf-vendorPin','1234'); });
+  // Depth lives in test-session.js. This check exists so the smoke run still
+  // notices if reopening the app stops landing a signed-in vendor on their
+  // dashboard — and it asserts the PAGE, not just activeVendorId. The old
+  // version checked only the variable, which is why a restore that left the
+  // vendor staring at the customer home screen passed the whole suite.
+  await page.evaluate(async () => {
+    adminSignOut();
+    el('v-sel').value='pares'; el('v-pin').value='1234';
+    await vendorLogin();
+  });
   await page.reload({ waitUntil:'domcontentloaded' });
   await page.waitForFunction(() => typeof goCust==='function', null, {timeout:15000});
   await page.waitForTimeout(2500);
   const restored = await page.evaluate(() => ({ vid: activeVendorId, page: document.querySelector('.page.on')?.id }));
-  check('Vendor session survives a reload (hashed PIN path)', restored.vid==='pares', JSON.stringify(restored));
+  check('Vendor session survives a reload, landing on the dashboard',
+        restored.vid==='pares' && restored.page==='p-vdash', JSON.stringify(restored));
 
-  // Bad stored PIN must NOT restore
-  await page.evaluate(() => { localStorage.setItem('lf-vendorId','pares'); localStorage.setItem('lf-vendorPin','0000'); });
+  // Logging out must not come back after a reload.
+  await page.evaluate(() => vendorLogout());
   await page.reload({ waitUntil:'domcontentloaded' });
   await page.waitForFunction(() => typeof goCust==='function', null, {timeout:15000});
   await page.waitForTimeout(2500);
   const notRestored = await page.evaluate(() => activeVendorId);
-  check('A wrong stored PIN does not restore the vendor session', !notRestored, 'activeVendorId='+notRestored);
+  check('A logged-out vendor is not restored on reload', !notRestored, 'activeVendorId='+notRestored);
 
   await browser.close(); srv.close();
   console.log('\n════ DEEP SMOKE ════');

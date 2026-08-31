@@ -5514,6 +5514,188 @@ async function verifyVendorPin(vid, pin){
   }
   return false;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v56 — PERSISTENT VENDOR SESSIONS
+   -----------------------------------------------------------------------
+   A vendor should sign in once and stay signed in. Before v56 they didn't:
+   the session was stored as the vendor id plus their RAW PIN, and on every
+   app open boot() re-verified that PIN against VENDOR_PIN_HASHES. Two things
+   went wrong with that, both reproduced in tests/test-session.js:
+
+     1. VENDOR_PIN_HASHES only holds the six demo vendors until /pinHashes
+        syncs from the cloud. A vendor created through the admin panel has no
+        local hash, so if the app opened with no connectivity the check
+        returned false — "wrong PIN" — and the code DELETED the saved
+        session. One bad reopen on patchy wifi logged them out permanently.
+     2. The restore ran after `await tryBoot()`, which retries a failing
+        fetch five times at 1.5s. On a slow connection the vendor sat on the
+        customer home screen for 7s+ and concluded they'd been logged out.
+
+   v56 stores no PIN at all. It stores the vendor's own salted-hash record —
+   the same {salt,hash} that is published to /pinHashes, which is not a
+   credential — plus a small display card so the dashboard can paint with no
+   network. Restore is therefore instant and fully offline.
+
+   ── BE HONEST ABOUT WHAT THIS IS ──
+   This is a local flag, not authentication. Anyone with devtools can write
+   lf-vsess by hand — but that was already true of the PIN screen itself
+   (see the v55 note above). What it does buy: the vendor's reusable
+   credential is no longer sitting in localStorage in plaintext where a
+   borrowed phone or an XSS can read it, and revocation now works — when the
+   admin rotates a PIN, the next sync sees the hash change and signs the old
+   device out. Real auth still means Firebase Auth and a server check.
+
+   Revocation is checked on every sync (lfRevalidateVendorSession), and only
+   ever acts on a DEFINITIVE answer. "I couldn't reach the database" is not
+   evidence that a session is invalid, and must never end one.
+═══════════════════════════════════════════════════════════════════════ */
+const LF_SESS_KEY  = 'lf-vsess';
+const LF_SESS_DAYS = 30;          // sliding: refreshed on every restore
+const LF_SESS_LOGO_MAX = 40000;   // don't put a big base64 logo in localStorage
+
+/* Writes (or refreshes) the session. MERGES — it never blanks a field just
+   because the in-memory copy isn't loaded yet. This matters: refreshing the
+   30-day expiry on an offline reopen happens when VENDOR_PIN_HASHES and
+   VENDORS hold nothing for this vendor, and an overwriting version quietly
+   erased the stored hash — which killed revocation, since a session with no
+   hash has nothing for lfRevalidateVendorSession() to compare against. */
+function lfSaveVendorSession(vid){
+  try{
+    let prev = {};
+    try{ prev = JSON.parse(localStorage.getItem(LF_SESS_KEY)||'{}') || {}; }catch(e){}
+    if(prev.vid !== vid) prev = {};                 // a different vendor: start clean
+    const prevCard = prev.card || {};
+    const cred = VENDOR_PIN_HASHES[vid] || {};
+    const v    = VENDORS[vid] || {};
+    const logo = (typeof v.logo === 'string' && v.logo.length <= LF_SESS_LOGO_MAX) ? v.logo : null;
+    localStorage.setItem(LF_SESS_KEY, JSON.stringify({
+      v: 1,
+      vid: vid,
+      salt: cred.salt || prev.salt || '',
+      hash: cred.hash || prev.hash || '',
+      // Enough to paint the dashboard header before the catalog syncs.
+      card: {
+        name:  v.name  || prevCard.name  || '',
+        sub:   v.sub   || prevCard.sub   || '',
+        emoji: v.emoji || prevCard.emoji || '🏪',
+        logo:  logo !== null ? logo : (prevCard.logo || ''),
+        category: VENDORS[vid] ? vendorCat(v) : (prevCard.category || 'food')
+      },
+      exp: Date.now() + LF_SESS_DAYS*86400000
+    }));
+  }catch(e){}
+}
+
+function lfReadVendorSession(){
+  try{
+    const raw = localStorage.getItem(LF_SESS_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s || !s.vid) return null;
+    if(!(Number(s.exp) > Date.now())){ lfClearVendorSession(); return null; }
+    return s;
+  }catch(e){ return null; }
+}
+
+/* The signed-in vendor id for code that runs outside the app's own state —
+   the OneSignal binding and the push diagnostics both need it before boot()
+   has necessarily run. Falls back to the pre-v56 key on a device that hasn't
+   been migrated yet. */
+function lfSessionVendorId(){
+  try{
+    const s = lfReadVendorSession();
+    if(s && s.vid) return s.vid;
+    return localStorage.getItem('lf-vendorId') || '';
+  }catch(e){ return ''; }
+}
+
+function lfClearVendorSession(){
+  try{
+    localStorage.removeItem(LF_SESS_KEY);
+    localStorage.removeItem('lf-vendorId');   // pre-v56 keys
+    localStorage.removeItem('lf-vendorPin');
+  }catch(e){}
+}
+
+/* Pre-v56 devices stored {lf-vendorId, lf-vendorPin}. Upgrade one to a
+   hash-only session the first time we actually have a credential record to
+   check it against, then wipe the plaintext PIN off the disk. If we can't
+   check yet — offline, hashes not synced — leave it exactly as it is and try
+   again next sync. Never delete a session we merely failed to verify. */
+async function lfMigrateLegacyVendorSession(){
+  try{
+    if(lfReadVendorSession()) return false;
+    const vid = localStorage.getItem('lf-vendorId');
+    const pin = localStorage.getItem('lf-vendorPin');
+    if(!vid || !pin) return false;
+    const cred = VENDOR_PIN_HASHES[vid];
+    if(!cred || !cred.salt || !cred.hash) return false;   // can't tell yet — keep waiting
+    if((await lfHashPass(pin, cred.salt)) !== cred.hash){
+      lfClearVendorSession();                              // definitively wrong
+      return false;
+    }
+    lfSaveVendorSession(vid);
+    try{ localStorage.removeItem('lf-vendorId'); localStorage.removeItem('lf-vendorPin'); }catch(e){}
+    return true;
+  }catch(e){ return false; }
+}
+
+/* Called after every sync. The ONLY things that may end a session are a
+   changed PIN or a deleted vendor — both of which need a real answer from
+   the database. A missing record means "not synced yet", not "invalid". */
+function lfRevalidateVendorSession(){
+  const s = lfReadVendorSession();
+  if(!s) return;
+  const cred = VENDOR_PIN_HASHES[s.vid];
+  if(cred && cred.hash && s.hash && cred.hash !== s.hash){
+    lfEndVendorSession('🔐 Your PIN was changed — please sign in again');
+  }
+}
+
+/* One place that tears a session down, so the UI can never be left showing a
+   dashboard for a vendor we just signed out. */
+function lfEndVendorSession(msg){
+  const wasActive = !!activeVendorId;
+  lfClearVendorSession();
+  activeVendorId = null;
+  try{ updateAppBadge(0); }catch(e){}
+  if(wasActive){
+    try{ goPage('p-vlogin'); }catch(e){}
+    try{ const p=el('v-pin'); if(p) p.value=''; }catch(e){}
+  }
+  if(msg){ try{ showToast(msg); }catch(e){} }
+}
+
+/* ── The single path into the vendor portal ──────────────────────────────
+   Login and session-restore used to be two hand-copied copies of this, and
+   they drifted: the restore copy never called applyVendorChrome(), so a
+   cleaning provider who reopened the app got a dashboard headed "Vendor
+   Portal / Incoming Orders / My Menu" with a delivery-fee field they don't
+   have. One function, both callers — that class of drift can't come back. */
+function lfEnterVendorPortal(vid, opts){
+  opts = opts || {};
+  const card = opts.card || null;
+  const v = VENDORS[vid] || null;
+  const pick = (k, dflt) => (v && v[k]) || (card && card[k]) || dflt;
+
+  activeVendorId = vid;
+  try{ el('v-dname').textContent  = pick('name','My Store'); }catch(e){}
+  try{ el('v-dsub').textContent   = pick('sub',''); }catch(e){}
+  try{ el('v-demoji').textContent = pick('emoji','🏪'); }catch(e){}
+  try{ applyVendorLogo(pick('logo','')); }catch(e){}
+  // Falls back to the cached category so a cleaner restoring offline — before
+  // VENDORS has synced — still gets the cleaning labels, not the food ones.
+  try{ applyVendorChrome(vid, card && card.category); }catch(e){}
+  try{ updateVendorDash(vid); }catch(e){}
+  try{ renderVendorMenu(vid); }catch(e){}
+  try{ updateStoreStatusUI(); }catch(e){}
+  try{ renderVendorPayments(); }catch(e){}
+  goPage('p-vdash');
+  try{ refreshBadge(); }catch(e){}
+  if(opts.greet) showToast('Welcome back, '+pick('name','')+'! 👋');
+}
+
 async function vendorLogin(){
   const sel=document.getElementById('v-sel').value;
   const pin=document.getElementById('v-pin').value;
@@ -5532,8 +5714,6 @@ async function vendorLogin(){
     notifGranted = true;
   }
   activeVendorId=sel;
-  // Persist vendor session so app reopens to dashboard
-  try{ localStorage.setItem('lf-vendorId', sel); localStorage.setItem('lf-vendorPin', pin); }catch(e){}
   // Save this device's FCM token so the vendor receives orders even when logged out / app closed
   try{ await fcmSaveVendorToken(sel); }catch(e){ showToast('⚠️ FCM save error: '+(e&&e.message||e)); }
   // Request badge permission
@@ -5558,15 +5738,10 @@ async function vendorLogin(){
   }
   const v=VENDORS[sel];
   if(!v){showToast('⚠️ Vendor not found — contact admin');activeVendorId=null;return;}
-  el('v-dname').textContent=v.name;
-  el('v-dsub').textContent=v.sub;
-  el('v-demoji').textContent=v.emoji;
-  applyVendorLogo(v.logo||'');
-  applyVendorChrome(sel);   // v54: relabel the portal for this vendor's vertical
-  updateVendorDash(sel);
-  renderVendorMenu(sel);
-  updateStoreStatusUI();
-  renderVendorPayments();
+  // Persist the session so the app reopens straight to the dashboard. Written
+  // AFTER the vendor record is confirmed, so the cached display card is real.
+  lfSaveVendorSession(sel);
+  lfEnterVendorPortal(sel, {});
   // Force immediate sync to get latest orders from Firebase
   syncFromCloud();
   // Immediately notify about any unaccepted orders waiting
@@ -5576,8 +5751,6 @@ async function vendorLogin(){
     playPing();
     pendingOrders.forEach(o=>vendorNotifOrders.add(o.id)); // mark as notified
   }
-  goPage('p-vdash');
-  refreshBadge();
   showToast('Welcome back, '+v.name+'! 👋');
 }
 
@@ -5589,8 +5762,12 @@ async function vendorLogin(){
    so nothing on screen lies about what they're looking at.
    Called on login and on every vendor-tab navigation, because these pages are
    also reachable from a restored session. */
-function applyVendorChrome(vid){
-  const v = VENDORS[vid]; if(!v) return;
+function applyVendorChrome(vid, fallbackCat){
+  // fallbackCat (v56): a session restoring with no network has no VENDORS
+  // record yet, but the cached session card knows the vertical — enough to
+  // label the portal correctly instead of defaulting a cleaner to Food.
+  const v = VENDORS[vid] || (fallbackCat ? { id: vid, category: fallbackCat } : null);
+  if(!v) return;
   const m = mkt(v);
   const clean = isCleaning(v);
   const set=(id,txt)=>{ const e=el(id); if(e) e.textContent=txt; };
@@ -5634,7 +5811,7 @@ function applyVendorChrome(vid){
 
 function vendorLogout(){
   activeVendorId=null;
-  try{ localStorage.removeItem('lf-vendorId'); localStorage.removeItem('lf-vendorPin'); }catch(e){}
+  lfClearVendorSession();
   document.getElementById('v-sel').value='';
   document.getElementById('v-pin').value='';
   updateAppBadge(0);
@@ -6526,7 +6703,8 @@ async function testVendorPush(){
 function renderVendorPayments(){
   if(!activeVendorId) return;
   const list = el('v-payments-list'); if(!list) return;
-  const payments = VENDORS[activeVendorId].payments||[];
+  // v56: a restored-offline session can be active before VENDORS has synced.
+  const payments = (VENDORS[activeVendorId]||{}).payments||[];
   if(!payments.length){
     list.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center;padding:4px 0">No payment accounts yet</div>';
     return;
@@ -9011,6 +9189,12 @@ function applyData(d){
   // Also clean up in case a deleted vendor somehow still exists locally
   tombstoned.forEach(k=>{
     delete VENDORS[k]; delete MENU[k]; delete VENDOR_PIN_HASHES[k]; delete LF_LEGACY_PINS[k];
+    // v56: a deleted vendor's saved session has to go too, or their device
+    // keeps restoring straight into a dashboard for a store that's gone.
+    try{
+      const _s = lfReadVendorSession();
+      if(_s && _s.vid === k){ lfEndVendorSession('This store was removed — signed out'); return; }
+    }catch(e){}
     if(activeVendorId===k) activeVendorId=null;
   });
 
@@ -9132,6 +9316,9 @@ async function syncFromCloud(){
     if(_pendingWrites > 0 || _lastWriteDoneAt > _issuedAt) return;
     applyData(d);
     lastSyncTime = Date.now();
+    // v56: the only place a live PIN rotation can reach a signed-in device.
+    try{ lfRevalidateVendorSession(); }catch(e){}
+    try{ await lfMigrateLegacyVendorSession(); }catch(e){}
   }catch(e){
     if(Date.now() - (window._lastSyncErrLog||0) > 30000){
       console.warn('sync: connection issue, retrying automatically');
@@ -9262,6 +9449,22 @@ function refreshVisible(){
   loadHeroStats();
   applyHeroStats(true);
   registerServiceWorker();
+
+  /* ═══ v56: restore the vendor session FIRST, before touching the network ═══
+     This used to run after `await tryBoot()`, which retries a failing fetch
+     five times at 1.5s apart. On a slow connection the vendor watched the
+     customer home screen for seven seconds and reasonably concluded they had
+     been logged out. The session record carries everything the dashboard
+     needs to paint, so there is nothing here worth waiting for a server. */
+  const _sess = lfReadVendorSession();
+  if(_sess){
+    try{
+      lfEnterVendorPortal(_sess.vid, { card: _sess.card, greet: true });
+      lfSaveVendorSession(_sess.vid);   // slide the 30-day expiry forward
+      setTimeout(()=>{ try{ fcmSaveVendorToken(_sess.vid); }catch(e){} }, 2000);
+    }catch(e){ console.warn('vendor session restore failed:', e); }
+  }
+
   // splash covers this — toast silenced (v-polish #3)
   // Boot with retry — Firebase free tier can have a slow cold start
   let bootAttempts = 0;
@@ -9295,53 +9498,30 @@ function refreshVisible(){
   // ═══ Fade out the app-open splash once data is ready (v-polish #3) ═══
   try{ if(window.lfHideSplash) window.lfHideSplash(); }catch(e){}
   // ═══ Open straight to the food-browsing home (v-polish #4: landing page retired) ═══
-  try{ goCust(); }catch(e){}
-  // Restore vendor session if they were logged in before closing the app
-  try{
-    const savedVendorId = localStorage.getItem('lf-vendorId');
-    const savedVendorPin = localStorage.getItem('lf-vendorPin');
-    if(savedVendorId && savedVendorPin){
-      const pinOk = await verifyVendorPin(savedVendorId, savedVendorPin);
-      if(pinOk){
-        activeVendorId = savedVendorId;
-        function _doVendorRestore(vid, vendor){
-          el('v-dname').textContent = vendor.name;
-          el('v-dsub').textContent = vendor.sub;
-          el('v-demoji').textContent = vendor.emoji;
-          applyVendorLogo(vendor.logo||'');
-          updateVendorDash(vid);
-          renderVendorMenu(vid);
-          updateStoreStatusUI();
-          renderVendorPayments();
-          goPage('p-vdash');
-          refreshBadge();
-          showToast('Welcome back, '+vendor.name+'! 👋');
-          // Re-save FCM token silently (token may have rotated since last login)
-          setTimeout(()=>{ try{ fcmSaveVendorToken(vid); }catch(e){} }, 2000);
-        }
-        const v = VENDORS[savedVendorId];
-        if(v){
-          _doVendorRestore(savedVendorId, v);
-        } else {
-          // Vendor data not in local cache yet — wait one sync cycle and retry
-          setTimeout(()=>{
-            const v2 = VENDORS[savedVendorId];
-            if(v2 && activeVendorId === savedVendorId){
-              _doVendorRestore(savedVendorId, v2);
-            } else {
-              activeVendorId = null;
-              localStorage.removeItem('lf-vendorId');
-              localStorage.removeItem('lf-vendorPin');
-            }
-          }, 3500);
-        }
-      } else {
-        // PIN mismatch or vendor removed — clear saved session
-        localStorage.removeItem('lf-vendorId');
-        localStorage.removeItem('lf-vendorPin');
+  // …unless a vendor session was restored above — goCust() nulls activeVendorId
+  // and would drop the vendor back onto the customer home they just skipped.
+  if(!_sess){ try{ goCust(); }catch(e){} }
+  else {
+    // Catalog has landed now: repaint with the real vendor record (the first
+    // paint used the cached card) and pick up anything waiting. Only if the
+    // vendor is still sitting on the dashboard — boot takes a couple of
+    // seconds and they may already have tapped through to another screen.
+    try{
+      const _still = document.querySelector('.page.on');
+      if(VENDORS[_sess.vid] && activeVendorId === _sess.vid && _still && _still.id === 'p-vdash'){
+        lfEnterVendorPortal(_sess.vid, { card: _sess.card });
       }
+      lfRevalidateVendorSession();
+    }catch(e){ console.warn('vendor session refresh failed:', e); }
+  }
+  // Upgrade a pre-v56 {vendorId, PIN} pair to a hash-only session, now that
+  // the credential records have synced and we can actually verify it.
+  try{
+    if(await lfMigrateLegacyVendorSession()){
+      const s2 = lfReadVendorSession();
+      if(s2 && !activeVendorId) lfEnterVendorPortal(s2.vid, { card: s2.card, greet: true });
     }
-  }catch(e){ console.warn('vendor session restore failed:', e); }
+  }catch(e){ console.warn('legacy vendor session migration skipped:', e); }
   // Option A: do NOT auto-open any past order tracker on launch.
   // The app always starts on the landing/home page. Customers can reach
   // any order via "My Orders". We still load vendor contact data in the
@@ -10195,7 +10375,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 62; // ← bump this each release (and version.json)
+  const APP_VERSION = 63; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -10434,7 +10614,7 @@ setInterval(updateClock,15000);
       }
       window._osSubId = id;
       var vid = '';
-      try{ vid = localStorage.getItem('lf-vendorId') || ''; }catch(e){}
+      try{ vid = lfSessionVendorId(); }catch(e){}
       _paintHealth('#34D399', 'Notifications ACTIVE' + (vid ? ' for ' + vid : '') + ' · id …' + String(id).slice(-6) + ' · Reminder: turn OFF Do Not Disturb to hear alerts.');
     }catch(e){ console.warn('[OneSignal] health check failed:', e); }
   }
@@ -10481,7 +10661,7 @@ setInterval(updateClock,15000);
         try{ await OneSignal.User.PushSubscription.optIn(); }catch(e){ console.warn('[OneSignal] optIn:', e); }
         // 3. Re-bind vendor identity so the Cloud Function can target this device
         try{
-          var vid = localStorage.getItem('lf-vendorId');
+          var vid = lfSessionVendorId();
           if(vid){ await OneSignal.login(vid); }
         }catch(e){ console.warn('[OneSignal] re-login:', e); }
         setTimeout(function(){ OneSignalDeferred.push(_osUpdateHealth); }, 800);
@@ -10527,7 +10707,7 @@ setInterval(updateClock,15000);
         'window._osSubId: ' + (window._osSubId || '(none)'),
         '',
         '-- Vendor session --',
-        'lf-vendorId: ' + (localStorage.getItem('lf-vendorId') || '(none)'),
+        'vendor session: ' + (lfSessionVendorId() || '(none)'),
         '',
         '-- Current health strip --',
         'Text: ' + (document.getElementById('v-push-txt') ? document.getElementById('v-push-txt').textContent : '(not on dashboard)'),
@@ -10622,7 +10802,7 @@ setInterval(updateClock,15000);
 
       // If a vendor session is already active (restored from localStorage), bind it
       try{
-        var savedVid = localStorage.getItem('lf-vendorId');
+        var savedVid = lfSessionVendorId();
         if(savedVid){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
     }catch(e){

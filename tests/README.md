@@ -6,7 +6,7 @@ npm install
 ./run.sh
 ```
 
-126 checks across four suites, all driving the real `index.html` in headless
+231 checks across seven suites, all driving the real `index.html` in headless
 Chromium.
 
 | Suite | Covers |
@@ -15,6 +15,9 @@ Chromium.
 | `test-cleaning.js` | The cleaning vertical, end to end: browse → book → provider accepts → status walk → history. |
 | `test-cross.js` | Both verticals in one app, plus booking edge cases and legacy-record defaults. |
 | `test-security.js` | XSS, credential storage, admin auth, duration-aware slot conflicts, earnings maths. |
+| `test-smoke.js` | Every page renders, chat, order archiving, admin flows. |
+| `test-orderfail.js` | Order confirmation only after the backend write lands. |
+| `test-session.js` | Vendor session persistence: offline reopen, revocation, expiry, pre-v56 migration. |
 
 ## The one rule
 
