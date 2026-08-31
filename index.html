@@ -2706,7 +2706,7 @@ select option { color: var(--t1); background: var(--w); }
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
   <div class="topbar" style="display:flex;align-items:center;gap:10px">
     <button class="back" onclick="goBack()">←</button>
-    <div><div style="font-size:17px;font-weight:700">Book a Cleaning</div><div style="font-size:12px;color:var(--t3);margin-top:1px" id="bk-vendor-name"></div></div>
+    <div><div id="bk-title" style="font-size:17px;font-weight:700">Book a Service</div><div style="font-size:12px;color:var(--t3);margin-top:1px" id="bk-vendor-name"></div></div>
   </div>
   <div class="scrl">
     <!-- Selected service -->
@@ -2731,7 +2731,7 @@ select option { color: var(--t1); background: var(--w); }
       <input class="finp" id="bk-building" type="text" placeholder="e.g. Tower 3" autocomplete="off">
       <label class="flbl">Unit number</label>
       <input class="finp" id="bk-unit" type="text" placeholder="e.g. 1204" autocomplete="off">
-      <label class="flbl">Mobile number <span style="font-weight:500;color:var(--t3)">(so the cleaner can reach you)</span></label>
+      <label class="flbl">Mobile number <span style="font-weight:500;color:var(--t3)" id="bk-phone-hint">(so the provider can reach you)</span></label>
       <input class="finp" id="bk-phone" type="tel" inputmode="tel" placeholder="e.g. 09171234567" autocomplete="tel">
       <label class="flbl">Special instructions <span style="font-weight:500;color:var(--t3)">(optional)</span></label>
       <textarea class="finp" id="bk-notes" rows="3" maxlength="300" placeholder="e.g. Please call before entering." style="resize:none;line-height:1.45"></textarea>
@@ -3946,7 +3946,7 @@ const MARKETPLACES = {
     catHint:'e.g. Split type, Window type, Repair', emojiHint:'❄️',
     defaultVendorEmoji:'❄️', defaultItemEmoji:'❄️',
     histEmptySub:'Book a technician from the Aircon tab on Home.',
-    workerNoun:'Technician', jobNoun:'Aircon service'
+    workerNoun:'Technician', jobNoun:'Aircon Service'
   }
 };
 const MKT_ORDER = ['food','cleaning','aircon'];   // display order in the category switcher
@@ -4544,15 +4544,21 @@ function ffSearch(q){
           <span id="ffsr-${i.vendorId}-${ffKey(i.name)}" onclick="event.stopPropagation()">${ffStepperHTML(i.vendorId,i.name,i.emoji,i.price)}</span>
         </div>`).join('');
     }
-    if(_svcs.length){
-      html+='<div class="ff-sr-head">Cleaning Services</div>';
-      html+=_svcs.map(i=>`
+    /* v57: services are grouped by their OWN vertical. This head was the
+       literal string "Cleaning Services", so a search for "Split Type"
+       returned aircon jobs filed under Cleaning. MKT_ORDER keeps the groups
+       in the same order as the tabs. */
+    MKT_ORDER.filter(k=>MARKETPLACES[k].scheduled).forEach(k=>{
+      const group = _svcs.filter(i=>vendorCat({category:i.vendorCat})===k);
+      if(!group.length) return;
+      html+='<div class="ff-sr-head">'+esc(MARKETPLACES[k].label)+'</div>';
+      html+=group.map(i=>`
         <div class="ff-sr-row" onclick="startBooking('${i.vendorId}','${escJs(i.id)}')">
           <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
           <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}${i.dur?' · ⏱ '+lfFmtDur(i.dur):''}</div></div>
           <span class="ff-sr-price">${lfPrice(i)}</span>
         </div>`).join('');
-    }
+    });
   }
   html+='</div>';
   wrap.innerHTML=html;
@@ -5267,6 +5273,15 @@ function startBooking(vid, itemId){
   booking = { vid, itemId, date, time };
 
   el('bk-vendor-name').textContent = v.name;
+  /* v57: the booking page was headed "Book a Cleaning" in the markup, so an
+     aircon customer was told they were booking a clean. Worded per vertical
+     from the registry, like everything else. */
+  const _bm = mkt(v);
+  const _bt = el('bk-title');
+  if(_bt) _bt.textContent = 'Book ' + (/^[AEIOU]/i.test(_bm.label) ? 'an ' : 'a ') +
+                            _bm.label.replace(/ Services$/,'');
+  const _bh = el('bk-phone-hint');
+  if(_bh) _bh.textContent = '(so the '+(_bm.workerNoun||'provider').toLowerCase()+' can reach you)';
   // Carry over whatever the customer already told us on a previous order so
   // they aren't retyping their own unit every single time (spec §15).
   bkPrefillIdentity();
@@ -6777,12 +6792,18 @@ async function notifOnStatusChange(order, newStatus){
   const where = lfLocationOf(order);
   const isClean = orderScheduled(order);
 
+  // v57: worded from the vertical's own nouns. These were hardcoded to
+  // cleaning, so an aircon customer was told "Your cleaner is on the way".
+  const _M = orderMkt(order);
+  const _worker = (_M.workerNoun || 'Provider').toLowerCase();
+  const _job    = _M.jobNoun || 'Service';
+  const _svcName = (order.items && order.items[0] && order.items[0].name) || _job.toLowerCase();
   const statusMsgs = isClean ? {
-    accepted:  { title:'Booking Accepted! ✅', body:`${vname} accepted your cleaning booking. Scheduled for ${lfFmtDate(order.svcDate)} at ${order.svcTime?fmtTime(order.svcTime):'the agreed time'}.`, type:'success' },
-    preparing: { title:'Your cleaner is on the way 🚗', body:`${vname} is heading to ${where} now.`, type:'status' },
-    ready:     { title:'Cleaning has started 🧹', body:`${vname} has started your ${(order.items&&order.items[0]&&order.items[0].name)||'cleaning service'}.`, type:'status' },
-    delivered: { title:'Cleaning completed! ✨', body:`${vname} has finished your cleaning service at ${where}. Thanks for booking through LokalFinder!`, type:'success' },
-    declined:  { title:'Booking Rejected 😞', body:`Your booking ${order.id} was rejected by ${vname}. Try another provider or a different time slot.`, type:'warning' },
+    accepted:  { title:'Booking Accepted! ✅', body:`${vname} accepted your booking. Scheduled for ${lfFmtDate(order.svcDate)} at ${order.svcTime?fmtTime(order.svcTime):'the agreed time'}.`, type:'success' },
+    preparing: { title:`Your ${_worker} is on the way 🚗`, body:`${vname} is heading to ${where} now.`, type:'status' },
+    ready:     { title:`${_job} has started ${_M.icon}`, body:`${vname} has started your ${_svcName}.`, type:'status' },
+    delivered: { title:`${_job} completed! ✨`, body:`${vname} has finished your ${_svcName} at ${where}. Thanks for booking through LokalFinder!`, type:'success' },
+    declined:  { title:'Booking Cancelled 😞', body:`Your booking ${order.id} was cancelled by ${vname}. Try another provider or a different time slot.`, type:'warning' },
   } : {
     accepted:  { title:'Order Accepted! ✅', body:`${vname} confirmed your order ${order.id}. They're getting started!`, type:'success' },
     preparing: { title:'Being Prepared 👨‍🍳', body:`Your order from ${vname} is being cooked right now.`, type:'status' },
@@ -9274,13 +9295,14 @@ function updateTrackerFromStatus(){
   // "Declined"/"Delivered" titles leaking onto a fresh order).
   // v54: one copy table per vertical, replacing the old if/else ladder that
   // hardcoded "meal" and "vendor" into every branch.
+  const _hm = orderMkt(o);
   const HEAD = _clean ? {
     new:       ['Booking Placed! 🎉',   'Waiting for the provider to confirm your booking.', '✓'],
     accepted:  ['Booking Confirmed! 📅','Scheduled for '+lfFmtDate(o.svcDate)+(o.svcTime?' at '+fmtTime(o.svcTime):'')+'.', '📅'],
-    preparing: ['Cleaner On the Way 🚗','They are heading to your unit now.', '🚗'],
-    ready:     ['Cleaning In Progress 🧹','Work has started in your unit.', '🧹'],
-    delivered: ['Cleaning Completed! ✨','Thanks for booking through LokalFinder!', '✨'],
-    declined:  ['Booking Rejected 😞',  'The provider could not take this booking.', '😞'],
+    preparing: [(_hm.workerNoun||'Provider')+' On the Way 🚗','They are heading to your unit now.', '🚗'],
+    ready:     [(_hm.jobNoun||'Service')+' In Progress '+_hm.icon,'Work has started in your unit.', _hm.icon],
+    delivered: [(_hm.jobNoun||'Service')+' Completed! ✨','Thanks for booking through LokalFinder!', '✨'],
+    declined:  ['Booking Cancelled 😞',  'The provider could not take this booking.', '😞'],
     cancelled: ['Booking Cancelled',    'You cancelled this booking.', '🚫'],
   } : {
     new:       ['Order Placed! 🎉',     'Waiting for the vendor to accept your order.', '✓'],
@@ -10679,7 +10701,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 64; // ← bump this each release (and version.json)
+  const APP_VERSION = 65; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

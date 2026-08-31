@@ -223,7 +223,7 @@ that guard ever fails, someone has hardcoded a vertical again.
   provider's own earnings screen is intentionally left showing gross. Showing
   a worker a net figure the app cannot enforce would be a lie.
 
-**Testing:** `tests/` holds a Playwright suite — 289 checks across eight files,
+**Testing:** `tests/` holds a Playwright suite — 299 checks across eight files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.

@@ -168,7 +168,64 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   check('Tracker says "Technician on the way", not "Cleaner"',
         succ.tt3==='Technician on the way', succ.tt3);
   check('Work-in-progress step named for the vertical',
-        /Aircon service in progress/.test(succ.tt4), succ.tt4);
+        /aircon service in progress/i.test(succ.tt4), succ.tt4);
+
+  // ── 5b. Customer-facing wording must never say "cleaner" to an aircon
+  // customer. Every string below was found hardcoded to cleaning during the
+  // pre-deploy audit — 289 tests passed while the app told an aircon customer
+  // a cleaner was on the way. Wording IS the product here, so assert it.
+  const words = await page.evaluate(() => ({
+    bookTitle: el('bk-title') ? el('bk-title').textContent : '(missing)',
+    phoneHint: el('bk-phone-hint') ? el('bk-phone-hint').textContent : '(missing)',
+  }));
+  check('Booking page is headed for aircon, not "Book a Cleaning"',
+        /Aircon/.test(words.bookTitle) && !/Book a Cleaning$/.test(words.bookTitle), words.bookTitle);
+  check('Phone hint names the technician, not the cleaner',
+        /technician/i.test(words.phoneHint), words.phoneHint);
+
+  // Walk the statuses and read the tracker header + the notification the
+  // customer actually receives at each step.
+  const oidEarly = await page.evaluate(() => lastPlacedOrderId);
+  const walk = {};
+  for(const st of ['accepted','preparing','ready','delivered']){
+    walk[st] = await page.evaluate(async ([id,s]) => {
+      await updateOrderStatus(id, s);
+      const o = orders.find(x=>x.id===id);
+      paintSuccessChrome(o); updateTrackerFromStatus();
+      return { head: el('suc-ttl').textContent, sub: el('suc-sub').textContent };
+    }, [oidEarly, st]);
+  }
+  check('Tracker header says "Technician On the Way", not "Cleaner"',
+        /Technician On the Way/.test(walk.preparing.head), walk.preparing.head);
+  check('Tracker header says "Aircon Service In Progress", not "Cleaning"',
+        /Aircon Service In Progress/.test(walk.ready.head), walk.ready.head);
+  check('Tracker header says "Aircon Service Completed", not "Cleaning Completed"',
+        /Aircon Service Completed/.test(walk.delivered.head), walk.delivered.head);
+
+  const custNotifs = await page.evaluate(id =>
+    fetch(FB_URL+'/'+ROOM_KEY+'/notifs/'+String('cust_'+id).replace(/[^a-zA-Z0-9_-]/g,'_')+'.json')
+      .then(r=>r.json()).then(j=>Object.values(j||{}).map(n=>n.title+' :: '+n.body)), oidEarly);
+  const joined = custNotifs.join(' | ');
+  check('Customer alerts never mention a "cleaner" on an aircon booking',
+        !/cleaner/i.test(joined), joined);
+  check('Customer alert names the technician', /technician/i.test(joined), joined);
+  check('Customer alerts speak of the aircon service', /Aircon Service/i.test(joined), joined);
+
+  // Search must file aircon under its own heading, not "Cleaning Services".
+  const srch = await page.evaluate(async () => {
+    goCust();
+    filterMkt(document.querySelector('#mkt-row .mkt-tab[data-mkt="all"]'), 'all');
+    const si = el('ff-search-input'); si.value='Window Type'; ffSearch('Window Type');
+    await new Promise(r=>setTimeout(r,250));
+    const wrap = el('ff-search-wrap');
+    return { heads: [...wrap.querySelectorAll('.ff-sr-head')].map(h=>h.textContent),
+             txt: wrap.textContent.replace(/\s+/g,' ').slice(0,120) };
+  });
+  check('Search groups aircon services under "Aircon Cleaning"',
+        srch.heads.includes('Aircon Cleaning'), srch.heads.join(' | '));
+  check('Search does NOT file aircon under "Cleaning Services"',
+        !srch.heads.includes('Cleaning Services'), srch.heads.join(' | '));
+  await page.evaluate(() => { ffClearSearch(); goPage('p-csuccess'); });
 
   // ── 6. Provider side: NEW BOOKING -> accept -> complete ───────────
   const dbo = Object.values(H.DB().lokalfinder_grass?.orders || {})[0];
@@ -207,6 +264,11 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   check('Today\'s schedule strip shown to the provider', portal.sched!=='none', String(portal.sched));
 
   const oid = await page.evaluate(() => lastPlacedOrderId);
+  // Reset to 'new' first: the wording walk above already drove this booking
+  // to delivered, and re-asserting Accept from a completed job would pass
+  // vacuously.
+  await page.evaluate(async id => { await updateOrderStatus(id,'new'); }, oid);
+  await page.waitForTimeout(400);
   await page.evaluate(async id => { await updateOrderStatus(id,'accepted'); }, oid);
   await page.waitForTimeout(600);
   const acc = await page.evaluate(id => {
