@@ -123,9 +123,19 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     // Pin the provider open, as the cleaning suite does. Sparkle's seeded
     // hours are 08:00-18:00, so without this the run passes in the afternoon
     // and fails in the evening on a closed store.
+    //
+    // The await pushState() is load-bearing and was missing: pinning only the
+    // in-memory copy left the CLOUD copy on the seeded hours, so whenever the
+    // 3s sync happened to land between the failed submit and the retry, it
+    // restored 08:00-18:00 and the retry was correctly refused with "just
+    // closed". That made this suite fail ~1 run in 3 outside business hours,
+    // on main as well — a genuine flake, not a product bug. The cleaning
+    // suite already pushes for exactly this reason.
     VENDORS.sparkle.openTime='00:00'; VENDORS.sparkle.closeTime='23:59';
     VENDORS.sparkle.closedDays=[]; VENDORS.sparkle.active=true;
     VENDORS.sparkle.suspended=false; VENDORS.sparkle.manualOverride=false;
+    VENDORS.sparkle.manualUntil=0;
+    await pushState();
     startBooking('sparkle','sp1'); bkPickDate(key);
     const slots = lfSlotsFor(VENDORS.sparkle, key, 120).filter(s=>!s.taken);
     if(slots.length) bkPickTime(slots[0].time);

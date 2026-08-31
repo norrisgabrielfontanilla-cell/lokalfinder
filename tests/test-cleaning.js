@@ -32,11 +32,20 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   const nav = await page.evaluate(() => ({
     bottomNav: [...document.querySelectorAll('#p-chome .bnav > div')].map(d=>d.querySelector('span:last-child')?.textContent),
     mktTabs: [...document.querySelectorAll('#mkt-row .mkt-tab')].map(t=>t.getAttribute('data-mkt')),
+    expected: ['all'].concat(MKT_ORDER),
   }));
   check('No extra bottom-nav button added for Cleaning',
         nav.bottomNav.join(',')==='Home,Feed,Orders,Alerts', nav.bottomNav.join(','));
-  check('Single directory exposes All / Food / Cleaning',
-        nav.mktTabs.join(',')==='all,food,cleaning', nav.mktTabs.join(','));
+  // v57: the tabs are generated from MKT_ORDER, so assert they MATCH the
+  // registry rather than a frozen list. Hardcoding 'all,food,cleaning' here
+  // just meant this test had to be edited every time a vertical was added,
+  // which tests nothing. What matters is that Cleaning is a tab in the ONE
+  // directory and not a fourth bottom-nav button — both still checked.
+  check('Vertical tabs are generated from the registry, in order',
+        nav.mktTabs.join(',')===nav.expected.join(','),
+        nav.mktTabs.join(',')+' vs '+nav.expected.join(','));
+  check('Cleaning is a tab inside the single directory',
+        nav.mktTabs.includes('cleaning'), nav.mktTabs.join(','));
 
   // ── 2. Customer taps "Cleaning" ───────────────────────────────────
   await page.click('#mkt-row .mkt-tab[data-mkt="cleaning"]');
@@ -160,7 +169,7 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     cancel: el('cancel-order-btn').textContent, td3: el('td3').textContent, tt3: el('tt3').textContent,
   }));
   check('Success screen speaks "booking"',
-        succ.ttl==='Booking Placed! 🎉' && succ.oidLbl==='🧾 Booking ID:' && succ.unitLbl==='📍 Clean at:' &&
+        succ.ttl==='Booking Placed! 🎉' && succ.oidLbl==='🧾 Booking ID:' && succ.unitLbl==='📍 Service at:' &&
         succ.trkHd==='Booking Tracker' && succ.tt1==='Booking Received' && succ.chat==='Chat with Provider' &&
         succ.cancel==='Cancel Booking', JSON.stringify(succ));
   check('Location shows Tower 3 / Unit 1204', succ.unit==='Tower 3 / Unit 1204', succ.unit);

@@ -2292,9 +2292,9 @@ select option { color: var(--t1); background: var(--w); }
     <!-- v54: THE vendor directory switcher. One Vendors experience, category
          separation inside it — deliberately NOT a second nav button. -->
     <div class="mkt-row" id="mkt-row">
+      <!-- v57: built from MKT_ORDER by lfBuildMktTabs(). Only "All" is markup;
+           adding a vertical to the registry adds its tab automatically. -->
       <div class="mkt-tab on" data-mkt="all" onclick="filterMkt(this,'all')">All</div>
-      <div class="mkt-tab" data-mkt="food" onclick="filterMkt(this,'food')">🍽️ Food</div>
-      <div class="mkt-tab" data-mkt="cleaning" onclick="filterMkt(this,'cleaning')">🧹 Cleaning</div>
     </div>
     <div style="display:flex;gap:12px;padding:10px 16px 4px;overflow-x:auto" id="cat-row">
       <div class="cat-chip on-cat" data-cat="all" onclick="filterCat(this,'all');heroPillPop(this)">
@@ -2878,8 +2878,6 @@ select option { color: var(--t1); background: var(--w); }
          separate account page for cleaning. -->
     <div class="mkt-row" id="hist-row">
       <div class="mkt-tab on" data-hist="all" onclick="filterHistory(this,'all')">All</div>
-      <div class="mkt-tab" data-hist="food" onclick="filterHistory(this,'food')">🍽️ Food</div>
-      <div class="mkt-tab" data-hist="cleaning" onclick="filterHistory(this,'cleaning')">🧹 Cleaning</div>
     </div>
     <div id="cust-history" style="padding:12px 0">
       <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">No orders yet</div><div class="empty-sub">Place your first order from any vendor inside GRASS.</div></div>
@@ -3008,6 +3006,22 @@ select option { color: var(--t1); background: var(--w); }
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
           <div id="v-desc-count" style="font-size:10px;color:rgba(255,255,255,.45)">300 left</div>
           <button onclick="saveStoreDesc()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save Info</button>
+        </div>
+      </div>
+
+      <!-- v57: cover photo — the wide banner at the top of the customer-facing
+           profile. Separate from the logo: the logo is a 200px square avatar,
+           this is a 1200x500 banner, and squeezing one into the other looked
+           broken for both. -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:6px">🖼️ COVER PHOTO <span style="font-weight:600;text-transform:none;letter-spacing:0;color:rgba(255,255,255,.4)">— the banner customers see first</span></div>
+        <div id="v-cover-preview" onclick="triggerCoverUpload()" title="Tap to change cover photo"
+          style="width:100%;height:96px;border-radius:10px;background:rgba(255,255,255,.12);border:2px dashed rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;background-size:cover;background-position:center">
+          <span id="v-cover-hint" style="font-size:11px;color:rgba(255,255,255,.6);font-weight:600">📷 Tap to add a cover photo</span>
+        </div>
+        <input type="file" id="v-cover-input" accept="image/*" style="display:none" onchange="handleCoverUpload(this)">
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button id="v-cover-remove" onclick="removeCoverPhoto()" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--ff)">Remove cover</button>
         </div>
       </div>
 
@@ -3382,6 +3396,10 @@ select option { color: var(--t1); background: var(--w); }
     <div id="new-item-dur-row" style="display:none">
       <label class="flbl">Typical duration (minutes)</label>
       <input class="finp" id="new-item-dur" type="number" min="15" max="600" step="15" inputmode="numeric" placeholder="e.g. 120">
+      <label class="flbl" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:13px">
+        <input type="checkbox" id="new-item-from" style="width:17px;height:17px;flex-shrink:0">
+        <span>Price varies — show as “Starting at ₱”</span>
+      </label>
     </div>
     <label class="flbl" id="new-photo-lbl">Food Photo</label>
     <div id="new-photo-preview" style="width:100%;height:140px;border-radius:10px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:13px;overflow:hidden;position:relative" onclick="document.getElementById('new-item-photo').click()">
@@ -3410,6 +3428,10 @@ select option { color: var(--t1); background: var(--w); }
     <div id="edit-item-dur-row" style="display:none">
       <label class="flbl">Typical duration (minutes)</label>
       <input class="finp" id="edit-item-dur" type="number" min="15" max="600" step="15" inputmode="numeric" placeholder="e.g. 120">
+      <label class="flbl" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:13px">
+        <input type="checkbox" id="edit-item-from" style="width:17px;height:17px;flex-shrink:0">
+        <span>Price varies — show as “Starting at ₱”</span>
+      </label>
     </div>
     <label class="flbl" id="edit-photo-lbl">Food Photo</label>
     <div id="edit-photo-preview" style="width:100%;height:140px;border-radius:10px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:13px;overflow:hidden;position:relative" onclick="document.getElementById('edit-item-photo').click()">
@@ -3508,6 +3530,9 @@ select option { color: var(--t1); background: var(--w); }
     <input class="finp" id="ev-pin" type="text" placeholder="Leave blank to keep current" maxlength="10" minlength="4" style="text-align:center;letter-spacing:6px;font-size:20px">
     <label class="flbl">Minimum Order (₱)</label>
     <input class="finp" id="ev-min" type="number" placeholder="e.g. 50">
+    <label class="flbl">Commission (%)</label>
+    <input class="finp" id="ev-commission" type="number" min="0" max="50" step="0.5" inputmode="decimal" placeholder="0 = no commission">
+    <div style="font-size:10.5px;color:var(--t3);margin:-7px 0 13px;line-height:1.45">Recorded on delivered sales and shown in Insights. Lokal Finder does not collect it — orders are settled directly with the provider.</div>
     <button class="cta" onclick="saveEditVendor()" style="margin-bottom:8px">Save Changes ✓</button>
     <button class="cta sec" onclick="closeModal('modal-editvendor')">Cancel</button>
   </div>
@@ -3757,7 +3782,12 @@ const VENDORS = {
   // ordinary vendor shape, so they flow through the existing vendor system.
   // openTime/closeTime double as the bookable window (see lfSlotsFor).
   sparkle:{id:'sparkle',name:'Sparkle Home Cleaning',sub:'GRASS Residences · Residential cleaning',emoji:'🧼',bg:'#E8F1FF',rating:'⭐ 4.9',min:'₱350',cats:['cleaning'],category:'cleaning',active:true,openTime:'08:00',closeTime:'18:00',closedDays:[0],desc:'Professional residential cleaning. Bonded, insured, and trusted by 40+ units inside GRASS. We bring our own supplies.'},
-  freshnest:{id:'freshnest',name:'FreshNest Cleaners',sub:'GRASS Residences · Deep clean specialists',emoji:'🧽',bg:'#EAFBF3',rating:'⭐ 4.7',min:'₱400',cats:['cleaning'],category:'cleaning',active:true,openTime:'09:00',closeTime:'17:00',closedDays:[0,6],desc:'Deep-clean and move-in/move-out specialists. Same-day slots when available.'}
+  freshnest:{id:'freshnest',name:'FreshNest Cleaners',sub:'GRASS Residences · Deep clean specialists',emoji:'🧽',bg:'#EAFBF3',rating:'⭐ 4.7',min:'₱400',cats:['cleaning'],category:'cleaning',active:true,openTime:'09:00',closeTime:'17:00',closedDays:[0,6],desc:'Deep-clean and move-in/move-out specialists. Same-day slots when available.'},
+  // v57: DEMO aircon providers. Same vendor shape again — no new fields, no
+  // new store. These are fixtures for testing the flow, NOT real supply: no
+  // aircon technician has been onboarded and no real booking has been placed.
+  coolbreeze:{id:'coolbreeze',name:'CoolBreeze Aircon Services',sub:'GRASS Residences · Aircon cleaning & repair',emoji:'❄️',bg:'#E6F4FF',rating:'⭐ 4.8',min:'₱800',cats:['aircon'],category:'aircon',active:true,openTime:'08:00',closeTime:'18:00',closedDays:[0],desc:'Split and window type cleaning, freon charging and minor repairs. Licensed technicians, 30-day workmanship warranty.'},
+  kooltech:{id:'kooltech',name:'KoolTech Aircon Care',sub:'GRASS Residences · Split type specialists',emoji:'🧊',bg:'#EEF2FF',rating:'⭐ 4.6',min:'₱750',cats:['aircon'],category:'aircon',active:true,openTime:'09:00',closeTime:'17:00',closedDays:[0],desc:'Split type deep cleaning and preventive maintenance. We lay down covers and clean up after every job.'}
 };
 
 const MENU = {
@@ -3807,6 +3837,22 @@ const MENU = {
     {id:'fn2',name:'Deep Cleaning',emoji:'✨',price:700,desc:'Deep scrub incl. appliances and baseboards',avail:true,dur:240,tag:'best'},
     {id:'fn3',name:'Post-Renovation Clean',emoji:'🧱',price:1500,desc:'Dust and debris removal after construction work',avail:true,dur:360},
     {id:'fn4',name:'Laundry Area Cleaning',emoji:'🧺',price:280,desc:'Utility and laundry area degrease and sanitise',avail:true,dur:60},
+  ],
+  // v57: aircon services. The PROVIDER writes these — Lokal Finder does not
+  // define fixed packages. `from:true` renders the price as "Starting at ₱X"
+  // for jobs that genuinely vary (a 2HP unit is not a 1HP unit).
+  coolbreeze:[
+    {id:'cb1',name:'Split Type Deep Cleaning',emoji:'❄️',price:1500,desc:'Full teardown, coil and blower wash, drain flush. Per indoor unit.',avail:true,dur:90,tag:'best'},
+    {id:'cb2',name:'Window Type Cleaning',emoji:'🪟',price:800,desc:'Pull-out, chemical wash and reinstall. Per unit.',avail:true,dur:60},
+    {id:'cb3',name:'General Cleaning (Basic)',emoji:'🧴',price:600,desc:'Filter and fin cleaning without teardown. Good every 3 months.',avail:true,dur:45},
+    {id:'cb4',name:'Freon Charging',emoji:'🌡️',price:1200,desc:'Leak check and refrigerant top-up.',avail:true,dur:60,from:true},
+    {id:'cb5',name:'Repair / Diagnostics',emoji:'🔧',price:500,desc:'On-site fault check. Parts quoted separately before any work.',avail:true,dur:60,from:true},
+  ],
+  kooltech:[
+    {id:'kt1',name:'Split Type Deep Cleaning',emoji:'❄️',price:1400,desc:'Indoor unit teardown and pressurised wash, covers laid down.',avail:true,dur:90,tag:'best'},
+    {id:'kt2',name:'Window Type Cleaning',emoji:'🪟',price:750,desc:'Chemical wash, drain clear and reinstall.',avail:true,dur:60},
+    {id:'kt3',name:'Preventive Maintenance',emoji:'🛠️',price:900,desc:'Quarterly check-up: filters, drainage, coolant pressure.',avail:true,dur:75},
+    {id:'kt4',name:'Installation / Relocation',emoji:'📦',price:2500,desc:'Mount or move a split type unit. Bracket and piping quoted on site.',avail:true,dur:180,from:true},
   ]
 };
 
@@ -3849,17 +3895,61 @@ const MARKETPLACES = {
     // cartBased: does buying here go through the single-vendor cart? Food does;
     // a scheduled service is reserved directly and never touches the cart.
     cartBased:true, scheduled:false, emptyIcon:'🍽️',
-    tagline:'Fresh from your neighbors'
+    tagline:'Fresh from your neighbors',
+    // ── v57: every string that used to be chosen by `=== "cleaning"` lives
+    // here instead, so a new vertical is a data change, not a code change.
+    providerNoun:'Vendor', portalKicker:'Vendor Portal',
+    sectionTitle:'🏪 Your Neighborhood Kitchens',
+    picksTitle:"🔥 Today's Picks",
+    picksSub:'Fresh from your neighbors. Order now before it sells out! 👀',
+    searchPlaceholder:'Search food inside GRASS…',
+    searchNoun:'dish', searchHead:'Dishes',
+    catHint:'e.g. BBQ, Filipino, Coffee', emojiHint:'🍖',
+    defaultVendorEmoji:'🏪', defaultItemEmoji:'🍽️',
+    histEmptySub:'Place your first order!',
+    // Scheduled-vertical wording. Unused for food, kept null so a stray read
+    // is obviously wrong rather than silently producing food copy.
+    workerNoun:null, jobNoun:null
   },
   cleaning: {
     id:'cleaning', label:'Cleaning Services', short:'Cleaning', icon:'🧹',
     itemsNoun:'Services', itemNoun:'Service', itemsNounLower:'services',
     txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
     cartBased:false, scheduled:true, emptyIcon:'🧹',
-    tagline:'Book a cleaner inside GRASS'
+    tagline:'Book a cleaner inside GRASS',
+    providerNoun:'Cleaning Provider', portalKicker:'Cleaning Provider Portal',
+    sectionTitle:'🧹 Cleaning Providers',
+    picksTitle:'🧴 Popular Services',
+    picksSub:'Book a trusted cleaner for your unit — pick a date and time that suits you.',
+    searchPlaceholder:'Search cleaning services…',
+    searchNoun:'service', searchHead:'Services',
+    catHint:'e.g. Residential, Deep clean', emojiHint:'🧼',
+    defaultVendorEmoji:'🧼', defaultItemEmoji:'🧹',
+    histEmptySub:'Book a cleaner from the Cleaning tab on Home.',
+    workerNoun:'Cleaner', jobNoun:'Cleaning'
+  },
+  /* ── v57: AIRCON. Added as one registry entry and nothing else. If this
+     needed new branching anywhere, the abstraction was leaking — that is the
+     test the next vertical (laundry, plumbing, electrical…) should also pass. */
+  aircon: {
+    id:'aircon', label:'Aircon Cleaning', short:'Aircon', icon:'❄️',
+    itemsNoun:'Services', itemNoun:'Service', itemsNounLower:'services',
+    txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
+    cartBased:false, scheduled:true, emptyIcon:'❄️',
+    tagline:'Book an aircon technician inside GRASS',
+    providerNoun:'Aircon Provider', portalKicker:'Aircon Provider Portal',
+    sectionTitle:'❄️ Aircon Specialists',
+    picksTitle:'❄️ Popular Aircon Services',
+    picksSub:'Split type, window type, general cleaning — pick a date and time that suits you.',
+    searchPlaceholder:'Search aircon services…',
+    searchNoun:'service', searchHead:'Services',
+    catHint:'e.g. Split type, Window type, Repair', emojiHint:'❄️',
+    defaultVendorEmoji:'❄️', defaultItemEmoji:'❄️',
+    histEmptySub:'Book a technician from the Aircon tab on Home.',
+    workerNoun:'Technician', jobNoun:'Aircon service'
   }
 };
-const MKT_ORDER = ['food','cleaning'];   // display order in the category switcher
+const MKT_ORDER = ['food','cleaning','aircon'];   // display order in the category switcher
 
 // Legacy-safe readers. A record with no category/kind predates v54 and is Food.
 function vendorCat(v){ const c = v && v.category; return (c && MARKETPLACES[c]) ? c : 'food'; }
@@ -3871,7 +3961,81 @@ function mkt(idOrVendor){
 // The vertical an ORDER belongs to, resolved through its vendor when possible
 // (the vendor is the authority; o.kind is the record of what it was at the time).
 function orderMkt(o){ return MARKETPLACES[orderKind(o)] || MARKETPLACES.food; }
-function isCleaning(v){ return vendorCat(v)==='cleaning'; }
+
+/* ── v57: CAPABILITY, NOT IDENTITY ──────────────────────────────────────
+   These replace isCleaning() and ~35 hand-written `=== 'cleaning'` checks.
+   Every one of those sites was really asking "is this booked with a date and
+   time rather than added to a cart?" — none of them cared that the vertical
+   was specifically cleaning. Asking about the capability means the aircon
+   vertical (and laundry, plumbing, electrical…) gets the right behaviour for
+   free, and nothing has to be hunted down and edited a second time.
+
+   The v54 note here used to claim "nothing below hardcodes the pair food and
+   cleaning". That was not true when it was written — the literals were spread
+   across the customer cards, search, tracker, vendor portal and admin. It is
+   true now, and lfAssertNoVerticalLeak() in the tests is what keeps it true. */
+function isScheduled(v){ return !!mkt(v).scheduled; }
+function orderScheduled(o){ return !!orderMkt(o).scheduled; }
+function isCartBased(v){ return !!mkt(v).cartBased; }
+
+/* ── v57: "Starting at" pricing ──────────────────────────────────────────
+   Some service work genuinely cannot be quoted flat — freon charging depends
+   on the leak, an installation depends on the piping run. An item with
+   `from:true` shows its price as a floor rather than a promise.
+
+   This is display only. The booking still RECORDS item.price, because that is
+   the number both sides agreed on at booking time and the number earnings and
+   admin totals are computed from; quoting the rest on site is a conversation
+   between the customer and the provider, and inventing a second "final price"
+   field would imply a settlement flow this app does not have. */
+/* ── v57: COMMISSION ─────────────────────────────────────────────────────
+   Per-provider rate, set by admin. Default 0: Lokal Finder is not taking a
+   cut today, and a non-zero default would quietly invent revenue in the
+   Insights report.
+
+   BE CLEAR ABOUT WHAT THIS IS. There is no payments integration — orders are
+   settled cash or GCash directly between customer and provider. This RECORDS
+   what a commission would come to on delivered sales so the founder can see
+   the number and invoice against it. It does not collect, deduct, or hold
+   anything, and the provider's earnings screen is deliberately unchanged:
+   showing them a net figure the app cannot actually enforce would be a lie
+   to the person doing the work. */
+const LF_COMMISSION_MAX = 50;
+function lfCommissionRate(v){
+  const r = Number(v && v.commission);
+  return (isFinite(r) && r > 0) ? Math.min(r, LF_COMMISSION_MAX) : 0;
+}
+function lfCommissionOn(v, sales){
+  return Math.round((Number(sales)||0) * lfCommissionRate(v) / 100);
+}
+
+function lfIsFrom(item){ return !!(item && item.from); }
+function lfPrice(item){      // compact — cards, search rows
+  return (lfIsFrom(item) ? 'From ₱' : '₱') + (item ? item.price : 0);
+}
+function lfPriceLong(item){  // roomier — provider profile, booking sheet
+  return (lfIsFrom(item) ? 'Starting at ₱' : '₱') + (item ? item.price : 0);
+}
+
+/* v57: the Home and History vertical tabs are GENERATED from MKT_ORDER.
+   They used to be three hand-written divs in each row, which is why adding a
+   vertical meant editing markup in two places and was easy to half-do. Only
+   the "All" tab is in the HTML; everything after it is registry-driven. */
+function lfBuildMktTabs(){
+  [['mkt-row','data-mkt','filterMkt'],['hist-row','data-hist','filterHistory']].forEach(([rowId,attr,fn])=>{
+    const row = document.getElementById(rowId); if(!row) return;
+    row.querySelectorAll('.mkt-tab['+attr+']:not(['+attr+'="all"])').forEach(t=>t.remove());
+    MKT_ORDER.forEach(k=>{
+      const M = MARKETPLACES[k]; if(!M) return;
+      const d = document.createElement('div');
+      d.className = 'mkt-tab';
+      d.setAttribute(attr, k);
+      d.textContent = M.icon+' '+M.short;
+      d.onclick = function(){ window[fn](this, k); };
+      row.appendChild(d);
+    });
+  });
+}
 
 let cart = {};
 let orders = [];
@@ -4198,7 +4362,7 @@ function ffFoodCard(item){
   const bg = ffDishBg(item);
   // v54: a cleaning service can't go in a cart — it needs a date and a time.
   // Same card, different terminal action: tapping it opens the booking sheet.
-  const _isClean = (item.vendorCat||vendorCat(VENDORS[item.vendorId]))==='cleaning';
+  const _isClean = isScheduled(item.vendorCat || vendorCat(VENDORS[item.vendorId]));
   if(_isClean){
     const _dur = item.dur ? `<span class="ff-fc-vendor" style="margin-top:1px">⏱ ${lfFmtDur(item.dur)}</span>` : '';
     return `
@@ -4209,7 +4373,7 @@ function ffFoodCard(item){
         <div class="ff-fc-vendor">${item.vendorEmoji} ${item.vendorName}</div>
         ${_dur}
         <div class="ff-fc-foot">
-          <span class="ff-fc-price">₱${item.price}</span>
+          <span class="ff-fc-price">${lfPrice(item)}</span>
           <span class="ff-book-btn">Book</span>
         </div>
       </div>
@@ -4222,7 +4386,7 @@ function ffFoodCard(item){
         <div class="ff-fc-name">${esc(item.name)}</div>
         <div class="ff-fc-vendor">${item.vendorEmoji} ${item.vendorName}</div>
         <div class="ff-fc-foot">
-          <span class="ff-fc-price">₱${item.price}</span>
+          <span class="ff-fc-price">${lfPrice(item)}</span>
           <span id="ffctl-${item.vendorId}-${ffKey(item.name)}" onclick="event.stopPropagation()">${ffStepperHTML(item.vendorId,item.name,item.emoji,item.price)}</span>
         </div>
       </div>
@@ -4309,7 +4473,7 @@ function buildHeroStrip(){
   if(!pick){ host.innerHTML=''; return; }
   // v54: a cleaning service is booked, not added — so the hero's tap target and
   // its call to action both change. Same card, honest verb.
-  const _isClean = pick.vendorCat==='cleaning';
+  const _isClean = isScheduled(pick.vendorCat);
   const _tap = _isClean
     ? `startBooking('${pick.vendorId}','${escJs(pick.id)}')`
     : `quickAdd('${pick.vendorId}','${escJs(pick.name)}','${pick.emoji}',${pick.price})`;
@@ -4353,7 +4517,7 @@ function ffSearch(q){
   });
 
   if(!vMatches.length && !dMatches.length){
-    const _noun = activeMktFilter==='cleaning' ? 'service' : 'dish';
+    const _noun = mkt(activeMktFilter).searchNoun;
     wrap.innerHTML=`<div class="ff-empty"><span class="em">🔍</span>No results for “${esc(q)}”.<br>Try another ${_noun} or vendor.</div>`;
     return;
   }
@@ -4369,8 +4533,8 @@ function ffSearch(q){
       </div>`).join('');
   }
   if(dMatches.length){
-    const _foods = dMatches.filter(i=>i.vendorCat!=='cleaning');
-    const _svcs  = dMatches.filter(i=>i.vendorCat==='cleaning');
+    const _foods = dMatches.filter(i=>!isScheduled(i.vendorCat));
+    const _svcs  = dMatches.filter(i=>isScheduled(i.vendorCat));
     if(_foods.length){
       html+='<div class="ff-sr-head">Dishes</div>';
       html+=_foods.map(i=>`
@@ -4386,7 +4550,7 @@ function ffSearch(q){
         <div class="ff-sr-row" onclick="startBooking('${i.vendorId}','${escJs(i.id)}')">
           <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
           <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}${i.dur?' · ⏱ '+lfFmtDur(i.dur):''}</div></div>
-          <span class="ff-sr-price">₱${i.price}</span>
+          <span class="ff-sr-price">${lfPrice(i)}</span>
         </div>`).join('');
     }
   }
@@ -4432,28 +4596,29 @@ function filterMkt(btn, id){
 
   // Switching vertical resets the cuisine filter, otherwise coming back to
   // Food from Cleaning would silently still be filtered to e.g. Desserts.
+  // Cuisine chips only mean something for Food (and for "All", which
+  // includes it). Any scheduled vertical hides them rather than showing
+  // filters that quietly do nothing.
+  const _hideCats = id!=='all' && isScheduled(id);
   const catRow = el('cat-row');
-  if(catRow) catRow.style.display = (id==='cleaning') ? 'none' : 'flex';
-  if(id==='cleaning' && activeCatFilter!=='all'){
+  if(catRow) catRow.style.display = _hideCats ? 'none' : 'flex';
+  if(_hideCats && activeCatFilter!=='all'){
     activeCatFilter='all';
     document.querySelectorAll('#cat-row .cat-chip').forEach(p=>p.classList.toggle('on-cat', p.getAttribute('data-cat')==='all'));
   }
 
   // Section heading follows the vertical so the row is never mislabelled
   // "Kitchens" while showing cleaners.
+  const _M = (id==='all') ? null : mkt(id);
   const t = el('vendor-sec-title');
-  if(t) t.textContent = id==='cleaning' ? '🧹 Cleaning Providers'
-                      : id==='food'     ? '🏪 Your Neighborhood Kitchens'
-                      : '🏪 Vendors Near You';
+  if(t) t.textContent = _M ? _M.sectionTitle : '🏪 Vendors Near You';
   const pt = el('picks-title');
   const ps = el('picks-sub');
-  if(pt) pt.textContent = id==='cleaning' ? '🧴 Popular Services' : "🔥 Today's Picks";
-  if(ps) ps.textContent = id==='cleaning'
-    ? 'Book a trusted cleaner for your unit — pick a date and time that suits you.'
-    : 'Fresh from your neighbors. Order now before it sells out! 👀';
+  if(pt) pt.textContent = _M ? _M.picksTitle : MARKETPLACES.food.picksTitle;
+  if(ps) ps.textContent = _M ? _M.picksSub   : MARKETPLACES.food.picksSub;
 
   const si = el('ff-search-input');
-  if(si) si.placeholder = id==='cleaning' ? 'Search cleaning services…' : 'Search food inside GRASS…';
+  if(si) si.placeholder = _M ? _M.searchPlaceholder : 'Search inside GRASS…';
 
   buildVendorCards(true);
   buildTodaysPicks(true);
@@ -4505,12 +4670,26 @@ function openVendor(vid){
   }
   activeVendorId=vid;
   const v=VENDORS[vid];
-  document.getElementById('vd-hero').style.background=v.bg;
+  /* v57: cover photo. With one set, the hero becomes the banner and the
+     logo/emoji sits on top of it at a smaller size with a scrim behind, so
+     the name stays readable over a busy photo. Without one, this is exactly
+     the old coloured-band hero — no vendor is required to upload anything. */
+  const heroEl=document.getElementById('vd-hero');
   const emojiEl=document.getElementById('vd-emoji');
-  if(v.logo){
-    emojiEl.innerHTML=`<img src="${v.logo}" style="width:132px;height:132px;border-radius:24px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.22)">`;
+  if(v.cover){
+    heroEl.style.background='linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.42)), url("'+v.cover+'") center/cover no-repeat';
+    if(v.logo){
+      emojiEl.innerHTML=`<img src="${v.logo}" style="width:96px;height:96px;border-radius:20px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.4);border:3px solid rgba(255,255,255,.9)">`;
+    } else {
+      emojiEl.innerHTML=`<span style="display:flex;align-items:center;justify-content:center;width:96px;height:96px;border-radius:20px;background:rgba(255,255,255,.92);font-size:52px;box-shadow:0 8px 28px rgba(0,0,0,.4)">${esc(v.emoji||'🏪')}</span>`;
+    }
   } else {
-    emojiEl.textContent=v.emoji;
+    heroEl.style.background=v.bg;
+    if(v.logo){
+      emojiEl.innerHTML=`<img src="${v.logo}" style="width:132px;height:132px;border-radius:24px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.22)">`;
+    } else {
+      emojiEl.textContent=v.emoji;
+    }
   }
   document.getElementById('vd-name').textContent=v.name;
   document.getElementById('vd-sub').textContent=v.sub;
@@ -4522,7 +4701,7 @@ function openVendor(vid){
   // oddly — the two stat cells become "Starts at" and the working window.
   const _vdMinLbl = document.getElementById('vd-min-lbl');
   const _vdDelLbl = document.getElementById('vd-delivery-lbl');
-  if(isCleaning(v)){
+  if(isScheduled(v)){
     if(_vdMinLbl) _vdMinLbl.textContent='Starts at';
     if(_vdDelLbl) _vdDelLbl.textContent='Available';
     const vdDelC = document.getElementById('vd-delivery');
@@ -4587,7 +4766,7 @@ function openVendor(vid){
   // v54: same row layout for both verticals — a cleaning service just ends in
   // "Book" instead of "+", because it needs a date and time before it means
   // anything. Everything else (photos, lightbox, sold-out dimming) is shared.
-  const _clean = isCleaning(v);
+  const _clean = isScheduled(v);
   const _tapFor = item => _clean
     // v55: these strings become the VALUE of an onclick attribute further
     // down, so they need escJs (JS-literal + entity), not esc (entity only).
@@ -4601,7 +4780,7 @@ function openVendor(vid){
           ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
         </div>
         <div class="mrow-info"><div class="mrow-name">${esc(item.name)}</div><div class="mrow-desc">${esc(item.desc||'')}${(_clean&&item.dur)?' · ⏱ '+lfFmtDur(item.dur):''}</div></div>
-        <div class="mrow-price">₱${item.price}</div>
+        <div class="mrow-price">${lfPriceLong(item)}</div>
         ${_canOrder?(_clean
           ? `<button class="add-btn" style="width:auto;padding:0 13px;border-radius:999px;font-size:11.5px;font-weight:800" onclick="event.stopPropagation();startBooking('${vid}','${escJs(item.id)}')">Book</button>`
           : `<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${escJs(item.name)}','${item.emoji}',${item.price})">+</button>`):''}
@@ -4851,7 +5030,7 @@ function lfPlaySuccessStage(order){
   return new Promise(resolve=>{
     const stage = el('lf-success-stage');
     if(!stage){ resolve(); return; }
-    const clean = orderKind(order)==='cleaning';
+    const clean = orderScheduled(order);
     const vname = (VENDORS[order.vendorId] && VENDORS[order.vendorId].name) || '';
     const t = el('lf-suc-ttl'), s = el('lf-suc-sub');
     if(t) t.textContent = clean ? 'Booking confirmed' : 'Order confirmed';
@@ -5054,7 +5233,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
    -----------------------------------------------------------------------
    Reuses, rather than reimplements: genOrderId, the `orders` array, saveLocal,
    myOrderIds, pushOrders, notifOnStatusChange, the tracker and order history.
-   A booking IS an order — it just carries kind:'cleaning' plus svcDate,
+   A booking IS an order — it just carries its vertical's kind plus svcDate,
    svcTime, building and instructions, and skips the cart entirely.
 ═══════════════════════════════════════════════════════════════════════ */
 let booking = null;          // { vid, itemId, date, time }
@@ -5125,12 +5304,12 @@ function bkRenderService(){
   const svc = bkService();
   if(!svc){ box.innerHTML='<div style="font-size:13px;color:var(--t3)">Service unavailable</div>'; return; }
   box.innerHTML = `
-    <div class="bk-svc-ico">${svc.photo?`<img src="${svc.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`:esc(svc.emoji||'🧹')}</div>
+    <div class="bk-svc-ico">${svc.photo?`<img src="${svc.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`:esc(svc.emoji||mkt(VENDORS[booking&&booking.vid]).defaultItemEmoji)}</div>
     <div style="flex:1;min-width:0">
       <div style="font-size:14px;font-weight:800;color:var(--t1)">${esc(svc.name)}</div>
       <div style="font-size:11.5px;color:var(--t3);margin-top:2px;line-height:1.4">${esc(svc.desc||'')}${svc.dur?' · ⏱ '+lfFmtDur(svc.dur):''}</div>
     </div>
-    <div style="font-size:15px;font-weight:800;color:var(--g);flex-shrink:0">₱${svc.price}</div>`;
+    <div style="font-size:15px;font-weight:800;color:var(--g);flex-shrink:0;text-align:right">${lfPriceLong(svc)}</div>`;
 }
 
 // "Change" goes back to the provider's service list — the one place where
@@ -5266,16 +5445,19 @@ async function submitBooking(){
       total: svc.price, subtotal: svc.price, deliveryFee: 0, fee: 0,
       // One line item, same shape as a food item, so every existing renderer
       // (order cards, history, admin, earnings) reads it without special cases.
-      items: [{ name:svc.name, emoji:svc.emoji||'🧹', price:svc.price, qty:1,
+      items: [{ name:svc.name, emoji:svc.emoji||mkt(v).defaultItemEmoji, price:svc.price, qty:1,
                 vendorId:booking.vid, vendorName:v.name, dur:svc.dur||0 }],
-      method: 'cash',           // cleaning is settled with the provider on site
+      method: 'cash',           // a service is settled with the provider on site
       ref: '',
       status: 'new',
       timestamp: new Date(),
       vendorId: booking.vid,
       updatedAt: Date.now(),
-      // ── cleaning-specific ──
-      kind: 'cleaning',
+      // ── scheduled-service fields ──
+      // v57: the vertical comes from the PROVIDER, not a literal. This line
+      // read kind:'cleaning' before, which would have filed every aircon
+      // booking as a cleaning job — wrong tab, wrong tracker, wrong labels.
+      kind: vendorCat(v),
       svcDate: booking.date,
       svcTime: booking.time,
       building: bldg,
@@ -5388,7 +5570,7 @@ function resetTrackerUI(){
   prevTrackerStatus=null;
 }
 
-let activeHistFilter = 'all';   // v54: 'all' | 'food' | 'cleaning'
+let activeHistFilter = 'all';   // 'all' or any MARKETPLACES id
 function filterHistory(btn, id){
   activeHistFilter = id;
   document.querySelectorAll('#hist-row .mkt-tab').forEach(t=>t.classList.remove('on'));
@@ -5414,11 +5596,11 @@ function renderOrderHistory(){
     const _m = activeHistFilter==='all' ? null : MARKETPLACES[activeHistFilter];
     el2.innerHTML='<div class="empty"><div class="empty-ico">'+((_m&&_m.emptyIcon)||'📋')+'</div>'+
       '<div class="empty-ttl">No '+(_m?esc(_m.txNounPlural.toLowerCase()):'orders')+' yet</div>'+
-      '<div class="empty-sub">'+(activeHistFilter==='cleaning'?'Book a cleaner from the Cleaning tab on Home.':'Place your first order!')+'</div></div>';
+      '<div class="empty-sub">'+esc(mkt(activeHistFilter).histEmptySub)+'</div></div>';
     return;
   }
   el2.innerHTML=shown.slice().reverse().map(o=>{
-    const clean = orderKind(o)==='cleaning';
+    const clean = orderScheduled(o);
     const _m = orderMkt(o);
     // A booking's headline fact is when it's scheduled, not what it cost.
     const foot = clean
@@ -5684,6 +5866,7 @@ function lfEnterVendorPortal(vid, opts){
   try{ el('v-dsub').textContent   = pick('sub',''); }catch(e){}
   try{ el('v-demoji').textContent = pick('emoji','🏪'); }catch(e){}
   try{ applyVendorLogo(pick('logo','')); }catch(e){}
+  try{ applyVendorCoverUI((v && v.cover) || ''); }catch(e){}
   // Falls back to the cached category so a cleaner restoring offline — before
   // VENDORS has synced — still gets the cleaning labels, not the food ones.
   try{ applyVendorChrome(vid, card && card.category); }catch(e){}
@@ -5769,10 +5952,10 @@ function applyVendorChrome(vid, fallbackCat){
   const v = VENDORS[vid] || (fallbackCat ? { id: vid, category: fallbackCat } : null);
   if(!v) return;
   const m = mkt(v);
-  const clean = isCleaning(v);
+  const clean = isScheduled(v);
   const set=(id,txt)=>{ const e=el(id); if(e) e.textContent=txt; };
 
-  set('v-portal-kicker', clean ? 'Cleaning Provider Portal' : 'Vendor Portal');
+  set('v-portal-kicker', m.portalKicker);
   document.querySelectorAll('.v-items-label').forEach(e=>{ e.textContent = clean ? 'My Services' : 'My Menu'; });
   // The vendor-portal nav tab, so it can't read "Orders" while the screen it
   // opens is headed "Incoming Bookings". Customer-side nav is untouched.
@@ -5817,6 +6000,53 @@ function vendorLogout(){
   updateAppBadge(0);
   goPage('p-chome');
   showToast('Logged out of vendor portal');
+}
+
+/* v57: cover photo. Same resize-to-canvas path as the logo, at banner
+   proportions and a tighter JPEG quality — this is the largest image the app
+   stores, it goes into an RTDB row as base64, and every device that opens the
+   provider downloads it. 1200px wide at .78 keeps a full-width banner sharp
+   on a phone at roughly 120-180KB. */
+function triggerCoverUpload(){ el('v-cover-input').click(); }
+function handleCoverUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const tmp=new Image();
+    tmp.onload=()=>{
+      const maxW=1200, sc=Math.min(1, maxW/tmp.width);
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
+      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
+      const dataUrl=cv.toDataURL('image/jpeg',.78);
+      if(activeVendorId){
+        VENDORS[activeVendorId].cover=dataUrl;
+        applyVendorCoverUI(dataUrl);
+        pushState();
+        showToast('✅ Cover photo updated!');
+      }
+    };
+    tmp.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+function removeCoverPhoto(){
+  if(!activeVendorId) return;
+  delete VENDORS[activeVendorId].cover;
+  applyVendorCoverUI('');
+  pushState();
+  showToast('Cover photo removed');
+}
+// The preview inside the vendor's own portal.
+function applyVendorCoverUI(url){
+  const box=el('v-cover-preview'), hint=el('v-cover-hint'), rm=el('v-cover-remove');
+  if(box){
+    box.style.backgroundImage = url ? 'url("'+url+'")' : '';
+    box.style.border = url ? '1px solid rgba(255,255,255,.2)' : '2px dashed rgba(255,255,255,.28)';
+  }
+  if(hint) hint.style.display = url ? 'none' : '';
+  if(rm)   rm.style.display   = url ? '' : 'none';
 }
 
 function triggerLogoUpload(){
@@ -6307,7 +6537,7 @@ function loadCustomerVendorContact(oid){
 async function customerCancelOrder(){
   if(!lastPlacedOrderId) return;
   const o = orders.find(x=>x.id===lastPlacedOrderId);
-  const _clean = orderKind(o)==='cleaning';
+  const _clean = orderScheduled(o);
   const _noun = _clean ? 'booking' : 'order';
   if(!o){ showToast('⚠️ Order not found'); return; }
   if(o.status!=='new'){ showToast('⚠️ Cannot cancel — '+(_clean?'provider already confirmed':'vendor already accepted')); return; }
@@ -6350,6 +6580,7 @@ function openEditVendorModal(vid){
   el('ev-gcash').value = v.gcash||'';
   el('ev-pin').value = '';   // v55: PINs are hashed — there is nothing to show
   el('ev-min').value = v.min||50;
+  if(el('ev-commission')) el('ev-commission').value = lfCommissionRate(v) || '';
   // Set location
   const locSel = el('ev-loc');
   const subLoc = (v.sub||'').split('·')[0].trim();
@@ -6369,16 +6600,22 @@ async function saveEditVendor(){
   const gcash = el('ev-gcash').value.trim();
   const pin = el('ev-pin').value.trim();
   const min = parseInt(el('ev-min').value)||50;
+  const commRaw = (el('ev-commission')||{}).value;
+  const comm = Math.max(0, Math.min(LF_COMMISSION_MAX, Number(commRaw)||0));
   if(!name){ showToast('⚠️ Store name is required'); return; }
+  if(commRaw!=='' && commRaw!=null && !isFinite(Number(commRaw))){ showToast('⚠️ Commission must be a number'); return; }
   if(pin && !/^\d{4,10}$/.test(pin)){ showToast('⚠️ PIN must be 4–10 digits (6+ recommended)'); return; }
 
   // Update vendor
   VENDORS[vid].name = name;
   VENDORS[vid].emoji = emoji||VENDORS[vid].emoji;
-  VENDORS[vid].sub = loc+' · '+(cat||'Food');
+  // v57: was hardcoded 'Food', which relabelled a cleaning or aircon provider
+  // as Food the moment an admin saved their profile with the category blank.
+  VENDORS[vid].sub = loc+' · '+(cat||mkt(VENDORS[vid]).label);
   VENDORS[vid].cats = cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean);
   VENDORS[vid].gcash = gcash;
   VENDORS[vid].min = min;
+  if(comm > 0) VENDORS[vid].commission = comm; else delete VENDORS[vid].commission;
   if(pin){ await setVendorPin(vid, pin); try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); }catch(e){} }
 
   await pushState();
@@ -6538,7 +6775,7 @@ async function notifOnStatusChange(order, newStatus){
   const custId = 'cust_'+order.id;
   const vendId = order.vendorId;
   const where = lfLocationOf(order);
-  const isClean = orderKind(order)==='cleaning';
+  const isClean = orderScheduled(order);
 
   const statusMsgs = isClean ? {
     accepted:  { title:'Booking Accepted! ✅', body:`${vname} accepted your cleaning booking. Scheduled for ${lfFmtDate(order.svcDate)} at ${order.svcTime?fmtTime(order.svcTime):'the agreed time'}.`, type:'success' },
@@ -6560,8 +6797,9 @@ async function notifOnStatusChange(order, newStatus){
   // Notify vendor of a new order / booking
   if(newStatus==='new'){
     if(isClean){
-      const svc = (order.items && order.items[0] && order.items[0].name) || 'Cleaning';
-      await pushNotif(vendId, '🧹 New Cleaning Booking!',
+      const _M = orderMkt(order);
+      const svc = (order.items && order.items[0] && order.items[0].name) || _M.itemNoun;
+      await pushNotif(vendId, _M.icon+' New '+_M.label.replace(/ Services$/,'')+' Booking!',
         `${order.name} · ${where} · ${svc} · ${lfFmtDate(order.svcDate)} ${order.svcTime?fmtTime(order.svcTime):''} · ₱${order.total}`, 'order');
     } else {
       await pushNotif(vendId, '🛒 New Order!', `${order.name} · ${where} · ₱${order.total} · ${order.method==='gcash'?'GCash':'Cash'}`, 'order');
@@ -6890,6 +7128,14 @@ const LF_STATUS_COPY = {
   cleaning: {
     new:'Pending', accepted:'Scheduled', preparing:'On the Way', ready:'In Progress',
     delivered:'Completed ✓', done:'Completed ✓', declined:'Rejected'
+  },
+  // v57: aircon reads the same as cleaning because the founder asked for
+  // Pending -> Accepted -> Completed (+ Cancelled). The extra middle states
+  // stay available to a provider who wants them, and a customer who never
+  // sees them just goes Pending -> Accepted -> Completed.
+  aircon: {
+    new:'Pending', accepted:'Accepted', preparing:'On the Way', ready:'In Progress',
+    delivered:'Completed ✓', done:'Completed ✓', declined:'Cancelled'
   }
 };
 function lfStatusLabel(o){
@@ -6958,7 +7204,7 @@ function lfBookingDates(v, span){
 function lfLiveBookings(vid){
   return orders.filter(o=>
     o.vendorId===vid &&
-    orderKind(o)==='cleaning' &&
+    orderScheduled(o) &&
     o.status!=='declined' &&
     o.svcDate && o.svcTime
   );
@@ -7182,12 +7428,12 @@ function renderVendorSchedule(vid){
   const wrap = el('v-sched-wrap'); const list = el('v-sched-list');
   if(!wrap || !list) return;
   const v = VENDORS[vid];
-  if(!v || !isCleaning(v)){ wrap.style.display='none'; return; }
+  if(!v || !isScheduled(v)){ wrap.style.display='none'; return; }
   wrap.style.display='';
 
   const today = lfTodayKey();
   const mine = vendorVisibleOrders(vid)
-    .filter(o=>orderKind(o)==='cleaning' && o.svcDate && o.status!=='declined')
+    .filter(o=>orderScheduled(o) && o.svcDate && o.status!=='declined')
     .sort((a,b)=> (a.svcDate+a.svcTime).localeCompare(b.svcDate+b.svcTime));
   const todays   = mine.filter(o=>o.svcDate===today && o.status!=='delivered');
   const upcoming = mine.filter(o=>o.svcDate>today);
@@ -7247,7 +7493,7 @@ function renderOrderCard(o, vendorView=false){
   // v54: a booking's most important facts are WHEN and WHERE — a provider
   // scanning their day needs those before the price. Drawn as an extra strip
   // on the same card rather than a separate card type.
-  const _clean = orderKind(o)==='cleaning';
+  const _clean = orderScheduled(o);
   const _sched = _clean ? `
     <div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;display:flex;flex-wrap:wrap;gap:8px 14px">
       <div><div style="font-size:9.5px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Date</div><div style="font-size:12.5px;font-weight:800;color:var(--gd)">${esc(lfFmtDate(o.svcDate))}</div></div>
@@ -7324,8 +7570,9 @@ async function updateOrderStatus(oid,status){
   refreshBadge();
   // v54: the status STRINGS are shared, so this function needed no branching —
   // only the confirmation the vendor reads back is chosen by vertical.
-  const msgs = orderKind(o)==='cleaning'
-    ? {accepted:'✓ Booking accepted — customer notified.',preparing:'🚗 Marked on the way.',ready:'🧹 Cleaning started.',delivered:'✅ Completed! Earnings updated.',declined:'Booking rejected — slot released.'}
+  const _m = orderMkt(o);
+  const msgs = _m.scheduled
+    ? {accepted:'✓ Booking accepted — customer notified.',preparing:'🚗 Marked on the way.',ready:_m.icon+' '+(_m.jobNoun||'Service')+' started.',delivered:'✅ Completed! Earnings updated.',declined:'Booking cancelled — slot released.'}
     : {accepted:'✓ Order accepted! Start preparing.',preparing:'👨‍🍳 Preparing order…',ready:'📦 Order ready! Delivering now.',delivered:'✅ Delivered! Earnings updated.',declined:'Order declined.'};
   showToast(msgs[status]||'Updated');
   updateVendorDash(activeVendorId);
@@ -7419,7 +7666,7 @@ function renderVendorMenu(vid){
           <div class="mrow-name">${esc(item.name)}</div>
           <div class="mrow-desc">${esc(item.desc)}</div>
         </div>
-        <div class="mrow-price">₱${item.price}</div>
+        <div class="mrow-price">${lfPrice(item)}</div>
         <label class="tog">
           <input type="checkbox" ${item.avail?'checked':''} onchange="toggleMenuItem('${vid}','${item.id}',this)">
           <div class="tog-t"></div><div class="tog-k"></div>
@@ -7441,6 +7688,7 @@ function openEditItemModal(vid, itemId){
   el('edit-item-emoji').value=item.emoji;
   el('edit-item-avail').checked=item.avail;
   if(el('edit-item-dur')) el('edit-item-dur').value = item.dur || '';   // v54
+  if(el('edit-item-from')) el('edit-item-from').checked = !!item.from;   // v57
   const eImg=el('edit-photo-img');
   if(item.photo){
     eImg.src=item.photo; eImg.style.display='block';
@@ -7474,9 +7722,11 @@ function saveEditItem(){
   Object.assign(item,{name,price,desc,emoji,avail,photo});
   // v54: only touch `dur` for a cleaning vendor, so editing a dish can never
   // introduce a duration field onto a food item.
-  if(isCleaning(VENDORS[vid])){
+  if(isScheduled(VENDORS[vid])){
     const _d=parseInt(el('edit-item-dur').value);
     if(_d>0) item.dur=_d; else delete item.dur;
+    const _f=el('edit-item-from');
+    if(_f && _f.checked) item.from=true; else delete item.from;
   }
   renderVendorMenu(vid);
   closeModal('modal-edititem');
@@ -7557,7 +7807,7 @@ function addMenuItemConfirm(){
   const name=el('new-item-name').value.trim();
   const price=parseInt(el('new-item-price').value);
   const desc=el('new-item-desc').value.trim();
-  const emoji=el('new-item-emoji').value.trim()||(isCleaning(VENDORS[activeVendorId])?'🧹':'🍽️');
+  const emoji=el('new-item-emoji').value.trim()||mkt(VENDORS[activeVendorId]).defaultItemEmoji;
   const photoSrc=el('new-photo-img').src||'';
   if(!name||!price){showToast('⚠️ Fill in name and price');return;}
   if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
@@ -7566,9 +7816,11 @@ function addMenuItemConfirm(){
   const newItem={id:_newItemId(),name,emoji,price,desc:desc||'New item',avail:true,photo:photoSrc.startsWith('data:')?photoSrc:''};
   // v54: duration is cleaning-only and optional — omitted entirely for food so
   // no food item gains a field it has no use for.
-  if(isCleaning(VENDORS[activeVendorId])){
+  if(isScheduled(VENDORS[activeVendorId])){
     const _d=parseInt(el('new-item-dur').value);
     if(_d>0) newItem.dur=_d;
+    const _f=el('new-item-from');
+    if(_f && _f.checked) newItem.from=true;
   }
   MENU[activeVendorId].push(newItem);
   const vidAdd=activeVendorId;
@@ -7576,6 +7828,7 @@ function addMenuItemConfirm(){
   closeModal('modal-additem');
   el('new-item-name').value=''; el('new-item-price').value=''; el('new-item-desc').value=''; el('new-item-emoji').value='';
   if(el('new-item-dur')) el('new-item-dur').value='';
+  if(el('new-item-from')) el('new-item-from').checked=false;
   el('new-photo-img').src=''; el('new-photo-img').style.display='none';
   el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
   el('new-item-photo').value='';
@@ -8365,12 +8618,26 @@ function renderAdminRevenue(){
     return;
   }
 
+  // v57: commission across every provider with a rate set. Delivered sales
+  // only — lfStatsFor already excludes declined and cancelled orders, so a
+  // job that never happened is never invoiced for.
+  const _commTotal = Object.values(VENDORS).reduce((sum,v)=>{
+    const r = lfCommissionRate(v);
+    if(!r) return sum;
+    return sum + lfCommissionOn(v, lfStatsFor(scoped.filter(o=>o.vendorId===v.id)).sales);
+  }, 0);
+
   // ── headline ──
   const head = `<div style="background:var(--acc);border-radius:var(--r);padding:18px;margin:0 16px 10px;position:relative;overflow:hidden">
     <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.1);border-radius:50%"></div>
     <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Sales delivered</div>
     <div style="font-size:34px;font-weight:800;color:#fff;margin-bottom:2px">${lfPeso(tot.sales)}</div>
     <div style="font-size:12px;color:rgba(255,255,255,.7)">${tot.delivered} delivered · avg ${lfPeso(tot.avg)} per order</div>
+    ${_commTotal>0?`<div style="margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.18)">
+      <div style="font-size:11px;color:rgba(255,255,255,.65)">Commission recorded</div>
+      <div style="font-size:20px;font-weight:800;color:#fff">${lfPeso(_commTotal)}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;line-height:1.4">Not collected by the app — invoice providers directly.</div>
+    </div>`:''}
   </div>`;
 
   const cells = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px">
@@ -8421,10 +8688,11 @@ function renderAdminRevenue(){
         ${s.cancelled?`<span class="bdg" style="background:#E2E8F0;color:#475569">↩ ${s.cancelled} cancelled</span>`:''}
         ${s.open?`<span class="bdg" style="background:#DBEAFE;color:#1e40af">⏳ ${s.open} open</span>`:''}
       </div>
-      <div style="display:flex;gap:14px;margin-top:9px;font-size:11px;color:var(--t2)">
+      <div style="display:flex;gap:14px;margin-top:9px;font-size:11px;color:var(--t2);flex-wrap:wrap">
         <span>Accept <b style="color:${bad?'var(--red)':'var(--t1)'}">${rate}</b></span>
         <span>Avg <b style="color:var(--t1)">${lfPeso(s.avg)}</b></span>
         <span>Orders <b style="color:var(--t1)">${s.orders}</b></span>
+        ${lfCommissionRate(v)?`<span>Commission <b style="color:var(--t1)">${lfPeso(lfCommissionOn(v,s.sales))}</b> <span style="color:var(--t3)">(${lfCommissionRate(v)}%)</span></span>`:''}
       </div>
       ${spark}${cleared}</div>`;
   }).join('');
@@ -8474,14 +8742,14 @@ function openAddVendorModal(){
 function nvMktChanged(){
   const k=(el('nv-mkt')||{}).value||'food';
   const cat=el('nv-cat'), emo=el('nv-emoji');
-  if(cat) cat.placeholder = k==='cleaning' ? 'e.g. Residential, Deep clean' : 'e.g. BBQ, Filipino, Coffee';
-  if(emo) emo.placeholder = k==='cleaning' ? '🧼' : '🍖';
+  if(cat) cat.placeholder = mkt(k).catHint;
+  if(emo) emo.placeholder = mkt(k).emojiHint;
 }
 function addVendorConfirm(){
   const name=el('nv-name').value.trim();
   const category=(el('nv-mkt')||{}).value||'food';
   const M=MARKETPLACES[category]||MARKETPLACES.food;
-  const emoji=el('nv-emoji').value.trim()||(category==='cleaning'?'🧼':'🏪');
+  const emoji=el('nv-emoji').value.trim()||M.defaultVendorEmoji;
   const loc=el('nv-loc').value;
   const cat=el('nv-cat').value.trim()||M.label;
   const pin=el('nv-pin').value.trim();
@@ -8775,11 +9043,13 @@ function notifyVendorNewOrder(o){
   // worker claims the page, which would silently drop the vendor's alert.
   if(notifGranted){
     // v54: same alert pipeline, booking-shaped wording when it's a booking.
-    const _clean = orderKind(o)==='cleaning';
+    const _clean = orderScheduled(o);
+    const _M = orderMkt(o);
     const body = _clean
-      ? `${o.name} · ${lfLocationOf(o)} · ${(o.items&&o.items[0]&&o.items[0].name)||'Cleaning'} · ${lfFmtDate(o.svcDate)} ${o.svcTime?fmtTime(o.svcTime):''}`
+      ? `${o.name} · ${lfLocationOf(o)} · ${(o.items&&o.items[0]&&o.items[0].name)||_M.itemNoun} · ${lfFmtDate(o.svcDate)} ${o.svcTime?fmtTime(o.svcTime):''}`
       : `${o.name} · ${lfLocationOf(o)} · ₱${o.total} · ${o.method==='gcash'?'GCash':'Cash'}`;
-    const title = _clean ? '🧹 New Cleaning Booking — LokalFinder' : '🔔 New Order — LokalFinder';
+    const title = _clean ? _M.icon+' New '+_M.label.replace(/ Services$/,'')+' Booking — LokalFinder'
+                         : '🔔 New Order — LokalFinder';
     try{
       new Notification(title,{ body, icon: iconUrl, tag:o.id, requireInteraction:true });
     }catch(e){
@@ -8865,25 +9135,50 @@ const STEPS = [
    Identical element ids, identical step count, identical status strings —
    so the walk below stays one loop with no cleaning branch in it. Only the
    words and icons are looked up per kind. */
-const STATUS_CONFIG_CLEANING = {
-  new:      { ico:'⏳', pill:'Waiting for confirmation…', pillSub:'The provider will confirm shortly',  bg:'var(--s2)', border:'var(--bdm)', dot:'#f59e0b', step:1 },
-  accepted: { ico:'📅', pill:'Booking Confirmed!',        pillSub:'Your cleaning is scheduled',          bg:'#f0fdf4', border:'#86efac',    dot:'#22c55e', step:2 },
-  preparing:{ ico:'🚗', pill:'Cleaner On the Way',        pillSub:'They are heading to your unit',       bg:'#eff6ff', border:'#93c5fd',    dot:'#3b82f6', step:3 },
-  ready:    { ico:'🧹', pill:'Cleaning In Progress',      pillSub:'Work has started in your unit',       bg:'#fffbeb', border:'#fcd34d',    dot:'#f59e0b', step:4 },
-  delivered:{ ico:'✨', pill:'Cleaning Completed!',       pillSub:'Thanks for booking with us 😊',       bg:'#f0fdf4', border:'#86efac',    dot:'#22c55e', step:5 },
-  declined: { ico:'😞', pill:'Booking Rejected',          pillSub:'Try another provider or time slot',   bg:'#fff1f2', border:'#fca5a5',    dot:'#ef4444', step:0 },
-};
-const STEPS_CLEANING = [
-  { td:'td2', tl:'tl2', tt:'tt2', ts:'ts2', labels:{ new:'Waiting for confirmation…', accepted:'Confirmed ✓', preparing:'Confirmed ✓', ready:'Confirmed ✓', delivered:'Confirmed ✓' } },
-  { td:'td3', tl:'tl3', tt:'tt3', ts:'ts3', labels:{ preparing:'Cleaner on the way 🚗', ready:'Arrived ✓', delivered:'Arrived ✓' } },
-  { td:'td4', tl:'tl4', tt:'tt4', ts:'ts4', labels:{ ready:'Cleaning in progress 🧹', delivered:'Cleaning done ✓' } },
-  { td:'td5', tl:null,  tt:'tt5', ts:'ts5', labels:{ delivered:'Completed! ✨' } },
-];
-// Step-dot icons, per vertical, in step order.
-const STEP_ICONS = { food:['⏳','👨‍🍳','🚚','📦'], cleaning:['⏳','🚗','🧹','✨'] };
-function trkCfg(o){  return orderKind(o)==='cleaning' ? STATUS_CONFIG_CLEANING : STATUS_CONFIG; }
-function trkSteps(o){ return orderKind(o)==='cleaning' ? STEPS_CLEANING : STEPS; }
-function trkIcons(o){ return STEP_ICONS[orderKind(o)] || STEP_ICONS.food; }
+/* ── v57: ONE scheduled tracker, worded per vertical ─────────────────────
+   These were STATUS_CONFIG_CLEANING / STEPS_CLEANING with "Cleaner" and
+   "Cleaning" written into every string. A second copy for aircon, a third for
+   laundry and a fourth for plumbing is exactly the duplication the v54 note
+   warned against — so the two nouns the copy actually varies by (workerNoun,
+   jobNoun) come from the registry and the shape is shared. Built once per
+   vertical and cached; the tracker repaints on every status poll. */
+const _lfSchedCache = {};
+function lfSchedStatusCfg(m){
+  const k = m.id;
+  if(_lfSchedCache[k]) return _lfSchedCache[k];
+  const worker = m.workerNoun || 'Provider';   // "Cleaner", "Technician"
+  const job    = m.jobNoun    || 'Service';    // "Cleaning", "Aircon service"
+  _lfSchedCache[k] = {
+    new:      { ico:'⏳',    pill:'Waiting for confirmation…', pillSub:'The provider will confirm shortly', bg:'var(--s2)', border:'var(--bdm)', dot:'#f59e0b', step:1 },
+    accepted: { ico:'📅',    pill:'Booking Confirmed!',        pillSub:'Your '+job.toLowerCase()+' is scheduled', bg:'#f0fdf4', border:'#86efac', dot:'#22c55e', step:2 },
+    preparing:{ ico:'🚗',    pill:worker+' On the Way',        pillSub:'They are heading to your unit',     bg:'#eff6ff', border:'#93c5fd', dot:'#3b82f6', step:3 },
+    ready:    { ico:m.icon,  pill:job+' In Progress',          pillSub:'Work has started in your unit',     bg:'#fffbeb', border:'#fcd34d', dot:'#f59e0b', step:4 },
+    delivered:{ ico:'✨',    pill:job+' Completed!',           pillSub:'Thanks for booking with us 😊',     bg:'#f0fdf4', border:'#86efac', dot:'#22c55e', step:5 },
+    declined: { ico:'😞',    pill:'Booking Rejected',          pillSub:'Try another provider or time slot', bg:'#fff1f2', border:'#fca5a5', dot:'#ef4444', step:0 },
+  };
+  return _lfSchedCache[k];
+}
+const _lfStepCache = {};
+function lfSchedSteps(m){
+  const k = m.id;
+  if(_lfStepCache[k]) return _lfStepCache[k];
+  const worker = (m.workerNoun || 'Provider').toLowerCase();
+  const job    = (m.jobNoun    || 'Service');
+  _lfStepCache[k] = [
+    { td:'td2', tl:'tl2', tt:'tt2', ts:'ts2', labels:{ new:'Waiting for confirmation…', accepted:'Confirmed ✓', preparing:'Confirmed ✓', ready:'Confirmed ✓', delivered:'Confirmed ✓' } },
+    { td:'td3', tl:'tl3', tt:'tt3', ts:'ts3', labels:{ preparing:worker.charAt(0).toUpperCase()+worker.slice(1)+' on the way 🚗', ready:'Arrived ✓', delivered:'Arrived ✓' } },
+    { td:'td4', tl:'tl4', tt:'tt4', ts:'ts4', labels:{ ready:job+' in progress '+m.icon, delivered:job+' done ✓' } },
+    { td:'td5', tl:null,  tt:'tt5', ts:'ts5', labels:{ delivered:'Completed! ✨' } },
+  ];
+  return _lfStepCache[k];
+}
+// Step-dot icons, in step order. A scheduled vertical uses its own icon for
+// the "work happening" dot so aircon shows ❄️ where cleaning shows 🧹.
+const STEP_ICONS = { food:['⏳','👨‍🍳','🚚','📦'] };
+function lfStepIcons(m){ return m.scheduled ? ['⏳','🚗',m.icon,'✨'] : STEP_ICONS.food; }
+function trkCfg(o){  return orderScheduled(o) ? lfSchedStatusCfg(orderMkt(o)) : STATUS_CONFIG; }
+function trkSteps(o){ return orderScheduled(o) ? lfSchedSteps(orderMkt(o)) : STEPS; }
+function trkIcons(o){ return lfStepIcons(orderMkt(o)); }
 
 let prevTrackerStatus = null;
 
@@ -8895,7 +9190,7 @@ let prevTrackerStatus = null;
    was checked out last. Now every field comes from the order being viewed. */
 function paintSuccessChrome(o){
   if(!o) return;
-  const clean = orderKind(o)==='cleaning';
+  const clean = orderScheduled(o);
   const set=(id,txt)=>{ const e=el(id); if(e) e.textContent=txt; };
 
   // Meta box — always the order actually on screen.
@@ -8903,7 +9198,7 @@ function paintSuccessChrome(o){
   set('s-unit', lfLocationOf(o));
   set('s-total', '₱'+o.total);
   set('s-oid-lbl', clean?'🧾 Booking ID:':'📦 Order ID:');
-  set('s-unit-lbl', clean?'📍 Clean at:':'📍 Deliver to:');
+  set('s-unit-lbl', clean?'📍 Service at:':'📍 Deliver to:');
   set('s-total-lbl', clean?'💰 Price:':'💰 Total paid:');
   const wrow = el('s-when-row');
   if(wrow){
@@ -8923,14 +9218,22 @@ function paintSuccessChrome(o){
   // Sub-lines under the future steps. The titles are driven by the STEPS walk;
   // these sit under them and would otherwise stay food-worded forever.
   const subs = clean
-    ? ['Provider will confirm shortly','Heading to your unit','Work in progress in your unit','Thanks for booking 🎉']
+    ? ['Provider will confirm shortly','Heading to your unit','Work in progress in your unit','Thanks for booking 🎉']  // vertical-neutral already
     : ['Vendor will confirm shortly','Your food is being made','On the way to your unit','Enjoy your meal 🎉'];
   ['ts2','ts3','ts4','ts5'].forEach((id,i)=>set(id, subs[i]));
 
   // Static fallback titles for steps not yet reached (the walk only writes a
   // title once a step is active or done).
+  // v57: derived from the registry's nouns instead of a second, hardcoded
+  // cleaning-worded copy — an aircon customer was being told a "Cleaner" was
+  // on the way. No trailing emoji here: these are the DIM, not-yet-reached
+  // titles, and the food column doesn't carry one either.
+  const _sm = orderMkt(o);
   const titles = clean
-    ? ['Waiting for confirmation…','Cleaner on the way','Cleaning in progress','Completed!']
+    ? ['Waiting for confirmation…',
+       (_sm.workerNoun || 'Provider') + ' on the way',
+       (_sm.jobNoun || 'Service') + ' in progress',
+       'Completed!']
     : ['Waiting for acceptance…','Preparing','Out for Delivery','Delivered!'];
   ['tt2','tt3','tt4','tt5'].forEach((id,i)=>{
     const e = el(id);
@@ -8949,7 +9252,7 @@ function updateTrackerFromStatus(){
 
   // v54: same tracker, wording chosen by the order's vertical.
   const _CFG=trkCfg(o), _STEPS=trkSteps(o), _ICO=trkIcons(o);
-  const _clean=orderKind(o)==='cleaning';
+  const _clean=orderScheduled(o);
   const cfg=_CFG[o.status]||_CFG.new;
   const step=cfg.step;
   paintSuccessChrome(o);
@@ -9446,6 +9749,7 @@ function refreshVisible(){
 // ═══ BOOT ═══
 (async function boot(){
   loadLocal();
+  lfBuildMktTabs();          // v57: vertical tabs come from MKT_ORDER
   loadHeroStats();
   applyHeroStats(true);
   registerServiceWorker();
@@ -10375,7 +10679,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 63; // ← bump this each release (and version.json)
+  const APP_VERSION = 64; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

@@ -22,7 +22,8 @@ as unknown, not as true.
 
 **Marketplace verticals (v54):** the app is no longer food-only. A
 `MARKETPLACES` registry in `index.html` defines the verticals (`food`,
-`cleaning`) and two defaulting helpers carry all the backward compatibility:
+`cleaning`, `aircon` — see v57 below) and two defaulting helpers carry all the
+backward compatibility:
 
 - `vendorCat(v)` → `v.category || 'food'`
 - `orderKind(o)` → `o.kind || 'food'`
@@ -31,13 +32,12 @@ Every vendor and order written before v54 lacks both fields and therefore
 reads back as Food. There is **no** second item store, transaction store,
 auth system, notification engine, dashboard or status machine for the new
 vertical — cleaning services live in `MENU[vid]` like any other item list,
-and a booking is an order in the same `orders` array carrying
-`kind:'cleaning'` plus `svcDate` / `svcTime` / `building` / `instructions`.
+and a booking is an order in the same `orders` array carrying its vertical's
+`kind` plus `svcDate` / `svcTime` / `building` / `instructions`.
 Bookings reuse the food status *strings* (`new`→`accepted`→`preparing`→
 `ready`→`delivered`, plus `declined`) and only re-label them via
 `LF_STATUS_COPY`, which is why `updateOrderStatus()` needed no branching.
-To add a third vertical (laundry, beauty…), add one `MARKETPLACES` entry
-and give its vendors that `category`.
+
 - `landing/` — a **separate** React 19 + TypeScript + Vite marketing/landing
   site (Tailwind, Framer Motion, GSAP, react-three-fiber/drei for 3D). This
   is independent of the main app and only used for the public-facing landing
@@ -50,6 +50,38 @@ and give its vendors that `category`.
   `landing/`, assembles `index.html` + service workers + built landing site
   into `_site/`, and deploys to **GitHub Pages**. No other hosting/backend
   deploy pipeline exists in this repo.
+
+**Verticals (v57): food, cleaning, aircon.** Adding aircon is what proved the
+v54 claim that "nothing hardcodes the pair food and cleaning" was **false** —
+there were ~35 literal `=== 'cleaning'` checks plus `isCleaning()` spread
+across the customer cards, search, tracker, vendor portal, notifications and
+admin, and two hand-written tab rows in the markup. Worst of all,
+`submitBooking()` wrote a literal `kind:'cleaning'`, so an aircon booking
+would have been filed as a cleaning job.
+
+That is fixed, and the shape to keep:
+
+- **Ask about capability, not identity.** `isScheduled(v)` / `orderScheduled(o)`
+  / `isCartBased(v)` read `MARKETPLACES[...].scheduled` / `.cartBased`. Every
+  one of the old literals was really asking "is this booked with a date and
+  time rather than added to a cart?" — none cared that it was cleaning.
+  `isCleaning()` is **gone**; do not reintroduce it or any `=== '<vertical>'`
+  behaviour check.
+- **Per-vertical copy lives in the registry**, not in ternaries: `sectionTitle`,
+  `picksTitle`, `picksSub`, `searchPlaceholder`, `searchNoun`, `searchHead`,
+  `portalKicker`, `catHint`, `emojiHint`, `defaultVendorEmoji`,
+  `defaultItemEmoji`, `histEmptySub`, and for scheduled verticals `workerNoun`
+  ("Cleaner"/"Technician") + `jobNoun`, which the ONE shared tracker
+  (`lfSchedStatusCfg` / `lfSchedSteps`) is worded from.
+- **The tabs are generated** from `MKT_ORDER` by `lfBuildMktTabs()`. Only the
+  "All" tab is markup.
+- **A booking records `kind: vendorCat(v)`** — the provider's own vertical.
+
+So a fourth vertical really is one `MARKETPLACES` entry plus `MKT_ORDER`, and
+`tests/test-aircon.js` proves it: its LEAK GUARD registers a laundry vertical
+at runtime with no code change and asserts it gets its tabs, its section
+title, scheduled behaviour, its own tracker wording and its portal label. If
+that guard ever fails, someone has hardcoded a vertical again.
 
 **Data layer (the real architecture — do not assume a "backend"):**
 - There is **no application server**. Persistence is via direct client-side
@@ -117,11 +149,13 @@ and give its vendors that `category`.
 - This is a single-community proof of concept (GRASS Residences), not yet a
   multi-community platform. Any "expansion to many communities" strategy
   work is aspirational, not implemented.
-- The seeded vendors and cleaning providers in `index.html` are **demo
-  fixtures**, not evidence of real supply. Two cleaning providers exist in
-  code (`sparkle`, `freshnest`); no real cleaning vendor has been onboarded,
-  and no cleaning booking has been placed by a real customer. Do not cite
-  them as traction.
+- The seeded vendors, cleaning providers and aircon providers in `index.html`
+  are **demo fixtures**, not evidence of real supply. Two cleaning providers
+  (`sparkle`, `freshnest`) and two aircon providers (`coolbreeze`, `kooltech`)
+  exist in code; no real cleaning or aircon provider has been onboarded, and
+  no booking in either vertical has been placed by a real customer. Do not
+  cite them as traction. Supply, not software, is what these two verticals
+  are actually short of.
 - **Credentials (v55).** Vendor PINs are salted SHA-256 in
   `VENDOR_PIN_HASHES`, synced under `/pinHashes`; `VENDOR_PINS_PLAIN` is gone.
   A legacy `/pins` node may still hold plaintext from before v55 — it is read
@@ -167,7 +201,29 @@ and give its vendors that `category`.
   sessions survive (they carry their own copy), but real login needs Firebase
   Auth. Verify this before publishing the rules.
 
-**Testing:** `tests/` holds a Playwright suite — 231 checks across seven files,
+**Provider profile & pricing (v57):**
+- **Cover photo** — `v.cover`, a base64 JPEG (resized to 1200px wide, quality
+  .78) set from the vendor portal. It becomes the customer-facing profile
+  banner, with the logo/emoji laid over a scrim so the name stays readable.
+  Optional: with no cover the hero is exactly the old coloured band. This is
+  the largest image the app stores and every viewer downloads it, hence the
+  cap — do not raise it without a reason.
+- **"Starting at" pricing** — an item with `from:true` renders as
+  `From ₱X` on cards and `Starting at ₱X` on the profile and booking sheet
+  (`lfPrice` / `lfPriceLong`). Display only: the booking still records
+  `item.price`, because that is the number both sides agreed to and the one
+  earnings and admin totals are computed from. There is deliberately no
+  second "final price" field — that would imply a settlement flow this app
+  does not have.
+- **Commission (admin)** — `v.commission`, a percent per provider, default
+  **0**, capped at `LF_COMMISSION_MAX` (50). `lfCommissionOn()` computes it on
+  *delivered* sales only, and the Insights page reports it per store and in
+  total. It **records**, it does not collect: there is no payments
+  integration, orders settle cash/GCash directly with the provider, and the
+  provider's own earnings screen is intentionally left showing gross. Showing
+  a worker a net figure the app cannot enforce would be a lie.
+
+**Testing:** `tests/` holds a Playwright suite — 289 checks across eight files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.

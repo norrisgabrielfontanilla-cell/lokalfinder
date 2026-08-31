@@ -6,7 +6,7 @@ npm install
 ./run.sh
 ```
 
-231 checks across seven suites, all driving the real `index.html` in headless
+289 checks across eight suites, all driving the real `index.html` in headless
 Chromium.
 
 | Suite | Covers |
@@ -18,6 +18,7 @@ Chromium.
 | `test-smoke.js` | Every page renders, chat, order archiving, admin flows. |
 | `test-orderfail.js` | Order confirmation only after the backend write lands. |
 | `test-session.js` | Vendor session persistence: offline reopen, revocation, expiry, pre-v56 migration. |
+| `test-aircon.js` | The aircon vertical end to end, plus a LEAK GUARD that registers a 4th vertical at runtime and asserts no code change is needed. |
 
 ## The one rule
 
