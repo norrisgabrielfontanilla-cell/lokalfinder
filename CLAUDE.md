@@ -252,7 +252,49 @@ row in order history) are the `.mkt-tab` component, built by `lfBuildMktTabs()`.
 - The **history** row is deliberately hidden until the device has orders in
   more than one vertical — that predates v60, see `renderOrderHistory()`.
 
-**Testing:** `tests/` holds a Playwright suite — 313 checks across eight files,
+**Self-serve vendor onboarding (v61).** A store applies for itself; the admin
+approves. `openVendorApply()` → `submitVendorApplication()` → admin
+`renderAdminApps()` → `approveApplication()` / `rejectApplication()`.
+
+- **An application is NOT a vendor.** It lives in `/vendorApplications/{id}`
+  and only enters `VENDORS` on approval. Two reasons, both load-bearing:
+  1. **`pushState()` is a full overwrite** of `/vendors`, `/menu` AND
+     `/pinHashes` from the device's memory. On a stranger's phone that has not
+     finished its first sync, `VENDORS` is just the six hardcoded demo seeds —
+     so a signup calling `pushState()` **wipes the live catalog and every real
+     PIN hash**. This was demonstrated, not theorised: injecting
+     `await pushState()` into the signup makes `test-signup.js` report
+     `hasReal:false, pinCount:6`. A signup writes exactly ONE node.
+     **Never call `pushState()` from any public, unauthenticated path.**
+  2. A pending store inside `VENDORS` would need filtering out of
+     `buildVendorCards`, `buildTodaysPicks`, `buildHeroStrip`,
+     `buildFeaturedBanner`, `updateMktCounts`, `ffSearch`,
+     `rebuildVendorSelect` and `openVendor`. `applyData()`/`lfFetchScoped()`
+     read a fixed node list, so a separate node is invisible to the customer
+     app **by construction** instead of by remembering to filter.
+- **The applicant chooses their own PIN**, hashed on their own device; the
+  plaintext is never transmitted and the admin never sees it. Approval carries
+  the `{salt,hash}` straight across. The admin's only power is
+  `resetVendorPin()`, which sets a new one — the old one is unrecoverable
+  because only a hash was ever stored.
+- Signup demands **6–10 digits** where the admin form allows 4: the hash sits
+  in a readable node, and a 4-digit hash is brute-forced instantly. This is
+  also why `#v-pin` had to stop being `maxlength="4"` — it had been capped at
+  4 since before v55 while `verifyVendorPin` accepted 4–10, so a self-serve
+  vendor literally could not type their own PIN in.
+- The queue is fetched **on demand** when the admin opens the page, not added
+  to `lfFetchScoped()`'s 3s poll, and deliberately not wired into
+  `refreshVisible()` — that runs on every sync.
+- The page is `p-signup`, **not** `p-v…`: `onVendorPage()` treats any `p-v*`
+  page as "acting as a seller", and an applicant is still a customer.
+- **The approval gate is workflow, not security.** The database still takes
+  unauthenticated writes, so someone with devtools can write into `/vendors`
+  and skip approval — exactly as they can today. `/vendorApplications` is also
+  world-**readable** (the admin queue has to list it and there is no auth to
+  scope that), so applicant names and phone numbers are exposed. Accepted
+  deliberately; one more reason to move to Firebase Auth.
+
+**Testing:** `tests/` holds a Playwright suite — 354 checks across nine files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.

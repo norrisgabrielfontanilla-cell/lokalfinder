@@ -2986,9 +2986,85 @@ select option { color: var(--t1); background: var(--w); }
       <option value="adbuns">ADBUNS</option>
     </select>
     <label class="flbl">PIN</label>
-    <input class="finp" id="v-pin" type="password" placeholder="4-digit PIN" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:22px">
+    <!-- v61: was maxlength="4" while verifyVendorPin has accepted 4-10 since
+         v55 — a vendor with a longer PIN literally could not type it in. Self-
+         serve applicants choose 6+, so this was about to lock out every store
+         that signed itself up. -->
+    <input class="finp" id="v-pin" type="password" inputmode="numeric" placeholder="Your PIN" maxlength="10" style="text-align:center;letter-spacing:8px;font-size:22px">
     <button class="cta" style="margin-top:4px" onclick="vendorLogin()">Enter My Store →</button>
 
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
+      <div id="v-app-status" style="display:none;background:var(--gl);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--t2)"></div>
+      <div style="font-size:12px;color:var(--t3)">Not listed yet?</div>
+      <button onclick="openVendorApply()" style="margin-top:6px;background:none;border:none;font-family:var(--ff);font-size:13px;font-weight:700;color:var(--g);cursor:pointer;text-decoration:underline;padding:6px 10px">List your store on LokalFinder →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     VENDOR — SELF-SERVE APPLICATION (v61)
+     Deliberately NOT id="p-v…": onVendorPage() treats any p-v* page as
+     "acting as a seller", and an applicant is still a customer.
+══════════════════════════════════════════ -->
+<div class="page" id="p-signup">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="topbar" style="display:flex;align-items:center;gap:10px">
+    <button class="back" onclick="goPage('p-vlogin')">←</button>
+    <div><div style="font-size:17px;font-weight:700">List your store</div><div style="font-size:12px;color:var(--t3);margin-top:1px">We review every application before it goes live</div></div>
+  </div>
+  <div class="scrl">
+    <div style="padding:14px 16px 0">
+      <label class="flbl">Store name</label>
+      <input class="finp" id="ap-name" type="text" maxlength="60" placeholder="e.g. Aling Nena Carinderia">
+
+      <label class="flbl">What do you offer?</label>
+      <select class="finp" id="ap-mkt" style="-webkit-appearance:none" onchange="apMktChanged()"></select>
+
+      <label class="flbl">Tower / Location</label>
+      <select class="finp" id="ap-loc" style="-webkit-appearance:none">
+        <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+      </select>
+
+      <label class="flbl">Category</label>
+      <input class="finp" id="ap-cat" type="text" maxlength="40" placeholder="e.g. Filipino, Silog">
+
+      <label class="flbl">Your mobile number <span style="font-weight:500;color:var(--t3)">(so we can reach you)</span></label>
+      <input class="finp" id="ap-phone" type="tel" inputmode="tel" maxlength="20" placeholder="e.g. 09171234567">
+
+      <div style="background:var(--gl);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin:4px 0 13px">
+        <div style="font-size:12px;font-weight:800;color:var(--gd);margin-bottom:3px">🔐 Choose your own PIN</div>
+        <div style="font-size:11.5px;color:var(--t2);line-height:1.5">This is how you sign in to your store. Nobody at LokalFinder can see it — not even the admin. Keep it somewhere safe.</div>
+      </div>
+
+      <label class="flbl">PIN (6–10 digits)</label>
+      <input class="finp" id="ap-pin" type="password" inputmode="numeric" maxlength="10" placeholder="At least 6 digits" style="text-align:center;letter-spacing:8px;font-size:20px">
+      <label class="flbl">Confirm PIN</label>
+      <input class="finp" id="ap-pin2" type="password" inputmode="numeric" maxlength="10" placeholder="Type it again" style="text-align:center;letter-spacing:8px;font-size:20px">
+
+      <button class="cta" id="ap-submit" style="margin-top:6px" onclick="submitVendorApplication()">Send application →</button>
+      <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:10px;line-height:1.5">
+        We'll review it and message you on the number above. Your store stays hidden from customers until it's approved.
+      </div>
+      <div style="height:60px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Application sent -->
+<div class="page" id="p-signup-done">
+  <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
+  <div class="login-wrap" style="text-align:center">
+    <div class="login-ico">📨</div>
+    <div class="login-ttl">Application sent!</div>
+    <div class="login-sub" id="ap-done-sub">We'll review it shortly.</div>
+    <div style="background:var(--gl);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:16px 0;text-align:left;font-size:12.5px;line-height:1.6;color:var(--t2)">
+      <div style="font-weight:800;color:var(--gd);margin-bottom:6px">What happens next</div>
+      1. The admin reviews your application.<br>
+      2. You'll get a message on the number you gave.<br>
+      3. Once approved, sign in with the PIN you chose.
+    </div>
+    <button class="cta" onclick="goPage('p-vlogin')">Back to Vendor Login</button>
+    <button class="cta sec" style="margin-top:8px" onclick="goCust()">Browse LokalFinder</button>
   </div>
 </div>
 
@@ -3336,7 +3412,9 @@ select option { color: var(--t1); background: var(--w); }
     <div class="sec"><span class="sec-t">All Orders (Live)</span><span class="sec-a" onclick="goAdminTab('orders')">View all →</span></div>
     <div id="a-orders-preview"></div>
     <div class="dvdr"></div>
-    <div class="sec"><span class="sec-t">Vendor Management</span><span class="sec-a" onclick="openAddVendorModal()">+ Add Vendor</span></div>
+    <div class="sec"><span class="sec-t">Vendor Management
+      <span id="a-apps-badge" onclick="goAdminTab('vendors')" style="display:none;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 6px;margin-left:6px;border-radius:9px;background:var(--red,#ef4444);color:#fff;font-size:10px;font-weight:800;cursor:pointer;vertical-align:middle"></span>
+    </span><span class="sec-a" onclick="openAddVendorModal()">+ Add Vendor</span></div>
     <div id="a-vendors-list"></div>
     <div class="dvdr"></div>
     <!-- ── Admin Settings ── -->
@@ -3407,7 +3485,10 @@ select option { color: var(--t1); background: var(--w); }
     <div><div style="font-size:17px;font-weight:700;color:#fff">Vendor Management</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Add, edit, pause or remove vendors</div></div>
     <button onclick="openAddVendorModal()" style="background:var(--acc);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:var(--ff);font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
   </div>
-  <div class="scrl"><div id="a-vendor-cards" style="padding:12px 0"></div><div style="height:80px"></div></div>
+  <div class="scrl">
+    <div id="a-apps" style="padding:12px 0 0"></div>
+    <div id="a-vendor-cards" style="padding:12px 0"></div><div style="height:80px"></div>
+  </div>
   <div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">
     <div class="bni" onclick="goAdminTab('dash')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:rgba(255,255,255,.4)">Dashboard</span></div>
     <div class="bni" onclick="goAdminTab('orders')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span style="color:rgba(255,255,255,.4)">All Orders</span></div>
@@ -4203,9 +4284,9 @@ function goPage(id){
   if(id==='p-chistory') renderOrderHistory();
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
-  if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); }
+  if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
   if(id==='p-aorders')  renderAdminOrders();
-  if(id==='p-avendors') renderAdminVendors();
+  if(id==='p-avendors') { renderAdminVendors(); renderAdminApps(); }
   if(id==='p-arevenue') renderAdminRevenue();
 }
 function goBack(){
@@ -4262,7 +4343,7 @@ function startSuggestionRotation(){
   },3000);
 }
 
-function goVendorLogin(){ goPage('p-vlogin'); }
+function goVendorLogin(){ goPage('p-vlogin'); try{ lfRefreshAppStatus(); }catch(e){} }
 function goAdminLogin(){
   goPage('p-alogin');
 }
@@ -6029,6 +6110,164 @@ function lfEnterVendorPortal(vid, opts){
   goPage('p-vdash');
   try{ refreshBadge(); }catch(e){}
   if(opts.greet) showToast('Welcome back, '+pick('name','')+'! 👋');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v61 — SELF-SERVE VENDOR APPLICATIONS
+   -----------------------------------------------------------------------
+   A store can apply on its own; the admin approves before it goes live.
+
+   ── WHY APPLICATIONS ARE NOT VENDORS ──
+   An application is a row in /vendorApplications. It never enters VENDORS
+   until it is approved. Two reasons, both learned the hard way:
+
+   1. pushState() is a FULL overwrite of /vendors, /menu AND /pinHashes from
+      whatever the device holds in memory. On the admin's phone that is the
+      whole catalog, so it is safe. On a stranger's phone that has not
+      finished its first sync, VENDORS is just the six hardcoded demo seeds —
+      so a signup calling pushState() would wipe every real vendor AND every
+      real PIN hash from the database. It would also pass every test, because
+      a test device has always synced by the time the test runs. So a signup
+      writes exactly ONE node and never calls pushState().
+
+   2. If a pending store lived in VENDORS it would have to be filtered out of
+      buildVendorCards, buildTodaysPicks, buildHeroStrip, buildFeaturedBanner,
+      updateMktCounts, ffSearch, rebuildVendorSelect and openVendor. Eight
+      places, and missing one leaks an unapproved store into the directory.
+      applyData()/lfFetchScoped() read a fixed list of nodes, so a separate
+      node is invisible to the customer app BY CONSTRUCTION rather than by
+      remembering to filter it.
+
+   ── BE HONEST ABOUT THE APPROVAL GATE ──
+   It is workflow, not security. The database still accepts unauthenticated
+   writes, so someone with devtools can write into /vendors directly and skip
+   approval entirely — exactly as they can today. This keeps junk out of the
+   directory in normal use. It is not a defence against a deliberate attack;
+   Firebase rules plus real auth are.
+
+   The applicant chooses their own PIN and the admin never sees it — only a
+   salted hash is ever stored, and the admin's only power is to RESET it.
+═══════════════════════════════════════════════════════════════════════ */
+const LF_APPS_NODE  = 'vendorApplications';
+const LF_APP_KEY    = 'lf-vendorApp';     // this device's own application id
+const LF_APP_MIN_PIN = 6;                 // stricter than the admin form's 4:
+                                          // this hash sits in a readable node
+function lfAppNode(id){ return ROOM_KEY+'/'+LF_APPS_NODE+'/'+String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_'); }
+// Entropy, not just a timestamp: 'v'+Date.now() collides when two people
+// submit in the same millisecond, which a public form makes likely.
+function lfNewAppId(){ return 'va'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+async function lfLoadApplications(){
+  try{ return (await fbGet(ROOM_KEY+'/'+LF_APPS_NODE)) || {}; }catch(e){ return {}; }
+}
+
+/* Open the form. The vertical picker is built from MARKETPLACES so a new
+   vertical becomes applicable-for without touching this screen. */
+function openVendorApply(){
+  const sel = el('ap-mkt');
+  if(sel && !sel.options.length){
+    MKT_ORDER.forEach(k=>{
+      const M = MARKETPLACES[k]; if(!M) return;
+      const o = document.createElement('option');
+      o.value = k; o.textContent = M.icon+' '+M.label;
+      sel.appendChild(o);
+    });
+  }
+  apMktChanged();
+  goPage('p-signup');
+}
+function apMktChanged(){
+  const k = (el('ap-mkt')||{}).value || 'food';
+  const cat = el('ap-cat');
+  if(cat) cat.placeholder = mkt(k).catHint;
+}
+
+async function submitVendorApplication(){
+  const btn = el('ap-submit');
+  const name  = (el('ap-name').value||'').trim();
+  const category = (el('ap-mkt')||{}).value || 'food';
+  const loc   = (el('ap-loc')||{}).value || 'GRASS Residences';
+  const cat   = (el('ap-cat').value||'').trim();
+  const phone = (el('ap-phone').value||'').trim();
+  const pin   = (el('ap-pin').value||'').trim();
+  const pin2  = (el('ap-pin2').value||'').trim();
+
+  if(!name){ showToast('⚠️ Enter your store name'); return; }
+  if(!phone){ showToast('⚠️ Enter a mobile number so we can reach you'); return; }
+  if(!new RegExp('^\\d{'+LF_APP_MIN_PIN+',10}$').test(pin)){
+    showToast('⚠️ PIN must be '+LF_APP_MIN_PIN+'–10 digits'); return;
+  }
+  if(pin !== pin2){ showToast('⚠️ The two PINs do not match'); return; }
+
+  // One pending application per device. A speed bump against accidental
+  // double-submits and casual spam — NOT a real rate limit, which needs a
+  // server this app does not have.
+  try{
+    const existing = localStorage.getItem(LF_APP_KEY);
+    if(existing){
+      const prev = await fbGet(lfAppNode(existing)).catch(()=>null);
+      if(prev && prev.status === 'pending'){
+        showToast('📨 You already have an application under review');
+        goPage('p-signup-done'); return;
+      }
+    }
+  }catch(e){}
+
+  if(btn){ btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Sending…'; }
+  try{
+    const id = lfNewAppId();
+    const salt = lfNewSalt();
+    const rec = {
+      id, name, category,
+      sub: loc+' · '+(cat || mkt(category).label),
+      cats: cat ? cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean) : [category],
+      phone,
+      // The applicant's PIN, salted and hashed here on their own device. The
+      // plaintext never leaves this function and is never transmitted.
+      salt, hash: await lfHashPass(pin, salt),
+      status: 'pending',
+      createdAt: Date.now()
+    };
+    // ONE node. Never pushState() — see the note above this block.
+    await fbSet(lfAppNode(id), rec);
+    try{ localStorage.setItem(LF_APP_KEY, id); }catch(e){}
+    ['ap-name','ap-cat','ap-phone','ap-pin','ap-pin2'].forEach(f=>{ const e2=el(f); if(e2) e2.value=''; });
+    const sub = el('ap-done-sub');
+    if(sub) sub.textContent = name+' is now waiting for review.';
+    goPage('p-signup-done');
+  }catch(e){
+    console.error('application failed:', e);
+    showToast('⚠️ Could not send — check your connection and try again');
+  }finally{
+    if(btn){ btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Send application →'; }
+  }
+}
+
+/* On the login screen, tell an applicant where they stand instead of leaving
+   them staring at a dropdown their store is not in yet. */
+async function lfRefreshAppStatus(){
+  const box = el('v-app-status'); if(!box) return;
+  let id = null;
+  try{ id = localStorage.getItem(LF_APP_KEY); }catch(e){}
+  if(!id){ box.style.display='none'; return; }
+  const rec = await fbGet(lfAppNode(id)).catch(()=>null);
+  if(!rec){
+    // Approved (the row is deleted on approval) or withdrawn — either way the
+    // store is in the dropdown now if it was approved.
+    box.style.display='none';
+    try{ localStorage.removeItem(LF_APP_KEY); }catch(e){}
+    return;
+  }
+  box.style.display='';
+  if(rec.status === 'rejected'){
+    box.innerHTML = '<b>'+esc(rec.name)+'</b> was not approved.'+
+      (rec.reason ? '<br>'+esc(rec.reason) : '')+
+      '<br><span style="color:var(--t3)">You can apply again below.</span>';
+    try{ localStorage.removeItem(LF_APP_KEY); }catch(e){}
+  } else {
+    box.innerHTML = '📨 <b>'+esc(rec.name)+'</b> is still under review.'+
+      '<br><span style="color:var(--t3)">You can sign in here once it is approved.</span>';
+  }
 }
 
 async function vendorLogin(){
@@ -8460,6 +8699,132 @@ async function adminUpdateStatus(oid,status){
   updateAdminStats(); renderAdminOrders();
 }
 
+/* ── v61: the pending-applications queue ────────────────────────────────
+   Fetched on demand when the admin opens this page, rather than added to
+   lfFetchScoped()'s 3-second poll — 500 residents do not need to download
+   the application queue every three seconds to browse lunch. */
+let _lfApps = {};
+async function renderAdminApps(){
+  const host = el('a-apps'); if(!host) return;
+  _lfApps = await lfLoadApplications();
+  const pending = Object.values(_lfApps)
+    .filter(a=>a && a.status==='pending')
+    .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  lfUpdateAppBadge(pending.length);
+  if(!pending.length){ host.innerHTML=''; return; }
+
+  host.innerHTML =
+    '<div class="sec" style="padding-bottom:6px"><span class="sec-t">Pending applications ('+pending.length+')</span></div>' +
+    pending.map(a=>{
+      const M = mkt(a.category);
+      // Everything below is applicant-controlled free text going into
+      // innerHTML — esc() on every field, escJs() for the id inside onclick.
+      return `
+      <div style="background:var(--w);border:.5px solid var(--bd);border-left:3px solid var(--g);border-radius:var(--rs);padding:13px 14px;margin:0 16px 8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <div style="font-size:14px;font-weight:800">${esc(M.icon)} ${esc(a.name)}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--g);background:var(--gl);border-radius:999px;padding:3px 8px;white-space:nowrap">${esc(M.short)}</div>
+        </div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:3px">${esc(a.sub||'')}</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:6px">📞 ${esc(a.phone||'—')}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:4px">Applied ${esc(lfAppWhen(a.createdAt))} · sets their own PIN</div>
+        <div class="av-acts" style="margin-top:10px">
+          <button class="oact p" onclick="approveApplication('${escJs(a.id)}')">✓ Approve</button>
+          <button class="oact d" onclick="rejectApplication('${escJs(a.id)}')">✕ Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+function lfAppWhen(ts){
+  if(!ts) return 'recently';
+  const mins = Math.floor((Date.now()-ts)/60000);
+  if(mins < 1)  return 'just now';
+  if(mins < 60) return mins+'m ago';
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24)  return hrs+'h ago';
+  return Math.floor(hrs/24)+'d ago';
+}
+function lfUpdateAppBadge(n){
+  const b = el('a-apps-badge');
+  if(b){ b.style.display = n>0 ? 'inline-flex' : 'none'; b.textContent = n; }
+}
+
+/* Approve: write the vendor through the SAME single-node path the admin's own
+   Add Vendor uses, then remove the application. Never pushState() — the
+   admin's catalog may be large and a full overwrite is exactly the risk this
+   whole feature was designed around. */
+async function approveApplication(id){
+  const a = _lfApps[id];
+  if(!a){ showToast('⚠️ That application is no longer there'); renderAdminApps(); return; }
+  const M = MARKETPLACES[a.category] || MARKETPLACES.food;
+  const vid = 'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const rec = {
+    id: vid, name: a.name, emoji: M.defaultVendorEmoji,
+    sub: a.sub || ('GRASS Residences · '+M.label),
+    bg:'#F5F5F5', rating:'⭐ New', min:50,
+    cats: (a.cats && a.cats.length) ? a.cats : [a.category],
+    category: a.category,
+    active: true,
+    contact: a.phone || '',
+    // A scheduled vertical needs a bookable window from day one, or its first
+    // customer sees a date picker with no slots in it.
+    ...(M.scheduled ? { openTime:'08:00', closeTime:'18:00', closedDays:[] } : {})
+  };
+  try{
+    // The PIN the APPLICANT chose, carried across as a hash. The admin never
+    // sees it and cannot recover it — only reset it.
+    VENDOR_PIN_HASHES[vid] = { salt:a.salt, hash:a.hash };
+    await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]);
+    await fbSet(ROOM_KEY+'/vendors/'+vid, rec);
+    VENDORS[vid] = rec;
+    await fbDelete(lfAppNode(id));
+    delete _lfApps[id];
+  }catch(e){
+    console.error('approve failed:', e);
+    showToast('⚠️ Approval did not save — check your connection');
+    return;
+  }
+  rebuildVendorSelect();
+  renderAdminApps(); renderAdminVendors();
+  buildVendorCards(true); buildTodaysPicks(true); updateMktCounts(); updateAdminStats();
+  showToast('✅ '+a.name+' is live — they sign in with their own PIN');
+}
+
+async function rejectApplication(id){
+  const a = _lfApps[id];
+  if(!a) return;
+  if(!confirm('Reject "'+a.name+'"?\n\nThey will see this on the vendor login screen and can apply again.')) return;
+  const reason = (prompt('Reason (optional) — the applicant will see this:','') || '').trim();
+  try{
+    await fbSet(lfAppNode(id), {...a, status:'rejected', reason: reason.slice(0,200), decidedAt: Date.now()});
+    delete _lfApps[id];
+  }catch(e){
+    showToast('⚠️ Could not save — check your connection'); return;
+  }
+  renderAdminApps();
+  showToast('Application rejected');
+}
+
+/* v61: one-tap PIN reset. A self-serve vendor picks their own PIN and the
+   admin cannot see it, so "I forgot my PIN" becomes a real support case —
+   this is the answer to it. Sets a NEW pin; it does not reveal the old one,
+   because only a salted hash was ever stored. Writes one node, and the
+   vendor's other devices are signed out on their next sync by
+   lfRevalidateVendorSession(), which is the behaviour you want from a reset. */
+async function resetVendorPin(vid){
+  const v = VENDORS[vid]; if(!v){ showToast('⚠️ Vendor not found'); return; }
+  const pin = (prompt('New PIN for "'+v.name+'" (4–10 digits).\n\nGive it to them directly — it is not stored in readable form and cannot be looked up later.','') || '').trim();
+  if(!pin) return;
+  if(!/^\d{4,10}$/.test(pin)){ showToast('⚠️ PIN must be 4–10 digits'); return; }
+  try{
+    await setVendorPin(vid, pin);
+    await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]);
+  }catch(e){
+    showToast('⚠️ Could not save the new PIN — check your connection'); return;
+  }
+  showToast('🔑 '+v.name+"'s PIN was reset");
+}
+
 function renderAdminVendors(){
   const el2=el('a-vendor-cards');
   if(!el2) return;
@@ -8487,6 +8852,7 @@ function renderAdminVendors(){
       <div class="av-acts">
         <button class="oact ${v.suspended?'p':'d'}" onclick="toggleVendorActive('${v.id}')">${v.suspended?'Reactivate':'Pause Store'}</button>
         <button class="oact s" onclick="openEditVendorModal('${v.id}')">✏️ Edit</button>
+        <button class="oact s" onclick="resetVendorPin('${v.id}')">🔑 Reset PIN</button>
         <button class="oact d" onclick="deleteVendor('${v.id}')">🗑️ Delete</button>
       </div>
     </div>`;

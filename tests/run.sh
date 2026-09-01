@@ -15,7 +15,7 @@ if [ ! -d node_modules ]; then
 fi
 
 fail=0
-for t in test-food.js test-cleaning.js test-cross.js test-security.js test-smoke.js test-orderfail.js test-session.js test-aircon.js; do
+for t in test-food.js test-cleaning.js test-cross.js test-security.js test-smoke.js test-orderfail.js test-session.js test-aircon.js test-signup.js; do
   node "$t"
   status=$?
   [ $status -ne 0 ] && fail=1

@@ -121,6 +121,22 @@
         }
       },
 
+      "//vendorApplications": "v61 self-serve vendor signup. READABLE, and that is a real cost: it holds applicants' names and mobile numbers, so anyone with this URL can read them. It has to be readable because the admin queue must LIST pending applications and there is no auth to scope that read to the admin. Accepted deliberately, and it is one more reason to move to Firebase Auth. Length caps below blunt the obvious spam. The PIN is stored as a SALTED HASH the applicant computed on their own device — the plaintext is never transmitted — but a short PIN's hash is brute-forceable from here, which is why the signup form demands 6+ digits where the admin form allows 4.",
+      "vendorApplications": {
+        ".read": true,
+        ".write": true,
+        "$aid": {
+          ".validate": "newData.hasChildren(['id','name','status']) || !newData.exists()",
+          "name":     { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "sub":      { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "phone":    { ".validate": "newData.isString() && newData.val().length <= 30" },
+          "reason":   { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "category": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "status":   { ".validate": "newData.isString() && newData.val().matches(/^(pending|rejected)$/)" },
+          "$other":   { ".validate": true }
+        }
+      },
+
       "fcmTokens":      { ".read": false, ".write": true },
       "deletedVendors": { ".read": true,  ".write": true },
       "posts":          { ".read": true,  ".write": true },
