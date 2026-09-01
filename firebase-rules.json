@@ -132,6 +132,7 @@
           "phone":    { ".validate": "newData.isString() && newData.val().length <= 30" },
           "reason":   { ".validate": "newData.isString() && newData.val().length <= 200" },
           "category": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "address":  { ".validate": "newData.isString() && newData.val().length <= 160" },
           "status":   { ".validate": "newData.isString() && newData.val().matches(/^(pending|rejected)$/)" },
           "$other":   { ".validate": true }
         }

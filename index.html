@@ -3021,9 +3021,22 @@ select option { color: var(--t1); background: var(--w); }
       <select class="finp" id="ap-mkt" style="-webkit-appearance:none" onchange="apMktChanged()"></select>
 
       <label class="flbl">Tower / Location</label>
-      <select class="finp" id="ap-loc" style="-webkit-appearance:none">
+      <select class="finp" id="ap-loc" style="-webkit-appearance:none" onchange="apLocChanged()">
         <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+        <option value="__outside">📍 Outside GRASS Residences</option>
       </select>
+      <!-- v62: a provider whose base is elsewhere. Shown only when they pick
+           "Outside", so a resident seller never sees a field that does not
+           apply to them. -->
+      <div id="ap-addr-row" style="display:none">
+        <label class="flbl">Your address</label>
+        <textarea class="finp" id="ap-addr" rows="2" maxlength="160"
+          placeholder="e.g. 12 Mabini St, Brgy. Santo Niño, Quezon City"
+          style="resize:none;line-height:1.45"></textarea>
+        <div style="font-size:11px;color:var(--t3);margin:-7px 0 13px;line-height:1.45">
+          Customers will see that you are based outside GRASS Residences. Your full address is shared with the admin, not shown on your public listing.
+        </div>
+      </div>
 
       <label class="flbl">Category</label>
       <input class="finp" id="ap-cat" type="text" maxlength="40" placeholder="e.g. Filipino, Silog">
@@ -6175,7 +6188,17 @@ function openVendorApply(){
     });
   }
   apMktChanged();
+  apLocChanged();
   goPage('p-signup');
+}
+/* v62: "Outside GRASS Residences" reveals a free-text address. A provider
+   who travels to the customer — a cleaner, an aircon tech — does not have to
+   be based in the building, and before this the dropdown quietly forced them
+   to claim a tower they do not live in. */
+const LF_LOC_OUTSIDE = '__outside';
+function apLocChanged(){
+  const row = el('ap-addr-row');
+  if(row) row.style.display = ((el('ap-loc')||{}).value === LF_LOC_OUTSIDE) ? '' : 'none';
 }
 function apMktChanged(){
   const k = (el('ap-mkt')||{}).value || 'food';
@@ -6194,6 +6217,8 @@ async function submitVendorApplication(){
   const name  = (el('ap-name').value||'').trim();
   const category = (el('ap-mkt')||{}).value || 'food';
   const loc   = (el('ap-loc')||{}).value || 'GRASS Residences';
+  const outside = loc === LF_LOC_OUTSIDE;
+  const addr  = ((el('ap-addr')||{}).value || '').trim();
   const cat   = (el('ap-cat').value||'').trim();
   const phone = (el('ap-phone').value||'').trim();
   const pin   = (el('ap-pin').value||'').trim();
@@ -6202,6 +6227,7 @@ async function submitVendorApplication(){
   const bail = m => { showToast(m); _apSubmitting = false; };
   if(!name){ bail('⚠️ Enter your store name'); return; }
   if(!phone){ bail('⚠️ Enter a mobile number so we can reach you'); return; }
+  if(outside && !addr){ bail('⚠️ Enter your address'); return; }
   if(!new RegExp('^\\d{'+LF_APP_MIN_PIN+',10}$').test(pin)){
     bail('⚠️ PIN must be '+LF_APP_MIN_PIN+'–10 digits'); return;
   }
@@ -6227,7 +6253,14 @@ async function submitVendorApplication(){
     const salt = lfNewSalt();
     const rec = {
       id, name, category,
-      sub: loc+' · '+(cat || mkt(category).label),
+      /* The card shows "Outside GRASS", not the street address: what a
+         customer needs when choosing a provider is whether they are in the
+         building or travelling in, and a full address would overflow the card
+         and publish more than the provider agreed to. The address itself goes
+         to the admin, who is the one who actually needs it. */
+      sub: (outside ? 'Outside GRASS' : loc)+' · '+(cat || mkt(category).label),
+      outside,
+      address: outside ? addr.slice(0,160) : '',
       cats: cat ? cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean) : [category],
       phone,
       // The applicant's PIN, salted and hashed here on their own device. The
@@ -6239,7 +6272,11 @@ async function submitVendorApplication(){
     // ONE node. Never pushState() — see the note above this block.
     await fbSet(lfAppNode(id), rec);
     try{ localStorage.setItem(LF_APP_KEY, id); }catch(e){}
-    ['ap-name','ap-cat','ap-phone','ap-pin','ap-pin2'].forEach(f=>{ const e2=el(f); if(e2) e2.value=''; });
+    ['ap-name','ap-cat','ap-phone','ap-pin','ap-pin2','ap-addr'].forEach(f=>{ const e2=el(f); if(e2) e2.value=''; });
+    // Reset the location too, or a second application from the same device
+    // starts on the previous applicant's "Outside GRASS" with a blank address.
+    const _loc = el('ap-loc'); if(_loc) _loc.selectedIndex = 0;
+    apLocChanged();
     const sub = el('ap-done-sub');
     if(sub) sub.textContent = name+' is now waiting for review.';
     goPage('p-signup-done');
@@ -8744,6 +8781,7 @@ async function renderAdminApps(){
         </div>
         <div style="font-size:11.5px;color:var(--t3);margin-top:3px">${esc(a.sub||'')}</div>
         <div style="font-size:12px;color:var(--t2);margin-top:6px">📞 ${esc(a.phone||'—')}</div>
+        ${a.outside ? `<div style="font-size:11.5px;color:var(--t2);margin-top:4px;line-height:1.45">📍 <b>Outside GRASS</b> · ${esc(a.address||'—')}</div>` : ''}
         <div style="font-size:10.5px;color:var(--t3);margin-top:4px">Applied ${esc(lfAppWhen(a.createdAt))} · sets their own PIN</div>
         <div class="av-acts" style="margin-top:10px">
           <button class="oact p" onclick="approveApplication('${escJs(a.id)}')">✓ Approve</button>
@@ -8796,6 +8834,9 @@ async function _approveApplication(id){
     category: a.category,
     active: true,
     contact: a.phone || '',
+    // Kept on the vendor so the admin can still reach an outside provider
+    // long after the application row is gone.
+    ...(a.outside ? { outside:true, address: String(a.address||'').slice(0,160) } : {}),
     // A scheduled vertical needs a bookable window from day one, or its first
     // customer sees a date picker with no slots in it.
     ...(M.scheduled ? { openTime:'08:00', closeTime:'18:00', closedDays:[] } : {})

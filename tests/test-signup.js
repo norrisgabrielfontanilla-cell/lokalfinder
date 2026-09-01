@@ -244,6 +244,64 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   check('The old PIN stops working after a reset', reset.oldWorks===false, String(reset.oldWorks));
   check('A reset PIN is still only stored as a hash', reset.plain, String(reset.plain));
 
+  // ── 8b. A provider based OUTSIDE GRASS (v62) ──────────────────────
+  const outside = await page.evaluate(async () => {
+    localStorage.removeItem('lf-vendorApp');
+    openVendorApply();
+    const hiddenByDefault = el('ap-addr-row').style.display === 'none';
+    el('ap-loc').value = '__outside'; apLocChanged();
+    const shownWhenOutside = el('ap-addr-row').style.display !== 'none';
+    el('ap-loc').value = 'Tower 2'; apLocChanged();
+    const hiddenAgain = el('ap-addr-row').style.display === 'none';
+
+    // Outside, but no address given — must be refused.
+    el('ap-loc').value = '__outside'; apLocChanged();
+    el('ap-name').value='Far Away Aircon'; el('ap-mkt').value='aircon';
+    el('ap-cat').value='Split type'; el('ap-phone').value='09175556666';
+    el('ap-addr').value='';
+    el('ap-pin').value='606060'; el('ap-pin2').value='606060';
+    const before = Object.keys(await lfLoadApplications()).length;
+    await submitVendorApplication();
+    const refused = Object.keys(await lfLoadApplications()).length === before;
+
+    el('ap-addr').value='12 Mabini St, Brgy. Santo Niño, Quezon City';
+    await submitVendorApplication();
+    const a = Object.values(await lfLoadApplications()).find(x=>x.name==='Far Away Aircon');
+    return { hiddenByDefault, shownWhenOutside, hiddenAgain, refused, a };
+  });
+  check('Address field is hidden until "Outside GRASS" is picked',
+        outside.hiddenByDefault && outside.shownWhenOutside && outside.hiddenAgain,
+        JSON.stringify(outside).slice(0,120));
+  check('An outside provider must give an address', outside.refused, String(outside.refused));
+  check('The application records the address and the outside flag',
+        outside.a && outside.a.outside===true && /Mabini/.test(outside.a.address||''),
+        JSON.stringify(outside.a && {o:outside.a.outside, ad:outside.a.address}));
+  check('Their card line says "Outside GRASS", not the street address',
+        /^Outside GRASS · /.test(outside.a.sub||'') && !/Mabini/.test(outside.a.sub||''), outside.a.sub);
+
+  const outQueue = await page.evaluate(async () => {
+    _lfAdminMode = true; goPage('p-avendors'); await renderAdminApps();
+    return el('a-apps').textContent.replace(/\s+/g,' ');
+  });
+  check('The admin queue shows the full address', /Mabini/.test(outQueue) && /Outside GRASS/.test(outQueue),
+        outQueue.slice(0,200));
+
+  const outVendor = await page.evaluate(async () => {
+    const a = Object.values(await lfLoadApplications()).find(x=>x.name==='Far Away Aircon');
+    await approveApplication(a.id);
+    const v = Object.values(VENDORS).find(x=>x.name==='Far Away Aircon');
+    return { outside: v && v.outside, address: v && v.address, sub: v && v.sub };
+  });
+  check('Approval carries the address onto the vendor',
+        outVendor.outside===true && /Mabini/.test(outVendor.address||''), JSON.stringify(outVendor));
+  check('A resident seller gets no outside flag',
+        await page.evaluate(()=>!VENDORS.pares.outside && !VENDORS.pares.address));
+  // The location must reset after a submit, or the NEXT applicant on this
+  // device starts on "Outside GRASS" with an empty address and is refused.
+  check('Location resets after submitting, so the next application starts clean',
+        await page.evaluate(()=>el('ap-loc').value!=='__outside' && el('ap-addr-row').style.display==='none'),
+        await page.evaluate(()=>el('ap-loc').value));
+
   // ── 9b. CONCURRENCY. The original checks here submitted sequentially,
   // which is not how a thumb behaves — and the sequential version passed
   // while three simultaneous taps really did create three applications.

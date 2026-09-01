@@ -282,6 +282,16 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
   also why `#v-pin` had to stop being `maxlength="4"` — it had been capped at
   4 since before v55 while `verifyVendorPin` accepted 4–10, so a self-serve
   vendor literally could not type their own PIN in.
+- **Providers based outside GRASS (v62).** The Tower dropdown has an
+  "📍 Outside GRASS Residences" option that reveals a required free-text
+  address. It is stored as `a.address` + `a.outside` and carried onto the
+  approved vendor. The **card line says "Outside GRASS", not the street
+  address** — what a customer needs when choosing is whether the provider is
+  in the building or travelling in; the address would overflow the card and
+  publish more than the provider agreed to. The admin queue shows it in full,
+  because the admin is who actually needs it. `openVendorApply()`/submit reset
+  the location, or a second application from the same device starts on the
+  previous applicant's "Outside" with a blank address and is refused.
 - **Every entry point has a re-entrancy guard** (`_apSubmitting`, `_apDeciding`),
   like `placeOrder`/`submitBooking` — without them three taps made three
   applications and a double-tapped Approve made two copies of the store. The
@@ -309,7 +319,7 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
   scope that), so applicant names and phone numbers are exposed. Accepted
   deliberately; one more reason to move to Firebase Auth.
 
-**Testing:** `tests/` holds a Playwright suite — 359 checks across nine files,
+**Testing:** `tests/` holds a Playwright suite — 367 checks across nine files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
