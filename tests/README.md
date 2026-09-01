@@ -6,7 +6,7 @@ npm install
 ./run.sh
 ```
 
-354 checks across nine suites, all driving the real `index.html` in headless
+359 checks across nine suites, all driving the real `index.html` in headless
 Chromium.
 
 | Suite | Covers |

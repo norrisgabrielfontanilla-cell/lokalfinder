@@ -213,6 +213,8 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     const rec = Object.values(after).find(x=>x.name==='Cold Start Store');
     await renderAdminApps();
     return { status: rec && rec.status, reason: rec && rec.reason,
+             noCred: !!rec && !rec.salt && !rec.hash,
+             hasSalt: !!(rec&&rec.salt), hasHash: !!(rec&&rec.hash),
              stillVendor: Object.values(VENDORS).some(v=>v.name==='Cold Start Store'),
              queueTxt: el('a-apps').textContent.replace(/\s+/g,' ').trim(),
              badgeShown: (el('a-apps-badge')||{}).style?.display };
@@ -220,6 +222,8 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   check('Rejected application is marked rejected', rejected.status==='rejected', String(rejected.status));
   check('Rejection reason is kept for the applicant', /Outside GRASS/.test(rejected.reason||''), rejected.reason);
   check('A rejected applicant never becomes a vendor', !rejected.stillVendor, String(rejected.stillVendor));
+  check('Rejection drops the applicant PIN hash from the readable node',
+        rejected.noCred, JSON.stringify({salt:rejected.hasSalt, hash:rejected.hasHash}));
   check('Queue empties once every application is decided',
         !/Cold Start Store/.test(rejected.queueTxt) && rejected.badgeShown==='none',
         rejected.queueTxt.slice(0,90)+' | badge='+rejected.badgeShown);
@@ -239,6 +243,38 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   check('Admin can reset a PIN', reset.changed && reset.newWorks, JSON.stringify(reset));
   check('The old PIN stops working after a reset', reset.oldWorks===false, String(reset.oldWorks));
   check('A reset PIN is still only stored as a hash', reset.plain, String(reset.plain));
+
+  // ── 9b. CONCURRENCY. The original checks here submitted sequentially,
+  // which is not how a thumb behaves — and the sequential version passed
+  // while three simultaneous taps really did create three applications.
+  const race = await page.evaluate(async () => {
+    localStorage.removeItem('lf-vendorApp');
+    openVendorApply();
+    el('ap-name').value='Impatient Thumb'; el('ap-mkt').value='food';
+    el('ap-cat').value='Silog'; el('ap-phone').value='09170002222';
+    el('ap-pin').value='151515'; el('ap-pin2').value='151515';
+    const before = Object.keys(await lfLoadApplications()).length;
+    await Promise.all([submitVendorApplication(), submitVendorApplication(), submitVendorApplication()]);
+    const after = Object.keys(await lfLoadApplications()).length;
+    return { added: after - before };
+  });
+  check('Three simultaneous taps create exactly ONE application', race.added===1, 'added='+race.added);
+
+  // Approving twice at once must not clone the store. The vendor id is derived
+  // from the application id precisely so this is idempotent.
+  const dblApprove = await page.evaluate(async () => {
+    const apps = await lfLoadApplications();
+    const a = Object.values(apps).find(x=>x.name==='Impatient Thumb');
+    const before = Object.keys(VENDORS).length;
+    await Promise.all([approveApplication(a.id), approveApplication(a.id)]);
+    const matches = Object.values(VENDORS).filter(v=>v.name==='Impatient Thumb');
+    return { added: Object.keys(VENDORS).length - before, copies: matches.length,
+             derived: matches[0] && matches[0].id === 'v'+String(a.id).replace(/[^a-zA-Z0-9]/g,'') };
+  });
+  check('Approving twice at once creates ONE vendor, not two',
+        dblApprove.copies===1 && dblApprove.added===1, JSON.stringify(dblApprove));
+  check('The vendor id is derived from the application id (approval is idempotent)',
+        dblApprove.derived, JSON.stringify(dblApprove));
 
   // ── 10. Duplicate submission guard ────────────────────────────────
   const dupe = await page.evaluate(async () => {
@@ -270,6 +306,15 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   });
   check('A pending applicant is told their status on the login screen',
         status.shown && /under review/i.test(status.txt), status.txt.slice(0,110));
+
+  // The strip must not show LAST render's answer while the fetch is in flight:
+  // an approved vendor was reading "still under review" until it resolved.
+  const stale = await page.evaluate(() => {
+    goVendorLogin();                       // fires lfRefreshAppStatus, unawaited
+    return el('v-app-status').style.display;   // sampled in the same tick
+  });
+  check('The status strip never shows a stale answer while it is loading',
+        stale === 'none', 'display='+stale);
 
   // ── 12. Applicant-controlled text is escaped in the admin queue ───
   const xss = await page.evaluate(async () => {

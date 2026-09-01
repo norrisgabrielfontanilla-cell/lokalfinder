@@ -282,6 +282,21 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
   also why `#v-pin` had to stop being `maxlength="4"` — it had been capped at
   4 since before v55 while `verifyVendorPin` accepted 4–10, so a self-serve
   vendor literally could not type their own PIN in.
+- **Every entry point has a re-entrancy guard** (`_apSubmitting`, `_apDeciding`),
+  like `placeOrder`/`submitBooking` — without them three taps made three
+  applications and a double-tapped Approve made two copies of the store. The
+  original tests missed both because they submitted *sequentially*; the checks
+  now fire concurrent calls.
+- **The approved vendor's id is derived from the application id**, so approval
+  is idempotent: a retry after a partial failure rewrites the same store
+  instead of cloning it. Approve/reject also fall back to fetching the row
+  rather than trusting `_lfApps` to have been populated by a prior render.
+- **Rejection strips `salt`/`hash`**, and the applicant's own device deletes
+  its rejected row once it has shown them the reason — otherwise names, phone
+  numbers and credential hashes accumulate in a readable node forever.
+- `lfRefreshAppStatus()` hides the strip **before** its await, or a vendor who
+  has just been approved reads "still under review" for the length of the
+  fetch.
 - The queue is fetched **on demand** when the admin opens the page, not added
   to `lfFetchScoped()`'s 3s poll, and deliberately not wired into
   `refreshVisible()` — that runs on every sync.
@@ -294,7 +309,7 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
   scope that), so applicant names and phone numbers are exposed. Accepted
   deliberately; one more reason to move to Firebase Auth.
 
-**Testing:** `tests/` holds a Playwright suite — 354 checks across nine files,
+**Testing:** `tests/` holds a Playwright suite — 359 checks across nine files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.

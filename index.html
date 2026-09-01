@@ -4282,6 +4282,7 @@ function goPage(id){
   if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
   if(id==='p-ccart')    renderCartPage();
   if(id==='p-chistory') renderOrderHistory();
+  if(id==='p-vlogin')   { try{ lfRefreshAppStatus(); }catch(e){} }
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
@@ -6182,7 +6183,13 @@ function apMktChanged(){
   if(cat) cat.placeholder = mkt(k).catHint;
 }
 
+let _apSubmitting = false;   // duplicate-submit guard, as placeOrder/submitBooking have
 async function submitVendorApplication(){
+  // Without this, three taps make three applications: the per-device check
+  // below does an await before writing, so concurrent calls all pass it.
+  // Proven, not assumed — the earlier test only submitted SEQUENTIALLY.
+  if(_apSubmitting) return;
+  _apSubmitting = true;
   const btn = el('ap-submit');
   const name  = (el('ap-name').value||'').trim();
   const category = (el('ap-mkt')||{}).value || 'food';
@@ -6192,12 +6199,13 @@ async function submitVendorApplication(){
   const pin   = (el('ap-pin').value||'').trim();
   const pin2  = (el('ap-pin2').value||'').trim();
 
-  if(!name){ showToast('⚠️ Enter your store name'); return; }
-  if(!phone){ showToast('⚠️ Enter a mobile number so we can reach you'); return; }
+  const bail = m => { showToast(m); _apSubmitting = false; };
+  if(!name){ bail('⚠️ Enter your store name'); return; }
+  if(!phone){ bail('⚠️ Enter a mobile number so we can reach you'); return; }
   if(!new RegExp('^\\d{'+LF_APP_MIN_PIN+',10}$').test(pin)){
-    showToast('⚠️ PIN must be '+LF_APP_MIN_PIN+'–10 digits'); return;
+    bail('⚠️ PIN must be '+LF_APP_MIN_PIN+'–10 digits'); return;
   }
-  if(pin !== pin2){ showToast('⚠️ The two PINs do not match'); return; }
+  if(pin !== pin2){ bail('⚠️ The two PINs do not match'); return; }
 
   // One pending application per device. A speed bump against accidental
   // double-submits and casual spam — NOT a real rate limit, which needs a
@@ -6207,7 +6215,7 @@ async function submitVendorApplication(){
     if(existing){
       const prev = await fbGet(lfAppNode(existing)).catch(()=>null);
       if(prev && prev.status === 'pending'){
-        showToast('📨 You already have an application under review');
+        bail('📨 You already have an application under review');
         goPage('p-signup-done'); return;
       }
     }
@@ -6239,6 +6247,7 @@ async function submitVendorApplication(){
     console.error('application failed:', e);
     showToast('⚠️ Could not send — check your connection and try again');
   }finally{
+    _apSubmitting = false;
     if(btn){ btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Send application →'; }
   }
 }
@@ -6247,9 +6256,14 @@ async function submitVendorApplication(){
    them staring at a dropdown their store is not in yet. */
 async function lfRefreshAppStatus(){
   const box = el('v-app-status'); if(!box) return;
+  // Hide BEFORE the await. Otherwise the strip keeps last render's message for
+  // the length of the fetch — so a vendor who has just been APPROVED opens the
+  // login screen and reads "still under review" for however long condo LTE
+  // takes. Wrong information, briefly, is worse than none.
+  box.style.display = 'none';
   let id = null;
   try{ id = localStorage.getItem(LF_APP_KEY); }catch(e){}
-  if(!id){ box.style.display='none'; return; }
+  if(!id) return;
   const rec = await fbGet(lfAppNode(id)).catch(()=>null);
   if(!rec){
     // Approved (the row is deleted on approval) or withdrawn — either way the
@@ -6264,6 +6278,9 @@ async function lfRefreshAppStatus(){
       (rec.reason ? '<br>'+esc(rec.reason) : '')+
       '<br><span style="color:var(--t3)">You can apply again below.</span>';
     try{ localStorage.removeItem(LF_APP_KEY); }catch(e){}
+    // Shown once, so clear the row rather than leaving the applicant's name
+    // and number in a readable node indefinitely.
+    fbDelete(lfAppNode(id)).catch(()=>{});
   } else {
     box.innerHTML = '📨 <b>'+esc(rec.name)+'</b> is still under review.'+
       '<br><span style="color:var(--t3)">You can sign in here once it is approved.</span>';
@@ -8753,11 +8770,24 @@ function lfUpdateAppBadge(n){
    Add Vendor uses, then remove the application. Never pushState() — the
    admin's catalog may be large and a full overwrite is exactly the risk this
    whole feature was designed around. */
+let _apDeciding = false;     // one decision at a time
 async function approveApplication(id){
-  const a = _lfApps[id];
+  if(_apDeciding) return;
+  _apDeciding = true;
+  try{ await _approveApplication(id); } finally { _apDeciding = false; }
+}
+async function _approveApplication(id){
+  // Fall back to fetching the row: relying on _lfApps being populated by a
+  // prior renderAdminApps() is a hidden ordering dependency, and a stale
+  // cache would silently approve nothing at all.
+  const a = _lfApps[id] || await fbGet(lfAppNode(id)).catch(()=>null);
   if(!a){ showToast('⚠️ That application is no longer there'); renderAdminApps(); return; }
   const M = MARKETPLACES[a.category] || MARKETPLACES.food;
-  const vid = 'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  /* The vendor id is DERIVED from the application id, not random. That makes
+     approval idempotent: a double-tap, or a retry after the delete failed
+     midway, rewrites the SAME vendor instead of creating a second copy of the
+     store. A random id turned any partial failure into a duplicate store. */
+  const vid = 'v'+String(a.id||id).replace(/[^a-zA-Z0-9]/g,'');
   const rec = {
     id: vid, name: a.name, emoji: M.defaultVendorEmoji,
     sub: a.sub || ('GRASS Residences · '+M.label),
@@ -8773,9 +8803,12 @@ async function approveApplication(id){
   try{
     // The PIN the APPLICANT chose, carried across as a hash. The admin never
     // sees it and cannot recover it — only reset it.
-    VENDOR_PIN_HASHES[vid] = { salt:a.salt, hash:a.hash };
-    await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]);
+    const cred = { salt:a.salt, hash:a.hash };
+    await fbSet(ROOM_KEY+'/pinHashes/'+vid, cred);
     await fbSet(ROOM_KEY+'/vendors/'+vid, rec);
+    // Local state only after both writes land, so a failure cannot leave a
+    // hash for a vendor that does not exist waiting for the next pushState().
+    VENDOR_PIN_HASHES[vid] = cred;
     VENDORS[vid] = rec;
     await fbDelete(lfAppNode(id));
     delete _lfApps[id];
@@ -8791,12 +8824,20 @@ async function approveApplication(id){
 }
 
 async function rejectApplication(id){
-  const a = _lfApps[id];
+  if(_apDeciding) return;
+  const a = _lfApps[id] || await fbGet(lfAppNode(id)).catch(()=>null);
   if(!a) return;
+  _apDeciding = true;
+  try{ await _rejectApplication(id, a); } finally { _apDeciding = false; }
+}
+async function _rejectApplication(id, a){
   if(!confirm('Reject "'+a.name+'"?\n\nThey will see this on the vendor login screen and can apply again.')) return;
   const reason = (prompt('Reason (optional) — the applicant will see this:','') || '').trim();
   try{
-    await fbSet(lfAppNode(id), {...a, status:'rejected', reason: reason.slice(0,200), decidedAt: Date.now()});
+    // Drop salt/hash: no reason to keep a rejected applicant's credential
+    // sitting in a world-readable node.
+    const {salt, hash, ...keep} = a;
+    await fbSet(lfAppNode(id), {...keep, status:'rejected', reason: reason.slice(0,200), decidedAt: Date.now()});
     delete _lfApps[id];
   }catch(e){
     showToast('⚠️ Could not save — check your connection'); return;
@@ -11204,7 +11245,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 66; // ← bump this each release (and version.json)
+  const APP_VERSION = 67; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
