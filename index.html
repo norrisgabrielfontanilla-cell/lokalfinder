@@ -1122,14 +1122,95 @@ select option { color: var(--t1); background: var(--w); }
    The single Vendors directory, split by vertical. Segmented-control shape
    (not another row of round cat-chips) so it reads as "which marketplace",
    clearly a level above the food cuisine chips directly beneath it. */
-.mkt-row{display:flex;gap:6px;padding:12px 16px 2px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+.mkt-row{display:flex;gap:8px;padding:10px 16px 12px;margin-bottom:-3px;
+  overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  /* scroll-padding-right clears the edge mask below: without it a tab revealed
+     by scrollIntoView() lands underneath the fade and the tab you just
+     selected is the one being faded out. */
+  scroll-padding-left:16px;scroll-padding-right:38px}
 .mkt-row::-webkit-scrollbar{display:none}
-.mkt-tab{flex-shrink:0;padding:8px 15px;border-radius:999px;background:var(--w);border:1px solid var(--bdm);
-  font-family:var(--ff);font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;white-space:nowrap;
-  transition:background .18s,color .18s,border-color .18s,transform .12s;box-shadow:0 1px 3px rgba(26,107,74,.05)}
-.mkt-tab:active{transform:scale(.95)}
-.mkt-tab.on{background:var(--g);border-color:var(--g);color:#fff;box-shadow:0 3px 10px rgba(14,138,90,.26)}
-.mkt-tab .mkt-n{opacity:.62;font-weight:600;margin-left:3px}
+/* Four 44px tabs do not fit a 390px phone, so the row scrolls — and a row that
+   scrolls with no edge treatment reads as a row that simply ends. A mask (not
+   an overlaid gradient) fades the content itself, so it works whatever is
+   behind the row and needs no wrapper element. Removed once you reach the end,
+   otherwise the last tab sits under a permanent smudge. */
+.mkt-row{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent 100%);
+  mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent 100%)}
+.mkt-row.mkt-end{-webkit-mask-image:none;mask-image:none}
+
+/* A 44px touch target on a warm off-white card, against the mint app
+   background. The bottom padding is what the elevation needs — overflow-x
+   clips vertically too, so without it every shadow is sliced off. The
+   negative margin gives that space back, so the row is only ~13px taller
+   than the old one despite the buttons being a third bigger. */
+.mkt-tab{flex-shrink:0;display:inline-flex;align-items:center;gap:7px;
+  min-height:44px;padding:0 15px;border-radius:16px;
+  background:linear-gradient(180deg,#FFFEFB 0%,#FBF8F2 100%);
+  border:1px solid rgba(26,107,74,.13);
+  font-family:var(--ff);font-size:13.5px;font-weight:600;letter-spacing:.1px;
+  color:var(--t1);cursor:pointer;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 1px 2px rgba(20,60,42,.05),0 3px 8px rgba(20,60,42,.05);
+  transition:transform .2s cubic-bezier(.34,1.35,.64,1),box-shadow .2s ease,
+             background .2s ease,border-color .2s ease,color .2s ease}
+.mkt-tab .mkt-emo{font-size:17px;line-height:1;display:inline-block;
+  transform-origin:60% 70%}
+
+/* The count is a quiet capsule, never competing with the category name.
+   :empty hides it, so a vertical with nothing open shows no hollow pill. */
+.mkt-tab .mkt-n{display:inline-flex;align-items:center;justify-content:center;
+  min-width:19px;height:19px;padding:0 6px;border-radius:10px;
+  font-size:11px;font-weight:700;letter-spacing:.2px;
+  background:rgba(14,138,90,.10);color:var(--gd);
+  transition:background .2s ease,color .2s ease}
+.mkt-tab .mkt-n:empty{display:none}
+
+/* hover:hover so a phone tap never leaves a tab stuck in the lifted state */
+@media(hover:hover){
+  .mkt-tab:hover{transform:translateY(-2px);border-color:rgba(26,107,74,.22);
+    box-shadow:0 2px 4px rgba(20,60,42,.06),0 8px 18px rgba(20,60,42,.10)}
+}
+.mkt-tab:active{transform:scale(.96);transition-duration:.09s;
+  box-shadow:0 1px 2px rgba(20,60,42,.08)}
+
+.mkt-tab.on{color:#fff;border-color:#0A6B45;
+  background:linear-gradient(180deg,#119C66 0%,#0A6E45 100%);
+  box-shadow:0 2px 6px rgba(11,110,72,.28),0 8px 20px rgba(14,138,90,.28)}
+.mkt-tab.on .mkt-n{background:rgba(255,255,255,.22);color:#fff}
+@media(hover:hover){
+  .mkt-tab.on:hover{box-shadow:0 3px 8px rgba(11,110,72,.30),0 12px 26px rgba(14,138,90,.32)}
+}
+
+/* ── Emoji motion ──────────────────────────────────────────────────────
+   EVENT-DRIVEN, never idle. Four emoji looping forever at the top of the
+   home screen would be noise you can't look away from; one 500ms reaction
+   on tap is personality. lfPulseTab() replays it on every selection —
+   including re-tapping the already-active tab, which a plain class toggle
+   cannot do because the class is removed and re-added in the same frame.
+   Which motion a vertical uses comes from its registry entry (tabAnim), so
+   a new vertical picks one by name instead of needing its own CSS rule. */
+@keyframes mkt-pop{0%{transform:scale(1)}42%{transform:scale(1.055)}100%{transform:scale(1)}}
+@keyframes mkt-emo-pop{0%,100%{transform:scale(1)}38%{transform:scale(1.3)}68%{transform:scale(.95)}}
+@keyframes mkt-emo-bounce{0%,100%{transform:translateY(0)}26%{transform:translateY(-5px)}50%{transform:translateY(0)}72%{transform:translateY(-2px)}}
+@keyframes mkt-emo-sweep{0%,100%{transform:rotate(0)}22%{transform:rotate(-18deg)}56%{transform:rotate(13deg)}80%{transform:rotate(-5deg)}}
+@keyframes mkt-emo-float{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-4px) rotate(-10deg)}64%{transform:translateY(-1px) rotate(8deg)}}
+
+.mkt-tab.mkt-anim{animation:mkt-pop .3s cubic-bezier(.34,1.5,.64,1)}
+.mkt-tab.mkt-anim .mkt-emo{animation:mkt-emo-pop .5s ease}
+.mkt-tab.mkt-anim[data-anim="bounce"] .mkt-emo{animation:mkt-emo-bounce .55s cubic-bezier(.3,1.2,.5,1)}
+.mkt-tab.mkt-anim[data-anim="sweep"]  .mkt-emo{animation:mkt-emo-sweep .55s ease-in-out}
+.mkt-tab.mkt-anim[data-anim="float"]  .mkt-emo{animation:mkt-emo-float .7s ease-in-out}
+@media(hover:hover){
+  .mkt-tab:hover .mkt-emo{animation:mkt-emo-pop .5s ease}
+  .mkt-tab:hover[data-anim="bounce"] .mkt-emo{animation:mkt-emo-bounce .55s cubic-bezier(.3,1.2,.5,1)}
+  .mkt-tab:hover[data-anim="sweep"]  .mkt-emo{animation:mkt-emo-sweep .55s ease-in-out}
+  .mkt-tab:hover[data-anim="float"]  .mkt-emo{animation:mkt-emo-float .7s ease-in-out}
+}
+@media(prefers-reduced-motion:reduce){
+  .mkt-tab,.mkt-tab .mkt-emo{animation:none!important;transition-duration:.01ms}
+  .mkt-tab:hover{transform:none}
+}
 
 /* Book pill on a cleaning service card — sits where the food stepper does */
 .ff-book-btn{background:var(--g);color:#fff;border-radius:999px;padding:5px 13px;font-size:11.5px;font-weight:800;
@@ -3896,6 +3977,7 @@ const MARKETPLACES = {
     // a scheduled service is reserved directly and never touches the cart.
     cartBased:true, scheduled:false, emptyIcon:'🍽️',
     tagline:'Fresh from your neighbors',
+    tabAnim:'bounce',            // v60: emoji motion on the Home switcher
     // ── v57: every string that used to be chosen by `=== "cleaning"` lives
     // here instead, so a new vertical is a data change, not a code change.
     providerNoun:'Vendor', portalKicker:'Vendor Portal',
@@ -3917,6 +3999,7 @@ const MARKETPLACES = {
     txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
     cartBased:false, scheduled:true, emptyIcon:'🧹',
     tagline:'Book a cleaner inside GRASS',
+    tabAnim:'sweep',
     providerNoun:'Cleaning Provider', portalKicker:'Cleaning Provider Portal',
     sectionTitle:'🧹 Cleaning Providers',
     picksTitle:'🧴 Popular Services',
@@ -3937,6 +4020,7 @@ const MARKETPLACES = {
     txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
     cartBased:false, scheduled:true, emptyIcon:'❄️',
     tagline:'Book an aircon technician inside GRASS',
+    tabAnim:'float',
     providerNoun:'Aircon Provider', portalKicker:'Aircon Provider Portal',
     sectionTitle:'❄️ Aircon Specialists',
     picksTitle:'❄️ Popular Aircon Services',
@@ -4025,16 +4109,69 @@ function lfBuildMktTabs(){
   [['mkt-row','data-mkt','filterMkt'],['hist-row','data-hist','filterHistory']].forEach(([rowId,attr,fn])=>{
     const row = document.getElementById(rowId); if(!row) return;
     row.querySelectorAll('.mkt-tab['+attr+']:not(['+attr+'="all"])').forEach(t=>t.remove());
+    // v60: the "All" tab is markup, so paint it through the same helper —
+    // otherwise it is the one tab that never gets the emoji or the motion.
+    const allTab = row.querySelector('.mkt-tab['+attr+'="all"]');
+    if(allTab) lfPaintTab(allTab, LF_ALL_TAB);
     MKT_ORDER.forEach(k=>{
       const M = MARKETPLACES[k]; if(!M) return;
       const d = document.createElement('div');
       d.className = 'mkt-tab';
       d.setAttribute(attr, k);
-      d.textContent = M.icon+' '+M.short;
+      lfPaintTab(d, M);
       d.onclick = function(){ window[fn](this, k); };
       row.appendChild(d);
     });
+    row.addEventListener('scroll', ()=>lfMktFade(row), {passive:true});
+    lfMktFade(row);
   });
+  window.addEventListener('resize', ()=>{
+    ['mkt-row','hist-row'].forEach(id=>lfMktFade(document.getElementById(id)));
+  }, {passive:true});
+}
+
+/* v60: "All" is not a vertical, so it has no MARKETPLACES entry — but it is a
+   tab like any other and needs the same shape. */
+const LF_ALL_TAB = { icon:'🏠', short:'All', tabAnim:'pop' };
+
+/* Emoji and label as separate elements so the emoji can be sized and animated
+   on its own. It was one text node ("🍽️ Food"), which is why neither was
+   possible. Built with createElement, never innerHTML: `short` and `icon` are
+   registry values today, but this is exactly the shape that becomes an
+   injection point the moment a vertical is ever admin-defined. */
+function lfPaintTab(d, meta){
+  while(d.firstChild) d.removeChild(d.firstChild);
+  const e = document.createElement('span');
+  e.className = 'mkt-emo'; e.textContent = meta.icon || '';
+  const l = document.createElement('span');
+  l.className = 'mkt-lbl'; l.textContent = meta.short || '';
+  d.appendChild(e); d.appendChild(l);
+  d.setAttribute('data-anim', meta.tabAnim || 'pop');
+}
+
+/* Replay the tap animation. Removing and re-adding the class in one frame does
+   NOT restart a CSS animation — the browser never sees the intermediate state
+   — so re-tapping the tab you are already on would do nothing. Reading
+   offsetWidth forces the reflow that makes the restart real. */
+function lfTabSelected(btn){
+  if(!btn || !btn.classList) return;
+  btn.classList.remove('mkt-anim');
+  void btn.offsetWidth;
+  btn.classList.add('mkt-anim');
+  /* Bring an off-screen tab into view. At 44px the four tabs no longer fit a
+     390px phone, so tapping the last one used to select it with no visible
+     feedback whatsoever — the tab you just chose was past the right edge.
+     block:'nearest' keeps this from scrolling the page vertically too. */
+  try{
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+    btn.scrollIntoView({behavior: reduce?'auto':'smooth', inline:'nearest', block:'nearest'});
+  }catch(e){}
+}
+
+// Drop the edge fade once the row is scrolled to the end (or never overflows).
+function lfMktFade(row){
+  if(!row) return;
+  row.classList.toggle('mkt-end', row.scrollLeft + row.clientWidth >= row.scrollWidth - 2);
 }
 
 let cart = {};
@@ -4598,7 +4735,7 @@ function filterCat(btn,cat){
 function filterMkt(btn, id){
   activeMktFilter = id;
   document.querySelectorAll('#mkt-row .mkt-tab').forEach(t=>t.classList.remove('on'));
-  if(btn) btn.classList.add('on');
+  if(btn){ btn.classList.add('on'); lfTabSelected(btn); }
 
   // Switching vertical resets the cuisine filter, otherwise coming back to
   // Food from Cleaning would silently still be filtered to e.g. Desserts.
@@ -5589,7 +5726,7 @@ let activeHistFilter = 'all';   // 'all' or any MARKETPLACES id
 function filterHistory(btn, id){
   activeHistFilter = id;
   document.querySelectorAll('#hist-row .mkt-tab').forEach(t=>t.classList.remove('on'));
-  if(btn) btn.classList.add('on');
+  if(btn){ btn.classList.add('on'); lfTabSelected(btn); }
   renderOrderHistory();
 }
 

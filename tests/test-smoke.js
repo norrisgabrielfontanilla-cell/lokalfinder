@@ -289,6 +289,117 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   const notRestored = await page.evaluate(() => activeVendorId);
   check('A logged-out vendor is not restored on reload', !notRestored, 'activeVendorId='+notRestored);
 
+  // ── 8. Vertical switcher (v60 redesign) ───────────────────────────
+  // The tabs carry real interaction now — a 44px target, a split emoji/label
+  // so the emoji can be sized and animated, a badge, and a scroll-into-view.
+  // None of that is visible to a test that only reads data-mkt, which is how
+  // the "Book a Cleaning" class of bug got shipped twice already.
+  await page.evaluate(() => { vendorLogout(); goCust(); });
+  await page.waitForTimeout(600);
+
+  // Measured per row while its page is actually ON — a hidden page reports
+  // every element as 0x0, which would make a height assertion meaningless.
+  const readRow = id => page.evaluate(rowId => {
+    const row = document.getElementById(rowId);
+    return { tabs: [...row.querySelectorAll('.mkt-tab')].map(t => {
+               const b = t.getBoundingClientRect();
+               return { id: t.getAttribute('data-mkt') || t.getAttribute('data-hist'),
+                        h: Math.round(b.height), anim: t.getAttribute('data-anim'),
+                        emo: (t.querySelector('.mkt-emo')||{}).textContent,
+                        lbl: (t.querySelector('.mkt-lbl')||{}).textContent };
+             }),
+             scrolls: row.scrollWidth > row.clientWidth,
+             barHidden: getComputedStyle(row).scrollbarWidth === 'none' };
+  }, id);
+  const homeRow = await readRow('mkt-row');
+  // The history filter row is deliberately hidden until this device has
+  // orders in more than one vertical (renderOrderHistory) — pre-existing
+  // behaviour, not part of this redesign. Reveal it to measure the tabs
+  // rather than fabricating orders just to see them.
+  await page.evaluate(() => { goPage('p-chistory'); el('hist-row').style.display='flex'; });
+  await page.waitForTimeout(400);
+  const histRow = await readRow('hist-row');
+  await page.evaluate(() => goCust());
+  await page.waitForTimeout(400);
+  const tabs = { home: homeRow.tabs, hist: histRow.tabs,
+                 scrolls: homeRow.scrolls, barHidden: homeRow.barHidden };
+  check('Every vertical tab meets a 44px touch target',
+        tabs.home.every(t=>t.h>=44) && tabs.hist.every(t=>t.h>=44),
+        'home '+tabs.home.map(t=>t.id+':'+t.h).join(' ')+
+        ' | hist '+tabs.hist.map(t=>t.id+':'+t.h).join(' '));
+  check('Emoji and label are separate elements (so the emoji can animate)',
+        tabs.home.every(t=>t.emo && t.lbl), JSON.stringify(tabs.home));
+  check('"All" carries the house emoji',
+        tabs.home[0].id==='all' && tabs.home[0].emo==='\u{1F3E0}' && tabs.home[0].lbl==='All',
+        JSON.stringify(tabs.home[0]));
+  check('Each vertical shows its registry emoji',
+        tabs.home.find(t=>t.id==='food').emo==='\u{1F37D}\uFE0F' &&
+        tabs.home.find(t=>t.id==='cleaning').emo==='\u{1F9F9}' &&
+        tabs.home.find(t=>t.id==='aircon').emo==='\u2744\uFE0F',
+        tabs.home.map(t=>t.id+':'+t.emo).join(' '));
+  check('Each tab declares its motion by name, from the registry',
+        tabs.home.map(t=>t.id+'='+t.anim).join(',')==='all=pop,food=bounce,cleaning=sweep,aircon=float',
+        tabs.home.map(t=>t.id+'='+t.anim).join(','));
+  check('History row gets the same treatment as Home',
+        tabs.hist.length===tabs.home.length && tabs.hist.every(t=>t.emo), JSON.stringify(tabs.hist));
+  check('Row still scrolls horizontally with the scrollbar hidden',
+        tabs.scrolls && tabs.barHidden, 'scrolls='+tabs.scrolls+' barHidden='+tabs.barHidden);
+
+  // The count badge is secondary, and must vanish rather than render hollow.
+  const badge = await page.evaluate(() => {
+    const on = document.querySelector('#mkt-row .mkt-tab[data-mkt="food"] .mkt-n');
+    const before = on ? { txt:on.textContent, shown:getComputedStyle(on).display!=='none' } : null;
+    on.textContent = '';
+    const after = { shown: getComputedStyle(on).display!=='none' };
+    updateMktCounts();
+    return { before, after };
+  });
+  check('Count renders as a badge element, not loose text', !!badge.before, JSON.stringify(badge));
+  check('An empty count is hidden, not a hollow capsule', badge.after.shown===false, JSON.stringify(badge.after));
+
+  // Selecting a tab replays the animation AND brings it on screen — at 44px
+  // the four tabs no longer fit a phone, so the last one was being selected
+  // off-screen with no feedback at all.
+  const pick = await page.evaluate(async () => {
+    const row = document.getElementById('mkt-row');
+    row.scrollLeft = 0;
+    const t = document.querySelector('#mkt-row .mkt-tab[data-mkt="aircon"]');
+    t.click();
+    await new Promise(r=>setTimeout(r,700));
+    const rb = row.getBoundingClientRect(), tb = t.getBoundingClientRect();
+    return { anim: t.classList.contains('mkt-anim'), on: t.classList.contains('on'),
+             visible: tb.left >= rb.left-1 && tb.right <= rb.right+1,
+             atEnd: row.classList.contains('mkt-end') };
+  });
+  check('Selecting a tab flags it for the tap animation', pick.anim, JSON.stringify(pick));
+  check('Selecting an off-screen tab scrolls it into view', pick.visible, JSON.stringify(pick));
+  check('Reaching the end drops the edge fade', pick.atEnd, JSON.stringify(pick));
+
+  // Re-tapping the tab you are already on must still replay: removing and
+  // re-adding a class in one frame does not restart a CSS animation.
+  const replay = await page.evaluate(async () => {
+    const t = document.querySelector('#mkt-row .mkt-tab[data-mkt="aircon"]');
+    let seen = 0;
+    t.addEventListener('animationstart', e => { if(e.animationName==='mkt-pop') seen++; });
+    t.click(); await new Promise(r=>setTimeout(r,450));
+    t.click(); await new Promise(r=>setTimeout(r,450));
+    return seen;
+  });
+  check('Re-tapping the active tab replays the animation', replay>=2, 'animationstart fired '+replay+'x');
+
+  // Motion is opt-out.
+  await page.emulateMedia({ reducedMotion:'reduce' });
+  await page.waitForTimeout(200);
+  const reduced = await page.evaluate(() => {
+    const t = document.querySelector('#mkt-row .mkt-tab[data-mkt="food"]');
+    t.click();
+    const e = t.querySelector('.mkt-emo');
+    return { tab: getComputedStyle(t).animationName, emo: getComputedStyle(e).animationName };
+  });
+  check('prefers-reduced-motion disables the tab and emoji animation',
+        reduced.tab==='none' && reduced.emo==='none', JSON.stringify(reduced));
+  await page.emulateMedia({ reducedMotion:'no-preference' });
+
   await browser.close(); srv.close();
   console.log('\n════ DEEP SMOKE ════');
   results.forEach(r => console.log((r.ok?'  PASS  ':'> FAIL <') + ' ' + r.name + (r.ok?'':'   ['+r.detail+']')));

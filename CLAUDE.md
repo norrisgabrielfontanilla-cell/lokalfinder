@@ -223,7 +223,36 @@ that guard ever fails, someone has hardcoded a vertical again.
   provider's own earnings screen is intentionally left showing gross. Showing
   a worker a net figure the app cannot enforce would be a lie.
 
-**Testing:** `tests/` holds a Playwright suite — 299 checks across eight files,
+**Vertical switcher (v60).** The four tabs at the top of Home (and the same
+row in order history) are the `.mkt-tab` component, built by `lfBuildMktTabs()`.
+
+- **44px touch targets**, warm off-white cards, a deeper-green active state.
+  The row's `padding-bottom` is load-bearing: `overflow-x` clips vertically
+  too, so without it every elevation shadow is sliced off. A negative
+  `margin-bottom` gives that space back so the row is only ~13px taller.
+- **Emoji and label are separate elements** (`.mkt-emo` / `.mkt-lbl`). They
+  used to be one text node ("🍽️ Food"), which is why the emoji could be
+  neither sized nor animated on its own. Built with `createElement`, never
+  `innerHTML`.
+- **Emoji motion is event-driven, never idle** — four emoji looping forever at
+  the top of the home screen is noise you can't look away from. Which motion a
+  vertical uses comes from its registry entry (`tabAnim`: pop / bounce / sweep
+  / float), so a new vertical picks one by name instead of needing a CSS rule
+  keyed to its id. `lfTabSelected()` replays it by removing the class, reading
+  `offsetWidth` to force a reflow, then re-adding — without that reflow,
+  re-tapping the tab you are already on does nothing, because the browser
+  never sees the intermediate state.
+- **`lfTabSelected()` also scrolls the tab into view.** At 44px the four tabs
+  no longer fit a 390px phone, so tapping the last one selected it off-screen
+  with no feedback at all. `scroll-padding-right` clears the edge mask, or the
+  tab revealed is the one being faded out.
+- The right-edge fade is a `mask-image` (not an overlaid gradient, so it needs
+  no wrapper and works on any backdrop), removed by `lfMktFade()` once the row
+  is scrolled to the end.
+- The **history** row is deliberately hidden until the device has orders in
+  more than one vertical — that predates v60, see `renderOrderHistory()`.
+
+**Testing:** `tests/` holds a Playwright suite — 313 checks across eight files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
