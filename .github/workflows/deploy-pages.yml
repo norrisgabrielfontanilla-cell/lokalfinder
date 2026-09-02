@@ -15,6 +15,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install
+
+      - name: Install headless browser
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the test suite against index.html
+        working-directory: tests
+        run: ./run.sh
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +75,7 @@ jobs:
           path: _site
 
   deploy:
-    needs: build
+    needs: [build, test]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

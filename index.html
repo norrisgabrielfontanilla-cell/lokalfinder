@@ -1815,514 +1815,6 @@ select option { color: var(--t1); background: var(--w); }
 </script>
 <div id="app">
 
-<!-- ══════════════════════════════════════════
-     LANDING — choose your portal
-══════════════════════════════════════════ -->
-<div class="page" id="p-land">
-<div class="lf2-wrap">
-
-  <!-- Warm ambient glow blobs -->
-  <div class="lf2-glow" style="top:-80px;right:-60px;width:280px;height:280px;background:radial-gradient(circle,rgba(26,107,74,.12),transparent 70%)"></div>
-  <div class="lf2-glow" style="top:300px;left:-80px;width:200px;height:200px;background:radial-gradient(circle,rgba(245,158,11,.08),transparent 70%)"></div>
-
-  <!-- HEADER -->
-  <div class="lf2-head">
-    <div class="lf2-brand">
-      <!-- SVG pin-house logo mark, animates gently -->
-      <div class="lf2-mark-wrap">
-        <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" height="52">
-          <path d="M24 2C13.5 2 5 10.5 5 21c0 15 19 33 19 33S43 36 43 21C43 10.5 34.5 2 24 2Z" fill="#1a5438" stroke="#2ea877" stroke-width="2"/>
-          <path d="M14 27v-8l10-8 10 8v8" stroke="#2ea877" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M18 27v10h12V27" stroke="#EFF7F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="21" y="30" width="6" height="7" rx="1" fill="#2ea877" opacity=".7"/>
-          <circle cx="24" cy="20" r="2.5" fill="#F5C842"/>
-        </svg>
-      </div>
-      <div>
-        <div class="lf2-word">Lokal<em>Finder</em></div>
-        <!-- land-logo kept invisible for admin 5-tap JS trigger -->
-        <div class="land-logo" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:auto">Finder</div>
-        <div class="lf2-sub">GRASS Residences &bull; Quezon City</div>
-      </div>
-    </div>
-    <div class="lf2-hbtns">
-      <div class="lf2-bell" onclick="goCust()" title="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span class="lf2-bell-dot"></span>
-      </div>
-      <div class="lf2-ava-ring" onclick="goCust()" title="Profile">
-        <div class="lf2-ava-inner">&#128512;</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- HERO ILLUSTRATION: warm night community scene -->
-  <div class="lf2-hero">
-    <svg viewBox="0 0 430 260" preserveAspectRatio="xMidYMid slice"
-         xmlns="http://www.w3.org/2000/svg"
-         style="position:absolute;inset:0;width:100%;height:100%">
-      <defs>
-        <radialGradient id="skyg" cx="55%" cy="0%" r="100%">
-          <stop offset="0%"   stop-color="#173022"/>
-          <stop offset="60%"  stop-color="#0f1e14"/>
-          <stop offset="100%" stop-color="#0a1410"/>
-        </radialGradient>
-        <radialGradient id="winglow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stop-color="#F5C842" stop-opacity="1"/>
-          <stop offset="80%"  stop-color="#E8973A" stop-opacity=".5"/>
-          <stop offset="100%" stop-color="#E8973A" stop-opacity="0"/>
-        </radialGradient>
-        <radialGradient id="winlit" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stop-color="#FFD97A"/>
-          <stop offset="100%" stop-color="#E8973A"/>
-        </radialGradient>
-        <radialGradient id="ambglow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stop-color="#F5C842" stop-opacity=".35"/>
-          <stop offset="100%" stop-color="#F5C842" stop-opacity="0"/>
-        </radialGradient>
-        <filter id="wglow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="4" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="sglow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="7"/>
-        </filter>
-        <filter id="soften" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="2.5" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <linearGradient id="groundg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stop-color="#1a3320"/>
-          <stop offset="100%" stop-color="#0f1e12"/>
-        </linearGradient>
-        <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stop-color="transparent"/>
-          <stop offset="100%" stop-color="#102014"/>
-        </linearGradient>
-      </defs>
-
-      <!-- SKY -->
-      <rect width="430" height="260" fill="url(#skyg)"/>
-
-      <!-- Stars twinkling -->
-      <g opacity=".7">
-        <circle cx="310" cy="16" r="1.4" fill="#fff"><animate attributeName="opacity" values=".2;1;.2" dur="2.1s" repeatCount="indefinite"/></circle>
-        <circle cx="348" cy="28" r="1.1" fill="#fff"><animate attributeName="opacity" values=".5;1;.5" dur="1.7s" repeatCount="indefinite"/></circle>
-        <circle cx="388" cy="12" r="1.5" fill="#fff"><animate attributeName="opacity" values=".2;.9;.2" dur="2.5s" repeatCount="indefinite"/></circle>
-        <circle cx="405" cy="32" r="1"   fill="#fff"><animate attributeName="opacity" values=".4;.8;.4" dur="3.1s" repeatCount="indefinite"/></circle>
-        <circle cx="370" cy="44" r="1.2" fill="#fff"><animate attributeName="opacity" values=".3;.9;.3" dur="1.9s" repeatCount="indefinite"/></circle>
-        <circle cx="292" cy="38" r="1"   fill="#fff"><animate attributeName="opacity" values=".2;.7;.2" dur="2.7s" repeatCount="indefinite"/></circle>
-      </g>
-
-      <!-- BUILDING — right half, tall apartment block -->
-      <!-- Ambient warm glow behind building -->
-      <ellipse cx="340" cy="120" rx="100" ry="90" fill="url(#ambglow)" filter="url(#sglow)"/>
-      <!-- Main block -->
-      <rect x="250" y="22" width="175" height="195" rx="4" fill="#1c3825"/>
-      <!-- Roof ridge -->
-      <rect x="250" y="18" width="175" height="8" rx="3" fill="#244c30"/>
-      <!-- Darker secondary block behind -->
-      <rect x="235" y="44" width="30" height="173" rx="3" fill="#162d1e"/>
-      <!-- Floor dividers -->
-      <line x1="250" y1="64"  x2="425" y2="64"  stroke="#19311f" stroke-width="1.5"/>
-      <line x1="250" y1="100" x2="425" y2="100" stroke="#19311f" stroke-width="1.5"/>
-      <line x1="250" y1="136" x2="425" y2="136" stroke="#19311f" stroke-width="1.5"/>
-      <line x1="250" y1="172" x2="425" y2="172" stroke="#19311f" stroke-width="1.5"/>
-
-      <!-- Windows row 1 — all warm lit -->
-      <rect x="260" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="283" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
-      <rect x="306" y="34" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
-      <rect x="329" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="352" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
-      <rect x="375" y="34" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
-      <rect x="398" y="34" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".8"/>
-      <!-- Windows row 2 -->
-      <rect x="260" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
-      <rect x="283" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="306" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
-      <rect x="329" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".45"/>
-      <rect x="352" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="375" y="74" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".7"/>
-      <rect x="398" y="74" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
-      <!-- Windows row 3 -->
-      <rect x="260" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
-      <rect x="283" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
-      <rect x="306" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="329" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".95"/>
-      <rect x="352" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
-      <rect x="375" y="110" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="398" y="110" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".6"/>
-      <!-- Windows row 4 -->
-      <rect x="260" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".7"/>
-      <rect x="283" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".85"/>
-      <rect x="306" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-      <rect x="329" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".4"/>
-      <rect x="352" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)" opacity=".9"/>
-      <rect x="375" y="146" width="16" height="14" rx="2" fill="url(#winlit)" opacity=".5"/>
-      <rect x="398" y="146" width="16" height="14" rx="2" fill="url(#winlit)" filter="url(#wglow)"/>
-
-      <!-- FAIRY STRING LIGHTS — full width draping wave -->
-      <path d="M-5 78 Q55 92 115 80 Q175 68 235 82 Q295 96 355 84 Q395 76 435 80"
-            stroke="rgba(200,180,80,.55)" stroke-width="1.4" fill="none"/>
-      <!-- Glowing bulbs on the string -->
-      <g filter="url(#wglow)">
-        <ellipse cx="32"  cy="88"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".65;1;.65" dur="1.9s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="90"  cy="82"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".5;.95;.5" dur="2.4s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="152" cy="76"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="212" cy="80"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".45;.9;.45" dur="2.8s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="272" cy="88"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".6;1;.6" dur="2.0s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="332" cy="82"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".5;.85;.5" dur="2.3s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="392" cy="78"  rx="4.5" ry="6" fill="#F5C842"><animate attributeName="opacity" values=".7;1;.7" dur="1.7s" repeatCount="indefinite"/></ellipse>
-      </g>
-      <!-- Warm glow pools below each bulb -->
-      <ellipse cx="32"  cy="96" rx="18" ry="6" fill="#F5C842" opacity=".08"/>
-      <ellipse cx="90"  cy="90" rx="18" ry="6" fill="#F5C842" opacity=".07"/>
-      <ellipse cx="152" cy="84" rx="18" ry="6" fill="#F5C842" opacity=".09"/>
-      <ellipse cx="212" cy="88" rx="18" ry="6" fill="#F5C842" opacity=".07"/>
-
-      <!-- FOLIAGE / BUSHES left side -->
-      <ellipse cx="-5"  cy="230" rx="48" ry="58" fill="#1a4228" opacity=".95"/>
-      <ellipse cx="20"  cy="210" rx="38" ry="50" fill="#1f5234" opacity=".9"/>
-      <ellipse cx="50"  cy="235" rx="32" ry="42" fill="#173820" opacity=".85"/>
-      <ellipse cx="75"  cy="220" rx="26" ry="36" fill="#1a4a2a" opacity=".7"/>
-      <ellipse cx="5"   cy="245" rx="24" ry="28" fill="#204a2c" opacity=".8"/>
-
-      <!-- TABLE — warm round dinner table -->
-      <ellipse cx="185" cy="228" rx="70" ry="18" fill="#1e3828"/>
-      <rect    x="115" y="220" width="140" height="10" rx="5" fill="#27533a"/>
-      <!-- Table cloth highlight -->
-      <ellipse cx="185" cy="220" rx="64" ry="6" fill="rgba(255,255,255,.04)"/>
-      <!-- Food dishes on table -->
-      <!-- Bowl left -->
-      <ellipse cx="148" cy="220" rx="16" ry="6" fill="#2d5c3c"/>
-      <ellipse cx="148" cy="218" rx="12" ry="4" fill="#E8973A" opacity=".75" filter="url(#soften)"/>
-      <circle  cx="145" cy="217" r="3.5" fill="#c44" opacity=".6"/>
-      <circle  cx="151" cy="216" r="2.5" fill="#F5C842" opacity=".8"/>
-      <!-- Plate center -->
-      <ellipse cx="188" cy="220" rx="18" ry="6" fill="#2d5c3c"/>
-      <circle  cx="188" cy="218" r="10"   fill="#b85c28" opacity=".5" filter="url(#soften)"/>
-      <ellipse cx="188" cy="217" rx="7"  ry="4" fill="#E8973A" opacity=".7"/>
-      <!-- Bottle / drinks -->
-      <rect x="218" y="207" width="8" height="16" rx="3" fill="#3a8a5a"/>
-      <ellipse cx="222" cy="207" rx="5" ry="3" fill="#4aaa6a"/>
-      <!-- Plate right -->
-      <ellipse cx="230" cy="221" rx="14" ry="5" fill="#2d5c3c"/>
-      <ellipse cx="230" cy="219" rx="9"  ry="3" fill="#F5C842" opacity=".6"/>
-
-      <!-- PEOPLE eating together -->
-      <!-- Person 1 — left, warm tan skin, yellow top, arm reaching to food -->
-      <ellipse cx="122" cy="196" rx="16" ry="20" fill="#E07A3A"/><!-- body/top -->
-      <circle  cx="122" cy="174" r="14" fill="#C17A4A"/><!-- head -->
-      <!-- hair -->
-      <path d="M108 174 Q110 160 122 158 Q134 160 136 174" fill="#3d1a08"/>
-      <ellipse cx="122" cy="159" rx="12" ry="7" fill="#3d1a08"/>
-      <!-- eyes & smile -->
-      <circle cx="117" cy="172" r="2" fill="#3d1a08"/>
-      <circle cx="127" cy="172" r="2" fill="#3d1a08"/>
-      <circle cx="117.5" cy="171.5" r=".7" fill="#fff"/>
-      <circle cx="127.5" cy="171.5" r=".7" fill="#fff"/>
-      <path d="M117 178 Q122 183 127 178" stroke="#3d1a08" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <!-- arm reaching toward food -->
-      <path d="M110 192 Q96 205 90 215" stroke="#C17A4A" stroke-width="9" stroke-linecap="round" fill="none"/>
-      <circle cx="88" cy="217" r="6" fill="#C17A4A"/>
-      <!-- cup in hand -->
-      <rect x="82" y="212" width="9" height="12" rx="2.5" fill="#E8973A"/>
-
-      <!-- Person 2 — center, green hoodie, Filipino look, big smile (tallest) -->
-      <ellipse cx="186" cy="192" rx="18" ry="22" fill="#2ea877"/><!-- hoodie -->
-      <circle  cx="186" cy="168" r="16" fill="#C4845A"/><!-- head -->
-      <!-- hair dark -->
-      <path d="M170 168 Q172 152 186 150 Q200 152 202 168" fill="#1a0800"/>
-      <ellipse cx="186" cy="151" rx="14" ry="8" fill="#1a0800"/>
-      <!-- ears -->
-      <circle cx="170" cy="169" r="5" fill="#C4845A"/>
-      <circle cx="202" cy="169" r="5" fill="#C4845A"/>
-      <!-- eyes bright -->
-      <circle cx="179" cy="165" r="2.5" fill="#1a0800"/>
-      <circle cx="193" cy="165" r="2.5" fill="#1a0800"/>
-      <circle cx="179.8" cy="164.3" r="1" fill="#fff"/>
-      <circle cx="193.8" cy="164.3" r="1" fill="#fff"/>
-      <!-- big warm smile -->
-      <path d="M178 172 Q186 180 194 172" stroke="#1a0800" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <ellipse cx="186" cy="174" rx="5" ry="2" fill="#c47050" opacity=".5"/>
-      <!-- hoodie pocket detail -->
-      <rect x="178" y="200" width="16" height="10" rx="4" fill="rgba(0,0,0,.12)"/>
-
-      <!-- Person 3 — right, lighter skin, beige jacket -->
-      <ellipse cx="252" cy="196" rx="15" ry="19" fill="#C4A882"/>
-      <circle  cx="252" cy="175" r="13" fill="#B8896A"/>
-      <!-- hair wavy -->
-      <path d="M239 175 Q241 162 252 160 Q263 162 265 175" fill="#2a1208"/>
-      <ellipse cx="252" cy="161" rx="11" ry="7" fill="#2a1208"/>
-      <!-- eyes -->
-      <circle cx="247" cy="173" r="2" fill="#2a1208"/>
-      <circle cx="257" cy="173" r="2" fill="#2a1208"/>
-      <circle cx="247.7" cy="172.4" r=".7" fill="#fff"/>
-      <circle cx="257.7" cy="172.4" r=".7" fill="#fff"/>
-      <path d="M247 179 Q252 184 257 179" stroke="#2a1208" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      <!-- arm reaching -->
-      <path d="M265 190 Q278 202 284 210" stroke="#B8896A" stroke-width="9" stroke-linecap="round" fill="none"/>
-
-      <!-- Person 4 — far right, darker skin, olive cap, waving -->
-      <ellipse cx="310" cy="198" rx="14" ry="18" fill="#5A8A6A"/><!-- jacket -->
-      <circle  cx="310" cy="178" r="12" fill="#8B6040"/><!-- head -->
-      <!-- cap -->
-      <rect x="298" y="167" width="24" height="7" rx="3" fill="#3a3020"/>
-      <rect x="296" y="168" width="28" height="5" rx="2" fill="#4d4030"/>
-      <!-- eyes -->
-      <circle cx="305" cy="177" r="2" fill="#1a0800"/>
-      <circle cx="315" cy="177" r="2" fill="#1a0800"/>
-      <circle cx="305.6" cy="176.4" r=".7" fill="#fff"/>
-      <circle cx="315.6" cy="176.4" r=".7" fill="#fff"/>
-      <!-- grin -->
-      <path d="M305 183 Q310 188 315 183" stroke="#1a0800" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <!-- waving arm animated -->
-      <g>
-        <path d="M322 190 Q338 175 344 164" stroke="#8B6040" stroke-width="9" stroke-linecap="round" fill="none">
-          <animateTransform attributeName="transform" type="rotate"
-            values="-8 322 190;10 322 190;-8 322 190" dur="1.6s" repeatCount="indefinite"/>
-        </path>
-        <circle cx="344" cy="163" r="7" fill="#8B6040">
-          <animateTransform attributeName="transform" type="rotate"
-            values="-8 322 190;10 322 190;-8 322 190" dur="1.6s" repeatCount="indefinite"/>
-        </circle>
-      </g>
-
-      <!-- Ground strip -->
-      <rect x="0" y="238" width="430" height="22" fill="#112016"/>
-
-      <!-- Bottom fade into page bg -->
-      <rect x="0" y="220" width="430" height="40" fill="url(#botfade)"/>
-    </svg>
-
-    <!-- Hero text overlay -->
-    <div class="lf2-hero-txt">
-      <div class="lf2-headline">Your community.<br><span class="g">Right</span> here.<br><span class="g">Right</span> now.</div>
-      <div class="lf2-tagline">Real food, real people,<br>same building. &#x1F49A;</div>
-    </div>
-  </div>
-
-  <!-- STAT CARD -->
-  <div class="lf2-stats">
-    <div class="lf2-stat">
-      <div class="lf2-stat-ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <div class="lf2-stat-n" id="hero-vendor-count">7</div>
-      <div class="lf2-stat-l">Vendors</div>
-      <div class="lf2-stat-d">Supporting neighbors</div>
-    </div>
-    <div class="lf2-stat-div"></div>
-    <div class="lf2-stat">
-      <div class="lf2-stat-ico"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div>
-      <div class="lf2-stat-n">&#x20B1;0</div>
-      <div class="lf2-stat-l">Service charge</div>
-      <div class="lf2-stat-d">100% for our community</div>
-    </div>
-    <div class="lf2-stat-div"></div>
-    <div class="lf2-stat">
-      <div class="lf2-stat-ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
-      <div class="lf2-stat-n"><span id="hero-user-count">100</span>+</div>
-      <div class="lf2-stat-l">Users</div>
-      <div class="lf2-stat-d">Growing everyday</div>
-    </div>
-  </div>
-
-  <!-- PORTAL CARDS -->
-  <div class="lf2-cards">
-
-    <!-- Browse & Order -->
-    <button class="lf2-card primary" onclick="goCust()">
-      <div class="lf2-cill">
-        <!-- Grocery basket illustration SVG -->
-        <svg viewBox="0 0 90 90" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
-          <rect width="90" height="90" rx="16" fill="rgba(255,255,255,.06)"/>
-          <!-- basket body -->
-          <path d="M20 52 Q20 72 45 72 Q70 72 70 52 Z" fill="#5a8a5a" stroke="#3a6a3a" stroke-width="1.5"/>
-          <path d="M20 52 h50" stroke="#3a6a3a" stroke-width="2"/>
-          <!-- basket weave lines -->
-          <path d="M25 58 Q45 62 65 58" stroke="#4a7a4a" stroke-width="1" fill="none"/>
-          <path d="M22 64 Q45 68 68 64" stroke="#4a7a4a" stroke-width="1" fill="none"/>
-          <line x1="35" y1="52" x2="35" y2="72" stroke="#4a7a4a" stroke-width="1"/>
-          <line x1="45" y1="52" x2="45" y2="72" stroke="#4a7a4a" stroke-width="1"/>
-          <line x1="55" y1="52" x2="55" y2="72" stroke="#4a7a4a" stroke-width="1"/>
-          <!-- handle -->
-          <path d="M28 52 Q28 38 45 36 Q62 38 62 52" stroke="#7ab07a" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <!-- groceries sticking out top -->
-          <!-- baguette -->
-          <rect x="50" y="30" width="8" height="28" rx="4" fill="#D4A042" transform="rotate(20 54 44)"/>
-          <!-- leafy greens -->
-          <ellipse cx="36" cy="36" rx="10" ry="7" fill="#3da83d" transform="rotate(-20 36 36)"/>
-          <ellipse cx="30" cy="38" rx="8" ry="6" fill="#2ea83d" transform="rotate(15 30 38)"/>
-          <ellipse cx="40" cy="33" rx="7" ry="5" fill="#45b845" transform="rotate(-10 40 33)"/>
-          <!-- tomato -->
-          <circle cx="56" cy="40" r="8" fill="#e03c3c"/>
-          <path d="M52 34 Q56 30 60 34" stroke="#2ea877" stroke-width="2" fill="none"/>
-        </svg>
-      </div>
-      <div class="lf2-ctxt">
-        <div class="lf2-ctitle">Browse &amp; Order</div>
-        <div class="lf2-cdesc">Food, drinks, snacks from your neighbors</div>
-        <div class="lf2-cmeta">
-          <span class="lf2-faces"><i></i><i></i><i></i><i></i></span>
-          <span class="lf2-cmeta-txt">Fresh picks from trusted neighbors</span>
-        </div>
-      </div>
-      <div class="lf2-chev-wrap"><div class="lf2-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
-    </button>
-
-    <!-- Vendor Login -->
-    <button class="lf2-card" onclick="goVendorLogin()">
-      <div class="lf2-cill">
-        <!-- 24H convenience store SVG -->
-        <svg viewBox="0 0 90 90" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
-          <rect width="90" height="90" rx="16" fill="rgba(255,255,255,.04)"/>
-          <!-- storefront building -->
-          <rect x="14" y="38" width="62" height="38" rx="3" fill="#2a4a3a"/>
-          <rect x="14" y="32" width="62" height="10" rx="2" fill="#e03c6a"/>
-          <!-- 24H sign -->
-          <rect x="24" y="22" width="42" height="14" rx="4" fill="#cc3560"/>
-          <text x="45" y="33" text-anchor="middle" fill="#fff" font-size="10" font-weight="800" font-family="monospace">24H</text>
-          <!-- door -->
-          <rect x="35" y="54" width="20" height="22" rx="2" fill="#1a3528"/>
-          <rect x="37" y="56" width="7" height="18" rx="1" fill="#4ab47a" opacity=".3"/>
-          <rect x="46" y="56" width="7" height="18" rx="1" fill="#4ab47a" opacity=".3"/>
-          <circle cx="44" cy="65" r="1.5" fill="#F5C842"/>
-          <!-- window left -->
-          <rect x="16" y="44" width="15" height="14" rx="2" fill="#4ab47a" opacity=".25"/>
-          <line x1="23" y1="44" x2="23" y2="58" stroke="#4ab47a" stroke-width="1" opacity=".3"/>
-          <!-- window right -->
-          <rect x="59" y="44" width="15" height="14" rx="2" fill="#4ab47a" opacity=".25"/>
-          <line x1="66" y1="44" x2="66" y2="58" stroke="#4ab47a" stroke-width="1" opacity=".3"/>
-          <!-- awning stripes -->
-          <path d="M14 42 L76 42" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
-          <!-- step -->
-          <rect x="30" y="74" width="30" height="4" rx="1" fill="#1a3528"/>
-          <!-- potted plant -->
-          <rect x="62" y="66" width="10" height="10" rx="2" fill="#2d5c3c"/>
-          <ellipse cx="67" cy="64" rx="6" ry="5" fill="#3da83d"/>
-          <!-- warm glow from sign -->
-          <ellipse cx="45" cy="30" rx="30" ry="8" fill="#e03c6a" opacity=".08"/>
-        </svg>
-      </div>
-      <div class="lf2-ctxt">
-        <div class="lf2-ctitle">Vendor Login</div>
-        <div class="lf2-cdesc">Manage your store &amp; incoming orders</div>
-        <div class="lf2-pill">&#x1F4C8; Grow your business</div>
-      </div>
-      <div class="lf2-chev-wrap"><div class="lf2-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
-    </button>
-
-    <!-- Admin -->
-    <button class="lf2-card" onclick="goAdminLogin()">
-      <div class="lf2-cill">
-        <!-- Shield with star SVG -->
-        <svg viewBox="0 0 90 90" width="88" height="88" xmlns="http://www.w3.org/2000/svg">
-          <rect width="90" height="90" rx="16" fill="rgba(255,255,255,.03)"/>
-          <defs>
-            <linearGradient id="shg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#7B5EA7"/><stop offset="100%" stop-color="#4a3080"/>
-            </linearGradient>
-          </defs>
-          <path d="M45 16 L66 24 L66 46 Q66 62 45 72 Q24 62 24 46 L24 24 Z" fill="url(#shg)" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
-          <path d="M45 20 L63 27 L63 46 Q63 59 45 68 Q27 59 27 46 L27 27 Z" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
-          <!-- star -->
-          <polygon points="45,33 47.5,40 55,40 49,44.5 51.5,51.5 45,47 38.5,51.5 41,44.5 35,40 42.5,40" fill="#F5C842" filter="url(#glow)"/>
-          <!-- sparkle dots -->
-          <circle cx="32" cy="28" r="1.5" fill="#F5C842" opacity=".6"><animate attributeName="opacity" values=".2;.8;.2" dur="2s" repeatCount="indefinite"/></circle>
-          <circle cx="62" cy="34" r="1.2" fill="#F5C842" opacity=".5"><animate attributeName="opacity" values=".3;.9;.3" dur="1.6s" repeatCount="indefinite"/></circle>
-        </svg>
-      </div>
-      <div class="lf2-ctxt">
-        <div class="lf2-ctitle">Admin</div>
-        <div class="lf2-cdesc">System management &amp; control center</div>
-      </div>
-      <div class="lf2-chev-wrap"><div class="lf2-chev"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
-    </button>
-  </div>
-
-  <!-- COMMUNITY BANNER -->
-  <div class="lf2-banner">
-    <div class="lf2-banner-txt">
-      <div class="lf2-banner-h">We're more than an app.</div>
-      <div class="lf2-banner-t">We're a community helping each other every day.</div>
-      <span class="lf2-banner-s">Let&apos;s keep supporting local! &#x1F90D;</span>
-    </div>
-    <!-- Community people SVG illustration right side -->
-    <div class="lf2-banner-art">
-      <svg viewBox="0 0 160 150" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" width="160" height="150">
-        <defs>
-          <radialGradient id="bgg" cx="50%" cy="100%" r="80%">
-            <stop offset="0%" stop-color="#2ea877" stop-opacity=".25"/>
-            <stop offset="100%" stop-color="transparent"/>
-          </radialGradient>
-        </defs>
-        <ellipse cx="80" cy="145" rx="80" ry="20" fill="url(#bgg)"/>
-        <!-- Person 1 - center smiling, green hoodie -->
-        <circle cx="80" cy="68" r="16" fill="#C4845A"/>
-        <path d="M64 68 Q68 58 80 57 Q92 58 96 68" fill="#3d2010"/>
-        <ellipse cx="80" cy="58" rx="14" ry="8" fill="#3d2010"/>
-        <path d="M74 74 Q80 79 86 74" stroke="#3d2010" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <ellipse cx="80" cy="96" rx="18" ry="22" fill="#2ea877"/>
-        <!-- waving arm right -->
-        <path d="M96 88 Q110 78 114 70" stroke="#C4845A" stroke-width="8" stroke-linecap="round" fill="none">
-          <animateTransform attributeName="transform" type="rotate" values="-5 96 88;8 96 88;-5 96 88" dur="1.8s" repeatCount="indefinite"/>
-        </path>
-        <circle cx="114" cy="68" r="7" fill="#C4845A"/>
-        <!-- Person 2 - left -->
-        <circle cx="44" cy="74" r="13" fill="#B8896A"/>
-        <path d="M31 74 Q35 65 44 64 Q53 65 57 74" fill="#2a1a0a"/>
-        <ellipse cx="44" cy="64" rx="11" ry="7" fill="#2a1a0a"/>
-        <ellipse cx="44" cy="96" rx="15" ry="20" fill="#5A7A5A"/>
-        <!-- Person 3 - right, darker skin -->
-        <circle cx="118" cy="76" r="12" fill="#8B6040"/>
-        <ellipse cx="118" cy="68" rx="10" ry="6" fill="#2a1810"/>
-        <ellipse cx="118" cy="96" rx="14" ry="18" fill="#3a6a5a"/>
-        <!-- Foliage / leaves -->
-        <ellipse cx="20" cy="130" rx="22" ry="28" fill="#1a5a30" opacity=".8"/>
-        <ellipse cx="8" cy="115" rx="16" ry="22" fill="#236b35" opacity=".7"/>
-        <ellipse cx="140" cy="125" rx="20" ry="26" fill="#1a5a30" opacity=".7"/>
-        <ellipse cx="152" cy="110" rx="14" ry="20" fill="#236b35" opacity=".6"/>
-        <!-- Heart sparkle above group -->
-        <text x="78" y="42" text-anchor="middle" font-size="16" opacity=".8">
-          &#x1F49A;
-          <animate attributeName="opacity" values=".5;1;.5" dur="2.2s" repeatCount="indefinite"/>
-        </text>
-        <text x="100" y="52" text-anchor="middle" font-size="10" opacity=".6">
-          &#x2728;
-          <animate attributeName="opacity" values=".3;.8;.3" dur="1.8s" repeatCount="indefinite"/>
-        </text>
-      </svg>
-    </div>
-  </div>
-
-  <!-- BOTTOM NAV -->
-  <div class="lf2-nav">
-    <div class="lf2-ni on" onclick="goCust()">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>Home</span>
-    </div>
-    <div class="lf2-ni" onclick="goCust()">
-      <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-      <span>Orders</span>
-    </div>
-    <div class="lf2-ni" onclick="goCust()">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <span>Discover</span>
-    </div>
-    <div class="lf2-ni" onclick="goCust()">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span>Messages</span>
-      <span class="lf2-ni-dot"></span>
-    </div>
-    <div class="lf2-ni" onclick="goVendorLogin()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
-      <span>Profile</span>
-    </div>
-  </div>
-
-</div>
-</div>
-
 <div class="page on" id="p-chome">
   <div class="notch">
     <span class="ph-clock">9:41</span>
@@ -2332,7 +1824,7 @@ select option { color: var(--t1); background: var(--w); }
     </div>
   </div>
   <div class="hero-anim-bg" style="background:#fff;padding:0 0 22px;flex-shrink:0;position:relative;overflow:hidden">
-    <!-- Landing-style brand header (reused from p-land for a consistent look) -->
+    <!-- Landing-style brand header -->
     <div class="lf2-head">
       <div class="lf2-brand">
         <div class="lf2-mark-wrap">
@@ -3144,7 +2636,7 @@ select option { color: var(--t1); background: var(--w); }
       <span id="v-push-dot" style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#9CA3AF"></span>
       <span id="v-push-txt" style="flex:1;font-size:10.5px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.3">Checking notifications…</span>
       <button onclick="osRepairPush()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛠 Fix</button>
-      <button onclick="copyPushDiagnostics()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">📋 Copy Info</button>
+      <button id="v-push-copyinfo" onclick="copyPushDiagnostics()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">📋 Copy Info</button>
     </div>
     <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -3972,7 +3464,7 @@ async function sha256(str){
 
 let activeVendorId = null;
 let payMethod = 'gcash';
-let pageHistory = ['p-land'];
+let pageHistory = ['p-chome'];
 let currentVendorTab = 'dash';
 
 const VENDORS = {
@@ -4340,7 +3832,7 @@ function goPage(id){
 }
 function goBack(){
   pageHistory.pop();
-  const prev=pageHistory[pageHistory.length-1]||'p-land';
+  const prev=pageHistory[pageHistory.length-1]||'p-chome';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(prev).classList.add('on');
 }
@@ -4488,6 +3980,18 @@ function buildFeaturedBanner(){
     </div>`;
 }
 
+// The rating badge shown on cards and the vendor profile. Uses the real,
+// customer-submitted review average once a vendor has at least one review
+// (computed by the LFN review module — see window.LFN.ratingFor). Falls back
+// to the vendor's seeded v.rating string when there are none yet, so nothing
+// currently on screen changes until real reviews start coming in.
+function lfRatingDisplay(v){
+  try{
+    const r = (window.LFN && typeof window.LFN.ratingFor === 'function') ? window.LFN.ratingFor(v.id) : null;
+    if(r && r.count) return '⭐ ' + r.avg.toFixed(1) + ' (' + r.count + ')';
+  }catch(e){}
+  return v.rating;
+}
 function buildVendorCards(force=false){
   const el=document.getElementById('vendor-cards');
   // v49b: key the cache on the LIVE open state, not the stored v.active flag.
@@ -4544,7 +4048,7 @@ function buildVendorCards(force=false){
         <div style="margin-bottom:4px"><span class="bdg ${isClosed?'closed':'open'}">● ${isClosed?'Closed':'Open'}</span>${_mktChip}${(!isClosed&&v.featured)?'<span class="bdg" style="background:#FEF9C3;color:#854d0e;margin-left:4px">⭐ Best Seller</span>':''}</div>
         <div class="vc-name">${esc(v.name)}</div>
         <div class="vc-sub">${esc(isClosed?opensTxt:subLine)}</div>
-        <div class="vc-foot"><span class="vc-price">From ₱${esc(String(v.min).replace(/^₱/,''))}</span><span class="vc-rating">${esc(v.rating)}</span></div>
+        <div class="vc-foot"><span class="vc-price">From ₱${esc(String(v.min).replace(/^₱/,''))}</span><span class="vc-rating">${esc(lfRatingDisplay(v))}</span></div>
       </div>
     </div>`;
   };
@@ -4984,7 +4488,7 @@ function openVendor(vid){
   // v.min is '₱45' on the seeded vendors but a bare 50 on admin-added ones —
   // normalise so the cell never renders a peso-less number.
   document.getElementById('vd-min').textContent='₱'+String(v.min).replace(/^₱/,'');
-  document.getElementById('vd-rating').textContent=v.rating;
+  document.getElementById('vd-rating').textContent=lfRatingDisplay(v);
   // v54: for a cleaner, "Delivery" is meaningless and "Min. order" reads
   // oddly — the two stat cells become "Starts at" and the working window.
   const _vdMinLbl = document.getElementById('vd-min-lbl');
@@ -8699,7 +8203,7 @@ function updateAdminStats(){
   const badge=el('a-badge');
   if(badge){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
   // Auto-update vendor count on front page if admin hasn't overridden it
-  if(!heroStats.vendorCount) el('hero-vendor-count').textContent=activeVendorCount;
+  if(!heroStats.vendorCount && el('hero-vendor-count')) el('hero-vendor-count').textContent=activeVendorCount;
   applyHeroStats();
   renderAdminOrdersPreview();
 }
@@ -9581,6 +9085,21 @@ function lfFcmDiag(msg){
     if(on) showToast(msg);
   }catch(e){}
 }
+
+// "Copy Info" dumps a raw technical diagnostic dump meant for a developer to
+// read, not something a vendor can act on themselves — hide it by default,
+// behind the exact same debug flag lfFcmDiag() already gates its own toasts
+// behind (#fcmdiag in the URL, or localStorage['lf-fcm-diag']==='1'). The
+// button and copyPushDiagnostics() itself are untouched, so turning the flag
+// on brings it straight back.
+(function(){
+  try{
+    var on = (location.hash||'').indexOf('fcmdiag') > -1 ||
+             localStorage.getItem('lf-fcm-diag') === '1';
+    var b = document.getElementById('v-push-copyinfo');
+    if(b && !on) b.style.display = 'none';
+  }catch(e){}
+})();
 
 function _fcmInit(){
   try{
@@ -10664,6 +10183,15 @@ window.LFN = (function(){
     catch(e){ showToast('⚠️ Review saved locally, sync failed'); }
   }
 
+  // Exposed so the vendor card/profile rating badge (outside this module) can
+  // show the real average instead of the seeded placeholder. Returns null for
+  // a vendor with no reviews yet, so the caller can fall back sensibly.
+  function ratingFor(vid){
+    const vRevs = reviews.filter(r=>r.vendorId===vid);
+    if(!vRevs.length) return null;
+    return { avg: vRevs.reduce((s,r)=>s+r.rating,0)/vRevs.length, count: vRevs.length };
+  }
+
   // ---------- FEED (customer side) ----------
   function openFeed(){
     goPage('p-cfeed');
@@ -11045,7 +10573,7 @@ window.LFN = (function(){
     openFeed, openComposer, togglePick, publishPost,
     handlePhoto, clearPhoto, deletePost,
     addFromFeed, openReviewModal, setStars, submitReview,
-    syncFromFB,
+    syncFromFB, ratingFor,
   };
 })();
 

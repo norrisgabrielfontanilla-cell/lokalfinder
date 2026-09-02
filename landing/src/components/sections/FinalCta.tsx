@@ -31,7 +31,7 @@ export default function FinalCta() {
             <Button href="#product" variant="inverted">
               Explore Lokal Finder
             </Button>
-            <Button href="#early-access" variant="outline-light">
+            <Button href="/lokalfinder/" variant="outline-light">
               Partner with Lokal Finder
             </Button>
           </div>
