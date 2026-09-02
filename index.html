@@ -1139,6 +1139,21 @@ select option { color: var(--t1); background: var(--w); }
   mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent 100%)}
 .mkt-row.mkt-end{-webkit-mask-image:none;mask-image:none}
 
+/* v63: the same row inside the vendor-login column, which already has its own
+   24px gutter. Without this the tabs sit inset by 40px and the edge mask
+   starts 16px early, so the fade lands in the middle of the card.
+
+   This one WRAPS rather than scrolls, unlike Home. On Home the row is a
+   browsing filter and a half-visible tab past the edge is a fine invitation
+   to swipe. Here it is a form control: the four tabs measure 546px against a
+   342px column, so scrolling would put Aircon off-screen at the exact moment
+   an aircon technician is looking for it. Wrapping costs one 44px line and
+   shows every option at once. overflow:visible also means the elevation is no
+   longer clipped, so the padding-bottom trick Home needs is unnecessary — and
+   the edge mask has nothing left to fade, so it is removed. */
+.mkt-row-flush{flex-wrap:wrap;overflow:visible;padding:0;margin-bottom:11px;
+  -webkit-mask-image:none;mask-image:none;row-gap:8px}
+
 /* A 44px touch target on a warm off-white card, against the mint app
    background. The bottom padding is what the elevation needs — overflow-x
    clips vertically too, so without it every shadow is sliced off. The
@@ -2977,14 +2992,29 @@ select option { color: var(--t1); background: var(--w); }
     <div class="login-ico">🏪</div>
     <div class="login-ttl">Vendor Login</div>
     <div class="login-sub">LokalFinder · GRASS Residences</div>
+    <!-- v63: the store picker is filtered by vertical. With three verticals and
+         self-serve signup live, one flat list mixes carinderias, cleaners and
+         aircon technicians together and a seller has to hunt for their own
+         store. Same .mkt-tab component as Home, generated from MKT_ORDER by
+         lfBuildMktTabs(), so a fourth vertical needs no work here either.
+         Only the "All" tab is markup. -->
+    <label class="flbl">What do you offer?</label>
+    <div class="mkt-row mkt-row-flush" id="vlogin-mkt-row">
+      <div class="mkt-tab on" data-vmkt="all" onclick="filterVendorLoginMkt(this,'all')"></div>
+    </div>
+
     <label class="flbl">Store</label>
+    <!-- The options used to be four hardcoded food stores here, replaced by
+         rebuildVendorSelect() on the first sync. That meant a cleaning or
+         aircon provider opening the login screen before the sync landed was
+         offered four carinderias and nothing else. Generated from VENDORS at
+         boot instead, which is seeded with every vertical. -->
     <select class="finp" id="v-sel">
       <option value="">Select your store…</option>
-      <option value="pares">Finest Pares & Goto</option>
-      <option value="siomai">Pau's Homemade Siomai</option>
-      <option value="kape">Kape At Ikaw</option>
-      <option value="adbuns">ADBUNS</option>
     </select>
+    <!-- Same offset as the signup form's hints: pulls up under the field it
+         belongs to instead of floating between two controls. -->
+    <div id="v-sel-empty" style="display:none;font-size:11.5px;color:var(--t3);line-height:1.45;margin:-7px 0 13px"></div>
     <label class="flbl">PIN</label>
     <!-- v61: was maxlength="4" while verifyVendorPin has accepted 4-10 since
          v55 — a vendor with a longer PIN literally could not type it in. Self-
@@ -4200,7 +4230,11 @@ function lfPriceLong(item){  // roomier — provider profile, booking sheet
    vertical meant editing markup in two places and was easy to half-do. Only
    the "All" tab is in the HTML; everything after it is registry-driven. */
 function lfBuildMktTabs(){
-  [['mkt-row','data-mkt','filterMkt'],['hist-row','data-hist','filterHistory']].forEach(([rowId,attr,fn])=>{
+  [['mkt-row','data-mkt','filterMkt'],
+   ['hist-row','data-hist','filterHistory'],
+   // v63: the vendor-login store filter. Third row, same component, same
+   // registry — adding a vertical still touches only MARKETPLACES/MKT_ORDER.
+   ['vlogin-mkt-row','data-vmkt','filterVendorLoginMkt']].forEach(([rowId,attr,fn])=>{
     const row = document.getElementById(rowId); if(!row) return;
     row.querySelectorAll('.mkt-tab['+attr+']:not(['+attr+'="all"])').forEach(t=>t.remove());
     // v60: the "All" tab is markup, so paint it through the same helper —
@@ -4220,7 +4254,7 @@ function lfBuildMktTabs(){
     lfMktFade(row);
   });
   window.addEventListener('resize', ()=>{
-    ['mkt-row','hist-row'].forEach(id=>lfMktFade(document.getElementById(id)));
+    ['mkt-row','hist-row','vlogin-mkt-row'].forEach(id=>lfMktFade(document.getElementById(id)));
   }, {passive:true});
 }
 
@@ -4295,7 +4329,8 @@ function goPage(id){
   if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
   if(id==='p-ccart')    renderCartPage();
   if(id==='p-chistory') renderOrderHistory();
-  if(id==='p-vlogin')   { try{ lfRefreshAppStatus(); }catch(e){} }
+  if(id==='p-vlogin')   { try{ lfResetVendorLoginFilter(); }catch(e){}
+                          try{ lfRefreshAppStatus(); }catch(e){} }
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
@@ -4358,6 +4393,21 @@ function startSuggestionRotation(){
 }
 
 function goVendorLogin(){ goPage('p-vlogin'); try{ lfRefreshAppStatus(); }catch(e){} }
+
+/* v63: land on "All" every time the login screen is shown. A stale filter
+   would hide the seller's own store behind a tab they do not remember
+   tapping — the same class of bug as the ap-loc reset in v62. Driven from
+   goPage() rather than goVendorLogin(), because logout and two Back buttons
+   reach p-vlogin without going through goVendorLogin(). */
+function lfResetVendorLoginFilter(){
+  const row = document.getElementById('vlogin-mkt-row');
+  const allTab = row && row.querySelector('.mkt-tab[data-vmkt="all"]');
+  _vLoginMkt = 'all';
+  if(row) row.querySelectorAll('.mkt-tab').forEach(t=>t.classList.remove('on'));
+  if(allTab) allTab.classList.add('on');
+  rebuildVendorSelect();
+  if(row){ row.scrollLeft = 0; lfMktFade(row); }
+}
 function goAdminLogin(){
   goPage('p-alogin');
 }
@@ -10328,15 +10378,94 @@ async function lfFetchScoped(){
   return d;
 }
 
+/* v63: which vertical the login store picker is filtered to. 'all' is the
+   default and must stay the default — it is what keeps the picker a superset
+   of the old flat list, so nothing that selects a store by id regresses.
+   Reset by goVendorLogin(), like ap-loc in v62: a seller who filtered to
+   Aircon, backed out and came back would otherwise return to a list their own
+   store is missing from and conclude it had been deleted. */
+let _vLoginMkt = 'all';
+
+function filterVendorLoginMkt(btn, k){
+  _vLoginMkt = k || 'all';
+  const row = document.getElementById('vlogin-mkt-row');
+  if(row) row.querySelectorAll('.mkt-tab').forEach(t=>t.classList.remove('on'));
+  if(btn){ btn.classList.add('on'); lfTabSelected(btn); }
+  rebuildVendorSelect();
+}
+
+/* Build the store picker from VENDORS, honouring the category filter.
+   Under 'all' the stores are still GROUPED by vertical rather than listed in
+   registry order — the ask was that businesses not be scattered, and an
+   unfiltered list that is merely long is still scattered. Groups follow
+   MKT_ORDER so Food is first wherever it appears. */
 function rebuildVendorSelect(){
   const sel=el('v-sel'); if(!sel) return;
   const cur=sel.value;
-  while(sel.options.length>1) sel.remove(1);
-  Object.values(VENDORS).forEach(v=>{
+  // Remove everything after the placeholder. The old loop used sel.remove(),
+  // which drops an <option> but leaves its now-empty <optgroup> behind.
+  while(sel.children.length>1) sel.removeChild(sel.lastChild);
+
+  const all = Object.values(VENDORS);
+  const pick = all.filter(v=>_vLoginMkt==='all' || vendorCat(v)===_vLoginMkt);
+  const byName = (a,b)=>String(a.name||'').localeCompare(String(b.name||''));
+  const addOpt = (v, parent)=>{
     const opt=document.createElement('option');
-    opt.value=v.id; opt.textContent=v.name; sel.appendChild(opt);
+    opt.value=v.id; opt.textContent=v.name;   // textContent, never innerHTML
+    parent.appendChild(opt);
+  };
+
+  if(_vLoginMkt==='all'){
+    const seen = {};
+    MKT_ORDER.forEach(k=>{
+      const M = MARKETPLACES[k]; if(!M) return;
+      const rows = all.filter(v=>vendorCat(v)===k).sort(byName);
+      if(!rows.length) return;
+      const g=document.createElement('optgroup');
+      g.label = (M.icon?M.icon+' ':'') + (M.label || M.short || k);
+      rows.forEach(v=>{ seen[v.id]=1; addOpt(v,g); });
+      sel.appendChild(g);
+    });
+    // A vendor whose category is not in MKT_ORDER would otherwise vanish from
+    // the picker entirely and be unable to sign in at all.
+    const orphans = all.filter(v=>!seen[v.id]).sort(byName);
+    if(orphans.length){
+      const g=document.createElement('optgroup'); g.label='Other';
+      orphans.forEach(v=>addOpt(v,g)); sel.appendChild(g);
+    }
+  }else{
+    pick.sort(byName).forEach(v=>addOpt(v, sel));
+  }
+
+  // Keep the selection only if it survived the filter. Assigning a value with
+  // no matching option leaves selectedIndex at -1, which paints the select
+  // BLANK rather than showing the placeholder — so fall back explicitly.
+  sel.value = cur || '';
+  if(sel.selectedIndex < 0) sel.selectedIndex = 0;
+
+  const note = document.getElementById('v-sel-empty');
+  if(note){
+    const M = MARKETPLACES[_vLoginMkt];
+    const empty = _vLoginMkt!=='all' && !pick.length;
+    note.style.display = empty ? 'block' : 'none';
+    note.textContent = empty
+      ? 'No '+((M && M.label) || 'stores')+' listed yet. Tap "List your store" below to apply.'
+      : '';
+  }
+  updateVendorLoginCounts();
+}
+
+/* Counts on the login tabs use the same .mkt-n capsule as Home, but count
+   EVERY store in the vertical, not just the open ones — a vendor signs in to
+   a closed store precisely to open it. */
+function updateVendorLoginCounts(){
+  document.querySelectorAll('#vlogin-mkt-row .mkt-tab').forEach(tab=>{
+    const id = tab.getAttribute('data-vmkt');
+    const n = Object.values(VENDORS).filter(v=>id==='all'||vendorCat(v)===id).length;
+    let s = tab.querySelector('.mkt-n');
+    if(!s){ s=document.createElement('span'); s.className='mkt-n'; tab.appendChild(s); }
+    s.textContent = n>0 ? String(n) : '';
   });
-  if(cur) sel.value=cur;
 }
 
 function refreshVisible(){
@@ -10357,6 +10486,11 @@ function refreshVisible(){
 (async function boot(){
   loadLocal();
   lfBuildMktTabs();          // v57: vertical tabs come from MKT_ORDER
+  /* v63: populate the store picker from the seeded VENDORS now, not on the
+     first sync. It used to hold four hardcoded food stores until applyData()
+     ran, so a cleaning or aircon provider opening the app offline was offered
+     carinderias only and could not sign in at all. */
+  rebuildVendorSelect();
   loadHeroStats();
   applyHeroStats(true);
   registerServiceWorker();
@@ -11286,7 +11420,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 68; // ← bump this each release (and version.json)
+  const APP_VERSION = 69; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

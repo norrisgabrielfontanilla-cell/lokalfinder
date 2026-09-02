@@ -319,7 +319,50 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
   scope that), so applicant names and phone numbers are exposed. Accepted
   deliberately; one more reason to move to Firebase Auth.
 
-**Testing:** `tests/` holds a Playwright suite — 367 checks across nine files,
+**Vendor login store picker (v63).** The Store dropdown used to be one flat
+list of every seller across all three verticals, so a cleaner had to scroll
+past four carinderias to find themselves. It is now filtered by a `.mkt-tab`
+row — the same component as Home, built by the same `lfBuildMktTabs()` from
+the same `MKT_ORDER`, so a fourth vertical still needs no work here.
+
+- **"All" must stay the default and stay a superset.** Every other suite picks
+  a store with `el('v-sel').value = id`, which fails *silently* if the option
+  is absent — `selectedIndex` goes to -1 and the box paints blank. That is why
+  `rebuildVendorSelect()` explicitly falls back to `selectedIndex = 0` and why
+  switching category drops a now-hidden selection instead of keeping it.
+- Under "All" the stores are still **grouped into `<optgroup>`s** by vertical,
+  labelled from the registry and ordered by `MKT_ORDER`. An unfiltered list
+  that is merely long is still scattered. A vendor whose category is not in
+  `MKT_ORDER` lands in an "Other" group rather than vanishing — without it
+  they could not sign in at all.
+- The old rebuild used `sel.remove()`, which drops an `<option>` but leaves its
+  empty `<optgroup>` behind; it now removes children directly.
+- **The filter resets from `goPage()`, not `goVendorLogin()`** — logout and two
+  Back buttons reach `p-vlogin` without passing through `goVendorLogin()`. Same
+  class of bug as the `ap-loc` reset in v62: a stale filter hides the seller's
+  own store behind a tab they do not remember tapping, and reads as "my store
+  was deleted".
+- **The picker is now built at boot**, from the seeded `VENDORS`. It used to
+  hold four hardcoded food `<option>`s in the markup until `applyData()` ran on
+  the first sync, so a cleaning or aircon provider opening the app offline was
+  offered carinderias only and could not sign in. Only the placeholder is
+  markup now, exactly like the tabs.
+- **`.mkt-row-flush` wraps rather than scrolls.** On Home a half-visible tab
+  past the edge invites a swipe; here it is a form control, and the four tabs
+  measure 546px against a 342px column — scrolling would put Aircon off-screen
+  at the moment an aircon technician looks for it. Wrapping costs one 44px
+  line. `overflow:visible` also means the elevation is no longer clipped, so
+  Home's `padding-bottom`/negative-margin trick is unnecessary here, and the
+  edge mask is removed because it has nothing left to fade.
+- Counts on these tabs include **closed** stores, unlike Home's — a vendor
+  signs in to a closed store precisely to open it.
+
+`tests/test-vlogin.js` covers this (43 checks) and carries its own LEAK GUARD:
+it registers a laundry vertical at runtime and asserts it gets a login tab, its
+registry label and motion, its own optgroup and correct filtering, with no code
+change.
+
+**Testing:** `tests/` holds a Playwright suite — 410 checks across ten files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
