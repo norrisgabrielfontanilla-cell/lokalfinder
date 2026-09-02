@@ -56,7 +56,7 @@ export default function MerchantSection() {
             </motion.ul>
 
             <div className="mt-10">
-              <Button href="#early-access" variant="primary">
+              <Button href="/lokalfinder/" variant="primary">
                 Partner with Lokal Finder
               </Button>
             </div>
