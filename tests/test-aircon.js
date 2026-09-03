@@ -333,54 +333,57 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
         /Not collected by the app/.test(comm.txt), comm.txt.slice(0,220));
 
   // ── 9. THE GUARD: no vertical may be hardcoded again ──────────────
-  // A fourth vertical is registered at runtime with nothing else changed. If
-  // any of this needs code, the abstraction leaked.
+  // A fifth vertical is registered at runtime with nothing else changed. If
+  // any of this needs code, the abstraction leaked. Laundry is now a REAL
+  // vertical (added alongside food/cleaning/aircon), so the guard uses a
+  // still-fictional one — plumbing, named as the next candidate in the v57
+  // comment this guard itself grew out of — to avoid colliding with it.
   const leak = await page.evaluate(() => {
-    MARKETPLACES.laundry = {
-      id:'laundry', label:'Laundry', short:'Laundry', icon:'🧺',
+    MARKETPLACES.plumbing = {
+      id:'plumbing', label:'Plumbing', short:'Plumbing', icon:'🔧',
       itemsNoun:'Services', itemNoun:'Service', itemsNounLower:'services',
       txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
-      cartBased:false, scheduled:true, emptyIcon:'🧺', tagline:'Laundry inside GRASS',
-      providerNoun:'Laundry Provider', portalKicker:'Laundry Provider Portal',
-      sectionTitle:'🧺 Laundry Providers', picksTitle:'🧺 Popular Services',
-      picksSub:'Book a pickup.', searchPlaceholder:'Search laundry…',
+      cartBased:false, scheduled:true, emptyIcon:'🔧', tagline:'Plumbing inside GRASS',
+      providerNoun:'Plumbing Provider', portalKicker:'Plumbing Provider Portal',
+      sectionTitle:'🔧 Plumbing Providers', picksTitle:'🔧 Popular Services',
+      picksSub:'Book a visit.', searchPlaceholder:'Search plumbing…',
       searchNoun:'service', searchHead:'Services',
-      catHint:'e.g. Wash & fold', emojiHint:'🧺',
-      defaultVendorEmoji:'🧺', defaultItemEmoji:'🧺',
-      histEmptySub:'Book a laundry pickup.', workerNoun:'Driver', jobNoun:'Laundry'
+      catHint:'e.g. Pipe repair', emojiHint:'🔧',
+      defaultVendorEmoji:'🔧', defaultItemEmoji:'🔧',
+      histEmptySub:'Book a plumbing visit.', workerNoun:'Plumber', jobNoun:'Plumbing'
     };
-    MKT_ORDER.push('laundry');
-    VENDORS.suds = { id:'suds', name:'Suds & Co', emoji:'🧺', sub:'Tower 1 · Wash & fold',
-      bg:'#eef', rating:'⭐ New', min:150, cats:['laundry'], category:'laundry', active:true,
+    MKT_ORDER.push('plumbing');
+    VENDORS.pipeworks = { id:'pipeworks', name:'PipeWorks Plumbing', emoji:'🔧', sub:'Tower 1 · Pipe repair',
+      bg:'#eef', rating:'⭐ New', min:150, cats:['plumbing'], category:'plumbing', active:true,
       openTime:'00:00', closeTime:'23:59', closedDays:[] };
-    MENU.suds = [{id:'s1',name:'Wash & Fold 5kg',emoji:'🧺',price:250,desc:'Next-day',avail:true,dur:60}];
+    MENU.pipeworks = [{id:'s1',name:'Pipe Leak Repair',emoji:'🔧',price:250,desc:'Same-day',avail:true,dur:60}];
     lfBuildMktTabs();
-    filterMkt(document.querySelector('#mkt-row .mkt-tab[data-mkt="laundry"]'), 'laundry');
-    const o = {kind:'laundry', status:'new', svcDate:lfTodayKey(), svcTime:'10:00'};
+    filterMkt(document.querySelector('#mkt-row .mkt-tab[data-mkt="plumbing"]'), 'plumbing');
+    const o = {kind:'plumbing', status:'new', svcDate:lfTodayKey(), svcTime:'10:00'};
     return {
-      tab: !!document.querySelector('#mkt-row .mkt-tab[data-mkt="laundry"]'),
-      histTab: !!document.querySelector('#hist-row .mkt-tab[data-hist="laundry"]'),
+      tab: !!document.querySelector('#mkt-row .mkt-tab[data-mkt="plumbing"]'),
+      histTab: !!document.querySelector('#hist-row .mkt-tab[data-hist="plumbing"]'),
       title: el('vendor-sec-title').textContent,
       names: [...document.querySelectorAll('#vendor-cards .vc-name')].map(n=>n.textContent),
-      scheduled: isScheduled(VENDORS.suds),
-      cart: isCartBased(VENDORS.suds),
+      scheduled: isScheduled(VENDORS.pipeworks),
+      cart: isCartBased(VENDORS.pipeworks),
       status: lfStatusLabel(o),
       trackerStep: trkSteps(o)[1].labels.preparing,
-      portalKicker: mkt(VENDORS.suds).portalKicker,
+      portalKicker: mkt(VENDORS.pipeworks).portalKicker,
     };
   });
   check('LEAK GUARD: a new vertical gets its Home tab with no code change', leak.tab, String(leak.tab));
   check('LEAK GUARD: it gets its history tab too', leak.histTab, String(leak.histTab));
-  check('LEAK GUARD: its section title comes from the registry', /Laundry Providers/.test(leak.title), leak.title);
+  check('LEAK GUARD: its section title comes from the registry', /Plumbing Providers/.test(leak.title), leak.title);
   check('LEAK GUARD: its provider is listed under its own tab',
-        leak.names.length===1 && leak.names[0]==='Suds & Co', leak.names.join(','));
+        leak.names.length===1 && leak.names[0]==='PipeWorks Plumbing', leak.names.join(','));
   check('LEAK GUARD: it is treated as scheduled, not cart-based',
         leak.scheduled===true && leak.cart===false, leak.scheduled+'/'+leak.cart);
   check('LEAK GUARD: status copy falls back sanely', leak.status==='New' || !!leak.status, leak.status);
   check('LEAK GUARD: tracker wording follows its own workerNoun',
-        leak.trackerStep==='Driver on the way 🚗', leak.trackerStep);
+        leak.trackerStep==='Plumber on the way 🚗', leak.trackerStep);
   check('LEAK GUARD: the vendor portal is relabelled for it',
-        leak.portalKicker==='Laundry Provider Portal', leak.portalKicker);
+        leak.portalKicker==='Plumbing Provider Portal', leak.portalKicker);
 
   // ── 10. Food is untouched ─────────────────────────────────────────
   const food = await page.evaluate(() => {
@@ -395,7 +398,7 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
              scheduled: isScheduled(VENDORS.pares), cart: isCartBased(VENDORS.pares) };
   });
   check('Food tab still lists only kitchens',
-        food.names.length>=4 && !food.names.some(n=>/Sparkle|CoolBreeze|KoolTech|Suds/.test(n)), food.names.join(' | '));
+        food.names.length>=4 && !food.names.some(n=>/Sparkle|CoolBreeze|KoolTech|SudsUp|Crisp|PipeWorks/.test(n)), food.names.join(' | '));
   check('Food keeps its own heading and cuisine chips',
         /Neighborhood Kitchens/.test(food.title) && food.catRow==='flex', food.title+' / '+food.catRow);
   check('Food is still cart-based and still adds to cart',

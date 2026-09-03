@@ -75,34 +75,34 @@ const SHAPE = () => {
   let s = await page.evaluate(SHAPE);
 
   check('The login screen has a category row',
-        s.tabs.length === 4, s.tabs.map(t=>t.k).join(','));
+        s.tabs.length === 5, s.tabs.map(t=>t.k).join(','));
   check('Its tabs follow MKT_ORDER, after All',
-        s.tabs.map(t=>t.k).join(',') === 'all,food,cleaning,aircon', s.tabs.map(t=>t.k).join(','));
+        s.tabs.map(t=>t.k).join(',') === 'all,food,cleaning,aircon,laundry', s.tabs.map(t=>t.k).join(','));
   check('Each tab carries its registry emoji',
-        s.tabs.map(t=>t.emo).join('') === '🏠🍽️🧹❄️', s.tabs.map(t=>t.emo).join(''));
+        s.tabs.map(t=>t.emo).join('') === '🏠🍽️🧹❄️🧺', s.tabs.map(t=>t.emo).join(''));
   check('Each tab carries its registry label',
-        s.tabs.map(t=>t.lbl).join(',') === 'All,Food,Cleaning,Aircon', s.tabs.map(t=>t.lbl).join(','));
+        s.tabs.map(t=>t.lbl).join(',') === 'All,Food,Cleaning,Aircon,Laundry', s.tabs.map(t=>t.lbl).join(','));
   check('Each tab carries its own motion from the registry',
-        s.tabs.map(t=>t.anim).join(',') === 'pop,bounce,sweep,float', s.tabs.map(t=>t.anim).join(','));
+        s.tabs.map(t=>t.anim).join(',') === 'pop,bounce,sweep,float,spin', s.tabs.map(t=>t.anim).join(','));
   check('Emoji and label are separate elements, so the emoji can animate alone',
         s.tabs.every(t => t.emo && t.lbl), JSON.stringify(s.tabs[1]));
   check('Tabs show how many stores are in each vertical',
-        s.tabs.map(t=>t.n).join(',') === '8,4,2,2', s.tabs.map(t=>t.n).join(','));
+        s.tabs.map(t=>t.n).join(',') === '10,4,2,2,2', s.tabs.map(t=>t.n).join(','));
 
   // ── 3. "All" is the default, and is a superset ───────────────────────
   check('The row opens on All', s.tabs[0].on === true && !s.tabs.slice(1).some(t=>t.on),
         s.tabs.map(t=>t.k+(t.on?'*':'')).join(','));
   check('All still offers EVERY store (nothing that selects by id regresses)',
-        ['pares','siomai','kape','adbuns','sparkle','freshnest','coolbreeze','kooltech']
+        ['pares','siomai','kape','adbuns','sparkle','freshnest','coolbreeze','kooltech','suds','crisp']
           .every(id => s.ids.includes(id)), s.ids.join(','));
   check('All keeps the placeholder selected', s.value === '' && s.selectedIndex === 0,
         s.value + '/' + s.selectedIndex);
 
   // ── 4. …but grouped, so the list is not merely long ──────────────────
   check('Under All the stores are grouped by vertical',
-        s.groups.length === 3, s.groups.map(g=>g.label).join(' | '));
+        s.groups.length === 4, s.groups.map(g=>g.label).join(' | '));
   check('The groups are labelled from the registry, in MKT_ORDER',
-        s.groups.map(g=>g.label).join(' | ') === '🍽️ Food | 🧹 Cleaning Services | ❄️ Aircon Cleaning',
+        s.groups.map(g=>g.label).join(' | ') === '🍽️ Food | 🧹 Cleaning Services | ❄️ Aircon Cleaning | 🧺 Laundry Services',
         s.groups.map(g=>g.label).join(' | '));
   check('Cleaners are grouped with cleaners, not scattered among kitchens',
         s.groups[1].opts.join(',') === 'FreshNest Cleaners,Sparkle Home Cleaning',
@@ -137,7 +137,7 @@ const SHAPE = () => {
   check('Food lists only the kitchens',
         s.ids.sort().join(',') === 'adbuns,kape,pares,siomai', s.ids.join(','));
   check('Food excludes cleaners and technicians',
-        !s.names.some(n => /Sparkle|FreshNest|CoolBreeze|KoolTech/.test(n)), s.names.join(' | '));
+        !s.names.some(n => /Sparkle|FreshNest|CoolBreeze|KoolTech|SudsUp|Crisp/.test(n)), s.names.join(' | '));
 
   // ── 6. A selection the filter hides must not linger ──────────────────
   // Assigning a value with no matching option leaves selectedIndex at -1,
@@ -173,7 +173,7 @@ const SHAPE = () => {
   s = await page.evaluate(SHAPE);
   check('Returning to the login screen resets to All', s.tabs[0].on === true,
         s.tabs.map(t=>t.k+(t.on?'*':'')).join(','));
-  check('…and the full grouped list is back', s.groups.length === 3 && s.ids.length === 8,
+  check('…and the full grouped list is back', s.groups.length === 4 && s.ids.length === 10,
         s.groups.length + '/' + s.ids.length);
 
   // Logout is not the only way back: the Back button reaches p-vlogin too.
@@ -183,7 +183,7 @@ const SHAPE = () => {
   await page.waitForTimeout(300);
   s = await page.evaluate(SHAPE);
   check('Any route back to the login screen resets it, not just logout',
-        s.tabs[0].on === true && s.ids.length === 8,
+        s.tabs[0].on === true && s.ids.length === 10,
         s.tabs.map(t=>t.k+(t.on?'*':'')).join(',') + ' / ' + s.ids.length);
 
   // ── 9. A vertical with no stores yet ────────────────────────────────
@@ -217,21 +217,24 @@ const SHAPE = () => {
         hostile.text === '<img src=x onerror=alert(1)>Bad Store', hostile.text);
   check('…with no elements injected into the option', hostile.kids === 0, String(hostile.kids));
 
-  // ── 11. LEAK GUARD: a fourth vertical needs no code here ────────────
+  // ── 11. LEAK GUARD: a fifth vertical needs no code here ─────────────
   // If this fails, someone has hardcoded the set of verticals into the login
   // screen — the same mistake v57 had to undo across ~35 call sites.
+  // Laundry is now a REAL vertical (added alongside food/cleaning/aircon),
+  // so this uses a still-fictional one — plumbing — to avoid colliding
+  // with it, same as the equivalent guard in test-aircon.js.
   await page.evaluate(() => {
     delete VENDORS.evil;
-    MARKETPLACES.laundry = {
-      id:'laundry', label:'Laundry', short:'Laundry', icon:'🧺', tabAnim:'bounce',
+    MARKETPLACES.plumbing = {
+      id:'plumbing', label:'Plumbing', short:'Plumbing', icon:'🔧', tabAnim:'bounce',
       itemsNoun:'Services', txNoun:'Booking', txVerb:'Book',
       cartBased:false, scheduled:true,
-      providerNoun:'Laundry Provider', portalKicker:'Laundry Provider Portal',
-      sectionTitle:'🧺 Laundry Providers', workerNoun:'Driver', jobNoun:'Laundry'
+      providerNoun:'Plumbing Provider', portalKicker:'Plumbing Provider Portal',
+      sectionTitle:'🔧 Plumbing Providers', workerNoun:'Plumber', jobNoun:'Plumbing'
     };
-    MKT_ORDER.push('laundry');
-    VENDORS.suds = { id:'suds', name:'Suds & Co', emoji:'🧺', sub:'Tower 1 · Wash & fold',
-      bg:'#eef', rating:'⭐ New', min:150, cats:['laundry'], category:'laundry', active:true };
+    MKT_ORDER.push('plumbing');
+    VENDORS.pipeworks = { id:'pipeworks', name:'PipeWorks Plumbing', emoji:'🔧', sub:'Tower 1 · Pipe repair',
+      bg:'#eef', rating:'⭐ New', min:150, cats:['plumbing'], category:'plumbing', active:true };
     lfBuildMktTabs();              // the ONLY call — no login-specific wiring
     lfResetVendorLoginFilter();
   });
@@ -240,22 +243,22 @@ const SHAPE = () => {
   const leak2 = await page.evaluate(src => {
     const shape = new Function('return (' + src + ')')();
     const before = shape();
-    filterVendorLoginMkt(document.querySelector('#vlogin-mkt-row .mkt-tab[data-vmkt="laundry"]'), 'laundry');
+    filterVendorLoginMkt(document.querySelector('#vlogin-mkt-row .mkt-tab[data-vmkt="plumbing"]'), 'plumbing');
     return { before, after: shape() };
   }, SHAPE.toString());
 
   check('LEAK GUARD: a new vertical gets a login tab with no code change',
-        leak2.before.tabs.some(t => t.k === 'laundry'),
+        leak2.before.tabs.some(t => t.k === 'plumbing'),
         leak2.before.tabs.map(t=>t.k).join(','));
   check('LEAK GUARD: its tab is labelled and animated from its registry entry',
-        (() => { const t = leak2.before.tabs.find(x=>x.k==='laundry');
-                 return t && t.lbl === 'Laundry' && t.emo === '🧺' && t.anim === 'bounce'; })(),
-        JSON.stringify(leak2.before.tabs.find(x=>x.k==='laundry')));
+        (() => { const t = leak2.before.tabs.find(x=>x.k==='plumbing');
+                 return t && t.lbl === 'Plumbing' && t.emo === '🔧' && t.anim === 'bounce'; })(),
+        JSON.stringify(leak2.before.tabs.find(x=>x.k==='plumbing')));
   check('LEAK GUARD: its store is grouped under its own registry label',
-        leak2.before.groups.some(g => g.label === '🧺 Laundry' && g.opts.join(',') === 'Suds & Co'),
+        leak2.before.groups.some(g => g.label === '🔧 Plumbing' && g.opts.join(',') === 'PipeWorks Plumbing'),
         leak2.before.groups.map(g=>g.label).join(' | '));
   check('LEAK GUARD: filtering to it lists only its own stores',
-        leak2.after.ids.join(',') === 'suds', leak2.after.ids.join(','));
+        leak2.after.ids.join(',') === 'pipeworks', leak2.after.ids.join(','));
 
   const hardErrors = log.errors.filter(e => !/favicon|OneSignal|firebase|net::ERR/i.test(e));
   check('No uncaught page errors across the login picker', hardErrors.length === 0,

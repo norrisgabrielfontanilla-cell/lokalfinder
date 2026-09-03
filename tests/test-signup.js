@@ -53,7 +53,7 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   });
   check('Apply form opens', form.page==='p-signup', form.page);
   check('Vertical picker is built from the registry',
-        form.verticals.join(',')===['food','cleaning','aircon'].join(','), form.verticals.join(','));
+        form.verticals.join(',')===['food','cleaning','aircon','laundry'].join(','), form.verticals.join(','));
 
   // ── 2. Validation ─────────────────────────────────────────────────
   const bad = await page.evaluate(async () => {
