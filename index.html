@@ -1210,17 +1210,20 @@ select option { color: var(--t1); background: var(--w); }
 @keyframes mkt-emo-bounce{0%,100%{transform:translateY(0)}26%{transform:translateY(-5px)}50%{transform:translateY(0)}72%{transform:translateY(-2px)}}
 @keyframes mkt-emo-sweep{0%,100%{transform:rotate(0)}22%{transform:rotate(-18deg)}56%{transform:rotate(13deg)}80%{transform:rotate(-5deg)}}
 @keyframes mkt-emo-float{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-4px) rotate(-10deg)}64%{transform:translateY(-1px) rotate(8deg)}}
+@keyframes mkt-emo-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 
 .mkt-tab.mkt-anim{animation:mkt-pop .3s cubic-bezier(.34,1.5,.64,1)}
 .mkt-tab.mkt-anim .mkt-emo{animation:mkt-emo-pop .5s ease}
 .mkt-tab.mkt-anim[data-anim="bounce"] .mkt-emo{animation:mkt-emo-bounce .55s cubic-bezier(.3,1.2,.5,1)}
 .mkt-tab.mkt-anim[data-anim="sweep"]  .mkt-emo{animation:mkt-emo-sweep .55s ease-in-out}
 .mkt-tab.mkt-anim[data-anim="float"]  .mkt-emo{animation:mkt-emo-float .7s ease-in-out}
+.mkt-tab.mkt-anim[data-anim="spin"]   .mkt-emo{animation:mkt-emo-spin .6s ease-in-out}
 @media(hover:hover){
   .mkt-tab:hover .mkt-emo{animation:mkt-emo-pop .5s ease}
   .mkt-tab:hover[data-anim="bounce"] .mkt-emo{animation:mkt-emo-bounce .55s cubic-bezier(.3,1.2,.5,1)}
   .mkt-tab:hover[data-anim="sweep"]  .mkt-emo{animation:mkt-emo-sweep .55s ease-in-out}
   .mkt-tab:hover[data-anim="float"]  .mkt-emo{animation:mkt-emo-float .7s ease-in-out}
+  .mkt-tab:hover[data-anim="spin"]   .mkt-emo{animation:mkt-emo-spin .6s ease-in-out}
 }
 @media(prefers-reduced-motion:reduce){
   .mkt-tab,.mkt-tab .mkt-emo{animation:none!important;transition-duration:.01ms}
@@ -3484,7 +3487,12 @@ const VENDORS = {
   // new store. These are fixtures for testing the flow, NOT real supply: no
   // aircon technician has been onboarded and no real booking has been placed.
   coolbreeze:{id:'coolbreeze',name:'CoolBreeze Aircon Services',sub:'GRASS Residences · Aircon cleaning & repair',emoji:'❄️',bg:'#E6F4FF',rating:'⭐ 4.8',min:'₱800',cats:['aircon'],category:'aircon',active:true,openTime:'08:00',closeTime:'18:00',closedDays:[0],desc:'Split and window type cleaning, freon charging and minor repairs. Licensed technicians, 30-day workmanship warranty.'},
-  kooltech:{id:'kooltech',name:'KoolTech Aircon Care',sub:'GRASS Residences · Split type specialists',emoji:'🧊',bg:'#EEF2FF',rating:'⭐ 4.6',min:'₱750',cats:['aircon'],category:'aircon',active:true,openTime:'09:00',closeTime:'17:00',closedDays:[0],desc:'Split type deep cleaning and preventive maintenance. We lay down covers and clean up after every job.'}
+  kooltech:{id:'kooltech',name:'KoolTech Aircon Care',sub:'GRASS Residences · Split type specialists',emoji:'🧊',bg:'#EEF2FF',rating:'⭐ 4.6',min:'₱750',cats:['aircon'],category:'aircon',active:true,openTime:'09:00',closeTime:'17:00',closedDays:[0],desc:'Split type deep cleaning and preventive maintenance. We lay down covers and clean up after every job.'},
+  // DEMO laundry providers. Same fixture pattern as cleaning/aircon — for
+  // testing the flow, NOT real supply: no laundry provider has been
+  // onboarded and no real pickup has been booked.
+  suds:{id:'suds',name:'SudsUp Laundry Care',sub:'GRASS Residences · Wash & fold specialists',emoji:'🧺',bg:'#EAF6FF',rating:'⭐ 4.8',min:'₱55',cats:['laundry'],category:'laundry',active:true,openTime:'08:00',closeTime:'19:00',closedDays:[0],desc:'Pickup and delivery laundry care. Wash & fold, dry cleaning and ironing. Standard turnaround 24-48 hrs.'},
+  crisp:{id:'crisp',name:'Crisp Laundry Express',sub:'GRASS Residences · Same-day wash & fold',emoji:'👕',bg:'#F1FBF5',rating:'⭐ 4.6',min:'₱60',cats:['laundry'],category:'laundry',active:true,openTime:'07:00',closeTime:'20:00',closedDays:[],desc:'Fast turnaround laundry, including a same-day rush option. Free pickup and delivery within GRASS.'}
 };
 
 const MENU = {
@@ -3550,6 +3558,23 @@ const MENU = {
     {id:'kt2',name:'Window Type Cleaning',emoji:'🪟',price:750,desc:'Chemical wash, drain clear and reinstall.',avail:true,dur:60},
     {id:'kt3',name:'Preventive Maintenance',emoji:'🛠️',price:900,desc:'Quarterly check-up: filters, drainage, coolant pressure.',avail:true,dur:75},
     {id:'kt4',name:'Installation / Relocation',emoji:'📦',price:2500,desc:'Mount or move a split type unit. Bracket and piping quoted on site.',avail:true,dur:180,from:true},
+  ],
+  // Laundry services. `dur` here is the PICKUP VISIT only (a few minutes at
+  // the door) — this app books one appointment window per service, same as
+  // cleaning and aircon, and has no second time point to promise a return
+  // time in. The provider's own turnaround lives in their store description
+  // and gets confirmed with the customer directly.
+  suds:[
+    {id:'su1',name:'Wash & Fold (per kilo)',emoji:'🧺',price:60,desc:'Washed, dried and neatly folded. Final weight confirmed at pickup.',avail:true,dur:10,from:true,tag:'best'},
+    {id:'su2',name:'Dry Cleaning (per item)',emoji:'👔',price:150,desc:'For delicates and formal wear.',avail:true,dur:10,from:true},
+    {id:'su3',name:'Ironing Only (per kilo)',emoji:'🧼',price:40,desc:'Pressing only — already-clean clothes.',avail:true,dur:10,from:true},
+    {id:'su4',name:'Beddings & Linens',emoji:'🛏️',price:180,desc:'Comforters, blankets and bedsheets, washed separately.',avail:true,dur:10,from:true},
+  ],
+  crisp:[
+    {id:'cr1',name:'Wash & Fold (per kilo)',emoji:'🧺',price:55,desc:'Standard wash & fold. Final weight confirmed at pickup.',avail:true,dur:10,from:true,tag:'best'},
+    {id:'cr2',name:'Rush Same-Day Service',emoji:'⚡',price:250,desc:'Picked up in the morning, back by evening. Limited daily slots.',avail:true,dur:10,from:true},
+    {id:'cr3',name:'Dry Cleaning (per item)',emoji:'👔',price:140,desc:'For delicates and formal wear.',avail:true,dur:10,from:true},
+    {id:'cr4',name:'Shoe Cleaning',emoji:'👟',price:120,desc:'Deep clean for sneakers and everyday shoes.',avail:true,dur:10},
   ]
 };
 
@@ -3647,9 +3672,38 @@ const MARKETPLACES = {
     defaultVendorEmoji:'❄️', defaultItemEmoji:'❄️',
     histEmptySub:'Book a technician from the Aircon tab on Home.',
     workerNoun:'Technician', jobNoun:'Aircon Service'
+  },
+  /* ── LAUNDRY. The vertical the v57 comment above named as the next proof
+     case — one registry entry, nothing else. MVP shape matches Cleaning and
+     Aircon exactly: a booking reserves a single appointment window. For
+     laundry that window is the PICKUP visit only (a few minutes at the
+     customer's door), not the full wash turnaround — this app has no
+     second time point to promise a return time in, so a provider states
+     their own turnaround (e.g. "24-48 hrs") in their store description and
+     confirms it with the customer directly, the same way delivery windows
+     already work for food. If a real two-time-point pickup+return flow is
+     ever needed, that is new booking-flow work — it is not free the way
+     this entry is. */
+  laundry: {
+    id:'laundry', label:'Laundry Services', short:'Laundry', icon:'🧺',
+    itemsNoun:'Services', itemNoun:'Service', itemsNounLower:'services',
+    txNoun:'Booking', txNounPlural:'Bookings', txVerb:'Book',
+    cartBased:false, scheduled:true, emptyIcon:'🧺',
+    tagline:'Book a laundry pickup inside GRASS',
+    tabAnim:'spin',
+    providerNoun:'Laundry Provider', portalKicker:'Laundry Provider Portal',
+    sectionTitle:'🧺 Laundry Providers',
+    picksTitle:'🧺 Popular Laundry Services',
+    picksSub:'Wash, dry and fold — pick a pickup date and time that suits you.',
+    searchPlaceholder:'Search laundry services…',
+    searchNoun:'service', searchHead:'Services',
+    catHint:'e.g. Wash & Fold, Dry Clean, Ironing', emojiHint:'🧺',
+    defaultVendorEmoji:'🧺', defaultItemEmoji:'🧺',
+    histEmptySub:'Book a pickup from the Laundry tab on Home.',
+    workerNoun:'Attendant', jobNoun:'Laundry'
   }
 };
-const MKT_ORDER = ['food','cleaning','aircon'];   // display order in the category switcher
+const MKT_ORDER = ['food','cleaning','aircon','laundry'];   // display order in the category switcher
 
 // Legacy-safe readers. A record with no category/kind predates v54 and is Food.
 function vendorCat(v){ const c = v && v.category; return (c && MARKETPLACES[c]) ? c : 'food'; }
