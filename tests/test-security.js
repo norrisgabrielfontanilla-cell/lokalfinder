@@ -20,7 +20,8 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
       timestamp:new Date(),vendorId:'pares',kind:'cleaning',
       svcDate:lfTodayKey(),svcTime:'10:00',instructions:P};
     host.innerHTML = renderOrderCard(o,true);          out.orderCard = host.querySelectorAll('img[src="x"]').length;
-    notifList=[{id:'1',title:P,body:P,type:'info',ts:Date.now(),read:false}];
+    _notifPanelRole='customer';
+    custNotifList=[{id:'1',title:P,body:P,type:'info',ts:Date.now(),read:false}];
     renderNotifPanel();                                out.notifs = document.querySelectorAll('#notif-list img[src="x"]').length;
     VENDORS.__x={id:'__x',name:P,sub:P,emoji:P,bg:P,rating:P,min:P,cats:['rice'],active:true,logo:P};
     MENU.__x=[]; buildVendorCards(true);               out.directory = document.querySelectorAll('#vendor-cards img[src="x"]').length;
@@ -283,6 +284,56 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   check('syncFromCloud no longer reads the entire database', !/const d = await fbGet\(ROOM_KEY\);/.test(src2), '');
   check('Dead Array.isArray(fbOrders) branch removed', !/Array\.isArray\(fbOrders\)/.test(src2), '');
   check('firebase-rules.json shipped', require('fs').existsSync(require('path').resolve(__dirname,'..','firebase-rules.json')), '');
+
+  // ── 7. Notification role isolation ────────────────────────────────
+  // A vendor's alert carries a real customer's name and unit by design.
+  // Proves it can never render into a customer's own "My Alerts" panel
+  // (or the reverse), regardless of which list happens to update last —
+  // the exact race a shared notifList variable used to allow.
+  const notifIso = await page.evaluate(() => {
+    const custMsg = 'SAFE-customer-only-content';
+    const vendMsg = 'Juan Dela Cruz . Tower 3 / Unit 1204 . vendor-only-content';
+    _notifPanelRole = 'customer';
+    custNotifList = [{id:'c1',title:'Order update',body:custMsg,type:'status',ts:Date.now(),read:false}];
+    vendNotifList = [];
+    renderNotifPanel();
+    const customerSeesOwn = document.getElementById('notif-list').textContent.includes(custMsg);
+    // Simulate the race: a vendor-role fetch resolves (populates vendNotifList
+    // and repaints) while the panel on screen is still the customer's.
+    vendNotifList = [{id:'v1',title:'New Order!',body:vendMsg,type:'order',ts:Date.now(),read:false}];
+    renderNotifPanel();
+    const customerPanelText = document.getElementById('notif-list').textContent;
+    const customerLeakedVendorData = customerPanelText.includes(vendMsg);
+    const customerStillSeesOwn = customerPanelText.includes(custMsg);
+    // Now the customer actually switches to the vendor panel — it should
+    // show ONLY the vendor list, never the customer's.
+    _notifPanelRole = 'vendor';
+    renderNotifPanel();
+    const vendorPanelText = document.getElementById('notif-list').textContent;
+    const vendorSeesOwn = vendorPanelText.includes(vendMsg);
+    const vendorLeakedCustomerData = vendorPanelText.includes(custMsg);
+    // Badges: seed different unread counts per role, confirm each badge
+    // reflects only its own role's count.
+    custNotifList = [{id:'c2',title:'t',body:'b',type:'info',ts:Date.now(),read:false}];
+    vendNotifList = [
+      {id:'v2',title:'t',body:'b',type:'order',ts:Date.now(),read:false},
+      {id:'v3',title:'t',body:'b',type:'order',ts:Date.now(),read:false}
+    ];
+    updateNotifBadge();
+    const custBadge = document.getElementById('cust-notif-badge').textContent.trim();
+    const vendBadge = document.getElementById('vend-notif-badge').textContent.trim();
+    custNotifList = []; vendNotifList = []; _notifPanelRole = null;
+    return { customerSeesOwn, customerLeakedVendorData, customerStillSeesOwn,
+             vendorSeesOwn, vendorLeakedCustomerData, custBadge, vendBadge };
+  });
+  check('Customer panel shows their own alert', notifIso.customerSeesOwn, '');
+  check('A vendor alert resolving in the background never renders into an open customer panel',
+        !notifIso.customerLeakedVendorData, JSON.stringify(notifIso));
+  check('...the customer panel keeps showing its own content throughout', notifIso.customerStillSeesOwn, '');
+  check('Vendor panel shows their own alert', notifIso.vendorSeesOwn, '');
+  check('A customer alert never renders into the vendor panel', !notifIso.vendorLeakedCustomerData, JSON.stringify(notifIso));
+  check('Customer badge count reflects only the customer list (1)', notifIso.custBadge==='1', 'got '+notifIso.custBadge);
+  check('Vendor badge count reflects only the vendor list (2), independently', notifIso.vendBadge==='2', 'got '+notifIso.vendBadge);
 
   await browser.close(); srv.close();
   console.log('\n════ SECURITY & CORRECTNESS (v55) ════');
