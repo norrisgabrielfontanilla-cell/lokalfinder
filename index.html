@@ -151,7 +151,7 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .hscrl::-webkit-scrollbar{display:none}
 
 /* ═══ VENDOR CARD ═══ */
-.vc{min-width:172px;background:var(--w);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s;border:.5px solid var(--bd)}
+.vc{width:172px;background:var(--w);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;cursor:pointer;flex-shrink:0;transition:transform .2s cubic-bezier(.22,.61,.36,1),box-shadow .2s;border:.5px solid var(--bd)}
 .vc:hover{transform:translateY(-3px);box-shadow:var(--shm)}
 .vc:active{transform:scale(.96);box-shadow:var(--shm)}
 .vc-closed{opacity:.55;filter:grayscale(.35)}
@@ -165,7 +165,7 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .vc-fav.on{color:var(--red)}
 .vc-body{padding:11px 13px 13px}
 .vc-name{font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px}
-.vc-sub{font-size:11px;color:var(--t3);margin-bottom:7px}
+.vc-sub{font-size:11px;color:var(--t3);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vc-foot{display:flex;align-items:center;justify-content:space-between}
 .vc-price{font-size:11px;font-weight:700;color:var(--g)}
 .vc-rating{font-size:11px;font-weight:600;color:var(--t2)}
@@ -10833,7 +10833,7 @@ setInterval(updateClock,15000);
      have cursor:pointer, link-green, and an :active scale — so it
      animated on tap and then did nothing.
      The row IS horizontally scrollable (.hscrl = flex + overflow-x
-     :auto, .vc = min-width 172px, flex-shrink 0), but the scrollbar
+     :auto, .vc = width 172px, flex-shrink 0), but the scrollbar
      is deliberately hidden, so nothing signalled that. This is that
      missing affordance.
      Self-contained: deleting this block + the JS block reverts it.
@@ -11044,7 +11044,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 70; // ← bump this each release (and version.json)
+  const APP_VERSION = 71; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
