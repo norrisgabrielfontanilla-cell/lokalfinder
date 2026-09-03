@@ -6633,7 +6633,32 @@ function showAdminEditPin(vid){
 // Stored at Firebase: /notifs/{userId}/{notifId}
 // userId = lastPlacedOrderId prefix for customers, vendorId for vendors
 
-let notifList = []; // local cache
+/* FIX — a vendor's alerts could land in a customer's "My Alerts" panel.
+   -----------------------------------------------------------------------
+   Both roles used to share ONE notifList variable. It was refreshed by two
+   independent triggers — a background check every 5 seconds (see boot()),
+   and opening the panel itself — and neither waited for the other. A
+   vendor's "New Order!" alert carries the customer's real name, unit and
+   total by design (a vendor is supposed to see that for their own orders).
+   The bug: if someone switched between vendor and customer mode close to
+   when either trigger fired, an in-flight vendor fetch and an in-flight
+   customer fetch could both resolve into that same shared variable —
+   whichever finished last painted its data into whatever panel happened to
+   be open, regardless of whose data it actually was. Intermittent by
+   nature, because it depends on request timing, not a fixed condition.
+
+   Fixed at the root, not patched: the two roles now keep genuinely separate
+   lists that can never be assigned into each other, renderNotifPanel() only
+   ever reads the list matching whichever panel is actually open, and a
+   generation counter per role discards a response if a newer request for
+   that same role has since been issued — the same "ignore a stale response"
+   idea syncFromCloud() already uses for orders, applied here for the first
+   time. */
+let custNotifList = [];   // customer's own "My Alerts"
+let vendNotifList = [];   // vendor's own "Order Alerts"
+let _notifPanelRole = null;   // which list the open panel should read from
+let _custNotifGen = 0;
+let _vendNotifGen = 0;
 
 /* ═══════════════════════════════════════════════════════════════════════
    v54 FIX — customer notifications were never actually per-customer.
@@ -6674,24 +6699,31 @@ async function pushNotif(userId, title, body, type='info'){
 }
 
 async function loadNotifs(userId){
+  const gen = ++_vendNotifGen;
   try{
     const data = await fbGet(notifNode(userId));
-    if(data && typeof data==='object'){
-      notifList = Object.values(data).sort((a,b)=>b.ts-a.ts).slice(0,50);
-    } else {
-      notifList = [];
-    }
-    renderNotifPanel();
-    updateNotifBadge();
-  }catch(e){ notifList=[]; }
+    if(gen !== _vendNotifGen) return;   // a newer vendor fetch started since — drop this one
+    vendNotifList = (data && typeof data==='object')
+      ? Object.values(data).sort((a,b)=>b.ts-a.ts).slice(0,50)
+      : [];
+  }catch(e){
+    if(gen !== _vendNotifGen) return;
+    vendNotifList = [];
+  }
+  renderNotifPanel();
+  updateNotifBadge();
 }
 
 // PRIVACY: load notifications for EVERY order this device placed, merged together.
 // A customer can only ever see alerts tied to their own order IDs — never anyone else's.
 async function loadCustomerNotifs(){
+  const gen = ++_custNotifGen;
   const ids = Array.from(new Set(myOrderIds||[]));
   if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
-  if(!ids.length){ notifList=[]; renderNotifPanel(); updateNotifBadge(); return; }
+  if(!ids.length){
+    if(gen === _custNotifGen){ custNotifList=[]; renderNotifPanel(); updateNotifBadge(); }
+    return;
+  }
   const merged = {};
   for(const oid of ids){
     try{
@@ -6701,7 +6733,8 @@ async function loadCustomerNotifs(){
       }
     }catch(e){ /* skip this order, keep going */ }
   }
-  notifList = Object.values(merged).sort((a,b)=>b.ts-a.ts).slice(0,50);
+  if(gen !== _custNotifGen) return;   // a newer customer fetch started since — drop this one
+  custNotifList = Object.values(merged).sort((a,b)=>b.ts-a.ts).slice(0,50);
   renderNotifPanel();
   updateNotifBadge();
 }
@@ -6710,7 +6743,7 @@ async function loadCustomerNotifs(){
 async function markCustomerNotifsRead(){
   const ids = Array.from(new Set(myOrderIds||[]));
   if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
-  notifList.forEach(n=>n.read=true);
+  custNotifList.forEach(n=>n.read=true);
   updateNotifBadge();
   for(const oid of ids){
     try{
@@ -6725,34 +6758,39 @@ async function markCustomerNotifsRead(){
 }
 
 async function markNotifsRead(userId){
-  notifList.forEach(n=>n.read=true);
+  vendNotifList.forEach(n=>n.read=true);
   updateNotifBadge();
   // Mark read in Firebase
   try{
     const updates = {};
-    notifList.forEach(n=>{ updates[n.id]={...n,read:true}; });
+    vendNotifList.forEach(n=>{ updates[n.id]={...n,read:true}; });
     await fbSet(notifNode(userId), updates);
   }catch(e){}
 }
 
 function updateNotifBadge(){
-  const unread = notifList.filter(n=>!n.read).length;
-  // Customer badge
+  // Each badge is computed from its OWN role's list — a vendor's unread count
+  // can no longer bleed into the customer badge, or the reverse.
+  const custUnread = custNotifList.filter(n=>!n.read).length;
+  const vendUnread = vendNotifList.filter(n=>!n.read).length;
   const cb = el('cust-notif-badge');
-  if(cb){ cb.style.display=unread>0?'flex':'none'; cb.textContent=unread>9?'9+':unread; }
-  // Vendor badge
+  if(cb){ cb.style.display=custUnread>0?'flex':'none'; cb.textContent=custUnread>9?'9+':custUnread; }
   const vb = el('vend-notif-badge');
-  if(vb){ vb.style.display=unread>0?'flex':'none'; vb.textContent=unread>9?'9+':unread; }
+  if(vb){ vb.style.display=vendUnread>0?'flex':'none'; vb.textContent=vendUnread>9?'9+':vendUnread; }
 }
 
 function renderNotifPanel(){
   const box = el('notif-list'); if(!box) return;
-  if(!notifList.length){
+  // Only ever reads the list belonging to the panel that is actually open —
+  // this is what makes the fix hold even if a background fetch for the
+  // OTHER role finishes while this panel is on screen.
+  const list = _notifPanelRole==='vendor' ? vendNotifList : custNotifList;
+  if(!list.length){
     box.innerHTML='<div style="padding:40px 20px;text-align:center"><div style="font-size:40px;margin-bottom:12px">🔔</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No notifications yet</div><div style="font-size:12px;color:var(--t3);margin-top:4px">Order updates will appear here</div></div>';
     return;
   }
   const icons={info:'ℹ️',success:'✅',warning:'⚠️',order:'🛒',status:'📦'};
-  box.innerHTML=notifList.map(n=>`
+  box.innerHTML=list.map(n=>`
     <div style="padding:14px 16px;border-bottom:.5px solid var(--bd);background:${n.read?'var(--w)':'var(--gl)'};display:flex;gap:12px;align-items:flex-start">
       <div style="font-size:24px;flex-shrink:0;margin-top:2px">${icons[n.type]||'🔔'}</div>
       <div style="flex:1;min-width:0">
@@ -6842,7 +6880,7 @@ function calcBadgeCount(){
   }
   // Customer: unread status updates
   if(lastPlacedOrderId){
-    const unread = notifList.filter(n=>!n.read).length;
+    const unread = custNotifList.filter(n=>!n.read).length;
     count += unread;
   }
   return count;
@@ -6858,25 +6896,29 @@ function refreshBadge(){
 
 function openNotifPanel(role){
   if(role==='customer'){
+    _notifPanelRole = 'customer';
     const hasOrders = (myOrderIds && myOrderIds.length) || lastPlacedOrderId;
     if(!hasOrders){
       el('notif-panel').style.display='flex';
       el('notif-panel-title').textContent='🔔 My Notifications';
-      notifList=[]; renderNotifPanel();
+      custNotifList=[]; renderNotifPanel();
       return;
     }
     el('notif-panel').style.display='flex';
     el('notif-panel-title').textContent='🔔 My Notifications';
+    renderNotifPanel();   // paint whatever's already cached immediately, correct role
     loadCustomerNotifs();
     markCustomerNotifsRead();
     updateAppBadge(0);
     return;
   }
   // Vendor
+  _notifPanelRole = 'vendor';
   const userId = activeVendorId;
   if(!userId){ showToast('No active session'); return; }
   el('notif-panel').style.display='flex';
   el('notif-panel-title').textContent='🔔 Order Alerts';
+  renderNotifPanel();   // paint whatever's already cached immediately, correct role
   loadNotifs(userId);
   markNotifsRead(userId);
   updateAppBadge(0);
