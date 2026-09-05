@@ -338,7 +338,7 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
         tabs.home.find(t=>t.id==='aircon').emo==='\u2744\uFE0F',
         tabs.home.map(t=>t.id+':'+t.emo).join(' '));
   check('Each tab declares its motion by name, from the registry',
-        tabs.home.map(t=>t.id+'='+t.anim).join(',')==='all=pop,food=bounce,cleaning=sweep,aircon=float',
+        tabs.home.map(t=>t.id+'='+t.anim).join(',')==='all=pop,food=bounce,cleaning=sweep,aircon=float,laundry=spin',
         tabs.home.map(t=>t.id+'='+t.anim).join(','));
   check('History row gets the same treatment as Home',
         tabs.hist.length===tabs.home.length && tabs.hist.every(t=>t.emo), JSON.stringify(tabs.hist));
@@ -363,7 +363,9 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   const pick = await page.evaluate(async () => {
     const row = document.getElementById('mkt-row');
     row.scrollLeft = 0;
-    const t = document.querySelector('#mkt-row .mkt-tab[data-mkt="aircon"]');
+    // The true LAST tab — was aircon, now laundry — since only selecting the
+    // actual last one should ever reach the row's scrollable end.
+    const t = document.querySelector('#mkt-row .mkt-tab[data-mkt="laundry"]');
     t.click();
     await new Promise(r=>setTimeout(r,700));
     const rb = row.getBoundingClientRect(), tb = t.getBoundingClientRect();

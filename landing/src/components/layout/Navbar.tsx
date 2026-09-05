@@ -65,7 +65,7 @@ export default function Navbar() {
 
           <div className="justify-self-end flex items-center gap-3">
             <a
-              href="#early-access"
+              href="/lokalfinder/"
               className="hidden sm:inline-flex px-5 py-2.5 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand/90 transition-colors duration-200 whitespace-nowrap"
             >
               Get Early Access
@@ -104,7 +104,7 @@ export default function Navbar() {
                 </a>
               ))}
               <a
-                href="#early-access"
+                href="/lokalfinder/"
                 onClick={() => setMenuOpen(false)}
                 className="mt-2 px-5 py-3 bg-brand text-white text-sm font-medium rounded-lg text-center"
               >
