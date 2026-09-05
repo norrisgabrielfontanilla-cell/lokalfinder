@@ -3414,7 +3414,7 @@ select option { color: var(--t1); background: var(--w); }
       <div class="stat-cell"><div class="stat-val" id="a-pending">0</div><div class="stat-lbl">Pending Orders</div></div>
       <div class="stat-cell"><div class="stat-val" id="a-vendors-active">4</div><div class="stat-lbl">Active Vendors</div></div>
       <div class="stat-cell"><div class="stat-val g" id="lfn-a-repeat">0</div><div class="stat-lbl">Repeat Buyers</div></div>
-      <div class="stat-cell"><div class="stat-val g" id="lfn-a-posts">0</div><div class="stat-lbl">Live Posts</div></div>
+      <div class="stat-cell" onclick="LFN.openFeed()" style="cursor:pointer" title="View feed &amp; moderate posts"><div class="stat-val g" id="lfn-a-posts">0</div><div class="stat-lbl">Live Posts</div></div>
     </div>
     <div class="dvdr"></div>
 
@@ -3865,7 +3865,10 @@ select option { color: var(--t1); background: var(--w); }
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">Discover · Today</div>
         <div style="font-family:var(--ffd);font-style:italic;font-size:24px;color:#fff;line-height:1">What's cooking</div>
       </div>
-      <button onclick="goPage('p-chome')" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">Home</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="LFN.openCustomerComposer()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">📸 Post</button>
+        <button onclick="goPage('p-chome')" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--ff)">Home</button>
+      </div>
     </div>
   </div>
   <div class="scrl">
@@ -3907,6 +3910,32 @@ select option { color: var(--t1); background: var(--w); }
 
     <button class="cta" onclick="LFN.publishPost()">Publish to feed ✓</button>
     <button class="cta sec" onclick="closeModal('lfn-modal-compose')" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
+<!-- NEW: customer post composer modal -->
+<div class="modal" id="lfn-modal-ccompose" onclick="closeModal('lfn-modal-ccompose',event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Share with your neighbors</div>
+
+    <label class="flbl">Photo (optional)</label>
+    <div id="lfn-ccompose-photo-preview" style="width:100%;height:180px;border-radius:12px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:14px;overflow:hidden;position:relative" onclick="document.getElementById('lfn-ccompose-photo-input').click()">
+      <span id="lfn-ccompose-photo-placeholder" style="font-size:36px;margin-bottom:6px">📸</span>
+      <span id="lfn-ccompose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo</span>
+      <img id="lfn-ccompose-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+      <button id="lfn-ccompose-photo-clear" type="button" onclick="event.stopPropagation();LFN.clearCustomerPhoto()" style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <input type="file" id="lfn-ccompose-photo-input" accept="image/*" style="display:none" onchange="LFN.handleCustomerPhoto(this)">
+
+    <label class="flbl">Your name (optional)</label>
+    <input class="finp" id="lfn-ccompose-name" type="text" placeholder="Neighbor" maxlength="40" style="margin-bottom:14px">
+
+    <label class="flbl">Caption</label>
+    <textarea class="finp" id="lfn-ccompose-caption" rows="3" maxlength="240" placeholder="What are you enjoying today?" style="resize:none;font-family:var(--ff);margin-bottom:14px"></textarea>
+
+    <button class="cta" onclick="LFN.publishCustomerPost()">Post to feed ✓</button>
+    <button class="cta sec" onclick="closeModal('lfn-modal-ccompose')" style="margin-top:8px">Cancel</button>
   </div>
 </div>
 
@@ -10625,13 +10654,37 @@ window.LFN = (function(){
     return FALLBACK_BGS[h % FALLBACK_BGS.length];
   }
 
-  let posts = [];          // {id, vendorId, caption, items[{name,emoji,price}], photo, bg, createdAt}
+  // posts: vendor posts {id, authorType:'vendor', vendorId, caption, items[{name,emoji,price}], photo, bg, createdAt}
+  //     or customer posts {id, authorType:'customer', authorId, authorName, caption, photo, bg, createdAt}
+  // authorType is missing on posts written before this feature — treat missing as 'vendor' (vendorId is always present on those).
+  let posts = [];
   let reviews = [];        // {id, vendorId, orderId, buyerName, rating, text, createdAt}
   let composeState = { photo: '', picks: [], caption: '' };
+  let ccomposeState = { photo: '' };
   let reviewState = { vendorId: null, orderId: null, rating: 5 };
 
   // ---------- helpers ----------
   const lfnUid = () => 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  // Device-local id so a customer (no account/login in this app) can be recognized
+  // as the owner of their own posts. Same pattern as the vendor session flag in
+  // localStorage — a local convenience, not real auth.
+  function lfnCustDeviceId(){
+    try {
+      let id = localStorage.getItem('lf-cust-id');
+      if(!id){
+        id = 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2,9);
+        localStorage.setItem('lf-cust-id', id);
+      }
+      return id;
+    } catch(e){ return 'u_nostorage'; }
+  }
+  function postAuthorType(p){ return p.authorType || 'vendor'; }
+  function isMyPost(p){
+    if(postAuthorType(p) === 'customer') return p.authorId === lfnCustDeviceId();
+    return !!activeVendorId && activeVendorId === p.vendorId;
+  }
+  // Admin can moderate any post, on top of (not instead of) the owner check above.
+  function canDeletePost(p){ return _lfAdminMode || isMyPost(p); }
   const timeAgo = (t) => {
     const s = Math.floor((Date.now() - t) / 1000);
     if (s < 60) return 'just now';
@@ -10677,25 +10730,49 @@ window.LFN = (function(){
   function renderFeed(){
     const list = el('lfn-feed-list');
     if(!list) return;
-    const sorted = [...posts].sort((a,b)=>b.createdAt-a.createdAt).filter(p=>VENDORS[p.vendorId]);
+    // Vendor posts need their vendor to still exist; customer posts don't reference one.
+    const sorted = [...posts].sort((a,b)=>b.createdAt-a.createdAt)
+      .filter(p=>postAuthorType(p)==='customer' || VENDORS[p.vendorId]);
     if(sorted.length === 0){
       list.innerHTML = `
         <div class="lfn-empty">
           <div class="lfn-empty-ico">📭</div>
           <div class="lfn-empty-ttl">The feed is quiet.</div>
-          <div class="lfn-empty-sub">When a neighbor posts what they're cooking today, it'll show up here. Vendors — tap the Post tab in your dashboard to share what's fresh.</div>
+          <div class="lfn-empty-sub">When a neighbor posts what they're cooking today, it'll show up here. Vendors — tap the Post tab in your dashboard to share what's fresh. Neighbors — tap 📸 Post above to share what you're enjoying.</div>
         </div>`;
       return;
     }
     list.innerHTML = sorted.map(p => {
-      const v = VENDORS[p.vendorId];
-      const rev = reviews.filter(r=>r.vendorId===p.vendorId);
-      const avg = rev.length ? (rev.reduce((s,r)=>s+r.rating,0)/rev.length).toFixed(1) : null;
+      const isMine = isMyPost(p);
+      const canDelete = canDeletePost(p);
       // photo wins; older posts may only have a gradient bg; otherwise generate one
       const bgStyle = p.photo
         ? `background:url('${p.photo}') center/cover`
         : `background:${p.bg || fallbackBgFor(p.id)}`;
-      const isMine = activeVendorId && activeVendorId === p.vendorId;
+      const deleteBtn = canDelete
+        ? `<button class="lfn-post-delete" onclick="event.stopPropagation();LFN.deletePost('${p.id}')" title="${isMine ? 'Delete post' : 'Remove post (admin)'}">×</button>`
+        : '';
+
+      if(postAuthorType(p) === 'customer'){
+        return `
+          <div class="lfn-post">
+            <div class="lfn-post-photo" style="${bgStyle}">
+              <div class="lfn-post-vendor">
+                <div class="lfn-post-avatar">🙂</div>
+                <div>
+                  <div class="lfn-post-vname">${escHTML(p.authorName || 'Neighbor')}</div>
+                  <div class="lfn-post-vmeta">Neighbor · ${timeAgo(p.createdAt)}</div>
+                </div>
+              </div>
+              ${deleteBtn}
+            </div>
+            ${p.caption ? `<div class="lfn-post-caption">${escHTML(p.caption)}</div>` : ''}
+          </div>`;
+      }
+
+      const v = VENDORS[p.vendorId];
+      const rev = reviews.filter(r=>r.vendorId===p.vendorId);
+      const avg = rev.length ? (rev.reduce((s,r)=>s+r.rating,0)/rev.length).toFixed(1) : null;
       return `
         <div class="lfn-post">
           <div class="lfn-post-photo" style="${bgStyle}">
@@ -10706,7 +10783,7 @@ window.LFN = (function(){
                 <div class="lfn-post-vmeta">${escHTML(v.sub.split('·')[0].trim())} · ${timeAgo(p.createdAt)}${avg?` · ⭐ ${avg}`:''}</div>
               </div>
             </div>
-            ${isMine ? `<button class="lfn-post-delete" onclick="event.stopPropagation();LFN.deletePost('${p.id}')" title="Delete post">×</button>` : ''}
+            ${deleteBtn}
           </div>
           ${p.caption ? `<div class="lfn-post-caption">${escHTML(p.caption)}</div>` : ''}
           <div class="lfn-post-items">
@@ -10834,6 +10911,7 @@ window.LFN = (function(){
     if(composeState.picks.length === 0){ showToast('Pick at least one item'); return; }
     const post = {
       id: lfnUid(),
+      authorType: 'vendor',
       vendorId: activeVendorId,
       caption: caption,
       items: composeState.picks.map(p=>({name:p.name, emoji:p.emoji, price:p.price})),
@@ -10847,17 +10925,93 @@ window.LFN = (function(){
     showToast('✅ Posted to feed!');
   }
 
+  // ---------- POST COMPOSER (customer side) ----------
+  function openCustomerComposer(){
+    ccomposeState = { photo: '' };
+    const cap = el('lfn-ccompose-caption'), nm = el('lfn-ccompose-name');
+    if(cap) cap.value = '';
+    if(nm) nm.value = '';
+    clearCustomerPhoto();
+    el('lfn-modal-ccompose').classList.add('on');
+  }
+  function handleCustomerPhoto(input){
+    const file = input && input.files && input.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo'); return; }
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const tmp = new Image();
+      tmp.onload = ()=>{
+        // Downscale to max 720px wide so post photos sync fast (same cap as vendor posts)
+        const max = 720;
+        const sc = Math.min(1, max/Math.max(tmp.width, tmp.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(tmp.width*sc);
+        cv.height = Math.round(tmp.height*sc);
+        cv.getContext('2d').drawImage(tmp, 0, 0, cv.width, cv.height);
+        const dataUrl = cv.toDataURL('image/jpeg', 0.78);
+        ccomposeState.photo = dataUrl;
+        const img = el('lfn-ccompose-photo-img');
+        img.src = dataUrl;
+        img.style.display = 'block';
+        el('lfn-ccompose-photo-placeholder').style.display = 'none';
+        el('lfn-ccompose-photo-text').style.display = 'none';
+        el('lfn-ccompose-photo-clear').style.display = 'flex';
+      };
+      tmp.onerror = ()=>showToast('⚠️ Couldn\'t read that image');
+      tmp.src = e.target.result;
+    };
+    reader.onerror = ()=>showToast('⚠️ Couldn\'t read that file');
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+  function clearCustomerPhoto(){
+    ccomposeState.photo = '';
+    const img = el('lfn-ccompose-photo-img');
+    if(img){ img.src = ''; img.style.display = 'none'; }
+    const ph = el('lfn-ccompose-photo-placeholder');
+    const tx = el('lfn-ccompose-photo-text');
+    const cl = el('lfn-ccompose-photo-clear');
+    if(ph) ph.style.display = 'block';
+    if(tx) tx.style.display = 'block';
+    if(cl) cl.style.display = 'none';
+  }
+  async function publishCustomerPost(){
+    const caption = el('lfn-ccompose-caption').value.trim();
+    if(!caption){ showToast('Write a quick caption'); return; }
+    const name = el('lfn-ccompose-name').value.trim().slice(0,40);
+    const post = {
+      id: lfnUid(),
+      authorType: 'customer',
+      authorId: lfnCustDeviceId(),
+      authorName: name || 'Neighbor',
+      caption: caption,
+      photo: ccomposeState.photo || '',
+      bg: ccomposeState.photo ? '' : fallbackBgFor(lfnUid()),
+      createdAt: Date.now(),
+    };
+    posts.push(post);
+    await pushPost(post);
+    closeModal('lfn-modal-ccompose');
+    showToast('✅ Posted to feed!');
+    renderFeedIfVisible(); // opened from the feed page itself — reflect it now, don't wait for the next poll
+  }
+
   async function deletePost(postId){
-    if(!confirm('Delete this post? Customers won\'t see it anymore.')) return;
     const p = posts.find(x=>x.id===postId);
     if(!p){ showToast('Post not found'); return; }
-    if(p.vendorId !== activeVendorId){ showToast('⚠️ You can only delete your own posts'); return; }
+    if(!canDeletePost(p)){ showToast('⚠️ You can only delete your own posts'); return; }
+    const asAdmin = _lfAdminMode && !isMyPost(p);
+    const confirmMsg = asAdmin
+      ? 'Remove this post as admin? The poster won\'t be notified, and this can\'t be undone.'
+      : 'Delete this post? Customers won\'t see it anymore.';
+    if(!confirm(confirmMsg)) return;
     // Remove locally
     posts = posts.filter(x=>x.id!==postId);
     // Remove from Firebase
     try {
       await fbDelete(POSTS_NODE + '/' + postId);
-      showToast('🗑️ Post deleted');
+      showToast(asAdmin ? '🗑️ Post removed (admin)' : '🗑️ Post deleted');
     } catch(e){
       showToast('⚠️ Delete failed, will retry on next sync');
     }
@@ -11044,6 +11198,7 @@ window.LFN = (function(){
   return {
     openFeed, openComposer, togglePick, publishPost,
     handlePhoto, clearPhoto, deletePost,
+    openCustomerComposer, handleCustomerPhoto, clearCustomerPhoto, publishCustomerPost,
     addFromFeed, openReviewModal, setStars, submitReview,
     syncFromFB,
   };
