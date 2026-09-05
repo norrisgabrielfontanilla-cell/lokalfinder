@@ -2420,23 +2420,58 @@ select option { color: var(--t1); background: var(--w); }
       <b id="s-total-lbl">💰 Total paid:</b> <span id="s-total">₱108</span>
     </div>
 
-    <!-- Vendor contact — v44: tap-to-Call / tap-to-Text so customers can follow
-         up directly while an order is still waiting to be accepted. Data-driven
-         from v.contact, so it works for every current AND future vendor. -->
-    <div id="s-vendor-contact" style="background:var(--s2);border-radius:var(--rs);border:1px solid var(--bdm);padding:12px 14px;margin-bottom:14px;display:none;flex-direction:column;gap:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:22px" id="s-vendor-emoji">🏪</span>
+    <!-- Vendor contact — v44, redesigned (v71) into a "Next Step" card.
+         Push notifications aren't reliable yet, so Call/Text is the real
+         fallback path — it must be impossible to miss, without ever reading
+         as an error. Data-driven from v.contact via loadCustomerVendorContact(),
+         so it works for every current AND future vendor. Ids are unchanged
+         from v44 — see that function for the render/visibility logic. -->
+    <style>
+      /* Scoped to this one card so it can't leak into any other component. */
+      .lf-fu-card{background:var(--gl);border:1.5px solid var(--g);border-radius:var(--rs);
+        padding:16px;margin-bottom:14px;box-shadow:var(--shm);
+        display:none;flex-direction:column;gap:12px}       /* JS flips display only */
+      .lf-fu-eyebrow{display:none;font-size:11px;font-weight:800;letter-spacing:.6px;
+        text-transform:uppercase;color:var(--gd)}           /* JS flips display only */
+      .lf-fu-vendor-row{display:flex;align-items:center;gap:10px}
+      .lf-fu-avatar{width:38px;height:38px;border-radius:11px;background:#fff;
+        display:flex;align-items:center;justify-content:center;font-size:20px;
+        flex-shrink:0;box-shadow:0 1px 4px rgba(15,74,50,.15)}
+      .lf-fu-name{font-size:15px;font-weight:800;color:var(--t1);line-height:1.25}
+      .lf-fu-phone{font-size:12.5px;color:var(--gd);font-weight:600;margin-top:1px}
+      .lf-fu-nocontact{font-size:11px;color:var(--t3);margin-top:1px;display:none}
+      .lf-fu-sub{font-size:12.5px;color:var(--t2);line-height:1.5}
+      .lf-fu-actions{display:none;flex-direction:column;gap:8px}   /* JS flips display only */
+      .lf-fu-call,.lf-fu-text{display:flex;align-items:center;justify-content:center;gap:8px;
+        width:100%;min-height:50px;border-radius:var(--rx);font-size:14.5px;font-weight:800;
+        text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
+        transition:transform .12s ease,filter .15s ease,background .15s ease;box-sizing:border-box}
+      .lf-fu-call{background:var(--g);color:#fff;box-shadow:var(--shg)}
+      .lf-fu-call:hover{filter:brightness(1.06)}
+      .lf-fu-call:active{transform:scale(.97);filter:brightness(.95)}
+      .lf-fu-text{background:#fff;color:var(--gd);border:1.5px solid var(--g)}
+      .lf-fu-text:hover{background:var(--gl)}
+      .lf-fu-text:active{transform:scale(.97);background:var(--s3)}
+      .lf-fu-call:focus-visible,.lf-fu-text:focus-visible{outline:2px solid var(--gd);outline-offset:2px}
+      .lf-fu-hint{display:none;font-size:11.5px;color:var(--gd);line-height:1.5;
+        margin-top:2px;padding-top:10px;border-top:1px dashed var(--bdm)}  /* JS flips display only */
+    </style>
+    <div id="s-vendor-contact" class="lf-fu-card">
+      <div id="s-vendor-eyebrow" class="lf-fu-eyebrow">📣 Need a faster response?</div>
+      <div class="lf-fu-vendor-row">
+        <span class="lf-fu-avatar" id="s-vendor-emoji">🏪</span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--t1)" id="s-vendor-name">Vendor</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:1px" id="s-vendor-contact-num"></div>
-          <div style="font-size:11px;color:var(--t3);margin-top:1px;display:none" id="s-vendor-nocontact">No contact number set — use Chat below</div>
+          <div class="lf-fu-name" id="s-vendor-name">Vendor</div>
+          <div class="lf-fu-phone" id="s-vendor-contact-num"></div>
+          <div class="lf-fu-nocontact" id="s-vendor-nocontact">No contact number set — use Chat below</div>
         </div>
       </div>
-      <div id="s-vendor-actions" style="display:none;gap:8px">
-        <a id="s-vendor-call" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--g);color:#fff;border-radius:10px;padding:11px 10px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">📞 Call</a>
-        <a id="s-vendor-text" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:var(--gd);border:1.5px solid var(--g);border-radius:10px;padding:11px 10px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">💬 Text</a>
+      <div class="lf-fu-sub">Call or text the vendor directly to confirm your order.</div>
+      <div id="s-vendor-actions" class="lf-fu-actions">
+        <a id="s-vendor-call" class="lf-fu-call" aria-label="Call the vendor"><span aria-hidden="true">📞</span><span>Call Vendor</span></a>
+        <a id="s-vendor-text" class="lf-fu-text" aria-label="Text the vendor"><span aria-hidden="true">💬</span><span>Text Vendor</span></a>
       </div>
-      <div id="s-vendor-followup-hint" style="display:none;font-size:11px;color:var(--t3);line-height:1.5">Still waiting? Tap <b>Call</b> or <b>Text</b> to follow up with the vendor right away.</div>
+      <div id="s-vendor-followup-hint" class="lf-fu-hint">Still waiting? Reach out directly — it's the fastest way to confirm.</div>
     </div>
 
     <!-- Chat button -->
@@ -6580,12 +6615,14 @@ function loadCustomerVendorContact(oid){
   const numEl = el('s-vendor-contact-num');
   const noneEl= el('s-vendor-nocontact');
   const hint  = el('s-vendor-followup-hint');
+  const eyebrow = el('s-vendor-eyebrow');
 
   const clearLinks = ()=>{
     if(acts) acts.style.display='none';
     if(call) call.removeAttribute('href');
     if(text) text.removeAttribute('href');
     if(hint) hint.style.display='none';
+    if(eyebrow) eyebrow.style.display='none';
   };
 
   let o = null;
@@ -6607,7 +6644,9 @@ function loadCustomerVendorContact(oid){
     if(text) text.setAttribute('href', lfSmsHref(p.e164, lfFollowUpMsg(o, v)));
     if(acts) acts.style.display='flex';
     // Nudge only while the order still hasn't been accepted.
-    if(hint) hint.style.display = (o.status==='new') ? 'block' : 'none';
+    const waiting = (o.status==='new');
+    if(hint) hint.style.display = waiting ? 'block' : 'none';
+    if(eyebrow) eyebrow.style.display = waiting ? 'block' : 'none';
   } else {
     if(numEl){ numEl.textContent=''; numEl.style.display='none'; }
     if(noneEl) noneEl.style.display='block';
