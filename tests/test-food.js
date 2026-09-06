@@ -86,11 +86,11 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     unit: el('s-unit').textContent, total: el('s-total').textContent,
     trkHd: el('trk-hd').textContent, tt1: el('tt1').textContent,
     whenShown: el('s-when-row').style.display,
-    chat: el('chat-btn-label').textContent, td3: el('td3').textContent,
+    chat: el('chat-btn-label').textContent, td3: el('td3').dataset.icon,
   }));
-  check('Food success copy intact', succ.ttl==='Order Placed! 🎉' && succ.oidLbl==='📦 Order ID:' &&
-        succ.unitLbl==='📍 Deliver to:' && succ.trkHd==='Order Tracker' && succ.tt1==='Order Received' &&
-        succ.chat==='Chat with Vendor' && succ.td3==='👨‍🍳', JSON.stringify(succ));
+  check('Food success copy intact', succ.ttl==='Order placed' && succ.oidLbl==='Order ID' &&
+        succ.unitLbl==='Deliver to' && succ.trkHd==='Order status' && succ.tt1==='Order Received' &&
+        succ.chat==='Chat with Vendor' && succ.td3==='cook', JSON.stringify(succ));
   check('Food success shows real order id/unit/total', succ.oid===placed.id && succ.unit==='Unit 2201' && succ.total==='₱115', JSON.stringify(succ));
   check('Schedule row hidden for food', succ.whenShown==='none', succ.whenShown);
 
@@ -176,7 +176,7 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   await page.evaluate(() => openMyOrder(lastPlacedOrderId));
   await page.waitForTimeout(400);
   const trk = await page.evaluate(() => ({ ttl: el('suc-ttl').textContent, sub: el('suc-sub').textContent, tt5: el('tt5').textContent }));
-  check('Food tracker end state', trk.ttl==='Delivered! 🎉' && trk.sub==='Enjoy your meal!' && trk.tt5==='Delivered! 📦', JSON.stringify(trk));
+  check('Food tracker end state', trk.ttl==='Delivered' && trk.sub==='Enjoy your meal!' && trk.tt5==='Delivered! 📦', JSON.stringify(trk));
 
   await browser.close(); srv.close();
 

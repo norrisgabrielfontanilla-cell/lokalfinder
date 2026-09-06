@@ -158,10 +158,10 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     td3: el('td3').textContent, tt3: el('tt3').textContent, tt4: el('tt4').textContent,
   }));
   check('Confirmation shows provider, schedule and location',
-        succ.ttl==='Booking Placed! 🎉' && succ.unit==='Tower 2 / Unit 905' &&
-        succ.whenRow==='inline' && /10 AM/.test(succ.when), JSON.stringify(succ));
+        succ.ttl==='Booking placed' && succ.unit==='Tower 2 / Unit 905' &&
+        succ.whenRow==='block' && /10 AM/.test(succ.when), JSON.stringify(succ));
   check('Confirmation speaks "booking", not "order"',
-        succ.oidLbl==='🧾 Booking ID:' && succ.trkHd==='Booking Tracker' && succ.chat==='Chat with Provider',
+        succ.oidLbl==='Booking ID' && succ.trkHd==='Booking status' && succ.chat==='Chat with Provider',
         JSON.stringify(succ));
   // Tracker copy must say TECHNICIAN, not "Cleaner" — the wording is derived
   // from the registry's workerNoun rather than copy-pasted per vertical.
@@ -195,12 +195,12 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
       return { head: el('suc-ttl').textContent, sub: el('suc-sub').textContent };
     }, [oidEarly, st]);
   }
-  check('Tracker header says "Technician On the Way", not "Cleaner"',
-        /Technician On the Way/.test(walk.preparing.head), walk.preparing.head);
-  check('Tracker header says "Aircon Service In Progress", not "Cleaning"',
-        /Aircon Service In Progress/.test(walk.ready.head), walk.ready.head);
-  check('Tracker header says "Aircon Service Completed", not "Cleaning Completed"',
-        /Aircon Service Completed/.test(walk.delivered.head), walk.delivered.head);
+  check('Tracker header says "Technician on the way", not "Cleaner"',
+        /technician on the way/i.test(walk.preparing.head), walk.preparing.head);
+  check('Tracker header says "Aircon service in progress", not "Cleaning"',
+        /aircon service in progress/i.test(walk.ready.head), walk.ready.head);
+  check('Tracker header says "Aircon service completed", not "Cleaning Completed"',
+        /aircon service completed/i.test(walk.delivered.head), walk.delivered.head);
 
   const custNotifs = await page.evaluate(id =>
     fetch(FB_URL+'/'+ROOM_KEY+'/notifs/'+String('cust_'+id).replace(/[^a-zA-Z0-9_-]/g,'_')+'.json')

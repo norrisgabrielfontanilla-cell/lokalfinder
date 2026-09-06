@@ -163,6 +163,9 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .vc-fav{position:absolute;top:9px;right:9px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border:none;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);transition:color .15s,transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.14);z-index:1}
 .vc-fav:active{transform:scale(.85)}
 .vc-fav.on{color:var(--red)}
+.vc-fav-filter{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--t2);background:var(--s2);border:1px solid var(--bdm);border-radius:999px;padding:5px 11px;cursor:pointer;user-select:none;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
+.vc-fav-filter:active{transform:scale(.94)}
+.vc-fav-filter.on{background:var(--gl);color:var(--red);border-color:var(--red)}
 .vc-body{padding:11px 13px 13px}
 .vc-name{font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px}
 .vc-sub{font-size:11px;color:var(--t3);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -260,20 +263,46 @@ body{font-family:var(--ff);background:linear-gradient(160deg,#c8e8d8 0%,#a8d4bc 
 .cta.sec{background:var(--w);color:var(--t1);border:1.5px solid var(--bdm);box-shadow:none}
 .cta.red{background:linear-gradient(135deg,#F05252,#E24B4A);color:#fff;box-shadow:0 4px 14px rgba(226,75,74,.28)}
 
-/* ═══ TRACKER ═══ */
-.trk{display:flex;flex-direction:column;gap:0}
-.trk-step{display:flex;gap:14px;align-items:flex-start}
-.trk-l{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0}
-.trk-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.trk-dot.done{background:var(--g);color:#fff}
-.trk-dot.active{background:var(--acl);color:var(--acc);border:2px solid var(--acc)}
-.trk-dot.pend{background:var(--s3);color:var(--t3)}
-.trk-line{width:2px;background:var(--bd);flex:1;min-height:24px;margin:3px 0;transition:background .5s}
+/* ═══ TRACKER — service-aware illustrated step row (order-success screen) ═══
+   .trk-ttl/.trk-sub stay in the DOM (updateTrackerFromStatus() still writes
+   real per-vertical copy to them every sync) but are visually replaced by
+   the .lf-stage-cap captions below each icon — a short, never-changing word
+   ("Preparing", "Delivered"...) reads faster than a full sentence repeated
+   five times down a page (the header above already carries the one full
+   current-status sentence). Each .trk-dot now holds a small inline-SVG
+   illustration (set via innerHTML in JS, see LF_TRK_SVG/lfTrkSvg) instead of
+   an emoji character — same status machine, same 4 index positions, just
+   re-skinned. Fixed-width steps + horizontal scroll (rather than shrinking
+   5 columns to fit) is deliberate: a squeezed tracker is illegible, and
+   scrolling five steps is a normal, well-understood mobile pattern. */
+.trk{display:flex;flex-direction:row;gap:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:2px 2px 6px;scrollbar-width:none}
+.trk::-webkit-scrollbar{display:none}
+.trk-step{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;width:68px;gap:0}
+.trk-l{display:flex;flex-direction:row;align-items:center;width:100%}
+.trk-dot{width:40px;height:40px;border-radius:50%;flex-shrink:0;position:relative;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  transition:transform .2s,background .2s,filter .2s,opacity .2s}
+.lf-trk-svg{width:58%;height:58%}
+.trk-dot.done{background:var(--g)}
+.trk-dot.done .lf-trk-svg{display:none}
+.trk-dot.done::after{content:'';position:absolute;left:50%;top:44%;width:5px;height:10px;
+  border-right:2px solid #fff;border-bottom:2px solid #fff;transform:translate(-65%,-60%) rotate(45deg)}
+.trk-dot.active{background:var(--g);transform:scale(1.35);animation:lfTrkPulse 2.2s ease-in-out infinite}
+.trk-dot.pend{background:var(--s3);color:var(--t3);filter:grayscale(1);opacity:.55}
+.trk-dot.neg{background:var(--rl);color:var(--red)}
+@keyframes lfTrkPulse{0%,100%{box-shadow:0 0 0 0 rgba(14,138,90,.35)}50%{box-shadow:0 0 0 6px rgba(14,138,90,0)}}
+@media (prefers-reduced-motion:reduce){.trk-dot.active{animation:none}}
+.trk-line{width:16px;flex:0 0 auto;height:2px;min-height:0;margin:0 -3px;background:var(--s3);transition:background .5s}
 .trk-line.done{background:var(--g)}
-.trk-cont{padding:5px 0 26px;flex:1}
-.trk-ttl{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
-.trk-sub{font-size:11px;color:var(--t3)}
-.trk-ttl.dim{color:var(--t3)}
+.trk-cont{padding:8px 1px 0;flex:none;width:100%;text-align:center}
+.trk-ttl,.trk-sub{display:none}
+.lf-stage-cap{font-size:10.5px;font-weight:600;color:var(--t3);line-height:1.2;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  overflow-wrap:break-word;word-break:break-word}
+.lf-stage-cap.active{color:var(--t1);font-weight:800}
+.lf-stage-cap.done{color:var(--t2);font-weight:700}
+.lf-stage-cap.neg{color:var(--red);font-weight:700}
 
 /* ═══ ADMIN STATS ═══ */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px}
@@ -2173,7 +2202,13 @@ select option { color: var(--t1); background: var(--w); }
   </div>
     <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
-    <div class="sec" style="padding-top:16px"><span class="sec-t" id="vendor-sec-title">🏪 Vendors Near You</span><span class="sec-a lf-swipe" id="vc-swipe" onclick="nudgeVendorRow()">Swipe<span class="lf-swipe-arrows"><i></i><i></i><i></i></span></span></div>
+    <div class="sec" style="padding-top:16px">
+      <span class="sec-t" id="vendor-sec-title">🏪 Vendors Near You</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="vc-fav-filter" id="vc-fav-filter-chip" onclick="toggleFavFilter()" role="button" tabindex="0" aria-pressed="false" aria-label="Show only my favorite vendors" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFavFilter();}">♡ Favorites</span>
+        <span class="sec-a lf-swipe" id="vc-swipe" onclick="nudgeVendorRow()">Swipe<span class="lf-swipe-arrows"><i></i><i></i><i></i></span></span>
+      </div>
+    </div>
     <div class="lf-row-wrap"><div class="hscrl" id="vendor-cards"></div><div class="lf-edge" id="vc-edge" aria-hidden="true"></div></div>
     <div class="dvdr"></div>
     <div style="padding:16px 16px 4px">
@@ -2371,120 +2406,187 @@ select option { color: var(--t1); background: var(--w); }
      CUSTOMER — ORDER SUCCESS / TRACKER
 ══════════════════════════════════════════ -->
 <div class="page" id="p-csuccess">
-  <div class="scrl" style="padding:24px 20px">
-    <div style="text-align:center;margin-bottom:28px;padding-top:16px">
-      <div class="success-ico" id="suc-ico">✓</div>
-      <div style="font-size:20px;font-weight:800;margin-bottom:6px" id="suc-ttl">Order Placed! 🎉</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.5" id="suc-sub">Waiting for the vendor to accept your order.</div>
-    </div>
+  <div class="scrl" style="padding:30px 22px 24px;background:var(--w)">
 
-    <!-- Live status pill -->
-    <div id="live-status-pill" style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:12px;padding:13px 16px;margin-bottom:14px;border:1.5px solid var(--bdm);transition:background .4s,border-color .4s">
-      <span id="lsp-ico" style="font-size:26px">⏳</span>
-      <div style="flex:1">
-        <div id="lsp-title" style="font-size:14px;font-weight:800;color:var(--t1)">Waiting for acceptance…</div>
-        <div id="lsp-sub" style="font-size:12px;color:var(--t2);margin-top:2px">The vendor will confirm shortly</div>
-      </div>
-      <div id="lsp-pulse" style="width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:pulse 1.2s infinite"></div>
-    </div>
-
-    <div class="card" style="padding:16px 18px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:14px;letter-spacing:.4px;text-transform:uppercase" id="trk-hd">Order Tracker</div>
-      <div class="trk">
-        <div class="trk-step">
-          <div class="trk-l"><div class="trk-dot done">✓</div><div class="trk-line done" id="tl1"></div></div>
-          <div class="trk-cont"><div class="trk-ttl" id="tt1">Order Received</div><div class="trk-sub" id="ts1">Payment confirmed</div></div>
-        </div>
-        <div class="trk-step">
-          <div class="trk-l"><div class="trk-dot active" id="td2">⏳</div><div class="trk-line" id="tl2"></div></div>
-          <div class="trk-cont"><div class="trk-ttl" id="tt2">Waiting for acceptance…</div><div class="trk-sub" id="ts2">Vendor will confirm shortly</div></div>
-        </div>
-        <div class="trk-step">
-          <div class="trk-l"><div class="trk-dot pend" id="td3">👨‍🍳</div><div class="trk-line" id="tl3"></div></div>
-          <div class="trk-cont"><div class="trk-ttl dim" id="tt3">Preparing</div><div class="trk-sub dim" id="ts3">Your food is being made</div></div>
-        </div>
-        <div class="trk-step">
-          <div class="trk-l"><div class="trk-dot pend" id="td4">🚚</div><div class="trk-line" id="tl4"></div></div>
-          <div class="trk-cont"><div class="trk-ttl dim" id="tt4">Out for Delivery</div><div class="trk-sub dim" id="ts4">On the way to your unit</div></div>
-        </div>
-        <div class="trk-step">
-          <div class="trk-l"><div class="trk-dot pend" id="td5">📦</div></div>
-          <div class="trk-cont" style="padding-bottom:0"><div class="trk-ttl dim" id="tt5">Delivered!</div><div class="trk-sub dim" id="ts5">Enjoy your meal 🎉</div></div>
-        </div>
-      </div>
-    </div>
-    <div style="background:var(--gl);border-radius:var(--rs);padding:13px 15px;margin-bottom:14px;font-size:12px;color:var(--gd);line-height:1.6">
-      <b id="s-oid-lbl">📦 Order ID:</b> <span id="s-oid">#LF-0001</span><br>
-      <span id="s-when-row" style="display:none"><b>🗓 Scheduled:</b> <span id="s-when"></span><br></span>
-      <b id="s-unit-lbl">📍 Deliver to:</b> <span id="s-unit">Unit 12B</span><br>
-      <b id="s-total-lbl">💰 Total paid:</b> <span id="s-total">₱108</span>
-    </div>
-
-    <!-- Vendor contact — v44, redesigned (v71) into a "Next Step" card.
-         Push notifications aren't reliable yet, so Call/Text is the real
-         fallback path — it must be impossible to miss, without ever reading
-         as an error. Data-driven from v.contact via loadCustomerVendorContact(),
-         so it works for every current AND future vendor. Ids are unchanged
-         from v44 — see that function for the render/visibility logic. -->
+    <!-- v73: full rewrite. One page, one visual system — typography +
+         spacing + a single subtle accent surface, instead of 5-6 stacked
+         bordered/shadowed cards. Every id below still exists so
+         updateTrackerFromStatus() / paintSuccessChrome() / loadCustomer-
+         VendorContact() keep running unmodified in logic (only a few
+         cosmetic-copy strings and two small, additive DOM hooks changed —
+         see those functions for exactly what and why). -->
     <style>
-      /* Scoped to this one card so it can't leak into any other component. */
-      .lf-fu-card{background:var(--gl);border:1.5px solid var(--g);border-radius:var(--rs);
-        padding:16px;margin-bottom:14px;box-shadow:var(--shm);
-        display:none;flex-direction:column;gap:12px}       /* JS flips display only */
-      .lf-fu-eyebrow{display:none;font-size:11px;font-weight:800;letter-spacing:.6px;
-        text-transform:uppercase;color:var(--gd)}           /* JS flips display only */
-      .lf-fu-vendor-row{display:flex;align-items:center;gap:10px}
-      .lf-fu-avatar{width:38px;height:38px;border-radius:11px;background:#fff;
-        display:flex;align-items:center;justify-content:center;font-size:20px;
-        flex-shrink:0;box-shadow:0 1px 4px rgba(15,74,50,.15)}
-      .lf-fu-name{font-size:15px;font-weight:800;color:var(--t1);line-height:1.25}
-      .lf-fu-phone{font-size:12.5px;color:var(--gd);font-weight:600;margin-top:1px}
-      .lf-fu-nocontact{font-size:11px;color:var(--t3);margin-top:1px;display:none}
-      .lf-fu-sub{font-size:12.5px;color:var(--t2);line-height:1.5}
-      .lf-fu-actions{display:none;flex-direction:column;gap:8px}   /* JS flips display only */
-      .lf-fu-call,.lf-fu-text{display:flex;align-items:center;justify-content:center;gap:8px;
-        width:100%;min-height:50px;border-radius:var(--rx);font-size:14.5px;font-weight:800;
+      .lf-hero-ico{width:40px;height:40px;border-radius:50%;background:var(--gl);
+        margin:0 auto 14px;position:relative;font-size:0;color:transparent}
+      .lf-hero-ico::after{content:'';position:absolute;left:50%;top:44%;width:7px;height:13px;
+        border-right:2.5px solid var(--g);border-bottom:2.5px solid var(--g);
+        transform:translate(-65%,-60%) rotate(45deg)}
+      .lf-hero-ico.lf-ico-neg{background:var(--rl)}
+      .lf-hero-ico.lf-ico-neg::after{display:none}
+      .lf-hero-ico.lf-ico-neg::before{content:'×';font-size:22px;line-height:40px;
+        color:var(--red);position:absolute;inset:0;text-align:center}
+
+      /* The one accent surface on the page — very subtle, no border, no shadow. */
+      .lf-fu-card{background:var(--gl);border-radius:18px;padding:18px 18px 6px;margin-bottom:28px}
+      .lf-fu-heading{display:none;font-size:17px;font-weight:700;color:var(--t1);margin-bottom:3px}
+      .lf-fu-sub{display:none;font-size:13.5px;color:var(--t2);margin-bottom:14px}
+      .lf-fu-nocontact{display:none;font-size:13.5px;color:var(--t3);text-align:center;padding:8px 0}
+      .lf-fu-actions{display:none;gap:10px;margin-bottom:10px}
+      .lf-fu-call,.lf-fu-text{display:flex;align-items:center;justify-content:center;gap:7px;
+        flex:1;min-width:0;min-height:52px;border-radius:14px;font-size:14.5px;font-weight:700;
         text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
         transition:transform .12s ease,filter .15s ease,background .15s ease;box-sizing:border-box}
-      .lf-fu-call{background:var(--g);color:#fff;box-shadow:var(--shg)}
-      .lf-fu-call:hover{filter:brightness(1.06)}
-      .lf-fu-call:active{transform:scale(.97);filter:brightness(.95)}
-      .lf-fu-text{background:#fff;color:var(--gd);border:1.5px solid var(--g)}
-      .lf-fu-text:hover{background:var(--gl)}
-      .lf-fu-text:active{transform:scale(.97);background:var(--s3)}
+      .lf-fu-call{background:var(--g);color:#fff}
+      .lf-fu-call svg{width:18px;height:18px;stroke:#fff}
+      .lf-fu-call:active{transform:scale(.97);filter:brightness(.94)}
+      .lf-fu-text{background:#fff;color:var(--gd);border:1.5px solid var(--bdm)}
+      .lf-fu-text svg{width:18px;height:18px;stroke:var(--gd)}
+      .lf-fu-text:active{transform:scale(.97);background:var(--s2)}
       .lf-fu-call:focus-visible,.lf-fu-text:focus-visible{outline:2px solid var(--gd);outline-offset:2px}
-      .lf-fu-hint{display:none;font-size:11.5px;color:var(--gd);line-height:1.5;
-        margin-top:2px;padding-top:10px;border-top:1px dashed var(--bdm)}  /* JS flips display only */
+      .lf-fu-mini{display:none;align-items:center;justify-content:center;gap:6px;
+        font-size:13px;font-weight:700;color:var(--gd);text-decoration:none;padding:8px 0}
+      .lf-fu-mini svg{width:15px;height:15px;stroke:var(--gd)}
+      .lf-fu-mini:focus-visible{outline:2px solid var(--gd);outline-offset:2px}
+      .lf-fu-icon{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+      /* Chat is a real, working feature — kept, as a small tertiary link. */
+      .lf-fu-chat{background:none;border:none;padding:8px 0 12px;margin:0;cursor:pointer;
+        font-family:var(--ff);font-size:12.5px;font-weight:600;color:var(--t3);
+        display:flex;align-items:center;justify-content:center;gap:5px;width:100%}
+      .lf-fu-chat:active{opacity:.65}
+      /* Narrow phones (iPhone SE-class, 320px): give the two buttons enough
+         room to stay one line each rather than wrapping mid-word. */
+      @media (max-width:340px){
+        .lf-fu-card{padding:16px 14px 6px}
+        .lf-fu-call,.lf-fu-text{font-size:13px;gap:5px;padding:0 4px}
+        .lf-fu-call span:last-child,.lf-fu-text span:last-child{white-space:nowrap}
+        .lf-stage-cap{font-size:9px}
+      }
+
+      .lf-section{margin-bottom:28px}
+      .lf-section-hd{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:16px}
+
+      .lf-detail-row{display:flex;justify-content:space-between;align-items:baseline;
+        padding:10px 0;border-bottom:1px solid var(--s2);font-size:13.5px}
+      .lf-detail-row:last-child{border-bottom:none}
+      .lf-detail-row>span:first-child{color:var(--t3);flex-shrink:0}
+      .lf-detail-row>span:last-child{color:var(--t1);font-weight:700;margin-left:14px;
+        max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+
+      .lf-ghost-btn{width:100%;padding:14px;background:none;border:none;font-family:var(--ff);
+        font-size:14px;font-weight:700;color:var(--t2);cursor:pointer}
+      .lf-ghost-btn:active{opacity:.6}
+      .lf-cancel-link{background:none;border:none;font-family:var(--ff);font-size:13.5px;
+        font-weight:700;color:var(--red);cursor:pointer;padding:8px 14px}
+      .lf-cancel-link:active{opacity:.6}
     </style>
+
+    <!-- Header — compact, one consistent status icon (shape + text carry
+         meaning, not color alone), real vendor name in the subtitle. -->
+    <div style="text-align:center;margin-bottom:26px">
+      <div class="lf-hero-ico" id="suc-ico">✓</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.2;color:var(--t1);margin-bottom:6px" id="suc-ttl">Order placed</div>
+      <div style="font-size:14px;color:var(--t2);line-height:1.45;max-width:280px;margin:0 auto" id="suc-sub">Waiting for the vendor to accept your order.</div>
+    </div>
+
+    <!-- kept in the DOM only so updateTrackerFromStatus()'s existing writes
+         don't need touching; no longer shown as its own box (it restated
+         the header above almost word-for-word). -->
+    <div id="live-status-pill" style="display:none">
+      <span id="lsp-ico"></span><span id="lsp-title"></span><span id="lsp-sub"></span><span id="lsp-pulse"></span>
+    </div>
+
+    <!-- Need a faster response — the one accent surface on this screen,
+         directly under the header, above the tracker. Data-driven from
+         v.contact via loadCustomerVendorContact(). While waiting: heading +
+         sub + two full-size actions. Once accepted: collapses to one small
+         "Contact vendor" link (#s-vendor-mini) — still real tel:, just no
+         longer shouting "confirm your order" after it's already confirmed. -->
     <div id="s-vendor-contact" class="lf-fu-card">
-      <div id="s-vendor-eyebrow" class="lf-fu-eyebrow">📣 Need a faster response?</div>
-      <div class="lf-fu-vendor-row">
-        <span class="lf-fu-avatar" id="s-vendor-emoji">🏪</span>
-        <div style="flex:1;min-width:0">
-          <div class="lf-fu-name" id="s-vendor-name">Vendor</div>
-          <div class="lf-fu-phone" id="s-vendor-contact-num"></div>
-          <div class="lf-fu-nocontact" id="s-vendor-nocontact">No contact number set — use Chat below</div>
+      <div id="s-vendor-eyebrow" class="lf-fu-heading">Need a faster response?</div>
+      <div id="s-vendor-sub" class="lf-fu-sub">Contact the vendor directly.</div>
+      <div class="lf-fu-nocontact" id="s-vendor-nocontact">Vendor contact unavailable</div>
+      <div id="s-vendor-actions" class="lf-fu-actions">
+        <a id="s-vendor-call" class="lf-fu-call" aria-label="Call vendor">
+          <svg class="lf-fu-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span>Call vendor</span>
+        </a>
+        <a id="s-vendor-text" class="lf-fu-text" aria-label="Message vendor">
+          <svg class="lf-fu-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Message</span>
+        </a>
+      </div>
+      <a id="s-vendor-mini" class="lf-fu-mini" aria-label="Contact vendor">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>Contact vendor</span>
+      </a>
+      <button class="lf-fu-chat" onclick="openChatPanel('customer')" aria-label="Chat with vendor">
+        <span id="chat-btn-label">Chat with Vendor</span><span id="chat-unread-badge" style="display:none;background:var(--g);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px">0</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </div>
+
+    <!-- Order status — thin compact step line. Same ids/state machine as
+         before (updateTrackerFromStatus() untouched); see the .trk-* rules
+         near the top of the stylesheet for how this renders now. -->
+    <div class="lf-section">
+      <div class="lf-section-hd" id="trk-hd">Order status</div>
+      <div class="trk">
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot done"></div><div class="trk-line done" id="tl1"></div></div>
+          <div class="trk-cont">
+            <div class="trk-ttl" id="tt1">Order Received</div><div class="trk-sub" id="ts1">Payment confirmed</div>
+            <div class="lf-stage-cap done">Placed</div>
+          </div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot active" id="td2"></div><div class="trk-line" id="tl2"></div></div>
+          <div class="trk-cont">
+            <div class="trk-ttl" id="tt2">Waiting for acceptance…</div><div class="trk-sub" id="ts2">Vendor will confirm shortly</div>
+            <div class="lf-stage-cap active" id="sc2">Accepted</div>
+          </div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td3"></div><div class="trk-line" id="tl3"></div></div>
+          <div class="trk-cont">
+            <div class="trk-ttl dim" id="tt3">Preparing</div><div class="trk-sub dim" id="ts3">Your food is being made</div>
+            <div class="lf-stage-cap pend" id="sc3">Preparing</div>
+          </div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td4"></div><div class="trk-line" id="tl4"></div></div>
+          <div class="trk-cont">
+            <div class="trk-ttl dim" id="tt4">Out for Delivery</div><div class="trk-sub dim" id="ts4">On the way to your unit</div>
+            <div class="lf-stage-cap pend" id="sc4">On the way</div>
+          </div>
+        </div>
+        <div class="trk-step">
+          <div class="trk-l"><div class="trk-dot pend" id="td5"></div></div>
+          <div class="trk-cont">
+            <div class="trk-ttl dim" id="tt5">Delivered!</div><div class="trk-sub dim" id="ts5">Enjoy your meal 🎉</div>
+            <div class="lf-stage-cap pend" id="sc5">Delivered</div>
+          </div>
         </div>
       </div>
-      <div class="lf-fu-sub">Call or text the vendor directly to confirm your order.</div>
-      <div id="s-vendor-actions" class="lf-fu-actions">
-        <a id="s-vendor-call" class="lf-fu-call" aria-label="Call the vendor"><span aria-hidden="true">📞</span><span>Call Vendor</span></a>
-        <a id="s-vendor-text" class="lf-fu-text" aria-label="Text the vendor"><span aria-hidden="true">💬</span><span>Text Vendor</span></a>
-      </div>
-      <div id="s-vendor-followup-hint" class="lf-fu-hint">Still waiting? Reach out directly — it's the fastest way to confirm.</div>
     </div>
 
-    <!-- Chat button -->
-    <button onclick="openChatPanel('customer')" style="width:100%;padding:13px;background:var(--s2);border:1.5px solid var(--bdm);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--t1);cursor:pointer;font-family:var(--ff);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
-      <span>💬</span><span id="chat-btn-label">Chat with Vendor</span><span id="chat-unread-badge" style="display:none;background:var(--g);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px">0</span>
-    </button>
-
-    <button class="cta" onclick="goPage('p-chome');resetCart()">Back to Home</button>
-    <div id="cancel-order-wrap" style="margin-top:10px;display:none">
-      <button id="cancel-order-btn" onclick="customerCancelOrder()" style="width:100%;padding:13px;background:transparent;border:1.5px solid var(--red);border-radius:var(--rs);font-size:14px;font-weight:700;color:var(--red);cursor:pointer;font-family:var(--ff)">Cancel Order</button>
-      <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px" id="cancel-order-hint">You can only cancel while waiting for acceptance</div>
+    <!-- Order details — plain label/value rows with a hairline divider,
+         not a shaded stat card. -->
+    <div class="lf-section">
+      <div class="lf-section-hd">Order details</div>
+      <div class="lf-detail-row"><span id="s-oid-lbl">Order ID</span><span id="s-oid">#LF-0001</span></div>
+      <div class="lf-detail-row" id="s-when-row" style="display:none"><span>Scheduled</span><span id="s-when"></span></div>
+      <div class="lf-detail-row"><span id="s-unit-lbl">Deliver to</span><span id="s-unit">Unit 12B</span></div>
+      <div class="lf-detail-row"><span id="s-total-lbl">Total</span><span id="s-total">₱108</span></div>
     </div>
-    <div style="height:20px"></div>
+
+    <!-- This page has no bottom nav, so Back to home is the only way off
+         it — kept, but as a plain secondary text action, never competing
+         with Call vendor. -->
+    <button class="lf-ghost-btn" onclick="goPage('p-chome');resetCart()">Back to home</button>
+    <div id="cancel-order-wrap" style="display:none;text-align:center">
+      <button id="cancel-order-btn" class="lf-cancel-link" onclick="customerCancelOrder()">Cancel order</button>
+      <div style="font-size:11.5px;color:var(--t3);margin-top:2px" id="cancel-order-hint">You can only cancel while waiting for acceptance</div>
+    </div>
   </div>
 </div>
 
@@ -4090,7 +4192,7 @@ function buildFeaturedBanner(){
   banner.innerHTML=`
     <div style="background:linear-gradient(135deg,#1A6B4A,#0d3d27);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer" onclick="openVendor('${featured.id}')">
       <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%"></div>
-      <div style="position:absolute;bottom:-30px;right:16px;font-size:56px;opacity:.18">${featured.emoji}</div>
+      <div style="position:absolute;bottom:-30px;right:16px;font-size:56px;opacity:.18">${esc(featured.emoji)}</div>
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">${label}</div>
       <div style="font-family:var(--ffd);font-style:italic;font-size:22px;color:#fff;margin-bottom:3px;line-height:1.2">${featured.name}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:14px">${sub}</div>
@@ -4115,15 +4217,20 @@ function buildVendorCards(force=false){
   // v49b: key the cache on the LIVE open state, not the stored v.active flag.
   // Keying on v.active meant nothing changed when the clock crossed 8 PM, so
   // the repaint was skipped and cards kept showing yesterday's status.
-  const vh=Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)+v.name+(v.logo?'1':'0')).join(',')+activeCatFilter+'|'+activeMktFilter;
+  const vh=Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)+v.name+(v.logo?'1':'0')+(savedVendors[v.id]?'f':'')).join(',')+activeCatFilter+'|'+activeMktFilter+'|'+(activeFavFilter?'fav':'');
   if(!force && vh===_vendorHash&&el.children.length>0) return;
   _vendorHash=vh;
   // Category filter (applies to both open and closed). v54: the marketplace
   // vertical is checked FIRST — cuisine tags only mean anything within Food.
-  const inCat = v => inActiveMkt(v) && (activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase())));
+  const inCat = v => inActiveMkt(v) && (activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) && (!activeFavFilter || savedVendors[v.id]);
   const openVendors = Object.values(VENDORS).filter(v=>isOpenNow(v) && inCat(v));
   const closedVendors = Object.values(VENDORS).filter(v=>!isOpenNow(v) && inCat(v));
   if(!openVendors.length && !closedVendors.length){
+    if(activeFavFilter){
+      el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🤍</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No favorites yet</div><div style="font-size:12px;color:var(--t3);margin-top:4px">Tap the ♡ on any vendor card to save it here.</div></div>';
+      updateVendorLiveBadge(); updateCategoryCounts(); updateMktCounts();
+      return;
+    }
     const _m = activeMktFilter==='all' ? null : MARKETPLACES[activeMktFilter];
     el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">'+((_m&&_m.emptyIcon)||'🍽️')+'</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No '+(_m?esc(_m.short.toLowerCase())+' providers':'vendors')+' in this category yet</div></div>';
     updateVendorLiveBadge(); updateCategoryCounts(); updateMktCounts();
@@ -4226,6 +4333,7 @@ let _picksHash = '';
 let _picksOrder = [];
 let activeCatFilter = 'all';
 let activeMktFilter = 'all';   // v54: which marketplace vertical the directory is showing
+let activeFavFilter = false;   // "Favorites" chip — show only saved vendors in the directory row
 let _vendorHash = '';
 function buildTodaysPicks(force=false){
   const container=document.getElementById('todays-picks');
@@ -4262,7 +4370,7 @@ function ffFoodCard(item){
   const tag = item.tag && FF_TAGS[item.tag] ? `<span class="ff-fc-tag"><span class="ff-tag ${FF_TAGS[item.tag].c}">${FF_TAGS[item.tag].l}</span></span>` : '';
   const img = item.photo
     ? `<img src="${item.photo}" alt="">`
-    : `<span class="em">${ffDishArt(item)}</span>`;
+    : `<span class="em">${esc(ffDishArt(item))}</span>`;
   const bg = ffDishBg(item);
   // v54: a cleaning service can't go in a cart — it needs a date and a time.
   // Same card, different terminal action: tapping it opens the booking sheet.
@@ -4284,7 +4392,7 @@ function ffFoodCard(item){
     </div>`;
   }
   return `
-    <div class="ff-fc" onclick="quickAdd('${item.vendorId}','${escJs(item.name)}','${item.emoji}',${item.price})">
+    <div class="ff-fc" onclick="quickAdd('${item.vendorId}','${escJs(item.name)}','${escJs(item.emoji)}',${item.price})">
       <div class="ff-fc-img" style="background:${bg}">${img}${tag}</div>
       <div class="ff-fc-body">
         <div class="ff-fc-name">${esc(item.name)}</div>
@@ -4380,17 +4488,17 @@ function buildHeroStrip(){
   const _isClean = isScheduled(pick.vendorCat);
   const _tap = _isClean
     ? `startBooking('${pick.vendorId}','${escJs(pick.id)}')`
-    : `quickAdd('${pick.vendorId}','${escJs(pick.name)}','${pick.emoji}',${pick.price})`;
+    : `quickAdd('${pick.vendorId}','${escJs(pick.name)}','${escJs(pick.emoji)}',${pick.price})`;
   host.innerHTML=`
     <div class="ff-hero" onclick="${_tap}">
       <div class="ff-hero-txt">
         <div class="ff-hero-kick">${_isClean?'✨ Most booked':'🔥 Trending now'}</div>
         <div class="ff-hero-ttl">${pick.name}</div>
-        <div class="ff-hero-sub">${pick.vendorEmoji} ${pick.vendorName} · ₱${pick.price}</div>
+        <div class="ff-hero-sub">${esc(pick.vendorEmoji)} ${pick.vendorName} · ₱${pick.price}</div>
         <span class="ff-hero-cta">${_isClean?'Book now →':'Order now →'}</span>
       </div>
       <div class="ff-hero-art">
-        ${pick.photo?`<img src="${pick.photo}" style="width:100%;height:100%;object-fit:cover">`:`<span class="em">${pick.emoji}</span>`}
+        ${pick.photo?`<img src="${pick.photo}" style="width:100%;height:100%;object-fit:cover">`:`<span class="em">${esc(pick.emoji)}</span>`}
         <span class="ff-hero-badge">Hot 🔥</span>
       </div>
     </div>`;
@@ -4431,7 +4539,7 @@ function ffSearch(q){
     html+='<div class="ff-sr-head">Vendors</div>';
     html+=vMatches.map(v=>`
       <div class="ff-sr-row" onclick="openVendor('${v.id}')">
-        <div class="ff-sr-ic">${v.logo?`<img src="${v.logo}">`:v.emoji}</div>
+        <div class="ff-sr-ic">${v.logo?`<img src="${v.logo}">`:esc(v.emoji)}</div>
         <div class="ff-sr-info"><div class="ff-sr-name">${esc(v.name)}</div><div class="ff-sr-sub">${esc((v.sub||'').split('·').slice(0,2).join('·'))}</div></div>
         <span class="ff-sr-price">From ₱${esc(String(v.min).replace(/^₱/,''))}</span>
       </div>`).join('');
@@ -4443,7 +4551,7 @@ function ffSearch(q){
       html+='<div class="ff-sr-head">Dishes</div>';
       html+=_foods.map(i=>`
         <div class="ff-sr-row" onclick="openVendor('${i.vendorId}')">
-          <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
+          <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:esc(i.emoji)}</div>
           <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}</div></div>
           <span id="ffsr-${i.vendorId}-${ffKey(i.name)}" onclick="event.stopPropagation()">${ffStepperHTML(i.vendorId,i.name,i.emoji,i.price)}</span>
         </div>`).join('');
@@ -4458,7 +4566,7 @@ function ffSearch(q){
       html+='<div class="ff-sr-head">'+esc(MARKETPLACES[k].label)+'</div>';
       html+=group.map(i=>`
         <div class="ff-sr-row" onclick="startBooking('${i.vendorId}','${escJs(i.id)}')">
-          <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:i.emoji}</div>
+          <div class="ff-sr-ic">${i.photo?`<img src="${i.photo}">`:esc(i.emoji)}</div>
           <div class="ff-sr-info"><div class="ff-sr-name">${esc(i.name)}</div><div class="ff-sr-sub">${esc(i.vendorEmoji)} ${esc(i.vendorName)}${i.dur?' · ⏱ '+lfFmtDur(i.dur):''}</div></div>
           <span class="ff-sr-price">${lfPrice(i)}</span>
         </div>`).join('');
@@ -4554,9 +4662,24 @@ function updateMktCounts(){
 
 function toggleFav(id,btn){
   savedVendors[id]=!savedVendors[id];
+  saveFavorites();
   btn.classList.toggle('on',savedVendors[id]);
   btn.textContent=savedVendors[id]?'❤':'♡';
   showToast(savedVendors[id]?'❤ Saved!':'Removed from saved');
+  // Un-favoriting while the "Favorites only" filter is on should drop the
+  // card immediately, not leave a now-unfavorited store sitting in the list.
+  if(activeFavFilter && !savedVendors[id]) buildVendorCards(true);
+}
+
+function toggleFavFilter(){
+  activeFavFilter = !activeFavFilter;
+  const chip = el('vc-fav-filter-chip');
+  if(chip){
+    chip.classList.toggle('on', activeFavFilter);
+    chip.setAttribute('aria-pressed', activeFavFilter ? 'true' : 'false');
+    chip.textContent = activeFavFilter ? '❤ Favorites' : '♡ Favorites';
+  }
+  buildVendorCards(true);
 }
 
 // ═══ VENDOR DETAIL ═══
@@ -4682,18 +4805,18 @@ function openVendor(vid){
     // down, so they need escJs (JS-literal + entity), not esc (entity only).
     // esc() here decoded back into a bare quote and broke the handler.
     ? `startBooking('${vid}','${escJs(item.id)}')`
-    : `addToCart('${vid}','${escJs(item.name)}','${item.emoji}',${item.price})`;
+    : `addToCart('${vid}','${escJs(item.name)}','${escJs(item.emoji)}',${item.price})`;
   menuEl.innerHTML=_banner+'<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">'+esc(mkt(v).itemsNoun)+'</div>'+
     _normalizeMenu(MENU[vid]).filter(i=>i.avail).map(item=>`
       <div class="mrow" ${_canOrder?`onclick="${_tapFor(item)}"`:'style="cursor:default;opacity:.62"'}>
         <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;cursor:zoom-in;position:relative':''}" ${item.photo?`onclick="event.stopPropagation();openImgLightbox('${item.photo}','${escJs(item.name)}')"`:''}>
-          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:`${item.emoji}`}
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}"><div style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.55);border-radius:5px;padding:1px 4px;font-size:9px;line-height:1.4">🔍</div>`:esc(item.emoji)}
         </div>
         <div class="mrow-info"><div class="mrow-name">${esc(item.name)}</div><div class="mrow-desc">${esc(item.desc||'')}${(_clean&&item.dur)?' · ⏱ '+lfFmtDur(item.dur):''}</div></div>
         <div class="mrow-price">${lfPriceLong(item)}</div>
         ${_canOrder?(_clean
           ? `<button class="add-btn" style="width:auto;padding:0 13px;border-radius:999px;font-size:11.5px;font-weight:800" onclick="event.stopPropagation();startBooking('${vid}','${escJs(item.id)}')">Book</button>`
-          : `<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${escJs(item.name)}','${item.emoji}',${item.price})">+</button>`):''}
+          : `<button class="add-btn" onclick="event.stopPropagation();addToCart('${vid}','${escJs(item.name)}','${escJs(item.emoji)}',${item.price})">+</button>`):''}
       </div>`).join('');
   menuEl.innerHTML+='<div style="height:80px"></div>';
   goPage('p-cvendor');
@@ -5114,6 +5237,12 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
   // Confirmed by the backend. Only past this line is any of it true.
   lastPlacedOrderId=order.id;
   pendingOid=null;
+  // Clear the cart now, not only when "Back to Home" is tapped — otherwise a
+  // customer who leaves the success screen any other way (refresh, close tab,
+  // navigate away) still has the just-placed items sitting in cart and can
+  // resubmit them as a second, duplicate order.
+  cart={};
+  updateCartBar();
   saveLocal();
   updateAdminStats();
   updateVendorDash(order.vendorId);
@@ -6609,20 +6738,22 @@ function getCartDeliveryFee(){
 // must be cheap, idempotent, and never throw on missing orders/vendors.
 function loadCustomerVendorContact(oid){
   const box = el('s-vendor-contact'); if(!box) return;
-  const acts  = el('s-vendor-actions');
-  const call  = el('s-vendor-call');
-  const text  = el('s-vendor-text');
-  const numEl = el('s-vendor-contact-num');
-  const noneEl= el('s-vendor-nocontact');
-  const hint  = el('s-vendor-followup-hint');
-  const eyebrow = el('s-vendor-eyebrow');
+  const heading = el('s-vendor-eyebrow');
+  const sub     = el('s-vendor-sub');
+  const acts    = el('s-vendor-actions');
+  const call    = el('s-vendor-call');
+  const text    = el('s-vendor-text');
+  const mini    = el('s-vendor-mini');
+  const noneEl  = el('s-vendor-nocontact');
 
   const clearLinks = ()=>{
     if(acts) acts.style.display='none';
+    if(mini) mini.style.display='none';
     if(call) call.removeAttribute('href');
     if(text) text.removeAttribute('href');
-    if(hint) hint.style.display='none';
-    if(eyebrow) eyebrow.style.display='none';
+    if(mini) mini.removeAttribute('href');
+    if(heading) heading.style.display='none';
+    if(sub) sub.style.display='none';
   };
 
   let o = null;
@@ -6632,23 +6763,26 @@ function loadCustomerVendorContact(oid){
   // leaving a stale number pointing at the wrong store.
   if(!o || !v){ box.style.display='none'; clearLinks(); return; }
 
-  box.style.display='flex';
-  if(el('s-vendor-emoji')) el('s-vendor-emoji').textContent = v.emoji||'🏪';
-  if(el('s-vendor-name'))  el('s-vendor-name').textContent  = v.name||'Vendor';
+  box.style.display='block';
+
+  // Full "need a faster response?" prominence only while the order still
+  // hasn't been accepted — once a vendor confirms, calling to ask "did you
+  // get it?" no longer applies. Call/Text collapse to one small secondary
+  // link rather than disappearing outright, since a real follow-up question
+  // ("wrong unit number", "running late") stays genuinely useful afterward.
+  const waiting = (o.status==='new');
 
   const p = lfPhone(v.contact);
   if(p){
-    if(numEl){ numEl.textContent = '📞 ' + p.pretty; numEl.style.display='block'; }
     if(noneEl) noneEl.style.display='none';
     if(call) call.setAttribute('href', 'tel:' + p.e164);
     if(text) text.setAttribute('href', lfSmsHref(p.e164, lfFollowUpMsg(o, v)));
-    if(acts) acts.style.display='flex';
-    // Nudge only while the order still hasn't been accepted.
-    const waiting = (o.status==='new');
-    if(hint) hint.style.display = waiting ? 'block' : 'none';
-    if(eyebrow) eyebrow.style.display = waiting ? 'block' : 'none';
+    if(mini) mini.setAttribute('href', 'tel:' + p.e164);
+    if(heading) heading.style.display = waiting ? 'block' : 'none';
+    if(sub) sub.style.display = waiting ? 'block' : 'none';
+    if(acts) acts.style.display = waiting ? 'flex' : 'none';
+    if(mini) mini.style.display = waiting ? 'none' : 'flex';
   } else {
-    if(numEl){ numEl.textContent=''; numEl.style.display='none'; }
     if(noneEl) noneEl.style.display='block';
     clearLinks();
   }
@@ -7829,7 +7963,7 @@ function renderVendorMenu(vid){
     <div style="background:var(--w);border-bottom:.5px solid var(--bd);opacity:${item.avail?1:.5};transition:opacity .2s" id="mi-${item.id}">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px">
         <div class="mrow-ico" style="${item.photo?'padding:0;overflow:hidden;border-radius:10px;':''}">
-          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}">`:`${item.emoji}`}
+          ${item.photo?`<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" alt="${esc(item.name)}">`:esc(item.emoji)}
         </div>
         <div class="mrow-info">
           <div class="mrow-name">${esc(item.name)}</div>
@@ -7884,7 +8018,8 @@ function saveEditItem(){
   const desc=el('edit-item-desc').value.trim();
   const emoji=el('edit-item-emoji').value.trim()||'🍽️';
   const avail=el('edit-item-avail').checked;
-  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
+  if(!name){showToast('⚠️ Fill in the item name');return;}
+  if(!(price>0)){showToast('⚠️ Price must be greater than ₱0');return;}
   const editPhotoSrc=el('edit-photo-img').src||'';
   const photo=editPhotoSrc.startsWith('data:')?editPhotoSrc:(item.photo||'');
   const before={...item};
@@ -7978,7 +8113,8 @@ function addMenuItemConfirm(){
   const desc=el('new-item-desc').value.trim();
   const emoji=el('new-item-emoji').value.trim()||mkt(VENDORS[activeVendorId]).defaultItemEmoji;
   const photoSrc=el('new-photo-img').src||'';
-  if(!name||!price){showToast('⚠️ Fill in name and price');return;}
+  if(!name){showToast('⚠️ Fill in the item name');return;}
+  if(!(price>0)){showToast('⚠️ Price must be greater than ₱0');return;}
   if(!MENU[activeVendorId]) MENU[activeVendorId]=[];
   // v48: Date.now() alone collides when two items are added in the same
   // millisecond, or on two devices at once. Add entropy.
@@ -9003,7 +9139,7 @@ function renderAdminRevenue(){
     const bad  = s.acceptRate!==null && s.acceptRate < 70;
     return `<div style="background:var(--w);border:.5px solid var(--bd);border-radius:var(--rs);padding:13px 14px;margin:0 16px 8px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.emoji||'🏪'} ${esc(v.name)}</div>
+        <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.emoji||'🏪')} ${esc(v.name)}</div>
         <div style="font-size:15px;font-weight:800;color:var(--g);white-space:nowrap">${lfPeso(s.sales)}</div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
@@ -9512,12 +9648,50 @@ function lfSchedSteps(m){
   return _lfStepCache[k];
 }
 // Step-dot icons, in step order. A scheduled vertical uses its own icon for
-// the "work happening" dot so aircon shows ❄️ where cleaning shows 🧹.
+// the "work happening" dot so aircon shows a fan where cleaning shows a broom.
 const STEP_ICONS = { food:['⏳','👨‍🍳','🚚','📦'] };
 function lfStepIcons(m){ return m.scheduled ? ['⏳','🚗',m.icon,'✨'] : STEP_ICONS.food; }
 function trkCfg(o){  return orderScheduled(o) ? lfSchedStatusCfg(orderMkt(o)) : STATUS_CONFIG; }
 function trkSteps(o){ return orderScheduled(o) ? lfSchedSteps(orderMkt(o)) : STEPS; }
 function trkIcons(o){ return lfStepIcons(orderMkt(o)); }
+
+/* v74 — SERVICE-AWARE TRACKER ILLUSTRATIONS
+   One consistent line-illustration family (same 24x24/stroke-2/round-cap
+   language as this screen's Call/Message icons), swapped in per marketplace
+   vertical. This is a pure re-skin of the emoji dots above — same 4 index
+   positions (steps 2-5), same status machine, nothing fabricated: food and
+   every scheduled vertical still only ever move through
+   new -> accepted -> preparing -> ready -> delivered, because that's the only
+   status model the backend actually has (confirmed by reading
+   lfSchedStatusCfg/lfSchedSteps above — a single shared shape, worded per
+   vertical). Adding a vertical here needs one array entry, not new markup or
+   new backend states; anything not listed falls back to `generic` so an
+   unknown future category never crashes the tracker. */
+const LF_TRK_SVG = {
+  confirm: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  cook: '<path d="M3 10h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/><path d="M9 3.2c-.3.9-1 1-1 2M13 3.2c-.3.9-1 1-1 2"/>',
+  car: '<path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="7" cy="17" r="1.3"/><circle cx="17" cy="17" r="1.3"/>',
+  scooter: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M6 18h4l2-8h4"/><path d="M12 10h5l2 5h-3"/><path d="M8 10h3"/>',
+  fan: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-3 1-6 4-6s2 4-1 6"/><path d="M14 12c3 0 6 1 6 4s-4 2-6-1"/><path d="M12 14c0 3-1 6-4 6s-2-4 1-6"/><path d="M10 12c-3 0-6-1-6-4s4-2 6 1"/>',
+  broom: '<path d="M19 3l-8 8"/><path d="M9 13l6-6 3 3-6 6z"/><path d="M4 21l2-5 3 3z"/><path d="M8 14l-4.5 6.5"/>',
+  washer: '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M9.5 13a2.5 2.5 0 0 0 5 0"/><circle cx="7" cy="6.2" r=".6" fill="currentColor" stroke="none"/><circle cx="9.6" cy="6.2" r=".6" fill="currentColor" stroke="none"/>',
+  box: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  sparkle: '<path d="M12 3l1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4z"/><path d="M19 15l.6 2 2 .6-2 .6-.6 2-.6-2-2-.6 2-.6z"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+};
+const LF_TRK_ICONSET = {
+  food:    ['confirm','cook','scooter','box'],
+  cleaning:['confirm','car','broom','sparkle'],
+  aircon:  ['confirm','car','fan','sparkle'],
+  laundry: ['confirm','car','washer','box'],
+  generic: ['confirm','car','confirm','sparkle'],
+};
+function lfTrkIconSet(o){ return LF_TRK_ICONSET[orderMkt(o).id] || LF_TRK_ICONSET.generic; }
+function lfTrkSvg(key){
+  return '<svg class="lf-trk-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+    (LF_TRK_SVG[key]||LF_TRK_SVG.confirm)+'</svg>';
+}
 
 let prevTrackerStatus = null;
 
@@ -9536,20 +9710,20 @@ function paintSuccessChrome(o){
   set('s-oid', o.id);
   set('s-unit', lfLocationOf(o));
   set('s-total', '₱'+o.total);
-  set('s-oid-lbl', clean?'🧾 Booking ID:':'📦 Order ID:');
-  set('s-unit-lbl', clean?'📍 Service at:':'📍 Deliver to:');
-  set('s-total-lbl', clean?'💰 Price:':'💰 Total paid:');
+  set('s-oid-lbl', clean?'Booking ID':'Order ID');
+  set('s-unit-lbl', clean?'Service at':'Deliver to');
+  set('s-total-lbl', clean?'Price':'Total');
   const wrow = el('s-when-row');
   if(wrow){
-    wrow.style.display = clean ? 'inline' : 'none';
+    wrow.style.display = clean ? 'block' : 'none';
     if(clean) set('s-when', lfFmtDate(o.svcDate,true)+(o.svcTime?' · '+fmtTime(o.svcTime):''));
   }
 
-  set('trk-hd', clean?'Booking Tracker':'Order Tracker');
+  set('trk-hd', clean?'Booking status':'Order status');
   set('tt1', clean?'Booking Received':'Order Received');
   set('ts1', clean?'Request sent to provider':'Payment confirmed');
   set('chat-btn-label', clean?'Chat with Provider':'Chat with Vendor');
-  set('cancel-order-btn', clean?'Cancel Booking':'Cancel Order');
+  set('cancel-order-btn', clean?'Cancel booking':'Cancel order');
   set('cancel-order-hint', clean
     ? 'You can only cancel while waiting for confirmation'
     : 'You can only cancel while waiting for acceptance');
@@ -9590,7 +9764,8 @@ function updateTrackerFromStatus(){
   if(cancelWrap) cancelWrap.style.display = o.status==='new' ? 'block' : 'none';
 
   // v54: same tracker, wording chosen by the order's vertical.
-  const _CFG=trkCfg(o), _STEPS=trkSteps(o), _ICO=trkIcons(o);
+  // v74: _ICO is now a set of illustration keys (LF_TRK_SVG), not emoji.
+  const _CFG=trkCfg(o), _STEPS=trkSteps(o), _ICO=lfTrkIconSet(o);
   const _clean=orderScheduled(o);
   const cfg=_CFG[o.status]||_CFG.new;
   const step=cfg.step;
@@ -9614,22 +9789,24 @@ function updateTrackerFromStatus(){
   // v54: one copy table per vertical, replacing the old if/else ladder that
   // hardcoded "meal" and "vendor" into every branch.
   const _hm = orderMkt(o);
+  const _v = VENDORS[o.vendorId];
+  const _vn = (_v && _v.name) ? _v.name : (_clean ? 'the provider' : 'the vendor');
   const HEAD = _clean ? {
-    new:       ['Booking Placed! 🎉',   'Waiting for the provider to confirm your booking.', '✓'],
-    accepted:  ['Booking Confirmed! 📅','Scheduled for '+lfFmtDate(o.svcDate)+(o.svcTime?' at '+fmtTime(o.svcTime):'')+'.', '📅'],
-    preparing: [(_hm.workerNoun||'Provider')+' On the Way 🚗','They are heading to your unit now.', '🚗'],
-    ready:     [(_hm.jobNoun||'Service')+' In Progress '+_hm.icon,'Work has started in your unit.', _hm.icon],
-    delivered: [(_hm.jobNoun||'Service')+' Completed! ✨','Thanks for booking through LokalFinder!', '✨'],
-    declined:  ['Booking Cancelled 😞',  'The provider could not take this booking.', '😞'],
-    cancelled: ['Booking Cancelled',    'You cancelled this booking.', '🚫'],
+    new:       ['Booking placed',   'Waiting for '+_vn+' to confirm your booking.', '✓'],
+    accepted:  ['Booking confirmed','Scheduled for '+lfFmtDate(o.svcDate)+(o.svcTime?' at '+fmtTime(o.svcTime):'')+'.', '📅'],
+    preparing: [(_hm.workerNoun||'Provider')+' on the way','They are heading to your unit now.', '🚗'],
+    ready:     [(_hm.jobNoun||'Service')+' in progress','Work has started in your unit.', _hm.icon],
+    delivered: [(_hm.jobNoun||'Service')+' completed','Thanks for booking through LokalFinder!', '✨'],
+    declined:  ['Booking declined',  'The provider could not take this booking.', '😞'],
+    cancelled: ['Booking cancelled',    'You cancelled this booking.', '🚫'],
   } : {
-    new:       ['Order Placed! 🎉',     'Waiting for the vendor to accept your order.', '✓'],
-    accepted:  ['Order Accepted! ✅',   'Your vendor confirmed the order.', '✅'],
-    preparing: ['Being Prepared 👨‍🍳',   'Your food is being made right now.', '👨‍🍳'],
-    ready:     ['Out for Delivery 🚚',  'On the way to your unit.', '🚚'],
-    delivered: ['Delivered! 🎉',        'Enjoy your meal!', '🎉'],
-    declined:  ['Order Declined 😞',    'The vendor could not take this order.', '😞'],
-    cancelled: ['Order Cancelled',      'You cancelled this order.', '🚫'],
+    new:       ['Order placed',     'Waiting for '+_vn+' to accept your order.', '✓'],
+    accepted:  ['Order accepted',   'Your vendor confirmed the order.', '✅'],
+    preparing: ['Being prepared',   'Your food is being made right now.', '👨‍🍳'],
+    ready:     ['Out for delivery', 'On the way to your unit.', '🚚'],
+    delivered: ['Delivered',        'Enjoy your meal!', '🎉'],
+    declined:  ['Order declined',   'The vendor could not take this order.', '😞'],
+    cancelled: ['Order cancelled',  'You cancelled this order.', '🚫'],
   };
   const headKey = (o.status==='declined' && o.cancelledByCustomer) ? 'cancelled' : o.status;
   const head = HEAD[headKey];
@@ -9637,6 +9814,8 @@ function updateTrackerFromStatus(){
     el('suc-ttl').textContent=head[0];
     el('suc-sub').textContent=head[1];
     el('suc-ico').textContent=head[2];
+    const icoWrap = el('suc-ico');
+    if(icoWrap) icoWrap.classList.toggle('lf-ico-neg', headKey==='declined'||headKey==='cancelled');
   }
   // Transition toasts — only on the edge, never on every 3s re-render.
   if(o.status==='accepted' && prevTrackerStatus==='new'){
@@ -9652,12 +9831,14 @@ function updateTrackerFromStatus(){
                                : ['Waiting…','Preparing','Out for Delivery','Delivered'];
     _STEPS.forEach((s,i)=>{
       const td=el(s.td); if(!td) return;
-      td.className='trk-dot pend'; td.textContent=_ICO[i];
+      td.className='trk-dot pend'; td.innerHTML=lfTrkSvg(_ICO[i]); td.dataset.icon=_ICO[i];
+      const cap=el('sc'+s.td.slice(2)); if(cap) cap.className='lf-stage-cap pend';
       el(s.tt).textContent=_pendLabels[i];
       el(s.tt).classList.add('dim'); el(s.ts).classList.add('dim');
       if(s.tl) el(s.tl).classList.remove('done');
     });
-    const td=el('td2'); td.className='trk-dot'; td.style.background='#ef4444'; td.style.color='#fff'; td.textContent='✕';
+    const td=el('td2'); td.className='trk-dot neg'; td.style.background=''; td.style.color=''; td.innerHTML=lfTrkSvg('x'); td.dataset.icon='x';
+    const sc2=el('sc2'); if(sc2) sc2.className='lf-stage-cap neg';
     if(o.cancelledByCustomer){
       el('tt2').textContent=(_clean?'Booking':'Order')+' cancelled by you'; el('tt2').classList.remove('dim');
       if(el('ts2')){ el('ts2').textContent='You cancelled this '+(_clean?'booking':'order'); el('ts2').classList.remove('dim'); }
@@ -9672,21 +9853,27 @@ function updateTrackerFromStatus(){
   _STEPS.forEach((s,i)=>{
     const td=el(s.td); if(!td) return;
     td.style.background=''; td.style.color='';
+    const cap=el('sc'+s.td.slice(2));
     if(step>i+1){
-      // done
-      td.className='trk-dot done'; td.textContent='✓';
+      // done — no icon needed, the CSS ::after checkmark on .trk-dot.done draws it
+      td.className='trk-dot done'; td.innerHTML=''; td.dataset.icon='check';
+      if(cap) cap.className='lf-stage-cap done';
       el(s.tt).textContent=s.labels[o.status]||Object.values(s.labels).pop()||'Done';
       el(s.tt).classList.remove('dim'); el(s.ts).classList.remove('dim');
       if(s.tl) el(s.tl).classList.add('done');
     } else if(step===i+1){
-      // active
-      td.className='trk-dot active'; td.textContent=_ICO[i];
+      // active — the one illustration that's alive (CSS pulse; muted via
+      // prefers-reduced-motion), full color, bigger.
+      td.className='trk-dot active'; td.innerHTML=lfTrkSvg(_ICO[i]); td.dataset.icon=_ICO[i];
+      if(cap) cap.className='lf-stage-cap active';
       el(s.tt).textContent=s.labels[o.status]||el(s.tt).textContent;
       el(s.tt).classList.remove('dim'); el(s.ts).classList.remove('dim');
       if(s.tl) el(s.tl).classList.remove('done');
     } else {
-      // pending
-      td.className='trk-dot pend'; td.textContent=_ICO[i];
+      // pending — same illustration, shown muted/grayscale/static so the
+      // sequence previews what's coming without competing with the active step.
+      td.className='trk-dot pend'; td.innerHTML=lfTrkSvg(_ICO[i]); td.dataset.icon=_ICO[i];
+      if(cap) cap.className='lf-stage-cap pend';
       el(s.tt).classList.add('dim'); el(s.ts).classList.add('dim');
       if(s.tl) el(s.tl).classList.remove('done');
     }
@@ -9729,6 +9916,17 @@ function loadLocal(){
     myOrderIds=JSON.parse(localStorage.getItem('lf-myOrders')||'[]');
     lastPlacedOrderId=localStorage.getItem('lf-lastOrder')||null;
   }catch(e){}
+  try{
+    savedVendors=JSON.parse(localStorage.getItem('lf-savedVendors')||'{}');
+  }catch(e){}
+}
+// Favorites: no customer account exists in this app, so "my favorites" is a
+// device-local list, same as the rest of this file's per-device state
+// (lf-myOrders, lf-cust-id). Saved eagerly on every toggle rather than only
+// on saveLocal()'s other call sites, so a favorite survives even if the
+// customer never places an order this session.
+function saveFavorites(){
+  try{ localStorage.setItem('lf-savedVendors', JSON.stringify(savedVendors)); }catch(e){}
 }
 
 async function fbGet(path){
@@ -10452,12 +10650,12 @@ window.LFN = (function(){
           <div class="lfn-post-items">
             ${p.items.map(it => `
               <div class="lfn-post-item">
-                <div class="lfn-post-item-emoji">${it.emoji||'🍽️'}</div>
+                <div class="lfn-post-item-emoji">${escHTML(it.emoji||'🍽️')}</div>
                 <div class="lfn-post-item-info">
                   <div class="lfn-post-item-name">${escHTML(it.name)}</div>
                   <div class="lfn-post-item-price">₱${it.price}</div>
                 </div>
-                <button class="lfn-post-add" onclick="LFN.addFromFeed('${p.vendorId}','${escHTML(it.name).replace(/'/g,"\\'")}','${it.emoji||'🍽️'}',${it.price})">Add</button>
+                <button class="lfn-post-add" onclick="LFN.addFromFeed('${p.vendorId}','${escHTML(it.name).replace(/'/g,"\\'")}','${escHTML(it.emoji||'🍽️').replace(/'/g,"\\'")}',${it.price})">Add</button>
               </div>
             `).join('')}
           </div>
@@ -10552,7 +10750,7 @@ window.LFN = (function(){
       return `
         <div class="lfn-compose-pick ${on?'on':''}" onclick="LFN.togglePick(${i})">
           <div class="lfn-compose-pick-check">${on?'✓':''}</div>
-          <div style="font-size:22px;width:30px;text-align:center">${it.emoji||'🍽️'}</div>
+          <div style="font-size:22px;width:30px;text-align:center">${escHTML(it.emoji||'🍽️')}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13.5px;font-weight:700;color:var(--t1)">${escHTML(it.name)}</div>
             <div style="font-size:12px;color:var(--t2)">₱${it.price}</div>

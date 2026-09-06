@@ -166,15 +166,15 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     unit: el('s-unit').textContent, whenRow: el('s-when-row').style.display,
     when: el('s-when').textContent, trkHd: el('trk-hd').textContent,
     tt1: el('tt1').textContent, chat: el('chat-btn-label').textContent,
-    cancel: el('cancel-order-btn').textContent, td3: el('td3').textContent, tt3: el('tt3').textContent,
+    cancel: el('cancel-order-btn').textContent, td3: el('td3').dataset.icon, tt3: el('tt3').textContent,
   }));
   check('Success screen speaks "booking"',
-        succ.ttl==='Booking Placed! 🎉' && succ.oidLbl==='🧾 Booking ID:' && succ.unitLbl==='📍 Service at:' &&
-        succ.trkHd==='Booking Tracker' && succ.tt1==='Booking Received' && succ.chat==='Chat with Provider' &&
-        succ.cancel==='Cancel Booking', JSON.stringify(succ));
+        succ.ttl==='Booking placed' && succ.oidLbl==='Booking ID' && succ.unitLbl==='Service at' &&
+        succ.trkHd==='Booking status' && succ.tt1==='Booking Received' && succ.chat==='Chat with Provider' &&
+        succ.cancel==='Cancel booking', JSON.stringify(succ));
   check('Location shows Tower 3 / Unit 1204', succ.unit==='Tower 3 / Unit 1204', succ.unit);
-  check('Scheduled row visible with date + time', succ.whenRow==='inline' && /2 PM/.test(succ.when), succ.whenRow+' '+succ.when);
-  check('Tracker steps re-worded for cleaning', succ.td3==='🚗' && succ.tt3==='Cleaner on the way', succ.td3+'/'+succ.tt3);
+  check('Scheduled row visible with date + time', succ.whenRow==='block' && /2 PM/.test(succ.when), succ.whenRow+' '+succ.when);
+  check('Tracker steps re-worded for cleaning', succ.td3==='car' && succ.tt3==='Cleaner on the way', succ.td3+'/'+succ.tt3);
 
   // ── 7. Persistence + vendor notification ──────────────────────────
   const dbOrders = H.DB().lokalfinder_grass?.orders || {};
