@@ -51,8 +51,17 @@ export default function BoomerangVideoBg() {
       frameCanvas.height = height;
       const ctx = frameCanvas.getContext('2d');
       if (!ctx) return;
-      ctx.drawImage(video, 0, 0, width, height);
-      framesRef.current.push(frameCanvas);
+      try {
+        ctx.drawImage(video, 0, 0, width, height);
+        framesRef.current.push(frameCanvas);
+      } catch {
+        // Cross-origin frame the canvas isn't allowed to read (the CDN
+        // didn't send a permissive CORS header) — give up on capturing
+        // the boomerang loop; handleEnded's fallback below keeps the
+        // plain video looping instead of freezing on its last frame.
+        cancelled = true;
+        stopCapture();
+      }
     };
 
     const scheduleNext = () => {
@@ -89,11 +98,29 @@ export default function BoomerangVideoBg() {
       stopCapture();
       if (framesRef.current.length > 1) {
         setFramesReady(true);
+      } else {
+        // Capture never produced a usable sequence (autoplay was blocked
+        // partway through, or drawImage was rejected above) — fall back
+        // to the plain video looping forward natively instead of
+        // freezing on whatever frame it stopped at.
+        video.loop = true;
+        video.play().catch(() => {});
       }
     };
 
+    // Mobile autoplay policies are stricter and less consistent than
+    // desktop's (this gets worse again in a home-screen/PWA launch,
+    // which starts from a different engagement state than a normal
+    // in-browser navigation). If the initial play() is rejected, retry
+    // once on the visitor's first touch/click instead of giving up —
+    // otherwise the video sits there never having played at all.
+    let retryOnInteraction: (() => void) | null = null;
     const handleLoadedMetadata = () => {
-      video.play().catch(() => {});
+      video.play().catch(() => {
+        if (retryOnInteraction) return;
+        retryOnInteraction = () => { video.play().catch(() => {}); };
+        document.addEventListener('pointerdown', retryOnInteraction, { once: true });
+      });
     };
 
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -106,6 +133,7 @@ export default function BoomerangVideoBg() {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('ended', handleEnded);
+      if (retryOnInteraction) document.removeEventListener('pointerdown', retryOnInteraction);
     };
   }, []);
 
@@ -152,6 +180,7 @@ export default function BoomerangVideoBg() {
       <video
         ref={videoRef}
         src={VIDEO_SRC}
+        autoPlay
         muted
         playsInline
         preload="auto"

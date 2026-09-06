@@ -9,6 +9,14 @@ import { ECOSYSTEM_STAGES } from '../../data/content';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Mobile browsers resize the visible viewport as the address bar
+// collapses/expands during scroll. ScrollTrigger treats that as a real
+// resize and recalculates this section's pinned start/end mid-scroll,
+// which can push the trigger past the user's current scroll position —
+// leaving the icons below stuck at their initial opacity:0. Desktop has
+// no such dynamic chrome, so this only ever shows up on a phone.
+ScrollTrigger.config({ ignoreMobileResize: true });
+
 const ICONS = {
   food: Utensils,
   laundry: Shirt,
