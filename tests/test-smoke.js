@@ -89,7 +89,7 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
     await new Promise(r=>setTimeout(r,300));
     addToCart('pares','Regular Pares','🍲',60);
     goPage('p-ccart');
-    el('cust-name').value='ChatTester'; el('cust-unit').value='999'; setPay('cash');
+    el('cust-name').value='ChatTester'; el('cust-unit').value='999'; el('cust-phone').value='09171234567'; setPay('cash');
     await placeOrder();
     await new Promise(r=>setTimeout(r,1200));
     const oid = lastPlacedOrderId;

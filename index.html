@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LokalFinder — GRASS Residences</title>
 <meta name="theme-color" content="#1A6B4A">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1690,8 +1691,26 @@ select option { color: var(--t1); background: var(--w); }
    fast open is never held hostage to the animation, and a slow one still gets
    the full sequence instead of a jump cut. */
 (function(){
-  var LAND     = 2900;  // the sequence has made its point by here
-  var minShown = 3050;  // ...and reads as finished by here
+  // First-ever open gets the full brand moment. Every visit after that,
+  // the app is already known — holding the user for ~3s on every single
+  // launch just to replay an animation they've seen is pure friction, so
+  // the forced hold drops to a brief, fast flash of the mark instead.
+  var seenBefore = false;
+  try{ seenBefore = localStorage.getItem('lf-splash-seen') === '1'; }catch(e){}
+  // v-priority-15: boot() (far below) wants to know if THIS open is the
+  // visitor's first, for the app_open analytics event — but by the time it
+  // runs, the setItem right below has already overwritten the same key this
+  // IIFE just read, so re-reading localStorage there would always say
+  // "not first". Expose the answer this IIFE already correctly computed.
+  window._lfFirstOpen = !seenBefore;
+  try{ localStorage.setItem('lf-splash-seen', '1'); }catch(e){}
+
+  var LAND     = seenBefore ? 450  : 2900;  // the sequence has made its point by here
+  var minShown = seenBefore ? 550  : 3050;  // ...and reads as finished by here
+  // Note: hide() adds another 140ms + a 700ms opacity fade AFTER minShown —
+  // but that tail is cosmetic, not a hold: pointer-events:none lands with the
+  // fade's first frame, so the app underneath is already tappable by
+  // minShown+140ms. That's the number the ~500-800ms target is measured against.
   var t0 = Date.now();
   var done = false, flattened = false;
 
@@ -1954,6 +1973,16 @@ select option { color: var(--t1); background: var(--w); }
     <div id="ff-search-wrap" style="display:none"></div>
     <!-- NORMAL HOME CONTENT (hidden while searching) -->
     <div id="ff-home-content">
+    <div class="sec" style="padding-top:16px">
+      <span class="sec-t" id="vendor-sec-title">🏪 Vendors Near You</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="vc-fav-filter" id="vc-fav-filter-chip" onclick="toggleFavFilter()" role="button" tabindex="0" aria-pressed="false" aria-label="Show only my favorite vendors" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFavFilter();}">♡ Favorites</span>
+        <span class="sec-a lf-swipe" id="vc-swipe" onclick="nudgeVendorRow()">Swipe<span class="lf-swipe-arrows"><i></i><i></i><i></i></span></span>
+      </div>
+    </div>
+    <div class="lf-row-wrap"><div class="hscrl" id="vendor-cards"></div><div class="lf-edge" id="vc-edge" aria-hidden="true"></div></div>
+    <div class="dvdr"></div>
+    <!-- v-polish: promotional hero content moved below Vendors Near You so real supply is what a customer sees first. -->
     <!-- Landing hero brought up to home (v-polish: fill the gap) -->
   <div class="lf2-hero" style="height:180px;border-radius:14px;margin:12px 16px 0;width:auto">
     <svg viewBox="0 0 430 260" preserveAspectRatio="xMidYMid slice"
@@ -2202,15 +2231,6 @@ select option { color: var(--t1); background: var(--w); }
   </div>
     <div id="ff-hero-strip"></div>
     <div id="featured-banner" style="margin:12px 16px"></div>
-    <div class="sec" style="padding-top:16px">
-      <span class="sec-t" id="vendor-sec-title">🏪 Vendors Near You</span>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="vc-fav-filter" id="vc-fav-filter-chip" onclick="toggleFavFilter()" role="button" tabindex="0" aria-pressed="false" aria-label="Show only my favorite vendors" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFavFilter();}">♡ Favorites</span>
-        <span class="sec-a lf-swipe" id="vc-swipe" onclick="nudgeVendorRow()">Swipe<span class="lf-swipe-arrows"><i></i><i></i><i></i></span></span>
-      </div>
-    </div>
-    <div class="lf-row-wrap"><div class="hscrl" id="vendor-cards"></div><div class="lf-edge" id="vc-edge" aria-hidden="true"></div></div>
-    <div class="dvdr"></div>
     <div style="padding:16px 16px 4px">
       <div style="font-size:22px;font-weight:800;color:var(--t1);line-height:1.2" id="picks-title">🔥 Today's Picks</div>
       <div style="font-size:13px;color:var(--t2);margin-top:4px" id="picks-sub">Fresh from your neighbors. Order now before it sells out! 👀</div>
@@ -2392,6 +2412,8 @@ select option { color: var(--t1); background: var(--w); }
     <div style="background:var(--s2);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px;text-align:center">
       <div style="font-size:12px;color:var(--t3);margin-bottom:4px">Amount to send</div>
       <div style="font-size:28px;font-weight:800;color:var(--g)">₱<span id="gc-amt">0</span></div>
+      <button type="button" onclick="lfCopyPay(el('gc-amt').textContent,'Amount')"
+        style="margin-top:8px;background:#fff;border:1px solid var(--bd);border-radius:9px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--g);cursor:pointer;font-family:var(--ff)">Copy amount</button>
     </div>
 
     <label class="flbl">Reference / Transaction Number</label>
@@ -2767,17 +2789,20 @@ select option { color: var(--t1); background: var(--w); }
         </div>
         <input type="file" id="v-logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
         <button onclick="goCust()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛒 Shop</button>
-        <button onclick="testVendorPush()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🔔 Test Push</button>
-        <button onclick="vendorLogout()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Log Out</button>
       </div>
     </div>
-    <!-- Push health (v31 additive — live diagnosis of the notification pipeline) -->
+    <!-- Push health (v31 additive — live diagnosis of the notification pipeline).
+         v-push-txt shows an ordinary vendor a plain-language summary only —
+         the technical diagnosis (service worker / push engine / iOS version
+         language) still runs exactly as before, but now lands in the hidden
+         v-push-detail node instead of the vendor's face. See _paintHealth(). -->
     <div id="v-push-health" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.18);border-radius:8px;padding:7px 10px;margin-bottom:10px">
       <span id="v-push-dot" style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#9CA3AF"></span>
-      <span id="v-push-txt" style="flex:1;font-size:10.5px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.3">Checking notifications…</span>
-      <button onclick="osRepairPush()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛠 Fix</button>
+      <span id="v-push-txt" style="flex:1;font-size:10.5px;color:rgba(255,255,255,.8);font-weight:600;line-height:1.3">Setting up order alerts…</span>
+      <button id="v-push-fix" onclick="osRepairPush()" style="display:none;flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🛠 Fix</button>
       <button id="v-push-copyinfo" onclick="copyPushDiagnostics()" style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">📋 Copy Info</button>
     </div>
+    <div id="v-push-detail" style="display:none;font-size:10px;color:rgba(255,255,255,.55);margin:-4px 0 10px;padding:0 2px"></div>
     <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
@@ -2789,6 +2814,59 @@ select option { color: var(--t1); background: var(--w); }
           <div class="tog-t"></div><div class="tog-k"></div>
         </label>
       </div>
+    </div>
+  </div>
+  <div class="scrl">
+    <!-- v-priority-8: shown only while this store hasn't gone live yet.
+         See renderGoLiveCard()/attemptGoLive(). -->
+    <div id="v-golive-card" style="display:none;margin:12px 16px;background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:var(--rs);padding:14px 16px">
+      <div style="font-size:14px;font-weight:800;color:#92400E;margin-bottom:2px">🚀 Finish setup to go live</div>
+      <div style="font-size:12px;color:#B45309;margin-bottom:12px">Customers can't find or order from your store yet.</div>
+      <div id="v-golive-checklist" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px"></div>
+      <button id="v-golive-btn" onclick="attemptGoLive()" disabled style="width:100%;background:var(--bdm);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:not-allowed;font-family:var(--ff)">Complete the checklist above</button>
+    </div>
+    <!-- Quick stats -->
+    <div style="display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto">
+      <div class="pill">📦 <b id="v-orders-today">0</b> today</div>
+      <div class="pill">💰 <b id="v-earned-today">₱0</b> earned</div>
+      <div class="pill" style="color:var(--red)">🔴 <b id="v-new-cnt">0</b> new</div>
+    </div>
+    <!-- Sales box. LokalFinder does not process or hold payments — orders
+         settle cash/GCash directly between customer and provider — so this
+         must never say anything that implies LokalFinder sends money. -->
+    <div class="sec"><span class="sec-t">Today's Sales</span><span class="sec-a" onclick="goVendorTab('earn')">Details →</span></div>
+    <div class="card-sm" style="margin:0 16px 10px;overflow:hidden">
+      <div style="padding:11px 14px;background:var(--gl);display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--bd)">
+        <div style="font-size:13px;font-weight:700;color:var(--gd)">Recorded sales today</div>
+        <div id="v-payout" style="font-size:16px;font-weight:800;color:var(--g)">₱0</div>
+      </div>
+      <div style="padding:9px 14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2)"><span>Gross orders</span><span id="v-gross" style="font-weight:700">₱0</span></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:6px">Payments handled directly with customers</div>
+      </div>
+    </div>
+    <!-- New orders alert -->
+    <div id="v-new-banner" style="margin:4px 16px 8px;background:#dc2626;border-radius:var(--rs);padding:14px;display:none;align-items:center;gap:10px;cursor:pointer" onclick="goVendorTab('orders')">
+      <div style="font-size:28px">🔔</div>
+      <div style="flex:1"><div id="v-banner-txt" style="font-size:15px;font-weight:800;color:#fff">New orders waiting!</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Tap here to view and accept</div></div>
+      <div id="v-banner-count" style="background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:4px 12px;font-size:16px;font-weight:800">0</div>
+    </div>
+    <!-- v54: today's schedule — cleaning providers only (hidden for food) -->
+    <div id="v-sched-wrap" style="display:none">
+      <div class="sec"><span class="sec-t" id="v-sched-title">Today's Schedule</span></div>
+      <div id="v-sched-list" style="padding:0 16px 4px"></div>
+    </div>
+    <div class="sec"><span class="sec-t" id="v-recent-title">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
+    <div id="v-recent-orders"><div class="empty" style="padding:24px"><div class="empty-sub">No orders yet. Share your store link to get started!</div></div></div>
+    <!-- v-priority-6: everything below is setup/config, not operational —
+         collapsed by default so a vendor opening the dashboard sees "do I
+         have a customer waiting" first. Every field here is the exact same
+         element, same id, same handler as before; only its position and
+         (while collapsed) visibility changed. -->
+    <div class="sec" style="margin-top:6px">
+      <span class="sec-t" onclick="toggleVendorSettings()" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none">⚙️ Store Settings <span id="v-settings-chevron" style="font-size:10px;display:inline-block;transition:transform .2s">▾</span></span>
+    </div>
+    <div id="v-settings-panel" style="display:none;background:var(--g);margin:0 16px 16px;border-radius:var(--rs);padding:14px 16px 16px;overflow:hidden">
       <div style="display:flex;gap:8px">
         <div style="flex:1">
           <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;letter-spacing:.5px">OPENS</div>
@@ -2863,41 +2941,11 @@ select option { color: var(--t1); background: var(--w); }
         <div id="v-payments-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
         <button onclick="openAddPaymentModal()" style="width:100%;background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.3);color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">+ Add Payment Account</button>
       </div>
-    </div>
-  </div>
-  <div class="scrl">
-    <!-- Quick stats -->
-    <div style="display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto">
-      <div class="pill">📦 <b id="v-orders-today">0</b> today</div>
-      <div class="pill">💰 <b id="v-earned-today">₱0</b> earned</div>
-      <div class="pill" style="color:var(--red)">🔴 <b id="v-new-cnt">0</b> new</div>
-    </div>
-    <!-- Payout box -->
-    <div class="sec"><span class="sec-t">Today's Payout</span><span class="sec-a" onclick="goVendorTab('earn')">Details →</span></div>
-    <div class="card-sm" style="margin:0 16px 10px;overflow:hidden">
-      <div style="padding:11px 14px;background:var(--gl);display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--bd)">
-        <div style="font-size:13px;font-weight:700;color:var(--gd)">LokalFinder will send you</div>
-        <div id="v-payout" style="font-size:16px;font-weight:800;color:var(--g)">₱0</div>
-      </div>
-      <div style="padding:9px 14px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:5px"><span>Gross orders</span><span id="v-gross" style="font-weight:700">₱0</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:5px"><span>Service fees deducted</span><span id="v-fees" style="font-weight:700;color:var(--red)">−₱0</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2)"><span style="font-size:11px;color:var(--t3)">Paid via GCash at 6PM daily</span><span style="font-size:11px;color:var(--t3)">Auto</span></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);display:flex;gap:8px">
+        <button onclick="testVendorPush()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">🔔 Test Push</button>
+        <button onclick="vendorLogout()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff)">Log Out</button>
       </div>
     </div>
-    <!-- New orders alert -->
-    <div id="v-new-banner" style="margin:4px 16px 8px;background:#dc2626;border-radius:var(--rs);padding:14px;display:none;align-items:center;gap:10px;cursor:pointer" onclick="goVendorTab('orders')">
-      <div style="font-size:28px">🔔</div>
-      <div style="flex:1"><div id="v-banner-txt" style="font-size:15px;font-weight:800;color:#fff">New orders waiting!</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">Tap here to view and accept</div></div>
-      <div id="v-banner-count" style="background:rgba(255,255,255,.25);color:#fff;border-radius:20px;padding:4px 12px;font-size:16px;font-weight:800">0</div>
-    </div>
-    <!-- v54: today's schedule — cleaning providers only (hidden for food) -->
-    <div id="v-sched-wrap" style="display:none">
-      <div class="sec"><span class="sec-t" id="v-sched-title">Today's Schedule</span></div>
-      <div id="v-sched-list" style="padding:0 16px 4px"></div>
-    </div>
-    <div class="sec"><span class="sec-t" id="v-recent-title">Recent Orders</span><span class="sec-a" onclick="goVendorTab('orders')">View all →</span></div>
-    <div id="v-recent-orders"><div class="empty" style="padding:24px"><div class="empty-sub">No orders yet. Share your store link to get started!</div></div></div>
     <div style="height:80px"></div>
   </div>
   <div class="bnav" id="v-bnav">
@@ -2958,10 +3006,10 @@ select option { color: var(--t1); background: var(--w); }
 <!-- VENDOR — EARNINGS TAB -->
 <div class="page" id="p-vearn">
   <div class="notch"><span class="ph-clock">9:41</span><div class="ni"></div></div>
-  <div class="topbar"><div style="font-size:17px;font-weight:700">Earnings</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Paid via GCash every 6PM</div></div>
+  <div class="topbar"><div style="font-size:17px;font-weight:700">Earnings</div><div style="font-size:12px;color:var(--t3);margin-top:1px">Payments handled directly with customers</div></div>
   <div class="scrl">
     <div style="padding-top:12px">
-      <div class="earn-hdr"><div class="earn-lbl">Today's payout</div><div class="earn-amt" id="ve-payout">₱0</div><div class="earn-sub" id="ve-sub">0 orders today</div></div>
+      <div class="earn-hdr"><div class="earn-lbl">Today's sales</div><div class="earn-amt" id="ve-payout">₱0</div><div class="earn-sub" id="ve-sub">0 orders today</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px">
         <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Gross sales</div><div id="ve-gross" style="font-size:17px;font-weight:700">₱0</div></div>
         <div style="background:var(--w);border-radius:var(--rs);border:.5px solid var(--bd);padding:12px"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Fees deducted</div><div id="ve-fees" style="font-size:17px;font-weight:700;color:var(--red)">₱0</div></div>
@@ -3874,6 +3922,22 @@ const MKT_ORDER = ['food','cleaning','aircon','laundry'];   // display order in 
 // Legacy-safe readers. A record with no category/kind predates v54 and is Food.
 function vendorCat(v){ const c = v && v.category; return (c && MARKETPLACES[c]) ? c : 'food'; }
 function orderKind(o){ const k = o && o.kind;     return (k && MARKETPLACES[k]) ? k : 'food'; }
+// v-priority-8: a vendor with no `live` field predates this gate entirely —
+// every vendor approved before it existed defaults to live, unaffected.
+// Only a fresh approval writes live:false, and only the vendor's own
+// "Go Live" tap ever flips it to true. This is a WORKFLOW gate, exactly
+// like the vendorApplications distinction it complements — not a security
+// boundary (nothing here is server-enforced; see the security review).
+// A vendor that doesn't exist at all (a stale id: a deleted vendor, a typo,
+// an old bookmark/notification) is NOT live — it is the opposite of "safe
+// to keep reading fields off of". Every real call site here either already
+// guards its own `!v` case before reaching this function, or iterates
+// Object.values(VENDORS)/Object.entries(VENDORS) and so never passes a
+// falsy v at all — openVendor(vid) was the one place that called this
+// directly with a possibly-nonexistent VENDORS[vid], and returning true
+// there let it fall through its own "not available" guard and crash on
+// v.cover a few lines later instead of ever showing that toast.
+function isVendorLive(v){ return !!v && v.live !== false; }
 function mkt(idOrVendor){
   if(idOrVendor && typeof idOrVendor === 'object') return MARKETPLACES[vendorCat(idOrVendor)];
   return MARKETPLACES[idOrVendor] || MARKETPLACES.food;
@@ -4039,7 +4103,7 @@ function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
-  if(id==='p-ccart')    renderCartPage();
+  if(id==='p-ccart')    { renderCartPage(); lfTrack('checkout_started', { itemCount: Object.values(cart).reduce((n,c)=>n+c.items.reduce((m,i)=>m+i.qty,0),0) }); }
   if(id==='p-chistory') renderOrderHistory();
   if(id==='p-vlogin')   { try{ lfResetVendorLoginFilter(); }catch(e){}
                           try{ lfRefreshAppStatus(); }catch(e){} }
@@ -4064,15 +4128,15 @@ function goCust(){ activeVendorId=null; buildVendorCards(); buildTodaysPicks(); 
 function updateVendorLiveBadge(){
   // v54: scoped to the vertical on screen — claiming "6 live" while showing
   // only the 2 open cleaners would be a number that matches nothing visible.
-  const count=Object.values(VENDORS).filter(v=>isOpenNow(v) && inActiveMkt(v)).length;
+  const count=Object.values(VENDORS).filter(v=>isOpenNow(v) && isVendorLive(v) && inActiveMkt(v)).length;
   const b=document.getElementById('vendor-live-badge');
   if(b) b.textContent='● '+count+' live';
 }
 function updateCategoryCounts(){
   const catFor=cat=>{
-    if(cat==='all') return Object.entries(MENU).reduce((s,[vid,items])=>s+((VENDORS[vid]&&isOpenNow(VENDORS[vid])&&inActiveMkt(VENDORS[vid]))?_normalizeMenu(items).filter(i=>i.avail).length:0),0);
+    if(cat==='all') return Object.entries(MENU).reduce((s,[vid,items])=>s+((VENDORS[vid]&&isOpenNow(VENDORS[vid])&&isVendorLive(VENDORS[vid])&&inActiveMkt(VENDORS[vid]))?_normalizeMenu(items).filter(i=>i.avail).length:0),0);
     return Object.entries(VENDORS).reduce((s,[vid,v])=>{
-      if(!isOpenNow(v)||!inActiveMkt(v)) return s;
+      if(!isOpenNow(v)||!isVendorLive(v)||!inActiveMkt(v)) return s;
       if(!(v.cats||[]).some(c=>c.toLowerCase().includes(cat.toLowerCase()))) return s;
       return s+(_normalizeMenu(MENU[vid]).filter(i=>i.avail).length);
     },0);
@@ -4159,6 +4223,64 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
   window.addEventListener('hashchange', _adminFromHash);
   setTimeout(_adminFromHash, 800);   // after boot() has navigated to home
+
+  /* v-priority-14: marketing deep links — same shape as _adminFromHash right
+     above (let boot() settle onto Home first, then redirect), because a
+     vendor recruitment QR code or a social ad needs to land the visitor
+     exactly where the campaign promised, not on Home with instructions to
+     "find the button yourself".
+       ?join=vendor        -> straight into the application form
+       ?vendor=VENDOR_ID   -> straight into that vendor's profile
+       ?category=<key>     -> Home, pre-filtered to that MARKETPLACES vertical
+     Checked against MARKETPLACES itself, not a hardcoded food/cleaning/aircon
+     list — a vertical added later needs no change here, same rule as
+     everywhere else in this codebase. Never fires with a vendor session
+     restored (activeVendorId set) — a seller's own phone should not get
+     yanked out of their portal by a parameter meant for a prospective
+     customer, and never overwritten by a late-resolving goCust() on a slow
+     connection — see the _lfDeepLinkHandled check in boot() below.
+     UTM capture itself (_lfCaptureUtm) lives at top level near lfTrack() and
+     is called from boot(), not from here — app_open fires synchronously at
+     the very top of boot(), which runs before this DOMContentLoaded handler
+     ever fires, so capturing UTM here would always be one event too late. */
+  function _lfDeepLinkFromQuery(attempt){
+    if(activeVendorId) return;   // a vendor is signed in here — leave their portal alone
+    try{
+      const p = new URLSearchParams(location.search);
+      const join = p.get('join');
+      const vendorId = p.get('vendor');
+      const category = p.get('category');
+      if(!join && !vendorId && !category) return;
+
+      if(join === 'vendor'){
+        history.replaceState(null,'',location.pathname+location.hash);
+        window._lfDeepLinkHandled = true;
+        openVendorApply();
+        return;
+      }
+      if(vendorId){
+        if(VENDORS[vendorId]){
+          history.replaceState(null,'',location.pathname+location.hash);
+          window._lfDeepLinkHandled = true;
+          openVendor(vendorId);
+        } else if(attempt < 6){
+          // Catalog may still be mid-sync (Firebase free-tier cold start) —
+          // bounded retry, same shape as boot()'s own tryBoot() backoff.
+          setTimeout(()=>_lfDeepLinkFromQuery(attempt+1), 800);
+        }
+        return;
+      }
+      if(category){
+        const M = MARKETPLACES[category];
+        if(!M) return;
+        history.replaceState(null,'',location.pathname+location.hash);
+        window._lfDeepLinkHandled = true;
+        const tabBtn = document.querySelector('#mkt-row .mkt-tab[data-mkt="'+category+'"]');
+        filterMkt(tabBtn, category);
+      }
+    }catch(e){ console.warn('deep link handling failed:', e); }
+  }
+  setTimeout(()=>_lfDeepLinkFromQuery(1), 800);
 });
 
 
@@ -4167,7 +4289,7 @@ function buildFeaturedBanner(){
   const banner = el('featured-banner'); if(!banner) return;
 
   // Priority 1: admin-marked featured vendor that is active
-  let featured = Object.values(VENDORS).find(v=>v.featured && isOpenNow(v));
+  let featured = Object.values(VENDORS).find(v=>v.featured && isOpenNow(v) && isVendorLive(v));
 
   // Priority 2: vendor with most orders today that is active
   if(!featured){
@@ -4175,7 +4297,7 @@ function buildFeaturedBanner(){
     const counts = {};
     orders.forEach(o=>{
       const d = new Date(o.timestamp).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'});
-      if(d===today && isOpenNow(VENDORS[o.vendorId])){
+      if(d===today && isOpenNow(VENDORS[o.vendorId]) && isVendorLive(VENDORS[o.vendorId])){
         counts[o.vendorId]=(counts[o.vendorId]||0)+1;
       }
     });
@@ -4210,19 +4332,25 @@ function lfRatingDisplay(v){
     const r = (window.LFN && typeof window.LFN.ratingFor === 'function') ? window.LFN.ratingFor(v.id) : null;
     if(r && r.count) return '⭐ ' + r.avg.toFixed(1) + ' (' + r.count + ')';
   }catch(e){}
-  return v.rating;
+  // No real reviews yet — never show a manufactured/seeded number in their
+  // place. v.rating is only trusted here when it's already the honest
+  // "no reviews yet" default a freshly-approved vendor gets, never a
+  // fabricated score.
+  return (v.rating === '⭐ New' || v.rating === 'New') ? v.rating : 'New';
 }
 function buildVendorCards(force=false){
   const el=document.getElementById('vendor-cards');
   // v49b: key the cache on the LIVE open state, not the stored v.active flag.
   // Keying on v.active meant nothing changed when the clock crossed 8 PM, so
   // the repaint was skipped and cards kept showing yesterday's status.
-  const vh=Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)+v.name+(v.logo?'1':'0')+(savedVendors[v.id]?'f':'')).join(',')+activeCatFilter+'|'+activeMktFilter+'|'+(activeFavFilter?'fav':'');
+  const vh=Object.values(VENDORS).map(v=>v.id+(isOpenNow(v)?1:0)+v.name+(v.logo?'1':'0')+(savedVendors[v.id]?'f':'')+(isVendorLive(v)?'1':'0')).join(',')+activeCatFilter+'|'+activeMktFilter+'|'+(activeFavFilter?'fav':'');
   if(!force && vh===_vendorHash&&el.children.length>0) return;
   _vendorHash=vh;
   // Category filter (applies to both open and closed). v54: the marketplace
   // vertical is checked FIRST — cuisine tags only mean anything within Food.
-  const inCat = v => inActiveMkt(v) && (activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) && (!activeFavFilter || savedVendors[v.id]);
+  // v-priority-8: a store still in setup (approved but not yet Go Live) is
+  // never shown here — see isVendorLive().
+  const inCat = v => isVendorLive(v) && inActiveMkt(v) && (activeCatFilter==='all' || (v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) && (!activeFavFilter || savedVendors[v.id]);
   const openVendors = Object.values(VENDORS).filter(v=>isOpenNow(v) && inCat(v));
   const closedVendors = Object.values(VENDORS).filter(v=>!isOpenNow(v) && inCat(v));
   if(!openVendors.length && !closedVendors.length){
@@ -4341,12 +4469,13 @@ function buildTodaysPicks(force=false){
   Object.entries(MENU).forEach(([vid,items])=>{
     const v=VENDORS[vid];
     if(!v||!isOpenNow(v)) return;
+    if(!isVendorLive(v)) return;  // v-priority-8: not yet gone live
     if(!inActiveMkt(v)) return;   // v54: only the selected vertical
     if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) return;
     _normalizeMenu(items).filter(i=>i.avail).slice(0,2).forEach(item=>picks.push({...item,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji,vendorCat:vendorCat(v)}));
   });
 
-  const hash = picks.map(p=>p.id+p.price+p.avail+(ffQtyOf(p.vendorId,p.name))).join(',')+'|'+activeMktFilter;
+  const hash = picks.map(p=>p.id+p.price+p.avail+(ffQtyOf(p.vendorId,p.name))).join(',')+'|'+activeMktFilter+'|'+Object.values(VENDORS).filter(v=>!isVendorLive(v)).length;
   if(!force && _picksBuilt && hash===_picksHash) return;
   const firstBuild = !_picksBuilt;
   _picksHash = hash;
@@ -4477,6 +4606,7 @@ function buildHeroStrip(){
   let pick=null;
   for(const [vid,items] of Object.entries(MENU)){
     const v=VENDORS[vid]; if(!v||!isOpenNow(v)) continue;
+    if(!isVendorLive(v)) continue;  // v-priority-8: not yet gone live
     if(!inActiveMkt(v)) continue;   // v54
     if(activeCatFilter!=='all' && !(v.cats||[]).some(c=>c.toLowerCase().includes(activeCatFilter.toLowerCase()))) continue;
     const best=_normalizeMenu(items).find(i=>i.avail&&i.tag==='best');
@@ -4517,11 +4647,11 @@ function ffSearch(q){
 
   // match vendors — v54: search stays inside the selected marketplace, so a
   // customer browsing Cleaning is never shown a siomai stall.
-  const vMatches=Object.values(VENDORS).filter(v=>isOpenNow(v) && inActiveMkt(v) && (v.name.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)));
+  const vMatches=Object.values(VENDORS).filter(v=>isOpenNow(v) && isVendorLive(v) && inActiveMkt(v) && (v.name.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)));
   // match items (dishes and cleaning services alike)
   const dMatches=[];
   Object.entries(MENU).forEach(([vid,items])=>{
-    const v=VENDORS[vid]; if(!v||!isOpenNow(v)||!inActiveMkt(v)) return;
+    const v=VENDORS[vid]; if(!v||!isOpenNow(v)||!isVendorLive(v)||!inActiveMkt(v)) return;
     _normalizeMenu(items).filter(i=>i.avail).forEach(i=>{
       if(i.name.toLowerCase().includes(q)||(i.desc||'').toLowerCase().includes(q))
         dMatches.push({...i,vendorId:vid,vendorName:v.name,vendorEmoji:v.emoji,vendorCat:vendorCat(v)});
@@ -4609,6 +4739,7 @@ function filterCat(btn,cat){
    on screen would be clutter that quietly does nothing. */
 function filterMkt(btn, id){
   activeMktFilter = id;
+  lfTrack('category_selected', { category: id });
   document.querySelectorAll('#mkt-row .mkt-tab').forEach(t=>t.classList.remove('on'));
   if(btn){ btn.classList.add('on'); lfTabSelected(btn); }
 
@@ -4653,7 +4784,7 @@ function inActiveMkt(v){ return activeMktFilter==='all' || vendorCat(v)===active
 function updateMktCounts(){
   document.querySelectorAll('#mkt-row .mkt-tab').forEach(tab=>{
     const id = tab.getAttribute('data-mkt');
-    const n = Object.values(VENDORS).filter(v=>(id==='all'||vendorCat(v)===id) && isOpenNow(v)).length;
+    const n = Object.values(VENDORS).filter(v=>(id==='all'||vendorCat(v)===id) && isOpenNow(v) && isVendorLive(v)).length;
     let s = tab.querySelector('.mkt-n');
     if(!s){ s=document.createElement('span'); s.className='mkt-n'; tab.appendChild(s); }
     s.textContent = n>0 ? String(n) : '';
@@ -4684,6 +4815,16 @@ function toggleFavFilter(){
 
 // ═══ VENDOR DETAIL ═══
 function openVendor(vid){
+  // v-priority-8: safety net. Every list a customer taps a vendor FROM
+  // already excludes a not-yet-live store (buildVendorCards, search, etc.)
+  // — this only matters if a stale link or an id typed elsewhere gets here
+  // directly. "Closed" has its own browsable state (v49); "not live yet"
+  // does not exist for a customer at all.
+  if(!isVendorLive(VENDORS[vid])){
+    showToast('⚠️ That store is not available yet');
+    return;
+  }
+  lfTrack('vendor_opened', { vendorId: vid, category: vendorCat(VENDORS[vid]) });
   // v49: a closed store is no longer a dead end. Customers can browse the
   // menu, prices and photos; only ordering is disabled. Ordering is blocked
   // in addToCart() and again at placeOrder(), so browsing is always safe.
@@ -4782,13 +4923,24 @@ function openVendor(vid){
   // schedule, or open but nothing left. An empty menu used to render as a
   // bare "Menu" heading with nothing under it, which just looked broken.
   const _st = storeStatus(v);
-  const _avail = _normalizeMenu(MENU[vid]).filter(i=>i.avail);
+  const _menuAll = _normalizeMenu(MENU[vid]);
+  const _avail = _menuAll.filter(i=>i.avail);
   let _banner = '';
   if(!_st.open){
     _banner = `<div style="margin:10px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">🔴</span>
       <div><div style="font-size:13px;font-weight:800;color:#991B1B">Closed right now</div>
       <div style="font-size:11.5px;color:#B91C1C;margin-top:1px">${esc(_st.detail||'Currently closed')} · you can still browse the menu</div></div></div>`;
+  } else if(!_menuAll.length){
+    // Distinct from "sold out" — this store has never posted anything at
+    // all, so telling a customer to "check back tomorrow" would be a real
+    // promise the store hasn't made. A real store mid-onboarding still
+    // shows up in the directory; this is the honest, non-alarming reason
+    // there's nothing to order yet.
+    _banner = `<div style="margin:10px 16px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🛠️</span>
+      <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Still setting up</div>
+      <div style="font-size:11.5px;color:var(--t3);margin-top:1px">This store hasn't posted its ${esc((mkt(v).itemsNounLower||'menu'))} yet — check back soon</div></div></div>`;
   } else if(!_avail.length){
     _banner = `<div style="margin:10px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">🍽️</span>
@@ -4906,6 +5058,11 @@ function addToCart(vid,name,emoji,price){
   if(!cart[vid]) cart[vid]={name:VENDORS[vid].name,items:[]};
   const ex=cart[vid].items.find(i=>i.name===name);
   if(ex) ex.qty++; else cart[vid].items.push({name,emoji,price,qty:1});
+  // This menu has no separate item-detail view — the row tap both shows and
+  // adds the item in one step — so item_opened and add_to_cart fire together
+  // rather than as distinct funnel stages.
+  lfTrack('item_opened', { vendorId: vid, itemName: name, price });
+  lfTrack('add_to_cart', { vendorId: vid, itemName: name, price });
   showToast(emoji+' '+name+' added!');
   updateCartBar();
 }
@@ -4958,6 +5115,7 @@ function renderCartPage(){
   const cf=document.getElementById('checkout-form');
   if(cartCount()===0){ il.innerHTML=''; em.style.display='block'; cf.style.display='none'; return; }
   em.style.display='none'; cf.style.display='block';
+  custPrefillIdentity();
   let html='';
   Object.entries(cart).forEach(([vid,vCart])=>{
     html+=`<div style="padding:9px 16px 3px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;background:var(--s2)">${vCart.name}</div>`;
@@ -5131,6 +5289,7 @@ function lfRetryOrder(){
 
 function placeOrder(){
   if(_lfSubmitting) return;                        // guard: re-entry / double tap
+  lfTrack('order_submit_clicked', {});
   if(!Object.keys(cart).length){ showToast('⚠️ Your cart is empty'); return; }
   // v49 gate 2: the cart was filled minutes ago. Re-check right now, at the
   // moment of paying — the store may have closed, or the vendor may have
@@ -5138,9 +5297,12 @@ function placeOrder(){
   if(!validateCartNow()) return;
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
-  const phone=document.getElementById('cust-phone').value.trim();
+  const rawPhone=document.getElementById('cust-phone').value.trim();
   if(!name){showToast('⚠️ Enter your name');return;}
   if(!unit){showToast('⚠️ Enter your unit number');return;}
+  const _ph = lfPhone(rawPhone);
+  if(!_ph){showToast('⚠️ Enter a valid mobile number (e.g. 0917 123 4567)');document.getElementById('cust-phone').focus();return;}
+  const phone = _ph.pretty;
   const sub=cartTotal();
   const df=getCartDeliveryFee();
   const total=sub+df;
@@ -5168,12 +5330,36 @@ function confirmGcash(){
   if(!ref){showToast('⚠️ Enter your GCash reference number');return;}
   const name=document.getElementById('cust-name').value.trim();
   const unit=document.getElementById('cust-unit').value.trim();
-  const phone=document.getElementById('cust-phone').value.trim();
+  const rawPhone=document.getElementById('cust-phone').value.trim();
+  const _ph = lfPhone(rawPhone);
+  if(!_ph){showToast('⚠️ Enter a valid mobile number (e.g. 0917 123 4567)');return;}
+  const phone = _ph.pretty;
   const sub=cartTotal();
   const df=getCartDeliveryFee();
   const total=sub+df;
   const oid=pendingOid||genOrderId();
   return finalizeOrder(name,unit,phone,total,oid,'gcash',ref,sub,df);
+}
+
+// Notification setup must never block or delay a transaction (a permission
+// prompt can sit unanswered indefinitely). Called only AFTER an order is
+// already confirmed by the backend, so a slow/denied/broken token never
+// stands between a customer and their vendor — it just patches the token
+// onto the order that already exists, best-effort.
+async function lfAttachCustomerNotifToken(oid){
+  try{
+    let token = null;
+    try{ await requestNotifPermission(); }catch(e){}
+    try{ token = await fcmCustomerToken(); }catch(e){}
+    const subId = (typeof window._osSubId === 'string' ? window._osSubId : '') || '';
+    if(!token && !subId) return;
+    const o = orders.find(x=>x.id===oid);
+    const patch = {};
+    if(token){ patch.customerFcmToken = token; if(o) o.customerFcmToken = token; }
+    if(subId){ patch.onesignalSubId  = subId; if(o) o.onesignalSubId  = subId; }
+    const key = String(oid).replace(/[^a-zA-Z0-9]/g,'_');
+    await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/orders/'+key, patch));
+  }catch(e){ console.error('post-order notif token attach failed:', e); }
 }
 
 async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deliveryFee){
@@ -5191,15 +5377,13 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
   // existing logic that expected subtotal===total still behaves identically.
   if(typeof subAmt !== 'number') subAmt = total;
   if(typeof deliveryFee !== 'number') deliveryFee = 0;
-  // Ask permission + grab this customer's FCM token so they get status pushes even when app is closed.
-  let _custToken = null;
-  try{ await requestNotifPermission(); }catch(e){}
-  try{ _custToken = await fcmCustomerToken(); }catch(e){}
+  // Notification token is attached AFTER the order is confirmed (see
+  // lfAttachCustomerNotifToken below) — never before, and never blocking.
   const order={
     id:oid, name, unit, phone, total, items, method, ref:ref||'',
     status:'new', timestamp:new Date(), vendorId:Object.keys(cart)[0],
     subtotal:subAmt, deliveryFee:deliveryFee, fee:0, updatedAt:Date.now(),
-    customerFcmToken: _custToken || '',
+    customerFcmToken: '',
     onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
   };
 
@@ -5221,6 +5405,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
     await pushOrderStrict(order.id);
   }catch(e){
     console.error('Order write failed:', e);
+    lfTrack('order_write_failure', { vendorId: order.vendorId, orderId: order.id, method });
     // Roll back, so no phantom order survives in local state or history.
     const i = orders.findIndex(x=>x.id===order.id);
     if(i>-1) orders.splice(i,1);
@@ -5235,6 +5420,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
   }
 
   // Confirmed by the backend. Only past this line is any of it true.
+  lfTrack('order_write_success', { vendorId: order.vendorId, orderId: order.id, method, total });
   lastPlacedOrderId=order.id;
   pendingOid=null;
   // Clear the cart now, not only when "Back to Home" is tapped — otherwise a
@@ -5264,6 +5450,7 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
     refreshBadge();
     setTimeout(syncFromCloud, 500);
   }catch(e){ console.error('post-order notify failed:', e); }
+  lfAttachCustomerNotifToken(order.id);  // fire-and-forget; never blocks the confirmed order
   await staged;
 }
 
@@ -5304,6 +5491,9 @@ function startBooking(vid, itemId){
     if(free.length){ date=d; time=''; break; }
   }
   booking = { vid, itemId, date, time };
+  // No separate item-detail view here either — same as addToCart().
+  lfTrack('item_opened', { vendorId: vid, itemId, price: svc.price });
+  lfTrack('booking_started', { vendorId: vid, itemId, price: svc.price });
 
   el('bk-vendor-name').textContent = v.name;
   /* v57: the booking page was headed "Book a Cleaning" in the markup, so an
@@ -5325,16 +5515,32 @@ function startBooking(vid, itemId){
   goPage('p-cbook');
 }
 
-// Reuses the details from this device's most recent order/booking.
-function bkPrefillIdentity(){
+// Shared by both the food checkout and the booking form, so a customer
+// never has to retype their own name/unit/phone on a return visit — reads
+// this device's most recent order/booking (myOrderIds persists in
+// localStorage; the order itself comes back from the customer's own
+// exact-key sync).
+function lfLastOwnOrderIdentity(){
   const mine = orders.filter(o=>myOrderIds.includes(o.id));
   const last = mine.length ? mine[mine.length-1] : null;
+  return last ? { name:last.name, unit:last.unit, phone:last.phone, building:last.building } : null;
+}
+function custPrefillIdentity(){
+  const info = lfLastOwnOrderIdentity();
+  if(!info) return;
   const set=(id,val)=>{ const e=el(id); if(e && !e.value && val) e.value=val; };
-  if(last){
-    set('bk-name', last.name);
-    set('bk-unit', last.unit);
-    set('bk-phone', last.phone);
-    set('bk-building', last.building);
+  set('cust-name', info.name);
+  set('cust-unit', info.unit);
+  set('cust-phone', info.phone);
+}
+function bkPrefillIdentity(){
+  const info = lfLastOwnOrderIdentity();
+  const set=(id,val)=>{ const e=el(id); if(e && !e.value && val) e.value=val; };
+  if(info){
+    set('bk-name', info.name);
+    set('bk-unit', info.unit);
+    set('bk-phone', info.phone);
+    set('bk-building', info.building);
   }
   // Fall back to whatever is typed on the food checkout form this session.
   set('bk-name', (el('cust-name')||{}).value);
@@ -5468,10 +5674,13 @@ async function submitBooking(){
   const name  = (el('bk-name').value||'').trim();
   const bldg  = (el('bk-building').value||'').trim();
   const unit  = (el('bk-unit').value||'').trim();
-  const phone = (el('bk-phone').value||'').trim();
+  const rawPhone = (el('bk-phone').value||'').trim();
   const notes = (el('bk-notes').value||'').trim();
   if(!name){ showToast('⚠️ Enter your name'); el('bk-name').focus(); return; }
   if(!unit){ showToast('⚠️ Enter your unit number'); el('bk-unit').focus(); return; }
+  const _bkPh = lfPhone(rawPhone);
+  if(!_bkPh){ showToast('⚠️ Enter a valid mobile number (e.g. 0917 123 4567)'); el('bk-phone').focus(); return; }
+  const phone = _bkPh.pretty;
 
   // guard 2: lock the button for the whole async round-trip
   _bkSubmitting = true;
@@ -5480,10 +5689,6 @@ async function submitBooking(){
   if(btn){ btn.disabled=true; btn.style.opacity='.62'; btn.textContent='Sending booking…'; }
 
   try{
-    let _custToken = null;
-    try{ await requestNotifPermission(); }catch(e){}
-    try{ _custToken = await fcmCustomerToken(); }catch(e){}
-
     // Reused across retries: a PUT to the same key overwrites, so retrying
     // after a write that actually landed cannot create a second booking.
     if(!_bkPendingOid) _bkPendingOid = genOrderId();
@@ -5510,7 +5715,9 @@ async function submitBooking(){
       svcTime: booking.time,
       building: bldg,
       instructions: notes,
-      customerFcmToken: _custToken || '',
+      // Notification token is attached AFTER the booking is confirmed (see
+      // lfAttachCustomerNotifToken below) — never before, and never blocking.
+      customerFcmToken: '',
       onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
     };
 
@@ -5532,6 +5739,7 @@ async function submitBooking(){
       const j = myOrderIds.indexOf(order.id);
       if(j>-1) myOrderIds.splice(j,1);
       console.error('Booking write failed:', err);
+      lfTrack('booking_failure', { vendorId: booking.vid, orderId: oid, category: vendorCat(v) });
       lfShowOrderError("We couldn't reach "+v.name+" just now. Your booking wasn't sent.", {
         retry: submitBooking, back: 'p-cbook', backLabel: 'Back to my booking',
         keepMsg: 'Your booking details are exactly as you left them \u2014 nothing was lost.'
@@ -5539,6 +5747,7 @@ async function submitBooking(){
       return;
     }
 
+    lfTrack('booking_success', { vendorId: order.vendorId, orderId: order.id, category: order.kind, total: order.total });
     lastPlacedOrderId = order.id;
     saveLocal();
     updateAdminStats();
@@ -5557,6 +5766,7 @@ async function submitBooking(){
       refreshBadge();
       setTimeout(syncFromCloud, 500);
     }catch(err){ console.error('post-booking notify failed:', err); }
+    lfAttachCustomerNotifToken(order.id);  // fire-and-forget; never blocks the confirmed booking
 
     booking = null;
     _bkPendingOid = null;
@@ -5990,6 +6200,7 @@ function openVendorApply(){
   }
   apMktChanged();
   apLocChanged();
+  lfTrack('vendor_application_started', {});
   goPage('p-signup');
 }
 /* v62: "Outside GRASS Residences" reveals a free-text address. A provider
@@ -6072,6 +6283,7 @@ async function submitVendorApplication(){
     };
     // ONE node. Never pushState() — see the note above this block.
     await fbSet(lfAppNode(id), rec);
+    lfTrack('vendor_application_submitted', { category, outside });
     try{ localStorage.setItem(LF_APP_KEY, id); }catch(e){}
     ['ap-name','ap-cat','ap-phone','ap-pin','ap-pin2','ap-addr'].forEach(f=>{ const e2=el(f); if(e2) e2.value=''; });
     // Reset the location too, or a second application from the same device
@@ -6125,28 +6337,34 @@ async function lfRefreshAppStatus(){
   }
 }
 
+// Notification permission + FCM token registration for a vendor, run AFTER
+// the dashboard is already open — never before. A permission prompt or a
+// slow/broken token save must not stand between a verified PIN and the
+// dashboard, and a failure here is never shown to the vendor as a raw
+// error; the push-health strip (_paintHealth) is the one honest, plain-
+// language surface for that.
+async function lfAttachVendorNotifications(sel){
+  try{
+    if(typeof Notification !== 'undefined' && Notification && Notification.permission !== 'granted'){
+      try{
+        const p = await Notification.requestPermission();
+        notifGranted = (p === 'granted');
+      }catch(e){ console.warn('notif permission error:', e); }
+    } else if(typeof Notification !== 'undefined' && Notification && Notification.permission === 'granted'){
+      notifGranted = true;
+    }
+    try{ await fcmSaveVendorToken(sel); }catch(e){ console.warn('FCM save error:', e); }
+    try{ if('setAppBadge' in navigator) await navigator.setAppBadge(0); }catch(e){}
+  }catch(e){ console.warn('lfAttachVendorNotifications failed:', e); }
+}
+
 async function vendorLogin(){
   const sel=document.getElementById('v-sel').value;
   const pin=document.getElementById('v-pin').value;
   if(!sel){showToast('⚠️ Select your store');return;}
   if(!pin){showToast('⚠️ Enter your PIN');return;}
   if(!(await verifyVendorPin(sel, pin))){showToast('⚠️ Incorrect PIN — contact admin');return;}
-  // Request notification permission NOW — must happen as direct result of user tap
-  if(typeof Notification !== 'undefined' && Notification && Notification.permission !== 'granted'){
-    try{
-      showToast('🔔 Requesting notification permission…');
-      const p = await Notification.requestPermission();
-      notifGranted = (p === 'granted');
-      showToast(notifGranted ? '✅ Notifications allowed!' : '⚠️ Notifications blocked — push won\'t work');
-    }catch(e){ console.warn('notif permission error:', e); }
-  } else if(typeof Notification !== 'undefined' && Notification && Notification.permission === 'granted'){
-    notifGranted = true;
-  }
   activeVendorId=sel;
-  // Save this device's FCM token so the vendor receives orders even when logged out / app closed
-  try{ await fcmSaveVendorToken(sel); }catch(e){ showToast('⚠️ FCM save error: '+(e&&e.message||e)); }
-  // Request badge permission
-  try{ if('setAppBadge' in navigator) await navigator.setAppBadge(0); }catch(e){}
   // Ensure vendor data exists — Firebase may not have synced yet
   if(!VENDORS[sel]){
     // Rebuild from hardcoded defaults
@@ -6181,6 +6399,9 @@ async function vendorLogin(){
     pendingOrders.forEach(o=>vendorNotifOrders.add(o.id)); // mark as notified
   }
   showToast('Welcome back, '+v.name+'! 👋');
+  // Notification setup happens after the vendor is already looking at their
+  // dashboard — see lfAttachVendorNotifications() above for why.
+  lfAttachVendorNotifications(sel);
 }
 
 /* ── v54: relabel the ONE vendor portal for the logged-in vendor's vertical ──
@@ -6236,6 +6457,20 @@ function applyVendorChrome(vid, fallbackCat){
   // leaving a field that does nothing for them.
   const dblock = el('v-delivery-block');
   if(dblock) dblock.style.display = clean ? 'none' : '';
+}
+
+// Store Settings starts collapsed on first arrival at the dashboard — it's
+// config a vendor sets once and rarely revisits, not something that should
+// compete with today's orders for attention. It deliberately does NOT
+// re-collapse on every tab switch (goVendorTab('dash') never touches it): a
+// vendor who opens it, checks Orders, then taps back to finish editing
+// would otherwise find it snapped shut on them mid-task.
+function toggleVendorSettings(){
+  const p = el('v-settings-panel'), c = el('v-settings-chevron');
+  if(!p) return;
+  const opening = p.style.display === 'none';
+  p.style.display = opening ? 'block' : 'none';
+  if(c) c.style.transform = opening ? 'rotate(180deg)' : '';
 }
 
 function vendorLogout(){
@@ -7261,6 +7496,26 @@ function renderVendorPayments(){
     </div>`).join('');
 }
 
+// Shared by every "Copy X" button on the payment screen. Falls back to the
+// old execCommand trick for a browser without the async clipboard API —
+// long-pressing to copy is a last resort, not the first thing a customer
+// mid-checkout should have to do.
+async function lfCopyPay(text, label){
+  const s = String(text);
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(s);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = s; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+    }
+    showToast('✅ '+(label||'Copied')+' copied');
+  }catch(e){ showToast('⚠️ Could not copy — press and hold to copy manually'); }
+}
+
 function loadPaymentWallets(vid){
   const box = el('payment-wallets'); if(!box) return;
   const v = VENDORS[vid]; if(!v) return;
@@ -7280,14 +7535,18 @@ function loadPaymentWallets(vid){
     return;
   }
 
+  // p.number/p.accname/p.type are vendor-writable — escape for display, and
+  // escJs (not esc) inside the onclick's JS-string literal.
   box.innerHTML = allPayments.map(p=>`
     <div style="background:var(--w);border:1.5px solid var(--bd);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px">
       <div style="width:44px;height:44px;border-radius:10px;background:${WALLET_COLORS[p.type]||'#6b7280'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${WALLET_ICONS[p.type]||'💳'}</div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:800;color:var(--t1)">${p.type}</div>
-        <div style="font-size:16px;font-weight:700;color:var(--g);margin:2px 0;letter-spacing:.5px">${p.number}</div>
-        <div style="font-size:12px;color:var(--t3)">${p.accname}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">${esc(p.type)}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--g);margin:2px 0;letter-spacing:.5px">${esc(p.number)}</div>
+        <div style="font-size:12px;color:var(--t3)">${esc(p.accname)}</div>
       </div>
+      <button type="button" onclick="lfCopyPay('${escJs(p.number)}','${escJs(p.type)} number')"
+        style="flex-shrink:0;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--t2);cursor:pointer;font-family:var(--ff)">Copy</button>
     </div>`).join('');
 }
 
@@ -7297,6 +7556,10 @@ function goVendorTab(tab){
   const pages={dash:'p-vdash',orders:'p-vorders',menu:'p-vmenu',earn:'p-vearn'};
   if(activeVendorId) applyVendorChrome(activeVendorId);   // v54
   goPage(pages[tab]);
+  // Tabbing back to the dashboard after adding a menu item or filling in
+  // contact/hours should reflect that in the Go Live checklist immediately,
+  // not only after the vendor signs back in.
+  if(tab==='dash') renderGoLiveCard();
   if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
   if(tab==='orders'){
     // Force immediate Firebase sync so vendor sees latest orders right away
@@ -7683,8 +7946,66 @@ function updateStoreStatusUI(){
   }catch(e){}
 }
 
+// v-priority-8: what a store still needs before Go Live is enabled. A plain
+// array of {ok,label} so the card and the button share one source of truth —
+// the button can't be tapped into a false "done" state the card disagrees with.
+const _lfSetupCompleteFired = new Set();   // v-priority-15: fire vendor_setup_completed once per vendor per session
+function vendorGoLiveChecklist(v){
+  const items = _normalizeMenu(MENU[v.id]||[]);
+  const _sched = isScheduled(v);
+  return [
+    { ok: !!(v.name && v.name.trim()), label: 'Store name' },
+    { ok: !!(v.contact && v.contact.trim()), label: 'Contact number' },
+    { ok: items.some(i=>Number(i.price)>0), label: _sched ? 'At least one service with a price' : 'At least one menu item with a price' },
+    { ok: !!(v.openTime && v.closeTime), label: 'Hours set' },
+  ];
+}
+function renderGoLiveCard(){
+  const card = el('v-golive-card');
+  if(!card) return;
+  const v = activeVendorId ? VENDORS[activeVendorId] : null;
+  if(!v || isVendorLive(v)){ card.style.display='none'; return; }
+  card.style.display='block';
+  const checklist = vendorGoLiveChecklist(v);
+  const list = el('v-golive-checklist');
+  if(list) list.innerHTML = checklist.map(c=>
+    `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:${c.ok?'#166534':'#92400E'};font-weight:600">`+
+    `<span>${c.ok?'✅':'⭕'}</span><span>${esc(c.label)}</span></div>`).join('');
+  const allDone = checklist.every(c=>c.ok);
+  // Fires once per vendor per session, not on every re-render — renderGoLiveCard()
+  // runs on every dashboard paint, and "setup completed" is a one-time milestone.
+  if(allDone && !_lfSetupCompleteFired.has(v.id)){
+    _lfSetupCompleteFired.add(v.id);
+    lfTrack('vendor_setup_completed', { vendorId: v.id, category: vendorCat(v) });
+  }
+  const btn = el('v-golive-btn');
+  if(btn){
+    btn.disabled = !allDone;
+    btn.textContent = allDone ? 'Go Live 🚀' : 'Complete the checklist above';
+    btn.style.background = allDone ? 'var(--g)' : 'var(--bdm)';
+    btn.style.cursor = allDone ? 'pointer' : 'not-allowed';
+  }
+}
+function attemptGoLive(){
+  if(!activeVendorId) return;
+  const v = VENDORS[activeVendorId];
+  if(!v) return;
+  if(!vendorGoLiveChecklist(v).every(c=>c.ok)){
+    showToast('⚠️ Finish the checklist first');
+    renderGoLiveCard();
+    return;
+  }
+  v.live = true;
+  pushState();
+  lfTrack('vendor_go_live', { vendorId: v.id, category: vendorCat(v) });
+  showToast('🚀 You\'re live! Customers can now find and order from '+v.name);
+  renderGoLiveCard();
+  buildVendorCards(true); buildTodaysPicks(true); updateMktCounts(); updateVendorLiveBadge();
+}
+
 function updateVendorDash(vid){
   if(!vid||!el('v-dname')) return;
+  renderGoLiveCard();
   const myOrders=vendorVisibleOrders(vid);  // v51: respects the clear watermark
   // v55: these three tiles are labelled "today", so scope them to today —
   // they previously showed every order since the vendor last tapped Clear
@@ -7695,7 +8016,6 @@ function updateVendorDash(vid){
   // Declined and customer-cancelled orders were being added to the payout.
   const earning = todays.filter(o=>o.status!=='declined');
   const gross=earning.reduce((s,o)=>s+(Number(o.subtotal)||0),0);
-  const fees=earning.length*SERVICE_FEE;
   const net=gross;
   const newOrders=myOrders.filter(o=>o.status==='new');
   const pendingOrders=myOrders.filter(o=>['new','accepted','preparing','ready'].includes(o.status));
@@ -7704,7 +8024,6 @@ function updateVendorDash(vid){
   el('v-new-cnt').textContent=newOrders.length;
   el('v-payout').textContent='₱'+net;
   el('v-gross').textContent='₱'+gross;
-  el('v-fees').textContent='−₱'+fees;
   // Badge shows ALL pending (new+accepted+preparing+ready) not just new
   const badge=el('v-orders-badge');
   if(badge){badge.style.display=pendingOrders.length>0?'flex':'none';badge.textContent=pendingOrders.length;}
@@ -7868,6 +8187,8 @@ async function updateOrderStatus(oid,status){
   o.status=status;
   o.updatedAt=Date.now();
   stampStatusTime(o, status, 'vendor');
+  if(status==='accepted')  lfTrack('vendor_order_accepted', { vendorId: o.vendorId, orderId: o.id, category: orderKind(o) });
+  if(status==='delivered') lfTrack('transaction_completed',  { vendorId: o.vendorId, orderId: o.id, category: orderKind(o), total: o.total });
   await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   refreshBadge();
@@ -8187,7 +8508,7 @@ function renderVendorEarnings(){
   }
 
   const note=el('ve-cash-note');
-  if(cashOwed>0){note.style.display='block';note.innerHTML=`<b>Cash settlement:</b> You collected ₱${cashOwed} in platform fees from cash orders. Please transfer to admin by 8PM.`;}
+  if(cashOwed>0){note.style.display='block';note.innerHTML=`<b>Cash settlement:</b> ₱${cashOwed} in platform fees from today's cash orders — coordinate with admin to settle this.`;}
   else note.style.display='none';
 
   // Real earnings history grouped by day
@@ -8601,6 +8922,8 @@ async function adminUpdateStatus(oid,status){
   o.updatedAt=Date.now();
   // v51: 'admin' so an admin-side decline is never miscounted against the vendor
   stampStatusTime(o, status, 'admin');
+  if(status==='accepted')  lfTrack('vendor_order_accepted', { vendorId: o.vendorId, orderId: o.id, category: orderKind(o), by:'admin' });
+  if(status==='delivered') lfTrack('transaction_completed',  { vendorId: o.vendorId, orderId: o.id, category: orderKind(o), total: o.total, by:'admin' });
   await pushOrders(o.id);
   await notifOnStatusChange(o, status);
   showToast('Order '+oid+' → '+statusLabel(status));
@@ -8687,13 +9010,16 @@ async function _approveApplication(id){
     cats: (a.cats && a.cats.length) ? a.cats : [a.category],
     category: a.category,
     active: true,
+    // v-priority-8: approval creates the account, not a live listing. No
+    // guessed hours either — those used to be a flat 8AM-6PM for every
+    // scheduled vertical, hours the provider never actually set. The
+    // vendor completes their own setup and taps Go Live when ready;
+    // isVendorLive() is what every customer-facing surface checks.
+    live: false,
     contact: a.phone || '',
     // Kept on the vendor so the admin can still reach an outside provider
     // long after the application row is gone.
     ...(a.outside ? { outside:true, address: String(a.address||'').slice(0,160) } : {}),
-    // A scheduled vertical needs a bookable window from day one, or its first
-    // customer sees a date picker with no slots in it.
-    ...(M.scheduled ? { openTime:'08:00', closeTime:'18:00', closedDays:[] } : {})
   };
   try{
     // The PIN the APPLICANT chose, carried across as a hash. The admin never
@@ -8712,10 +9038,11 @@ async function _approveApplication(id){
     showToast('⚠️ Approval did not save — check your connection');
     return;
   }
+  lfTrack('vendor_approved', { vendorId: vid, category: a.category, outside: !!a.outside });
   rebuildVendorSelect();
   renderAdminApps(); renderAdminVendors();
   buildVendorCards(true); buildTodaysPicks(true); updateMktCounts(); updateAdminStats();
-  showToast('✅ '+a.name+' is live — they sign in with their own PIN');
+  showToast('✅ '+a.name+' approved — they sign in with their own PIN to finish setup');
 }
 
 async function rejectApplication(id){
@@ -9398,6 +9725,11 @@ function lfFcmDiag(msg){
              localStorage.getItem('lf-fcm-diag') === '1';
     var b = document.getElementById('v-push-copyinfo');
     if(b && !on) b.style.display = 'none';
+    // The technical diagnosis (service worker state, push engine, iOS
+    // version checks) is real and still runs — it just isn't put in front
+    // of an ordinary vendor by default. Same reveal switch as Copy Info.
+    var d = document.getElementById('v-push-detail');
+    if(d) d.style.display = on ? 'block' : 'none';
   }catch(e){}
 })();
 
@@ -9505,6 +9837,7 @@ function playPing(){
 function notifyVendorNewOrder(o){
   if(vendorNotifOrders.has(o.id)) return;
   vendorNotifOrders.add(o.id);
+  lfTrack('vendor_order_received', { vendorId: o.vendorId, orderId: o.id, category: orderKind(o), total: o.total });
   playPing();
   // In-app banner
   updateVendorDash(activeVendorId);
@@ -9903,6 +10236,58 @@ let _oidCounter = 0;
 function genOrderId(){
   _oidCounter++;
   return '#LF-'+Date.now().toString(36).toUpperCase().slice(-5)+_oidCounter.toString(36).toUpperCase().padStart(2,'0')+Math.floor(Math.random()*36).toString(36).toUpperCase();
+}
+
+/* v-priority-15: a small, privacy-conscious analytics event layer. There is
+   no analytics system in this app today — this is the whole thing, not a
+   wrapper around one. Every call site below funnels through lfTrack(), so
+   wiring in a real provider later (GA4, Mixpanel, PostHog…) is a one-function
+   change: replace the body of lfTrack() to also call that SDK. Nothing here
+   blocks or gates a real user action — same non-negotiable as push
+   notifications (P3): tracking is fire-and-forget, never awaited by a caller,
+   and a throwing/misbehaving lfTrack() can never break the flow it's
+   attached to (everything is try/caught, including inside lfTrack itself).
+
+   PRIVACY: never record phone numbers, unit numbers, payment reference
+   numbers, or private chat text. That's enforced in two layers — call sites
+   below only ever pass identifiers/categories/amounts, never those fields —
+   and lfTrack() itself strips a denylist of key names as a backstop, so a
+   future call site that accidentally passes one doesn't leak it silently. */
+const LF_TRACK_PII_KEYS = ['phone','unit','building','address','paymentRef','reference','ref','chatText','message','text','name','instructions'];
+let _lfEvents = [];
+function lfTrack(name, props){
+  try{
+    const clean = {};
+    Object.keys(props||{}).forEach(k=>{
+      if(LF_TRACK_PII_KEYS.includes(k)) return;
+      const v = props[k];
+      if(v!==undefined && v!==null) clean[k] = v;
+    });
+    let utm = null;
+    try{ utm = JSON.parse(localStorage.getItem('lf-utm')||'null'); }catch(e){}
+    const evt = { name, props: clean, utm: utm||undefined, t: Date.now() };
+    _lfEvents.push(evt);
+    if(_lfEvents.length > 200) _lfEvents = _lfEvents.slice(-200);   // bounded, this is a local buffer, not storage
+    console.log('[LF Analytics]', name, clean);
+  }catch(e){ /* tracking must never be able to break the app */ }
+}
+
+/* v-priority-14/15: utm_source/utm_medium/utm_campaign, captured once so
+   every event for this app_open carries where the visitor came from. Called
+   from the very top of boot() — before app_open fires — not from the
+   DOMContentLoaded deep-link handler further up the file: that handler is
+   deliberately delayed (setTimeout 800ms, after boot() settles), and by then
+   app_open has already fired without it. Needs no DOM, so there was never a
+   reason to wait for one. */
+function _lfCaptureUtm(){
+  try{
+    const p = new URLSearchParams(location.search);
+    const keys = ['utm_source','utm_medium','utm_campaign'];
+    if(!keys.some(k=>p.get(k))) return;
+    const utm = { capturedAt: Date.now() };
+    keys.forEach(k=>{ const v=p.get(k); if(v) utm[k]=v.slice(0,100); });
+    localStorage.setItem('lf-utm', JSON.stringify(utm));
+  }catch(e){}
 }
 
 function saveLocal(){
@@ -10365,6 +10750,11 @@ function refreshVisible(){
 
 // ═══ BOOT ═══
 (async function boot(){
+  _lfCaptureUtm();
+  // window._lfFirstOpen is set by the splash IIFE near the top of this file,
+  // before it overwrites the same 'lf-splash-seen' key this would otherwise
+  // have to re-read — by this point that key always already says "seen".
+  try{ lfTrack('app_open', { firstOpen: !!window._lfFirstOpen }); }catch(e){}
   loadLocal();
   lfBuildMktTabs();          // v57: vertical tabs come from MKT_ORDER
   /* v63: populate the store picker from the seeded VENDORS now, not on the
@@ -10426,7 +10816,13 @@ function refreshVisible(){
   // ═══ Open straight to the food-browsing home (v-polish #4: landing page retired) ═══
   // …unless a vendor session was restored above — goCust() nulls activeVendorId
   // and would drop the vendor back onto the customer home they just skipped.
-  if(!_sess){ try{ goCust(); }catch(e){} }
+  // v-priority-14: also skip it once a marketing deep link has already
+  // navigated somewhere (_lfDeepLinkHandled) — on a slow connection tryBoot()
+  // can still be retrying past the deep link's own 800ms timeout, and an
+  // unconditional goCust() here would silently yank the visitor back to Home
+  // a few seconds after they landed on the vendor/signup page the link
+  // promised.
+  if(!_sess && !window._lfDeepLinkHandled){ try{ goCust(); }catch(e){} }
   else {
     // Catalog has landed now: repaint with the real vendor record (the first
     // paint used the cached card) and pick up anything waiting. Only if the
@@ -11551,11 +11947,23 @@ setInterval(updateClock,15000);
   // ▲▲▲ e.g. "8a2b3c4d-1234-5678-9abc-def012345678" ▲▲▲
 
   // ── Push health UI (always defined so the Fix button never throws) ──
+  // Plain-language summary for the vendor; the real technical diagnosis
+  // (unchanged) goes to v-push-detail, only ever shown in diagnostics mode.
+  // "iOS 16.4", "service worker", "push engine" mean nothing to a store
+  // owner — only "is this working, and do I need to do something" does.
+  var _PUSH_GOOD = '#34D399';
+  var _PUSH_CALM = {'#9CA3AF':1, '#60A5FA':1}; // not-configured / checking / in progress — not a problem yet
   function _paintHealth(color, text){
     try{
-      var d = document.getElementById('v-push-dot'), t = document.getElementById('v-push-txt');
-      if(d) d.style.background = color;
-      if(t) t.textContent = text;
+      var dot = document.getElementById('v-push-dot'), t = document.getElementById('v-push-txt');
+      var detail = document.getElementById('v-push-detail'), fix = document.getElementById('v-push-fix');
+      if(dot) dot.style.background = color;
+      if(detail) detail.textContent = text;
+      var isProblem = color !== _PUSH_GOOD && !_PUSH_CALM[color];
+      if(t) t.textContent = isProblem
+        ? "🔔 Enable order alerts so you don't miss new customers"
+        : (color === _PUSH_GOOD ? '🔔 Order alerts are on' : 'Setting up order alerts…');
+      if(fix) fix.style.display = isProblem ? '' : 'none';
     }catch(e){}
   }
   window.osRepairPush = function(){ _paintHealth('#F59E0B', 'Push module not loaded — check internet and reopen the app.'); try{ showToast('⚠️ Notification module not loaded'); }catch(e){} };
@@ -11709,7 +12117,13 @@ setInterval(updateClock,15000);
         }
         if(_tries >= 10){ // ~15s of active watching
           clearInterval(_poll); _osPolling = false;
-          _paintHealth('#F59E0B', 'Still connecting in the background — this can take a moment on slow networks. Keep using the app; it will switch on automatically.');
+          // Calm, not amber: this message says "no action needed, it will
+          // resolve on its own" — painting it amber (not in _PUSH_CALM) made
+          // isProblem true anyway, so the vendor saw "Enable order alerts"
+          // and a Fix button directly contradicting this text. Same color as
+          // the active "Reconnecting…" state a few lines up — this is that
+          // same not-yet-connected condition, just past the active-watch window.
+          _paintHealth('#60A5FA', 'Still connecting in the background — this can take a moment on slow networks. Keep using the app; it will switch on automatically.');
         }
       }, 1500);
       return;

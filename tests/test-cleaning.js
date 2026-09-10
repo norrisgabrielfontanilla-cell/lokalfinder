@@ -6,6 +6,8 @@ const H = require('./harness');
 
 const results = [];
 function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''}); }
+const FB = '**://lokalfinder-ec57f-default-rtdb.asia-southeast1.firebasedatabase.app/**';
+const abort = r => r.abort();
 
 (async () => {
   const srv = await H.startServer();
@@ -27,6 +29,12 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
     await pushState();
   });
   await page.waitForTimeout(500);
+  // pushState() makes the override durable, but a periodic sync landing at
+  // exactly the wrong moment (a GET that started before the push, resolving
+  // after) can still apply a stale, still-closed snapshot straight over it —
+  // the same class of race closed in test-vlogin.js. Block the backing store
+  // for the deterministic-hours-dependent portion of this test so it can't.
+  await page.route(FB, abort);
 
   // ── 1. ONE vendors directory, Cleaning is a tab inside it ─────────
   const nav = await page.evaluate(() => ({
@@ -140,6 +148,7 @@ function check(name, ok, detail){ results.push({name, ok:!!ok, detail:detail||''
   await page.fill('#bk-phone','09171234567');
   await page.fill('#bk-notes','Please call before entering.');
 
+  await page.unroute(FB, abort);
   // Duplicate-submit guard: fire the button twice in the same tick.
   await page.evaluate(() => { submitBooking(); submitBooking(); });
   await page.waitForFunction(() => !!lastPlacedOrderId && orders.some(o=>o.id===lastPlacedOrderId), null, {timeout:20000});

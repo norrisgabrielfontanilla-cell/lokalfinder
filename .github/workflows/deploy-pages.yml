@@ -62,7 +62,9 @@ jobs:
       - name: Assemble Pages site
         run: |
           mkdir -p _site
-          cp index.html version.json OneSignalSDKWorker.js firebase-messaging-sw.js _site/
+          cp index.html version.json OneSignalSDKWorker.js firebase-messaging-sw.js manifest.webmanifest _site/
+          mkdir -p _site/icons
+          cp -r icons/. _site/icons/
           mkdir -p _site/landing
           cp -r landing/dist/. _site/landing/
 

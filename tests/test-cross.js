@@ -38,8 +38,10 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   // Identity should be pre-filled from the food order (spec §15)
   const prefill = await page.evaluate(() => ({
     name: el('bk-name').value, unit: el('bk-unit').value, phone: el('bk-phone').value }));
+  // Phone is now normalized (0917 123 4567) before it's ever stored on the
+  // order, so the prefill reads back the normalized form, not the raw typed one.
   check('Booking form pre-fills name/unit/phone from previous order',
-        prefill.name==='Gab' && prefill.unit==='1204' && prefill.phone==='09171234567', JSON.stringify(prefill));
+        prefill.name==='Gab' && prefill.unit==='1204' && prefill.phone==='0917 123 4567', JSON.stringify(prefill));
 
   await page.evaluate(() => { el('bk-building').value='Tower 3'; submitBooking(); });
   await page.waitForFunction(() => orders.length===2, null, {timeout:20000});
