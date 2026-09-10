@@ -187,6 +187,12 @@ const SHAPE = () => {
         s.tabs.map(t=>t.k+(t.on?'*':'')).join(',') + ' / ' + s.ids.length);
 
   // ── 9. A vertical with no stores yet ────────────────────────────────
+  // This mutates VENDORS in-page rather than in the backing store, so it's
+  // only true until the next background sync merges the (still-seeded)
+  // aircon vendors back in — the app's periodic 3s poll is running for the
+  // rest of this file. Abort FB requests for this section, same as section
+  // 1, so a sync landing mid-check can't silently undo the deletion.
+  await page.route(FB, abort);
   await page.evaluate(() => {
     Object.values(VENDORS).filter(v => vendorCat(v) === 'aircon')
       .forEach(v => { delete VENDORS[v.id]; });
@@ -202,6 +208,7 @@ const SHAPE = () => {
   s = await tap('food');
   check('The empty note is hidden again once a category has stores',
         s.noteShown === false, s.noteText);
+  await page.unroute(FB, abort);
 
   // ── 10. A hostile store name is text, never markup ──────────────────
   await page.evaluate(() => {
