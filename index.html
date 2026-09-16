@@ -5012,6 +5012,15 @@ function validateCartNow(){
   if(!vid) return false;
   const v = VENDORS[vid];
   if(!v){ showToast('⚠️ That store is no longer available'); cart={}; updateCartBar(); goCust(); return false; }
+  // v-archive: openVendor() already refuses entry to an archived/not-yet-live
+  // store, but a cart filled BEFORE the admin archived it survives untouched
+  // — nothing until now re-checked liveness at the moment of paying, only
+  // hours and item availability. Same gate, same fallback as the !v branch
+  // above: an archived store is gone as far as this cart is concerned.
+  if(!isVendorLive(v)){
+    showToast(v.archived ? '⚠️ That store is no longer available' : '⚠️ That store is not available yet');
+    cart={}; updateCartBar(); goCust(); return false;
+  }
 
   const st = storeStatus(v);
   if(!st.open){
@@ -5668,6 +5677,14 @@ async function submitBooking(){
 
   const v = VENDORS[booking.vid];
   if(!v){ showToast('⚠️ That provider is no longer available'); goCust(); return; }
+  // v-archive: same re-check gap as validateCartNow() — a booking form opened
+  // before the admin archived this provider was never re-validated for
+  // liveness, only hours/slot availability, so it could still be submitted
+  // and land in the archived provider's dashboard as a live job.
+  if(!isVendorLive(v)){
+    showToast(v.archived ? '⚠️ That provider is no longer available' : '⚠️ That provider is not available yet');
+    goCust(); return;
+  }
 
   // Re-validate everything at the moment of submitting — the provider may have
   // closed, pulled the service, or taken the slot while the form was open.
@@ -8664,13 +8681,25 @@ async function adminLogin(){
   _lfAdminMode = true;
   try{ localStorage.removeItem('lf-adminPass'); }catch(e){}   // no plaintext left behind
   el('a-pass').value='';
-  await syncFromCloud();            // pull the full order set for the dashboard
+  // v-adminfast: show the dashboard the instant the password checks out,
+  // using whatever VENDORS/orders this device already has (the catalog is
+  // already synced for every visitor; only the full order fan-out below is
+  // admin-only). The old code awaited syncFromCloud() — which, in admin
+  // mode, fetches every vendor's orders one request per vendor — BEFORE
+  // switching off the login screen, so the founder sat on a spinner for the
+  // whole fan-out just to see an empty shell. Same shape as the v56 vendor-
+  // session fix: restore/show first, sync after. refreshVisible() (called at
+  // the end of applyData(), which syncFromCloud() below triggers) already
+  // re-renders p-adash once the real order set lands, typically a second or
+  // two later — these calls just paint something immediately instead of a
+  // blank wait.
   goPage('p-adash');
   updateAdminStats();
   renderAdminVendors();
   renderAdminOrders();
   loadAdminSettingsForm();
   showToast('Welcome back! 🏢');
+  syncFromCloud();                  // pulls the full order set in the background
 }
 
 // v55: signing out must also drop admin mode, otherwise the device keeps
@@ -8766,10 +8795,13 @@ async function adminCompleteSetup(){
   el('asetup-pass').value=''; el('asetup-confirm').value='';
   _adminFails = 0;
   _lfAdminMode = true;
-  await syncFromCloud();
+  // v-adminfast: same fix as adminLogin() — don't block the dashboard on the
+  // admin-only per-vendor order fan-out; show it now, let syncFromCloud()
+  // fill it in via refreshVisible() once the fan-out lands.
   goPage('p-adash');
   updateAdminStats(); renderAdminVendors(); renderAdminOrders(); loadAdminSettingsForm();
   showToast('✅ Admin password set — it now works on every device');
+  syncFromCloud();
 }
 
 // v55: writes the new salted hash to the DATABASE, not localStorage, so the
@@ -8841,7 +8873,10 @@ async function saveHeroStats(){
   showToast('✅ Front page stats updated!');
 }
 function applyHeroStats(updateInputs=false){
-  const vc = heroStats.vendorCount || String(Object.values(VENDORS).filter(v=>v.active).length);
+  // v-archive: isVendorLive() alongside v.active — an archived or not-yet-live
+  // store was still counted here, so the customer-facing banner could boast
+  // a vendor nobody can actually find or order from.
+  const vc = heroStats.vendorCount || String(Object.values(VENDORS).filter(v=>v.active && isVendorLive(v)).length);
   const uc = heroStats.userCount || '0';
   // Always update the front page display
   if(el('hero-vendor-count')) el('hero-vendor-count').textContent=vc;
@@ -8862,7 +8897,9 @@ function updateAdminStats(){
   el('a-total-orders').textContent=total;
   el('a-total-revenue').textContent='₱'+revenue;
   el('a-pending').textContent=pending;
-  const activeVendorCount=Object.values(VENDORS).filter(v=>v.active).length;
+  // v-archive: same isVendorLive() addition as applyHeroStats() — this tile
+  // feeds that same customer-facing count when the admin hasn't overridden it.
+  const activeVendorCount=Object.values(VENDORS).filter(v=>v.active && isVendorLive(v)).length;
   el('a-vendors-active').textContent=activeVendorCount;
   const badge=el('a-badge');
   if(badge){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
@@ -9220,15 +9257,28 @@ function toggleVendorActive(vid){
 // fix, not assumed: a two-device Playwright test — admin archives a vendor,
 // that vendor's own still-stale tab saves an unrelated field — showed the
 // archive reverted. fbPatch() writes ONLY the archived key to this vendor's
-// own node, so no other device's stale snapshot of any other field can ever
-// collide with it, regardless of which one lands first or last.
+// own node, so THIS device's own staleness on any other vendor/field can
+// never collide with it. It does NOT protect against a different device
+// overwriting archived itself afterwards with its own pushState() — that
+// residual is real, bounded to the pre-sync window, and shared by every
+// other pushState()-based admin toggle (toggleFeatured, toggleVendorActive);
+// closing it fully would mean moving those off pushState() too, which is
+// out of scope here.
+//
+// lfTrackedWrite(): fbPatch() alone has no pause side-effect the way
+// pushState() does (pushState sets syncPausedUntil itself, so every OTHER
+// admin toggle gets this for free without asking). Without it, an already
+// in-flight syncFromCloud() read issued just before this tap can land right
+// after the PATCH and, since applyData() lets the cloud copy win, briefly
+// flip the admin's own screen back to archived:false until the next 3s poll
+// — not data loss, but a confusing "did my tap even work" flicker.
 async function toggleVendorArchived(vid){
   const v = VENDORS[vid]; if(!v) return;
   const nowArchived = !v.archived;
   v.archived = nowArchived;
   showToast(nowArchived ? '📦 '+v.name+' archived — hidden from customers' : '✅ '+v.name+' unarchived — visible to customers again');
   try{
-    await fbPatch(ROOM_KEY+'/vendors/'+vid, {archived: nowArchived});
+    await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/vendors/'+vid, {archived: nowArchived}));
   }catch(e){
     console.error('archive sync failed:', e);
     showToast('⚠️ Saved locally — sync failed, check your connection');
