@@ -2825,6 +2825,12 @@ select option { color: var(--t1); background: var(--w); }
       <div id="v-golive-checklist" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px"></div>
       <button id="v-golive-btn" onclick="attemptGoLive()" disabled style="width:100%;background:var(--bdm);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:not-allowed;font-family:var(--ff)">Complete the checklist above</button>
     </div>
+    <!-- v-archive: shown only while an admin has archived this store. Status
+         only — no self-serve unarchive button here; see renderArchivedCard(). -->
+    <div id="v-archived-card" style="display:none;margin:12px 16px;background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);padding:14px 16px">
+      <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px">📦 This store is archived</div>
+      <div style="font-size:12px;color:var(--t2)">Customers can't find or order from you right now — your menu, orders and settings are all still here. Contact the LokalFinder admin if you'd like your store visible again.</div>
+    </div>
     <!-- Quick stats -->
     <div style="display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto">
       <div class="pill">📦 <b id="v-orders-today">0</b> today</div>
@@ -3937,7 +3943,23 @@ function orderKind(o){ const k = o && o.kind;     return (k && MARKETPLACES[k]) 
 // directly with a possibly-nonexistent VENDORS[vid], and returning true
 // there let it fall through its own "not available" guard and crash on
 // v.cover a few lines later instead of ever showing that toast.
-function isVendorLive(v){ return !!v && v.live !== false; }
+//
+// v-archive: isVendorLive() is really "is this vendor visible to a
+// customer right now", not literally "has gone live" — every one of its
+// ~13 call sites already treats it that way. So v.archived (admin-only,
+// toggleVendorArchived()) is folded in here rather than given its own
+// parallel set of checks: an archived store disappears from every one of
+// those call sites for free, including the cache-key hashes in
+// buildVendorCards()/buildTodaysPicks() that already key off this
+// function's result, with no call site needing to know archiving exists.
+// Unlike "closed" (v.suspended / hours), which a customer can still browse
+// per v49, archived is stronger — it skips that browsable state entirely,
+// because openVendor()'s safety-net guard checks isVendorLive() first and
+// returns before ever reaching the closed-but-browsable code beneath it.
+// Deliberately NOT checked by rebuildVendorSelect() (the vendor login
+// picker) — an archived vendor must still be able to sign in to their own
+// dashboard, same reasoning as a draft vendor pre-Go-Live.
+function isVendorLive(v){ return !!v && v.live !== false && !v.archived; }
 function mkt(idOrVendor){
   if(idOrVendor && typeof idOrVendor === 'object') return MARKETPLACES[vendorCat(idOrVendor)];
   return MARKETPLACES[idOrVendor] || MARKETPLACES.food;
@@ -4821,7 +4843,8 @@ function openVendor(vid){
   // directly. "Closed" has its own browsable state (v49); "not live yet"
   // does not exist for a customer at all.
   if(!isVendorLive(VENDORS[vid])){
-    showToast('⚠️ That store is not available yet');
+    const _v0 = VENDORS[vid];
+    showToast(_v0 && _v0.archived ? '⚠️ That store is no longer available' : '⚠️ That store is not available yet');
     return;
   }
   lfTrack('vendor_opened', { vendorId: vid, category: vendorCat(VENDORS[vid]) });
@@ -7559,7 +7582,7 @@ function goVendorTab(tab){
   // Tabbing back to the dashboard after adding a menu item or filling in
   // contact/hours should reflect that in the Go Live checklist immediately,
   // not only after the vendor signs back in.
-  if(tab==='dash') renderGoLiveCard();
+  if(tab==='dash'){ renderGoLiveCard(); renderArchivedCard(); }
   if(tab==='menu' && activeVendorId) renderVendorMenu(activeVendorId);
   if(tab==='orders'){
     // Force immediate Firebase sync so vendor sees latest orders right away
@@ -7964,7 +7987,13 @@ function renderGoLiveCard(){
   const card = el('v-golive-card');
   if(!card) return;
   const v = activeVendorId ? VENDORS[activeVendorId] : null;
-  if(!v || isVendorLive(v)){ card.style.display='none'; return; }
+  // v-archive: checks the RAW v.live field, not isVendorLive(v) — that helper
+  // now also means "not archived", and an already-live vendor who later gets
+  // archived must not see "finish setup to go live" again just because
+  // isVendorLive() turned false. An archived-but-never-live vendor doesn't
+  // need this card either: renderArchivedCard() already explains why
+  // customers can't find them, and Go Live wouldn't undo the archive anyway.
+  if(!v || v.archived || v.live !== false){ card.style.display='none'; return; }
   card.style.display='block';
   const checklist = vendorGoLiveChecklist(v);
   const list = el('v-golive-checklist');
@@ -7990,6 +8019,10 @@ function attemptGoLive(){
   if(!activeVendorId) return;
   const v = VENDORS[activeVendorId];
   if(!v) return;
+  // Defensive — the button that calls this is already hidden while archived
+  // (renderGoLiveCard()), but v.live=true alone would not make an archived
+  // store visible, so a stale render must never show a false "You're live!".
+  if(v.archived) return;
   if(!vendorGoLiveChecklist(v).every(c=>c.ok)){
     showToast('⚠️ Finish the checklist first');
     renderGoLiveCard();
@@ -8002,10 +8035,20 @@ function attemptGoLive(){
   renderGoLiveCard();
   buildVendorCards(true); buildTodaysPicks(true); updateMktCounts(); updateVendorLiveBadge();
 }
+// v-archive: sibling of renderGoLiveCard(), same "hidden unless relevant"
+// shape. Status only — unarchiving is admin-only (toggleVendorArchived()),
+// so there is no button here to wire up.
+function renderArchivedCard(){
+  const card = el('v-archived-card');
+  if(!card) return;
+  const v = activeVendorId ? VENDORS[activeVendorId] : null;
+  card.style.display = (v && v.archived) ? 'block' : 'none';
+}
 
 function updateVendorDash(vid){
   if(!vid||!el('v-dname')) return;
   renderGoLiveCard();
+  renderArchivedCard();
   const myOrders=vendorVisibleOrders(vid);  // v51: respects the clear watermark
   // v55: these three tiles are labelled "today", so scope them to today —
   // they previously showed every order since the vendor last tapped Clear
@@ -9094,11 +9137,17 @@ function renderAdminVendors(){
   el2.innerHTML=Object.values(VENDORS).map(v=>{
     const vOrders=orders.filter(o=>o.vendorId===v.id);
     const gross=vOrders.reduce((s,o)=>s+o.subtotal,0);
-    return `<div class="av-card">
+    // v-archive: archived supersedes open/closed/paused in the badge — a
+    // customer never sees any of those either way, so showing them here
+    // once a store is archived would just be stale, misleading detail.
+    const badge = v.archived
+      ? `<span class="bdg closed">📦 Archived</span>`
+      : `<span class="bdg ${v.suspended?'closed':(v.active?'open':'closed')}">${v.suspended?'⏸ Paused':(v.active?'● Open':'● Closed')}</span>`;
+    return `<div class="av-card"${v.archived?' style="opacity:.65"':''}>
       <div class="av-hd">
         <div class="av-ico">${esc(v.emoji)}</div>
         <div class="av-info"><div class="av-name">${esc(v.name)}</div><div class="av-sub">${mkt(v).icon} ${esc(mkt(v).short)} · ${esc((v.sub||'').split('·').slice(0,2).join('·'))}</div></div>
-        <span class="bdg ${v.suspended?'closed':(v.active?'open':'closed')}">${v.suspended?'⏸ Paused':(v.active?'● Open':'● Closed')}</span>
+        ${badge}
       </div>
       <div class="av-body">
         <div class="av-row"><span>${esc(mkt(v).txNounPlural)} today</span><span class="av-val">${vOrders.length}</span></div>
@@ -9116,6 +9165,7 @@ function renderAdminVendors(){
         <button class="oact ${v.suspended?'p':'d'}" onclick="toggleVendorActive('${v.id}')">${v.suspended?'Reactivate':'Pause Store'}</button>
         <button class="oact s" onclick="openEditVendorModal('${v.id}')">✏️ Edit</button>
         <button class="oact s" onclick="resetVendorPin('${v.id}')">🔑 Reset PIN</button>
+        <button class="oact ${v.archived?'p':'s'}" onclick="toggleVendorArchived('${v.id}')">${v.archived?'📦 Unarchive':'📦 Archive'}</button>
         <button class="oact d" onclick="deleteVendor('${v.id}')">🗑️ Delete</button>
       </div>
     </div>`;
@@ -9148,6 +9198,50 @@ function toggleVendorActive(vid){
   renderAdminVendors();
   updateAdminStats();
   buildVendorCards();
+}
+
+// v-archive: admin-only power to hide a store from every customer-facing
+// surface even while it's "open" by the clock — for a vendor who's stopped
+// actively selling but hasn't formally closed. Deliberately the softer
+// sibling of deleteVendor(): nothing is removed (menu, PIN, order history,
+// commission settings all survive untouched), it's a single flag, and it
+// flips back with one more tap — unarchiving hands the store straight back
+// to whatever its hours/suspended state already say, exactly as it was.
+// No confirm() dialog, matching toggleVendorActive() just above: reversible,
+// instant toggles get a toast, not a modal; deleteVendor() is the one that
+// asks first, because that one can't be undone.
+//
+// Deliberately NOT pushState(): that PUTs this admin device's entire local
+// VENDORS object, and a vendor's own device can be mid-session with a local
+// copy that predates this change — their next ordinary save (a menu edit,
+// saveVendorContact(), attemptGoLive(), all of which call pushState() too)
+// would PUT their stale copy right back over this one, silently erasing the
+// archive with no error either side would ever see. Proven live before this
+// fix, not assumed: a two-device Playwright test — admin archives a vendor,
+// that vendor's own still-stale tab saves an unrelated field — showed the
+// archive reverted. fbPatch() writes ONLY the archived key to this vendor's
+// own node, so no other device's stale snapshot of any other field can ever
+// collide with it, regardless of which one lands first or last.
+async function toggleVendorArchived(vid){
+  const v = VENDORS[vid]; if(!v) return;
+  const nowArchived = !v.archived;
+  v.archived = nowArchived;
+  showToast(nowArchived ? '📦 '+v.name+' archived — hidden from customers' : '✅ '+v.name+' unarchived — visible to customers again');
+  try{
+    await fbPatch(ROOM_KEY+'/vendors/'+vid, {archived: nowArchived});
+  }catch(e){
+    console.error('archive sync failed:', e);
+    showToast('⚠️ Saved locally — sync failed, check your connection');
+  }
+  renderAdminVendors();
+  updateAdminStats();
+  buildVendorCards();
+  buildTodaysPicks();
+  buildFeaturedBanner();
+  buildHeroStrip();
+  updateMktCounts();
+  updateCategoryCounts();
+  updateVendorLiveBadge();
 }
 
 // In-memory set so applyData never re-adds a vendor deleted this session,
@@ -10428,9 +10522,18 @@ function applyData(d){
   // Only touch the DOM when something actually changed since last sync.
   // Without this, the timers below rebuild the page every 3s, causing the
   // whole app to visibly "refresh / move" on its own and feel laggy.
+  // v-archive: v.archived (and v.live alongside it) were missing from this
+  // signature entirely — an admin archiving a vendor on a different device
+  // changes nothing else about that vendor's other fields, so the string
+  // below came out byte-identical to the previous sync and the anti-flicker
+  // guard silently skipped updateVendorDash() forever. The archived vendor's
+  // own open dashboard would never show the notice below until they signed
+  // out and back in. Same latent gap for v.live, one sync-cycle lower stakes
+  // since that one is normally only ever changed locally by the vendor's own
+  // Go Live tap — closed here too rather than leaving it for the next report.
   const _sig = JSON.stringify({
     o: orders.map(o=>o.id+'|'+o.status+'|'+(o.updatedAt||0)),
-    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)+'|'+(v.suspended?1:0)+'|'+(v.clearedBefore||0)),
+    v: Object.values(VENDORS).map(v=>v.id+'|'+v.active+'|'+(v.featured?1:0)+'|'+(v.openTime||'')+'|'+(v.closeTime||'')+'|'+(v.logo?1:0)+'|'+(v.contact||'')+'|'+(v.manualOverride?1:0)+'|'+(v.manualUntil||0)+'|'+(v.suspended?1:0)+'|'+(v.clearedBefore||0)+'|'+(v.archived?1:0)+'|'+(v.live===false?0:1)),
     m: Object.entries(MENU).map(([k,it])=>k+':'+_normalizeMenu(it).map(i=>i.id+i.price+(i.avail?1:0)).join(',')),
     h: d.heroStats ? JSON.stringify(d.heroStats) : ''
   });
