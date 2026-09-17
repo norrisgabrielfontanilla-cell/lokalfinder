@@ -166,6 +166,18 @@
         }
       },
 
+      "//adminLog": "v-auditlog: lightweight record of admin actions (archive, pause, feature, delete, PIN reset, approve/reject) — action name, a short detail string, a timestamp. No per-admin attribution: there is no per-admin identity yet (see adminAuth above), so this answers 'what happened and when', not 'who'. Same tradeoff as vendorApplications above and for the same reason: only the admin panel reads this, but there is no auth to scope the read to 'admin only', so it is readable by anyone with this URL, accepted until Firebase Auth exists. WRITE is open for the identical reason. Length caps below blunt spam the same way vendorApplications' do.",
+      "adminLog": {
+        ".read": true,
+        ".write": true,
+        "$lid": {
+          ".validate": "newData.hasChildren(['action','at'])",
+          "action": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "detail": { ".validate": "newData.isString() && newData.val().length <= 300" },
+          "at":     { ".validate": "newData.isNumber()" }
+        }
+      },
+
       "fcmTokens":      { ".read": false, ".write": true },
       "deletedVendors": { ".read": true,  ".write": true },
       "posts":          { ".read": true,  ".write": true },
