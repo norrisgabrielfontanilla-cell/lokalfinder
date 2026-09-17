@@ -11266,17 +11266,27 @@ window.LFN = (function(){
   // client-side the way handlePhoto()'s canvas resize does for images, so
   // instead of a soft compression target this is a hard admission cap: too
   // big or too long is refused outright with a clear reason, never silently
-  // squeezed. Keep these small — every viewer downloads every post's media
+  // squeezed. Keep these bounded — every viewer downloads every post's media
   // in full as part of the feed's JSON payload (see fetchRecentPosts()),
   // there is no lazy-loading a data: URI the way a real video host allows.
-  const LF_VIDEO_MAX_BYTES = 3 * 1024 * 1024;   // 3MB raw file
-  const LF_VIDEO_MAX_SECONDS = 10;
+  // v-longervideo: raised from 10s/3MB to 30s/8MB on request. Deliberately
+  // NOT scaled fully proportionally (3x the duration at 3x the bytes would
+  // be 9MB) — asking for slightly tighter compression per second on a
+  // clip 3x as long keeps the worst case (40 posts fetched at once, see
+  // fetchRecentPosts()'s limitToLast) from growing 3x too. Still a real,
+  // deliberate tradeoff: a Feed with several fresh videos now downloads
+  // meaningfully more per poll than it used to. The right long-term fix is
+  // real video hosting so viewers stream instead of downloading everything
+  // upfront — this is a bounded compromise within the current architecture,
+  // not a replacement for that.
+  const LF_VIDEO_MAX_BYTES = 8 * 1024 * 1024;   // 8MB raw file
+  const LF_VIDEO_MAX_SECONDS = 30;
   // Reads and validates a video File, resolving to a base64 data URL or
   // rejecting with a short, user-facing reason. Shared by both composers.
   function readVideoFile(file){
     return new Promise((resolve, reject)=>{
       if(file.size > LF_VIDEO_MAX_BYTES){
-        reject('Video is too large — keep clips under 3MB (roughly '+LF_VIDEO_MAX_SECONDS+' seconds on most phones).');
+        reject('Video is too large — keep clips under 8MB (roughly '+LF_VIDEO_MAX_SECONDS+' seconds on most phones).');
         return;
       }
       // v-feedvideo followup: a code review pointed out that if a browser's
@@ -11341,10 +11351,11 @@ window.LFN = (function(){
   // syncFromFB() replaces `posts` wholesale with whatever it fetched, that
   // stale read would silently erase a just-published post from every screen
   // (it hadn't reached the DB yet when the read was issued) or resurrect a
-  // just-deleted one, until the next poll caught up. 24s gives headroom over
-  // pushPost()'s own 20s video-write timeout, same margin LF_PENDING_MS gives
-  // the main app's 8s order writes.
-  const LFN_PENDING_MS = 24000;
+  // just-deleted one, until the next poll caught up. 44s gives headroom over
+  // pushPost()'s own 40s video-write timeout (v-longervideo: bumped from 20s
+  // alongside the 8MB cap, so this had to move with it), same margin
+  // LF_PENDING_MS gives the main app's 8s order writes.
+  const LFN_PENDING_MS = 44000;
   let _lfnPendingWrites = 0;
   let _lfnSyncPausedUntil = 0;
   async function lfnTrackedWrite(fn){
@@ -11511,7 +11522,8 @@ window.LFN = (function(){
     // A video post is a meaningfully bigger payload than anything else this
     // function has ever written — give it more time before fbSet's
     // AbortController gives up, instead of failing a slow-but-fine upload.
-    try { await lfnTrackedWrite(()=>fbSet(POSTS_NODE + '/' + p.id, p, p.video ? 20000 : 8000)); return true; }
+    // 40s (was 20s) tracks LF_VIDEO_MAX_BYTES moving from 3MB to 8MB.
+    try { await lfnTrackedWrite(()=>fbSet(POSTS_NODE + '/' + p.id, p, p.video ? 40000 : 8000)); return true; }
     catch(e){ return false; }
   }
   async function pushReview(r){
