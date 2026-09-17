@@ -180,7 +180,17 @@
 
       "fcmTokens":      { ".read": false, ".write": true },
       "deletedVendors": { ".read": true,  ".write": true },
-      "posts":          { ".read": true,  ".write": true },
+      "//posts": "v13 community feed, v-feedvideo update: added .indexOn so fetchRecentPosts() (index.html) can use a scoped orderBy=createdAt&limitToLast query instead of downloading every post ever made — the same reason /orders has .indexOn on vendorId. Also added length caps on video and photo as a second line of defense: the client already hard-caps a video at 3MB raw and resizes every photo to 720px/quality .78 JPEG before either ever reaches here, but a modified client could skip those checks and write an arbitrarily large string to this same unauthenticated node — a code review flagged that the first version of this cap only covered video, leaving photo with the identical exposure. 3MB raw video is a bit under 4,194,304 base64 characters; a 720px JPEG is typically well under 500KB raw. Both caps below sit comfortably above their legitimate ceiling so a real upload is never rejected by the rule itself, only bounded against abuse.",
+      "posts": {
+        ".read": true,
+        ".write": true,
+        ".indexOn": ["createdAt"],
+        "$pid": {
+          "video": { ".validate": "newData.isString() && newData.val().length <= 4500000" },
+          "photo": { ".validate": "newData.isString() && newData.val().length <= 1500000" },
+          "$other": { ".validate": true }
+        }
+      },
       "heroStats":      { ".read": true,  ".write": true },
       "rev":            { ".read": true,  ".write": true }
     }
