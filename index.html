@@ -3579,20 +3579,21 @@ select option { color: var(--t1); background: var(--w); }
 </div>
 
 <!-- NEW: post composer modal -->
-<div class="modal" id="lfn-modal-compose" onclick="closeModal('lfn-modal-compose',event)">
+<div class="modal" id="lfn-modal-compose" onclick="LFN.cancelComposer(event)">
   <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
     <div class="modal-handle"></div>
     <div class="modal-ttl">Post for today</div>
 
-    <label class="flbl">Photo</label>
+    <label class="flbl">Photo or video</label>
     <div id="lfn-compose-photo-preview" style="width:100%;height:180px;border-radius:12px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:14px;overflow:hidden;position:relative" onclick="document.getElementById('lfn-compose-photo-input').click()">
       <span id="lfn-compose-photo-placeholder" style="font-size:36px;margin-bottom:6px">📸</span>
-      <span id="lfn-compose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo</span>
-      <span style="font-size:11px;color:#9AA49E;margin-top:4px">Show real food. Photos beat menus.</span>
+      <span id="lfn-compose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo or a short video (10s max)</span>
+      <span style="font-size:11px;color:#9AA49E;margin-top:4px">Show real food. Photos and video beat menus.</span>
       <img id="lfn-compose-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+      <video id="lfn-compose-video-prev" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" muted controls playsinline></video>
       <button id="lfn-compose-photo-clear" type="button" onclick="event.stopPropagation();LFN.clearPhoto()" style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1">×</button>
     </div>
-    <input type="file" id="lfn-compose-photo-input" accept="image/*" style="display:none" onchange="LFN.handlePhoto(this)">
+    <input type="file" id="lfn-compose-photo-input" accept="image/*,video/*" style="display:none" onchange="LFN.handlePhoto(this)">
 
     <label class="flbl">Caption</label>
     <input class="finp" id="lfn-compose-caption" type="text" placeholder="Fresh today — limited servings!" style="margin-bottom:14px">
@@ -3601,24 +3602,25 @@ select option { color: var(--t1); background: var(--w); }
     <div id="lfn-compose-items" style="margin-bottom:14px"></div>
 
     <button class="cta" onclick="LFN.publishPost()">Publish to feed ✓</button>
-    <button class="cta sec" onclick="closeModal('lfn-modal-compose')" style="margin-top:8px">Cancel</button>
+    <button class="cta sec" onclick="LFN.cancelComposer()" style="margin-top:8px">Cancel</button>
   </div>
 </div>
 
 <!-- NEW: customer post composer modal -->
-<div class="modal" id="lfn-modal-ccompose" onclick="closeModal('lfn-modal-ccompose',event)">
+<div class="modal" id="lfn-modal-ccompose" onclick="LFN.cancelCustomerCompose(event)">
   <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:90%;overflow-y:auto">
     <div class="modal-handle"></div>
     <div class="modal-ttl">Share with your neighbors</div>
 
-    <label class="flbl">Photo (optional)</label>
+    <label class="flbl">Photo or video (optional)</label>
     <div id="lfn-ccompose-photo-preview" style="width:100%;height:180px;border-radius:12px;background:#f5f7f5;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:14px;overflow:hidden;position:relative" onclick="document.getElementById('lfn-ccompose-photo-input').click()">
       <span id="lfn-ccompose-photo-placeholder" style="font-size:36px;margin-bottom:6px">📸</span>
-      <span id="lfn-ccompose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo</span>
+      <span id="lfn-ccompose-photo-text" style="font-size:13px;color:#9AA49E;font-weight:600">Tap to add a photo or a short video (10s max)</span>
       <img id="lfn-ccompose-photo-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" src="" alt="">
+      <video id="lfn-ccompose-video-prev" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" muted controls playsinline></video>
       <button id="lfn-ccompose-photo-clear" type="button" onclick="event.stopPropagation();LFN.clearCustomerPhoto()" style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:99px;width:30px;height:30px;font-size:18px;cursor:pointer;line-height:1">×</button>
     </div>
-    <input type="file" id="lfn-ccompose-photo-input" accept="image/*" style="display:none" onchange="LFN.handleCustomerPhoto(this)">
+    <input type="file" id="lfn-ccompose-photo-input" accept="image/*,video/*" style="display:none" onchange="LFN.handleCustomerPhoto(this)">
 
     <label class="flbl">Your name (optional)</label>
     <input class="finp" id="lfn-ccompose-name" type="text" placeholder="Neighbor" maxlength="40" style="margin-bottom:14px">
@@ -3627,7 +3629,7 @@ select option { color: var(--t1); background: var(--w); }
     <textarea class="finp" id="lfn-ccompose-caption" rows="3" maxlength="240" placeholder="What are you enjoying today?" style="resize:none;font-family:var(--ff);margin-bottom:14px"></textarea>
 
     <button class="cta" onclick="LFN.publishCustomerPost()">Post to feed ✓</button>
-    <button class="cta sec" onclick="closeModal('lfn-modal-ccompose')" style="margin-top:8px">Cancel</button>
+    <button class="cta sec" onclick="LFN.cancelCustomerCompose()" style="margin-top:8px">Cancel</button>
   </div>
 </div>
 
@@ -11238,6 +11240,62 @@ window.LFN = (function(){
   const POSTS_NODE = ROOM_KEY + '/posts';
   const REVIEWS_NODE = ROOM_KEY + '/reviews';
 
+  // v-feedvideo: this app has no dedicated video hosting — posts are stored
+  // as base64 directly in the same RTDB node photos already use (see
+  // pushPost() below). There is no reliable way to re-encode/shrink a video
+  // client-side the way handlePhoto()'s canvas resize does for images, so
+  // instead of a soft compression target this is a hard admission cap: too
+  // big or too long is refused outright with a clear reason, never silently
+  // squeezed. Keep these small — every viewer downloads every post's media
+  // in full as part of the feed's JSON payload (see fetchRecentPosts()),
+  // there is no lazy-loading a data: URI the way a real video host allows.
+  const LF_VIDEO_MAX_BYTES = 3 * 1024 * 1024;   // 3MB raw file
+  const LF_VIDEO_MAX_SECONDS = 10;
+  // Reads and validates a video File, resolving to a base64 data URL or
+  // rejecting with a short, user-facing reason. Shared by both composers.
+  function readVideoFile(file){
+    return new Promise((resolve, reject)=>{
+      if(file.size > LF_VIDEO_MAX_BYTES){
+        reject('Video is too large — keep clips under 3MB (roughly '+LF_VIDEO_MAX_SECONDS+' seconds on most phones).');
+        return;
+      }
+      // v-feedvideo followup: a code review pointed out that if a browser's
+      // decoder neither loads nor explicitly errors on some phone-recorded
+      // format, neither handler below ever fires and this promise hangs
+      // forever — the input was already reset to '' by the caller, so the
+      // vendor/customer would be left with no preview, no error, and no way
+      // to tell what happened short of guessing to pick a different file.
+      // settled + a timeout gives every path exactly one outcome.
+      let settled = false;
+      const finish = (fn, arg) => { if(settled) return; settled = true; clearTimeout(giveUp); fn(arg); };
+      const giveUp = setTimeout(()=>finish(reject, "Couldn't read that video — try a different file or format."), 8000);
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const dataUrl = e.target.result;
+        const probe = document.createElement('video');
+        probe.preload = 'metadata';
+        probe.onloadedmetadata = ()=>{
+          // A code review flagged that some containers/codecs report
+          // duration as NaN or 0 at this point instead of the real length —
+          // `NaN > 10` and `0 > 10` are both false, which would have let
+          // an unverifiable-length clip through as if it passed the check.
+          // Treat "can't tell how long this is" as a rejection, not a pass.
+          if(!isFinite(probe.duration) || probe.duration <= 0){
+            finish(reject, "Couldn't verify that video's length — try a different file.");
+          } else if(probe.duration > LF_VIDEO_MAX_SECONDS){
+            finish(reject, 'Videos must be '+LF_VIDEO_MAX_SECONDS+' seconds or shorter — trim it and try again.');
+          } else {
+            finish(resolve, dataUrl);
+          }
+        };
+        probe.onerror = ()=>finish(reject, "Couldn't read that video — try a different file.");
+        probe.src = dataUrl;
+      };
+      reader.onerror = ()=>finish(reject, "Couldn't read that file.");
+      reader.readAsDataURL(file);
+    });
+  }
+
   // Fallback gradients for posts without a photo (e.g. older posts from v13)
   const FALLBACK_BGS = [
     'linear-gradient(135deg,#FF6B6B,#C9356E)',
@@ -11256,6 +11314,29 @@ window.LFN = (function(){
   // authorType is missing on posts written before this feature — treat missing as 'vendor' (vendorId is always present on those).
   let posts = [];
   let reviews = [];        // {id, vendorId, orderId, buyerName, rating, text, createdAt}
+
+  // v-feedvideo followup: mirrors the main app's _pendingWrites/syncPausedUntil
+  // pattern (v59), scoped to this module. Without it, a poll's read of /posts
+  // could be issued before a publish/delete write and resolve after — since
+  // syncFromFB() replaces `posts` wholesale with whatever it fetched, that
+  // stale read would silently erase a just-published post from every screen
+  // (it hadn't reached the DB yet when the read was issued) or resurrect a
+  // just-deleted one, until the next poll caught up. 24s gives headroom over
+  // pushPost()'s own 20s video-write timeout, same margin LF_PENDING_MS gives
+  // the main app's 8s order writes.
+  const LFN_PENDING_MS = 24000;
+  let _lfnPendingWrites = 0;
+  let _lfnSyncPausedUntil = 0;
+  async function lfnTrackedWrite(fn){
+    _lfnPendingWrites++;
+    _lfnSyncPausedUntil = Date.now() + LFN_PENDING_MS;
+    try { return await fn(); }
+    finally {
+      _lfnPendingWrites = Math.max(0, _lfnPendingWrites - 1);
+      if(_lfnPendingWrites === 0) _lfnSyncPausedUntil = Date.now() + 700;
+    }
+  }
+
   let composeState = { photo: '', picks: [], caption: '' };
   let ccomposeState = { photo: '' };
   let reviewState = { vendorId: null, orderId: null, rating: 5 };
@@ -11292,25 +11373,129 @@ window.LFN = (function(){
   const escHTML = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   // ---------- Firebase sync (parallel, isolated) ----------
-  async function syncFromFB(){
+  const LF_POSTS_RECENT_LIMIT = 40;
+  let _lfPostsIndexWarned = false;
+  // v-feedvideo: /posts was an unscoped full read on every feed open even
+  // before video existed — the same architectural gap v55 closed for
+  // /orders (see lfOrdersForVendor() below applyData()), just never applied
+  // here because photos were small enough not to hurt. A video-carrying
+  // post history growing without bound makes that the wrong tradeoff now:
+  // every open would re-download every post ever made, video and all.
+  // Mirrors lfOrdersForVendor()'s exact shape — an indexed, limited query,
+  // falling back to a full read (with a one-time console warning) only if
+  // that index isn't published yet.
+  async function fetchRecentPosts(){
+    try{
+      const q = `posts.json?orderBy=${encodeURIComponent('"createdAt"')}&limitToLast=${LF_POSTS_RECENT_LIMIT}`;
+      const r = await fetch(`${FB_URL}/${ROOM_KEY}/${q}`);
+      if(!r.ok) throw new Error('index query failed: '+r.status);
+      return (await r.json()) || {};
+    }catch(e){
+      if(!_lfPostsIndexWarned){
+        _lfPostsIndexWarned = true;
+        console.warn('feed: /posts is missing .indexOn["createdAt"] — falling back to a full read. '+
+                     'Publish firebase-rules.json to fix this.', e);
+      }
+      return (await fbGet(POSTS_NODE).catch(()=>null)) || {};
+    }
+  }
+  // v-feedvideo followup: a code review caught that the setInterval below
+  // ran this completely unconditionally — every device, every 8s, forever,
+  // whether or not the Feed was even open. That was already wasteful for
+  // photos; with fetchRecentPosts() now able to return up to 40 posts'
+  // worth of base64 video (up to ~4MB each), it meant every open tab could
+  // be re-downloading tens of megabytes on a timer for content nobody was
+  // looking at — real, ongoing mobile-data and battery cost, not a one-time
+  // one. reviews stays on the old unconditional path: it's small (text
+  // only) and genuinely needed in the background for the review badges
+  // shown on vendor pages, order history and the success screen — not just
+  // the Feed. posts is now fetched only while a page that actually shows
+  // it (the feed itself, or the admin dashboard's Live Posts stat) is the
+  // one currently on screen.
+  function postsCurrentlyNeeded(){
+    const cur = document.querySelector('.page.on');
+    return !!cur && (cur.id === 'p-cfeed' || cur.id === 'p-adash');
+  }
+  // v-feedvideo followup: a code review caught that gating the FETCH on
+  // page visibility wasn't enough — while the feed IS open (the actual
+  // primary use case), this still ran a full `list.innerHTML = ...` rebuild
+  // of every post card on every 8s poll regardless of whether anything had
+  // changed, which reset any <video> a customer had mid-playback back to
+  // 0:00. Since posts are immutable once created (no edit feature — only
+  // create and delete), the sorted set of ids is a cheap, sufficient
+  // signature: unchanged ids means an unchanged feed, so skip the render
+  // entirely rather than just skip the fetch. Mirrors the main app's own
+  // applyData()/_lastApplySig anti-flicker guard. Deliberately NOT applied
+  // to the immediate renders inside publishPost()/publishCustomerPost()/
+  // deletePost() — those are the ONE tick a real change actually happened
+  // and must always show it right away.
+  let _lfnLastPostsSig = null;
+  // v-feedvideo followup: a code review pointed out that gating the fetch on
+  // postsCurrentlyNeeded() only stops it while the Feed is CLOSED — while a
+  // customer is actually scrolling it (the main case), fetchRecentPosts()'s
+  // full payload (up to 40 posts, each up to a few MB of base64 photo/video)
+  // was still being re-downloaded every single 8s tick just to compute a
+  // signature that, most ticks, shows nothing changed. reviews stays on the
+  // fast 8s cadence below (small, text-only, needed broadly); this throttles
+  // only the expensive posts fetch to its own slower cadence.
+  const LFN_POSTS_POLL_MS = 25000;
+  let _lfnLastPostsFetchAt = 0;
+  async function syncFromFB(opts){
+    // A publish/delete write is in flight (or just landed) — skip this whole
+    // tick rather than let a read that started before it overwrite the
+    // optimistic local state it just applied. See lfnTrackedWrite() above.
+    if(Date.now() < _lfnSyncPausedUntil) return;
     try {
+      // forcePosts: openFeed() and the p-adash goPage hook pass this so the
+      // very first fetch on opening the page is never held back by a stale
+      // _lfnLastPostsFetchAt from a previous visit — only the background
+      // poll while the page stays open is throttled.
+      const forcePosts = !!(opts && opts.forcePosts);
+      const wantPosts = postsCurrentlyNeeded() &&
+        (forcePosts || Date.now() - _lfnLastPostsFetchAt >= LFN_POSTS_POLL_MS);
       const [postsData, reviewsData] = await Promise.all([
-        fbGet(POSTS_NODE).catch(()=>null),
+        wantPosts ? fetchRecentPosts() : Promise.resolve(null),
         fbGet(REVIEWS_NODE).catch(()=>null),
       ]);
-      posts = postsData ? Object.values(postsData) : [];
+      let sig = null;
+      if(wantPosts){
+        _lfnLastPostsFetchAt = Date.now();
+        const fetched = postsData ? Object.values(postsData) : [];
+        sig = fetched.map(x=>x.id).sort().join(',');
+        posts = fetched;
+      }
+      // `reviews` is reassigned before either render call: renderFeedIfVisible()
+      // reads it too (per-post avg ★), so rendering it while `reviews` still
+      // held the previous tick's value — as this did when the assignment ran
+      // after the posts render — showed a stale average for the one tick
+      // right after a review was submitted.
       reviews = reviewsData ? Object.values(reviewsData) : [];
-      renderFeedIfVisible();
+      // _lfnLastPostsSig is NOT set here — renderFeed() itself stamps it
+      // once it actually renders (see the comment there). Pre-setting it
+      // here regardless of whether a render actually happened (e.g. the
+      // Feed isn't the visible page right now) used to let it silently fall
+      // out of sync with what's really on screen.
+      if(wantPosts && sig !== _lfnLastPostsSig) renderFeedIfVisible();
       renderReviewsIfVisible();
       updateAdminExtras();
     } catch(e){ /* silent — don't disrupt main sync */ }
   }
+  // Returns true/false so callers can tell a real failure from success —
+  // a code review caught that the original version always let the caller
+  // show "Posted to feed!" and close the composer regardless, which for a
+  // failed write meant the post silently vanished on the next syncFromFB()
+  // poll (which overwrites the local posts array from the server) with no
+  // sign anything was wrong. Same "never celebrate before the write lands"
+  // rule this app already applies to orders (pushOrderStrict/v58-v59).
   async function pushPost(p){
-    try { await fbSet(POSTS_NODE + '/' + p.id, p); }
-    catch(e){ showToast('⚠️ Post saved locally, sync failed'); }
+    // A video post is a meaningfully bigger payload than anything else this
+    // function has ever written — give it more time before fbSet's
+    // AbortController gives up, instead of failing a slow-but-fine upload.
+    try { await lfnTrackedWrite(()=>fbSet(POSTS_NODE + '/' + p.id, p, p.video ? 20000 : 8000)); return true; }
+    catch(e){ return false; }
   }
   async function pushReview(r){
-    try { await fbSet(REVIEWS_NODE + '/' + r.id, r); }
+    try { await lfnTrackedWrite(()=>fbSet(REVIEWS_NODE + '/' + r.id, r)); }
     catch(e){ showToast('⚠️ Review saved locally, sync failed'); }
   }
 
@@ -11327,7 +11512,7 @@ window.LFN = (function(){
   function openFeed(){
     goPage('p-cfeed');
     renderFeed();
-    syncFromFB();
+    syncFromFB({forcePosts:true});
   }
   function renderFeedIfVisible(){
     const cur = document.querySelector('.page.on');
@@ -11351,18 +11536,70 @@ window.LFN = (function(){
     list.innerHTML = sorted.map(p => {
       const isMine = isMyPost(p);
       const canDelete = canDeletePost(p);
-      // photo wins; older posts may only have a gradient bg; otherwise generate one
+      // video wins over photo; photo wins over a gradient; older posts may
+      // only have a gradient bg; otherwise generate one. Data URLs (both
+      // photo and video are always base64-generated BY THIS APP on the
+      // legitimate path — but a code review pointed out that's true only
+      // for posts written through the UI. /posts is an unauthenticated
+      // RTDB node like everything else in this repo (see firebase-rules.json
+      // and CLAUDE.md's security notes): anyone can PUT a post whose photo/
+      // video field is not a real data URL at all but an HTML-attribute
+      // breakout string. The old comment here ("no quote characters, safe
+      // to interpolate unescaped") only accounted for the legitimate
+      // client path and was wrong — escHTML() below is the actual fix,
+      // exactly the "text going into innerHTML" case CLAUDE.md's v55
+      // escaping rules describe. Real data URLs contain no HTML-special
+      // characters, so this is a no-op for every genuine post and only
+      // neutralizes a malicious direct write.
+      // p.bg is the SAME unauthenticated-write exposure as photo/video —
+      // missed in the first pass because it's normally just one of the
+      // app's own hardcoded FALLBACK_BGS gradient strings, but nothing
+      // stops a direct write from putting anything else there.
       const bgStyle = p.photo
-        ? `background:url('${p.photo}') center/cover`
-        : `background:${p.bg || fallbackBgFor(p.id)}`;
+        ? `background:url('${escHTML(p.photo)}') center/cover`
+        : `background:${escHTML(p.bg) || fallbackBgFor(p.id)}`;
+      // v-feedvideo: absolutely positioned as the FIRST child so it paints
+      // behind the existing gradient (.lfn-post-photo::after, z-index:auto
+      // but later in paint order) and the vendor-info row (z-index:1) —
+      // the exact same stacking this container already relies on for the
+      // compose-preview <img>, not a new pattern. No autoplay/loop: a feed
+      // that silently played every video at once as you scrolled would be
+      // a real, ongoing mobile-data and battery cost, not a one-time one —
+      // native controls, tap to play, same restraint already applied to
+      // the vertical-tab emoji motion elsewhere in this app.
+      //
+      // A first screenshot of this caught something the CSS reasoning alone
+      // missed: native video controls also live at the bottom, exactly
+      // where the vendor-info row sits for photo posts — they visually
+      // collided. Fixed by moving the info row to the TOP for video posts
+      // only (photo posts are untouched: still bottom-anchored, still using
+      // the shared ::after gradient) and adding an explicit top-fade <div>,
+      // since a CSS ::after pseudo-element can't be flipped per-instance
+      // from an inline style the way a real element can.
+      const videoHTML = p.video
+        ? `<video style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" src="${escHTML(p.video)}" muted controls playsinline preload="metadata"></video>
+           <div style="position:absolute;top:0;left:0;right:0;height:70px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);pointer-events:none"></div>`
+        : '';
+      const photoStyle = bgStyle + (p.video ? ';align-items:flex-start' : '');
+      // p.id inside an onclick is a JS string literal INSIDE an HTML
+      // attribute, not just an HTML attribute — escHTML() alone isn't
+      // enough here: the browser HTML-decodes the attribute value (turning
+      // &#39; back into ') before handing it to the JS engine, so an
+      // HTML-only escape doesn't stop a quote from still breaking the JS
+      // string once it gets there. escJs() (used elsewhere in this app for
+      // exactly this shape, e.g. _tapFor/buildHeroStrip per its own
+      // definition) backslash-escapes for the JS layer FIRST, then
+      // HTML-escapes for the attribute layer — the correct order for a
+      // value that gets parsed twice.
       const deleteBtn = canDelete
-        ? `<button class="lfn-post-delete" onclick="event.stopPropagation();LFN.deletePost('${p.id}')" title="${isMine ? 'Delete post' : 'Remove post (admin)'}">×</button>`
+        ? `<button class="lfn-post-delete" onclick="event.stopPropagation();LFN.deletePost('${escJs(p.id)}')" title="${isMine ? 'Delete post' : 'Remove post (admin)'}">×</button>`
         : '';
 
       if(postAuthorType(p) === 'customer'){
         return `
           <div class="lfn-post">
-            <div class="lfn-post-photo" style="${bgStyle}">
+            <div class="lfn-post-photo" style="${photoStyle}">
+              ${videoHTML}
               <div class="lfn-post-vendor">
                 <div class="lfn-post-avatar">🙂</div>
                 <div>
@@ -11381,8 +11618,9 @@ window.LFN = (function(){
       const avg = rev.length ? (rev.reduce((s,r)=>s+r.rating,0)/rev.length).toFixed(1) : null;
       return `
         <div class="lfn-post">
-          <div class="lfn-post-photo" style="${bgStyle}">
-            <div class="lfn-post-vendor" onclick="openVendor('${p.vendorId}')">
+          <div class="lfn-post-photo" style="${photoStyle}">
+            ${videoHTML}
+            <div class="lfn-post-vendor" onclick="openVendor('${escJs(p.vendorId)}')">
               <div class="lfn-post-avatar">${escHTML(v.emoji)}</div>
               <div>
                 <div class="lfn-post-vname">${escHTML(v.name)}</div>
@@ -11398,15 +11636,28 @@ window.LFN = (function(){
                 <div class="lfn-post-item-emoji">${escHTML(it.emoji||'🍽️')}</div>
                 <div class="lfn-post-item-info">
                   <div class="lfn-post-item-name">${escHTML(it.name)}</div>
-                  <div class="lfn-post-item-price">₱${it.price}</div>
+                  <div class="lfn-post-item-price">₱${Number(it.price)||0}</div>
                 </div>
-                <button class="lfn-post-add" onclick="LFN.addFromFeed('${p.vendorId}','${escHTML(it.name).replace(/'/g,"\\'")}','${escHTML(it.emoji||'🍽️').replace(/'/g,"\\'")}',${it.price})">Add</button>
+                <button class="lfn-post-add" onclick="LFN.addFromFeed('${escJs(p.vendorId)}','${escJs(it.name)}','${escJs(it.emoji||'🍽️')}',${Number(it.price)||0})">Add</button>
               </div>
             `).join('')}
           </div>
         </div>`;
     }).join('') + '<div style="height:20px"></div>';
     updateFeedCartBar();
+    // Stamp the signature guard here, in the one place every render path
+    // funnels through (syncFromFB's own gated call, openFeed()'s direct
+    // call, the goPage hook's direct call on navigating to p-cfeed, and
+    // publishPost()/publishCustomerPost()/deletePost()'s renderFeedIfVisible()
+    // calls) — not just inside syncFromFB(). A round-3 regression test caught
+    // that when only syncFromFB stamped it: openFeed()'s own forced fetch
+    // could be skipped by the write-pause guard (right after publishing),
+    // leaving the signature never set even though renderFeed() had already
+    // shown the correct data — so the next tick that actually fetched saw a
+    // false "changed" and re-rendered the whole feed for no real reason,
+    // resetting any video mid-playback. Stamping here means any render,
+    // however it was triggered, is what the next fetch gets compared against.
+    _lfnLastPostsSig = posts.map(x=>x.id).sort().join(',');
   }
   function addFromFeed(vid, name, emoji, price){
     addToCart(vid, name, emoji, price);
@@ -11428,9 +11679,22 @@ window.LFN = (function(){
   }
 
   // ---------- POST COMPOSER (vendor side) ----------
+  // Same stale-async reasoning as _ccomposeGen (customer side) below.
+  let _composeGen = 0;
+  // True while a picked file is still being read/validated. A code review
+  // caught that publishPost() used to bump _composeGen itself, which — being
+  // the same counter handlePhoto() checks — silently retired a pick that was
+  // still genuinely in flight (e.g. a video still being probed for duration)
+  // instead of blocking the tap: the post would publish without the media,
+  // with no error, because the pick's own callback saw itself as superseded
+  // once it finally resolved. publishPost() now refuses to proceed while
+  // this is true instead of racing it.
+  let _composePicking = false;
   function openComposer(){
     if(!activeVendorId){ showToast('Log in as vendor first'); return; }
-    composeState = { photo: '', picks: [], caption: '' };
+    _composeGen++;
+    _composePicking = false;
+    composeState = { photo: '', video: '', picks: [], caption: '' };
     el('lfn-compose-caption').value = '';
     clearPhoto();
     renderComposerItems();
@@ -11440,11 +11704,38 @@ window.LFN = (function(){
   function handlePhoto(input){
     const file = input && input.files && input.files[0];
     if(!file) return;
-    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo'); return; }
+    const myGen = ++_composeGen;
+    _composePicking = true;
+    if(file.type.startsWith('video/')){
+      readVideoFile(file).then(dataUrl=>{
+        if(myGen !== _composeGen) return;   // superseded by a newer pick/cancel
+        composeState.photo = '';
+        composeState.video = dataUrl;
+        const img = el('lfn-compose-photo-img'); if(img){ img.src=''; img.style.display='none'; }
+        const vid = el('lfn-compose-video-prev');
+        if(vid){ vid.src = dataUrl; vid.style.display = 'block'; }
+        el('lfn-compose-photo-placeholder').style.display = 'none';
+        el('lfn-compose-photo-text').style.display = 'none';
+        el('lfn-compose-photo-clear').style.display = 'flex';
+      }).catch(msg=>{ if(myGen === _composeGen) showToast('⚠️ '+msg); })
+        .finally(()=>{ if(myGen === _composeGen) _composePicking = false; });
+      input.value = '';
+      return;
+    }
+    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo or video'); _composePicking = false; return; }
     const reader = new FileReader();
     reader.onload = (e)=>{
+      if(myGen !== _composeGen) return;
       const tmp = new Image();
       tmp.onload = ()=>{
+        if(myGen !== _composeGen) return;
+        // Only clear a previously-picked video once the new photo is
+        // confirmed valid — clearing it eagerly (before this point) meant a
+        // corrupt/unreadable photo file wiped out a perfectly good video
+        // with nothing left to show for it. Mirrors the video branch above,
+        // which already only clears `photo` inside its own success path.
+        composeState.video = '';
+        const vidPrev = el('lfn-compose-video-prev'); if(vidPrev){ vidPrev.src=''; vidPrev.style.display='none'; }
         // Downscale to max 720px wide so post photos sync fast
         const max = 720;
         const sc = Math.min(1, max/Math.max(tmp.width, tmp.height));
@@ -11460,11 +11751,12 @@ window.LFN = (function(){
         el('lfn-compose-photo-placeholder').style.display = 'none';
         el('lfn-compose-photo-text').style.display = 'none';
         el('lfn-compose-photo-clear').style.display = 'flex';
+        _composePicking = false;
       };
-      tmp.onerror = ()=>showToast('⚠️ Couldn\'t read that image');
+      tmp.onerror = ()=>{ if(myGen === _composeGen){ showToast('⚠️ Couldn\'t read that image'); _composePicking = false; } };
       tmp.src = e.target.result;
     };
-    reader.onerror = ()=>showToast('⚠️ Couldn\'t read that file');
+    reader.onerror = ()=>{ if(myGen === _composeGen){ showToast('⚠️ Couldn\'t read that file'); _composePicking = false; } };
     reader.readAsDataURL(file);
     // reset input so the same photo can be picked again later
     input.value = '';
@@ -11472,8 +11764,11 @@ window.LFN = (function(){
 
   function clearPhoto(){
     composeState.photo = '';
+    composeState.video = '';
     const img = el('lfn-compose-photo-img');
     if(img){ img.src = ''; img.style.display = 'none'; }
+    const vid = el('lfn-compose-video-prev');
+    if(vid){ vid.src = ''; vid.style.display = 'none'; }
     const ph = el('lfn-compose-photo-placeholder');
     const tx = el('lfn-compose-photo-text');
     const cl = el('lfn-compose-photo-clear');
@@ -11511,8 +11806,26 @@ window.LFN = (function(){
     else composeState.picks.push({ id:it.id, name:it.name, emoji:it.emoji, price:it.price });
     renderComposerItems();
   }
+  // v-feedvideo followup: a code review caught that closing/cancelling the
+  // composer while its own write was still in flight left _lfnVendorPosting
+  // stuck true forever — the button that guard protects would never
+  // re-enable until that abandoned write eventually resolved or timed out
+  // (up to 20s for a video). Cancel and the backdrop tap both need to reset
+  // it, not just a successful publish, so both are routed through this
+  // instead of calling closeModal() directly.
+  function cancelComposer(event){
+    _composeGen++;   // invalidate any pick or publish still in flight
+    _composePicking = false;
+    _lfnVendorPosting = false;
+    const btn = document.querySelector('#lfn-modal-compose .cta:not(.sec)');
+    if(btn){ btn.disabled = false; btn.textContent = 'Publish to feed ✓'; }
+    closeModal('lfn-modal-compose', event);
+  }
+  let _lfnVendorPosting = false;
   async function publishPost(){
     if(!activeVendorId){ showToast('Log in as vendor first'); return; }
+    if(_lfnVendorPosting) return;   // guard: a video upload takes real time — no double-tap
+    if(_composePicking){ showToast('Still processing your photo/video — one moment'); return; }
     const caption = el('lfn-compose-caption').value.trim();
     if(composeState.picks.length === 0){ showToast('Pick at least one item'); return; }
     const post = {
@@ -11522,18 +11835,53 @@ window.LFN = (function(){
       caption: caption,
       items: composeState.picks.map(p=>({name:p.name, emoji:p.emoji, price:p.price})),
       photo: composeState.photo || '',
-      bg: composeState.photo ? '' : fallbackBgFor(lfnUid()),
+      video: composeState.video || '',
+      bg: (composeState.photo || composeState.video) ? '' : fallbackBgFor(lfnUid()),
       createdAt: Date.now(),
     };
+    const myGen = ++_composeGen;   // this attempt is now "current"; also retires any stale pick
+    _lfnVendorPosting = true;
+    const btn = document.querySelector('#lfn-modal-compose .cta:not(.sec)');
+    const prevLabel = btn ? btn.textContent : '';
+    if(btn){ btn.textContent = post.video ? 'Uploading video…' : 'Publishing…'; btn.disabled = true; }
     posts.push(post);
-    await pushPost(post);
+    const ok = await pushPost(post);
+    // See the identical comment in publishCustomerPost() below: without
+    // this check, cancelling then quickly publishing again let the FIRST
+    // (abandoned) call's continuation fire a stale toast/close once its
+    // own slow write eventually resolved.
+    const stillCurrent = (myGen === _composeGen);
+    if(stillCurrent){
+      _lfnVendorPosting = false;
+      if(btn){ btn.textContent = prevLabel; btn.disabled = false; }
+    }
+    if(!ok){
+      const i = posts.findIndex(x=>x.id===post.id); if(i>-1) posts.splice(i,1);
+      if(stillCurrent) showToast('⚠️ Could not publish — check your connection and try again');
+      return;
+    }
+    if(!stillCurrent) return;
     closeModal('lfn-modal-compose');
     showToast('✅ Posted to feed!');
   }
 
   // ---------- POST COMPOSER (customer side) ----------
+  // v-feedvideo followup: a code review caught two stale-async races that
+  // share one cause — nothing marked an in-flight file read or publish as
+  // abandoned once the user moved on from it. _ccomposeGen is bumped
+  // whenever the customer's "current intent" changes (opening the
+  // composer, picking a new file, cancelling, or starting a publish); any
+  // earlier async callback checks its own captured generation against the
+  // live one before touching shared state, so a stale result is silently
+  // dropped instead of reviving an abandoned pick or firing a toast/close
+  // for a session the user already left.
+  let _ccomposeGen = 0;
+  // Same reasoning as _composePicking (vendor side) above.
+  let _ccomposePicking = false;
   function openCustomerComposer(){
-    ccomposeState = { photo: '' };
+    _ccomposeGen++;
+    _ccomposePicking = false;
+    ccomposeState = { photo: '', video: '' };
     const cap = el('lfn-ccompose-caption'), nm = el('lfn-ccompose-name');
     if(cap) cap.value = '';
     if(nm) nm.value = '';
@@ -11543,11 +11891,38 @@ window.LFN = (function(){
   function handleCustomerPhoto(input){
     const file = input && input.files && input.files[0];
     if(!file) return;
-    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo'); return; }
+    const myGen = ++_ccomposeGen;
+    _ccomposePicking = true;
+    if(file.type.startsWith('video/')){
+      readVideoFile(file).then(dataUrl=>{
+        if(myGen !== _ccomposeGen) return;   // superseded by a newer pick/cancel
+        ccomposeState.photo = '';
+        ccomposeState.video = dataUrl;
+        const img = el('lfn-ccompose-photo-img'); if(img){ img.src=''; img.style.display='none'; }
+        const vid = el('lfn-ccompose-video-prev');
+        if(vid){ vid.src = dataUrl; vid.style.display = 'block'; }
+        el('lfn-ccompose-photo-placeholder').style.display = 'none';
+        el('lfn-ccompose-photo-text').style.display = 'none';
+        el('lfn-ccompose-photo-clear').style.display = 'flex';
+      }).catch(msg=>{ if(myGen === _ccomposeGen) showToast('⚠️ '+msg); })
+        .finally(()=>{ if(myGen === _ccomposeGen) _ccomposePicking = false; });
+      input.value = '';
+      return;
+    }
+    if(!file.type.startsWith('image/')){ showToast('⚠️ Please choose a photo or video'); _ccomposePicking = false; return; }
     const reader = new FileReader();
     reader.onload = (e)=>{
+      if(myGen !== _ccomposeGen) return;
       const tmp = new Image();
       tmp.onload = ()=>{
+        if(myGen !== _ccomposeGen) return;
+        // Only clear a previously-picked video once the new photo is
+        // confirmed valid — clearing it eagerly (before this point) meant a
+        // corrupt/unreadable photo file wiped out a perfectly good video
+        // with nothing left to show for it. Mirrors the video branch above,
+        // which already only clears `photo` inside its own success path.
+        ccomposeState.video = '';
+        const vidPrev = el('lfn-ccompose-video-prev'); if(vidPrev){ vidPrev.src=''; vidPrev.style.display='none'; }
         // Downscale to max 720px wide so post photos sync fast (same cap as vendor posts)
         const max = 720;
         const sc = Math.min(1, max/Math.max(tmp.width, tmp.height));
@@ -11563,18 +11938,22 @@ window.LFN = (function(){
         el('lfn-ccompose-photo-placeholder').style.display = 'none';
         el('lfn-ccompose-photo-text').style.display = 'none';
         el('lfn-ccompose-photo-clear').style.display = 'flex';
+        _ccomposePicking = false;
       };
-      tmp.onerror = ()=>showToast('⚠️ Couldn\'t read that image');
+      tmp.onerror = ()=>{ if(myGen === _ccomposeGen){ showToast('⚠️ Couldn\'t read that image'); _ccomposePicking = false; } };
       tmp.src = e.target.result;
     };
-    reader.onerror = ()=>showToast('⚠️ Couldn\'t read that file');
+    reader.onerror = ()=>{ if(myGen === _ccomposeGen){ showToast('⚠️ Couldn\'t read that file'); _ccomposePicking = false; } };
     reader.readAsDataURL(file);
     input.value = '';
   }
   function clearCustomerPhoto(){
     ccomposeState.photo = '';
+    ccomposeState.video = '';
     const img = el('lfn-ccompose-photo-img');
     if(img){ img.src = ''; img.style.display = 'none'; }
+    const vid = el('lfn-ccompose-video-prev');
+    if(vid){ vid.src = ''; vid.style.display = 'none'; }
     const ph = el('lfn-ccompose-photo-placeholder');
     const tx = el('lfn-ccompose-photo-text');
     const cl = el('lfn-ccompose-photo-clear');
@@ -11582,7 +11961,19 @@ window.LFN = (function(){
     if(tx) tx.style.display = 'block';
     if(cl) cl.style.display = 'none';
   }
+  // Same reasoning as cancelComposer() above, for the customer side.
+  function cancelCustomerCompose(event){
+    _ccomposeGen++;   // invalidate any pick or publish still in flight
+    _ccomposePicking = false;
+    _lfnCustPosting = false;
+    const btn = document.querySelector('#lfn-modal-ccompose .cta:not(.sec)');
+    if(btn){ btn.disabled = false; btn.textContent = 'Post to feed ✓'; }
+    closeModal('lfn-modal-ccompose', event);
+  }
+  let _lfnCustPosting = false;
   async function publishCustomerPost(){
+    if(_lfnCustPosting) return;   // guard: a video upload takes real time — no double-tap
+    if(_ccomposePicking){ showToast('Still processing your photo/video — one moment'); return; }
     const caption = el('lfn-ccompose-caption').value.trim();
     if(!caption){ showToast('Write a quick caption'); return; }
     const name = el('lfn-ccompose-name').value.trim().slice(0,40);
@@ -11593,11 +11984,36 @@ window.LFN = (function(){
       authorName: name || 'Neighbor',
       caption: caption,
       photo: ccomposeState.photo || '',
-      bg: ccomposeState.photo ? '' : fallbackBgFor(lfnUid()),
+      video: ccomposeState.video || '',
+      bg: (ccomposeState.photo || ccomposeState.video) ? '' : fallbackBgFor(lfnUid()),
       createdAt: Date.now(),
     };
+    const myGen = ++_ccomposeGen;   // this attempt is now "current"; also retires any stale pick
+    _lfnCustPosting = true;
+    const btn = document.querySelector('#lfn-modal-ccompose .cta:not(.sec)');
+    const prevLabel = btn ? btn.textContent : '';
+    if(btn){ btn.textContent = post.video ? 'Uploading video…' : 'Posting…'; btn.disabled = true; }
     posts.push(post);
-    await pushPost(post);
+    const ok = await pushPost(post);
+    // If a cancel or a newer publish attempt happened while this write was
+    // in flight, this call is no longer the one driving the composer's UI —
+    // a code review caught that without this check, an abandoned publish's
+    // continuation could fire a confusing toast/close on whatever the
+    // composer is now doing (a second post already published, or already
+    // closed) once its own slow write finally resolved.
+    const stillCurrent = (myGen === _ccomposeGen);
+    if(stillCurrent){
+      _lfnCustPosting = false;
+      if(btn){ btn.textContent = prevLabel; btn.disabled = false; }
+    }
+    if(!ok){
+      // Roll back the optimistic add regardless of staleness — nothing was
+      // actually saved, so it must not linger in `posts` either way.
+      const i = posts.findIndex(x=>x.id===post.id); if(i>-1) posts.splice(i,1);
+      if(stillCurrent) showToast('⚠️ Could not post — check your connection and try again');
+      return;
+    }
+    if(!stillCurrent) return;
     closeModal('lfn-modal-ccompose');
     showToast('✅ Posted to feed!');
     renderFeedIfVisible(); // opened from the feed page itself — reflect it now, don't wait for the next poll
@@ -11616,7 +12032,7 @@ window.LFN = (function(){
     posts = posts.filter(x=>x.id!==postId);
     // Remove from Firebase
     try {
-      await fbDelete(POSTS_NODE + '/' + postId);
+      await lfnTrackedWrite(()=>fbDelete(POSTS_NODE + '/' + postId));
       showToast(asAdmin ? '🗑️ Post removed (admin)' : '🗑️ Post deleted');
     } catch(e){
       showToast('⚠️ Delete failed, will retry on next sync');
@@ -11690,14 +12106,22 @@ window.LFN = (function(){
         ${avg?`<span style="color:#F4A623;font-weight:800">⭐ ${avg} <span style="color:var(--t3);font-weight:600">(${vRevs.length})</span></span>`:''}
       </div>
       ${vRevs.length===0 ? `<div style="color:var(--t3);font-size:13px;padding:8px 0">No reviews yet. Be the first after your order arrives.</div>` :
-        vRevs.slice(0,10).map(r=>`
+        vRevs.slice(0,10).map(r=>{
+          // rating is clamped before .repeat(): a review row written by a
+          // direct, unauthenticated DB write (this app's real threat model —
+          // see firebase-rules.json notes) with a negative/huge/non-numeric
+          // rating would otherwise throw a RangeError here and leave this
+          // vendor's whole review section permanently unrendered.
+          const rt = Math.min(5,Math.max(0,Math.round(Number(r.rating))||0));
+          return `
           <div class="lfn-review-card">
             <div class="lfn-review-hd">
-              <span class="lfn-review-who">${escHTML(r.buyerName)} · <span style="color:#F4A623">${'★'.repeat(r.rating)}</span><span style="color:var(--s3)">${'★'.repeat(5-r.rating)}</span></span>
+              <span class="lfn-review-who">${escHTML(r.buyerName)} · <span style="color:#F4A623">${'★'.repeat(rt)}</span><span style="color:var(--s3)">${'★'.repeat(5-rt)}</span></span>
               <span class="lfn-review-when">${timeAgo(r.createdAt)}</span>
             </div>
             ${r.text ? `<div class="lfn-review-text">${escHTML(r.text)}</div>` : ''}
-          </div>`).join('')
+          </div>`;
+        }).join('')
       }
     `;
     // insert before the trailing spacer in menu
@@ -11765,7 +12189,14 @@ window.LFN = (function(){
     });
     const repeats = Object.values(counts).filter(n=>n>1).length;
     if(repeatEl) repeatEl.textContent = repeats;
-    // Posts in last 24h
+    // Posts in last 24h. v-feedvideo: `posts` is now the 40 most-recent
+    // community-wide (fetchRecentPosts()), not full history, so on a day
+    // with 40+ new posts this undercounts — it can only ever report the
+    // ones that happen to still be within the most-recent-40 window. Left
+    // as an honest limitation rather than a separate always-accurate query:
+    // this is a single-community app (see CLAUDE.md) where 40+ posts in a
+    // day would itself be a notable milestone, not the common case this
+    // stat needs to be exact for.
     const cutoff = Date.now() - 86400000;
     const live = posts.filter(p=>p.createdAt > cutoff).length;
     if(postsEl) postsEl.textContent = live;
@@ -11780,7 +12211,13 @@ window.LFN = (function(){
     if(id === 'p-cvendor') { setTimeout(injectReviewsIntoVendorPage, 30); }
     if(id === 'p-csuccess') { setTimeout(injectReviewPromptIntoSuccess, 30); }
     if(id === 'p-chistory') { setTimeout(injectReviewBadgesIntoHistory, 60); }
-    if(id === 'p-adash') { updateAdminExtras(); }
+    // syncFromFB() (not just updateAdminExtras()) — postsCurrentlyNeeded()
+    // only starts returning true once p-adash is actually the visible page,
+    // which goPage() has just made true one line above; without fetching
+    // here too, the Live Posts stat would show whatever was last fetched
+    // (possibly stale, possibly nothing at all) for up to 8s until the
+    // next interval tick caught up.
+    if(id === 'p-adash') { syncFromFB({forcePosts:true}); }
   };
 
   // Hook into existing cart updates so the feed cart bar stays in sync
@@ -11802,9 +12239,9 @@ window.LFN = (function(){
   setInterval(syncFromFB, 8000);
 
   return {
-    openFeed, openComposer, togglePick, publishPost,
+    openFeed, openComposer, togglePick, publishPost, cancelComposer,
     handlePhoto, clearPhoto, deletePost,
-    openCustomerComposer, handleCustomerPhoto, clearCustomerPhoto, publishCustomerPost,
+    openCustomerComposer, handleCustomerPhoto, clearCustomerPhoto, publishCustomerPost, cancelCustomerCompose,
     addFromFeed, openReviewModal, setStars, submitReview,
     syncFromFB, ratingFor,
   };
