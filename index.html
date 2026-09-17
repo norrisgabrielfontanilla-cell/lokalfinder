@@ -3253,6 +3253,12 @@ select option { color: var(--t1); background: var(--w); }
       </div>
       <div id="purge-note" style="font-size:11px;color:var(--t3);margin-top:8px"></div>
     </div>
+    <!-- v-auditlog: fetched on demand by renderAdminActivityLog(), same as
+         the vendor-application queue above it in this file — not kept live,
+         since it would otherwise be re-fetched by every 3s sync tick for a
+         list that changes far less often than that. -->
+    <div class="sec"><span class="sec-t">📋 Recent Activity</span></div>
+    <div id="a-activity-log" style="margin:0 16px 4px"></div>
     <div style="padding-top:12px">
       <!-- v53: entire body is rendered by renderAdminRevenue(). The old
            static cells (Total Collected / GCash / Cash fees / Avg) were all
@@ -4143,7 +4149,9 @@ function goPage(id){
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
   if(id==='p-aorders')  renderAdminOrders();
   if(id==='p-avendors') { renderAdminVendors(); renderAdminApps(); }
-  if(id==='p-arevenue') renderAdminRevenue();
+  // v-auditlog: on demand here only, same reasoning as renderAdminApps()
+  // above — not added to refreshVisible(), which runs on every 3s sync tick.
+  if(id==='p-arevenue') { renderAdminRevenue(); renderAdminActivityLog(); }
 }
 function goBack(){
   pageHistory.pop();
@@ -5015,24 +5023,34 @@ function shareVendor(){
 // explains itself if the store has closed or any item is no longer available.
 // Without this, marking an item sold out did nothing to a cart that already
 // held it — the vendor still received the order.
-function validateCartNow(){
+// v-gcashfail: true after validateCartNow() blocks the cart for a reason
+// that will NOT recover by retrying (vendor gone/archived/closed) — as
+// opposed to a sold-out item, which is recoverable in place with the same
+// vendor. confirmGcash() checks this to decide whether a toast is enough or
+// whether it needs the fuller "order wasn't placed" sheet instead (see
+// there for why). Reset at the top of every call.
+let _lastCartBlockedHard = false;
+function validateCartNow(quiet){
+  _lastCartBlockedHard = false;
   const vid = Object.keys(cart)[0];
   if(!vid) return false;
   const v = VENDORS[vid];
-  if(!v){ showToast('⚠️ That store is no longer available'); cart={}; updateCartBar(); goCust(); return false; }
+  if(!v){ _lastCartBlockedHard=true; if(!quiet) showToast('⚠️ That store is no longer available'); cart={}; updateCartBar(); goCust(); return false; }
   // v-archive: openVendor() already refuses entry to an archived/not-yet-live
   // store, but a cart filled BEFORE the admin archived it survives untouched
   // — nothing until now re-checked liveness at the moment of paying, only
   // hours and item availability. Same gate, same fallback as the !v branch
   // above: an archived store is gone as far as this cart is concerned.
   if(!isVendorLive(v)){
-    showToast(lfUnavailableMsg(v));
+    _lastCartBlockedHard = true;
+    if(!quiet) showToast(lfUnavailableMsg(v));
     cart={}; updateCartBar(); goCust(); return false;
   }
 
   const st = storeStatus(v);
   if(!st.open){
-    showToast('⏰ ' + v.name + ' just closed · ' + (st.detail||'try again later'));
+    _lastCartBlockedHard = true;
+    if(!quiet) showToast('⏰ ' + v.name + ' just closed · ' + (st.detail||'try again later'));
     return false;
   }
 
@@ -5375,7 +5393,23 @@ function confirmGcash(){
   // were mid-payment" case; the new isVendorLive() gate in validateCartNow()
   // makes it also the exact archived-vendor checkout bypass the previous
   // commit believed it had closed — it only reached the cash path.
-  if(!validateCartNow()) return;
+  //
+  // v-gcashfail: called quiet — a 2.6s nowrap toast that sends them home
+  // isn't enough here. By the time a customer reaches this screen they may
+  // already have sent real GCash money outside the app; if the store is now
+  // gone/archived/closed (not just this one item sold out — that's still
+  // recoverable with the same vendor, so it keeps its normal toast), that
+  // needs the same full-screen treatment as a failed write, not a pill that
+  // vanishes in under 3 seconds.
+  if(!validateCartNow(true)){
+    if(_lastCartBlockedHard){
+      lfShowOrderError(
+        "This store can't take your order right now. If you already sent GCash payment, keep your reference number — you'll need to sort this out with them directly. LokalFinder never received or held that payment.",
+        { keepMsg:'Your cart has been cleared — this store is no longer available to order from.', back:'p-chome', backLabel:'Back to home' }
+      );
+    }
+    return;
+  }
   const ref=document.getElementById('gc-ref').value.trim();
   if(!ref){showToast('⚠️ Enter your GCash reference number');return;}
   const name=document.getElementById('cust-name').value.trim();
@@ -7109,14 +7143,51 @@ async function customerCancelOrder(){
 }
 
 // ── FEATURED / BEST SELLER ──────────────────────────
-function toggleFeatured(vid, on){
-  // Turn off featured for all others first
-  Object.values(VENDORS).forEach(v=>v.featured=false);
-  VENDORS[vid].featured = on;
-  pushState();
+// v-scopedwrite: was Object.values(VENDORS).forEach(v=>v.featured=false) then a
+// full pushState() PUT of the whole /vendors collection — the same collateral-
+// damage class fixed for toggleVendorArchived(): a stale admin device's own
+// snapshot of some OTHER vendor's unrelated fields (contact, hours, menu
+// photo flag — anything in the anti-flicker signature) would get written
+// right back over the live DB just from marking a store as Best Seller.
+// Scoped fbPatch() per vendor removes that blast radius. "Only one vendor
+// featured at a time" is a cross-vendor invariant, though, and a first
+// version of this fix that cleared featured on scoped patches using only
+// THIS device's local VENDORS snapshot could under-clear: an admin device
+// that doesn't yet locally know some other vendor was just featured (by
+// another device, moments ago) would fail to unfeature it, leaving two
+// vendors simultaneously featured — proven live, not assumed, by a two-
+// admin-device test. The old unscoped pushState() version didn't actually
+// enforce this invariant correctly either (it had the identical local-
+// knowledge blind spot), it just tended to LOOK right because overwriting
+// the whole collection happened to also stomp the other vendor's true state
+// as a side effect — accidental, not a guarantee. Fetching the currently-
+// featured vendors fresh from the DB right before patching (instead of
+// trusting local memory) makes the invariant actually hold regardless of
+// this device's own staleness.
+async function toggleFeatured(vid, on){
+  const v = VENDORS[vid]; if(!v) return;
+  v.featured = on;
+  lfLogAdminAction(on ? 'vendor_featured' : 'vendor_unfeatured', v.name);
   buildVendorCards(true);
   buildFeaturedBanner();
-  showToast(on ? '⭐ '+VENDORS[vid].name+' marked as Best Seller!' : VENDORS[vid].name+' removed from Best Seller');
+  showToast(on ? '⭐ '+v.name+' marked as Best Seller!' : v.name+' removed from Best Seller');
+  try{
+    const fresh = await fbGet(ROOM_KEY+'/vendors') || {};
+    const staleFeatured = Object.keys(fresh).filter(id=>id!==vid && fresh[id] && fresh[id].featured);
+    await lfTrackedWrite(()=>Promise.all([
+      ...staleFeatured.map(id=>fbPatch(ROOM_KEY+'/vendors/'+id, {featured:false})),
+      fbPatch(ROOM_KEY+'/vendors/'+vid, {featured:on})
+    ]));
+    // Reflect the now-authoritative clear list locally too, in case any of
+    // those vendors were rendered as featured from this device's own memory.
+    if(staleFeatured.some(id=>VENDORS[id] && VENDORS[id].featured)){
+      staleFeatured.forEach(id=>{ if(VENDORS[id]) VENDORS[id].featured=false; });
+      buildVendorCards(true); buildFeaturedBanner();
+    }
+  }catch(e){
+    console.error('featured sync failed:', e);
+    showToast('⚠️ Saved locally — sync failed, check your connection');
+  }
 }
 
 function openEditVendorModal(vid){
@@ -9177,6 +9248,7 @@ async function _approveApplication(id){
     return;
   }
   lfTrack('vendor_approved', { vendorId: vid, category: a.category, outside: !!a.outside });
+  lfLogAdminAction('vendor_approved', a.name+' ('+M.label+')');
   rebuildVendorSelect();
   renderAdminApps(); renderAdminVendors();
   buildVendorCards(true); buildTodaysPicks(true); updateMktCounts(); updateAdminStats();
@@ -9202,6 +9274,7 @@ async function _rejectApplication(id, a){
   }catch(e){
     showToast('⚠️ Could not save — check your connection'); return;
   }
+  lfLogAdminAction('vendor_rejected', a.name+(reason?': '+reason:''));
   renderAdminApps();
   showToast('Application rejected');
 }
@@ -9217,6 +9290,7 @@ async function resetVendorPin(vid){
   const pin = (prompt('New PIN for "'+v.name+'" (4–10 digits).\n\nGive it to them directly — it is not stored in readable form and cannot be looked up later.','') || '').trim();
   if(!pin) return;
   if(!/^\d{4,10}$/.test(pin)){ showToast('⚠️ PIN must be 4–10 digits'); return; }
+  lfLogAdminAction('vendor_pin_reset', v.name);
   try{
     await setVendorPin(vid, pin);
     await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]);
@@ -9270,10 +9344,16 @@ function renderAdminVendors(){
 // v50: admin Pause/Reactivate. Flips v.suspended — NOT v.active — because
 // v.active is owned by applySchedule() and gets recomputed from the vendor's
 // opening hours every 60s. Writing v.active here is what made the pause revert.
-function toggleVendorActive(vid){
+// v-scopedwrite: same fix shape as toggleVendorArchived()/toggleFeatured() —
+// this only ever touches its own vendor's fields, so a scoped fbPatch() is a
+// strict improvement over the old full-collection pushState() with no
+// tradeoff (unlike toggleFeatured(), there's no cross-vendor invariant to
+// worry about losing precision on).
+async function toggleVendorActive(vid){
   const v = VENDORS[vid]; if(!v) return;
   const nowSuspended = !v.suspended;
   v.suspended = nowSuspended;
+  lfLogAdminAction(nowSuspended ? 'vendor_paused' : 'vendor_reactivated', v.name);
   if(nowSuspended){
     v.active = false;                 // reflect immediately, don't wait for the tick
   } else {
@@ -9289,7 +9369,14 @@ function toggleVendorActive(vid){
     }
   }
   showToast(nowSuspended ? '🔴 '+v.name+' paused' : '✅ '+v.name+' reactivated');
-  pushState();
+  try{
+    await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/vendors/'+vid, {
+      suspended: v.suspended, active: v.active, manualOverride: v.manualOverride, manualUntil: v.manualUntil
+    }));
+  }catch(e){
+    console.error('vendor active-state sync failed:', e);
+    showToast('⚠️ Saved locally — sync failed, check your connection');
+  }
   renderAdminVendors();
   updateAdminStats();
   buildVendorCards();
@@ -9308,6 +9395,23 @@ function toggleVendorActive(vid){
 //
 // Deliberately NOT pushState(): that PUTs this admin device's entire local
 // VENDORS object, and a vendor's own device can be mid-session with a local
+// v-auditlog: no record exists today of which admin action happened when —
+// archive, pause, feature, delete, PIN reset, approve/reject all leave no
+// trace once the toast fades. Not per-admin attribution: there is only one
+// shared admin login (see adminAuthNode() above), so "who" beyond "the
+// admin account" would be fiction — this answers "what happened and when",
+// which is the part that was missing entirely. Best-effort and fire-and-
+// forget on purpose: a logging failure must never surface as if the actual
+// action failed, so callers don't await this and a rejected write is
+// swallowed here, not at the call site. Viewed on the Insights page
+// (renderAdminActivityLog()), fetched on demand there rather than kept live
+// — same reasoning as the vendor-application queue just above: it is read
+// far less often than it would be re-fetched by the 3s sync tick.
+function lfLogAdminAction(action, detail){
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  fbSet(ROOM_KEY+'/adminLog/'+id, { action, detail: String(detail||'').slice(0,300), at: Date.now() }).catch(()=>{});
+}
+
 // copy that predates this change — their next ordinary save (a menu edit,
 // saveVendorContact(), attemptGoLive(), all of which call pushState() too)
 // would PUT their stale copy right back over this one, silently erasing the
@@ -9334,6 +9438,7 @@ async function toggleVendorArchived(vid){
   const v = VENDORS[vid]; if(!v) return;
   const nowArchived = !v.archived;
   v.archived = nowArchived;
+  lfLogAdminAction(nowArchived ? 'vendor_archived' : 'vendor_unarchived', v.name);
   showToast(nowArchived ? '📦 '+v.name+' archived — hidden from customers' : '✅ '+v.name+' unarchived — visible to customers again');
   try{
     await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/vendors/'+vid, {archived: nowArchived}));
@@ -9365,6 +9470,7 @@ async function deleteVendor(vid){
     msg = '⚠️ "'+v.name+'" still has '+activeOrders.length+' active order'+(activeOrders.length>1?'s':'')+'.\n\nDelete anyway? Past orders stay in records, but the store, menu and PIN will be removed for everyone. This cannot be undone.';
   }
   if(!confirm(msg)) return;
+  lfLogAdminAction('vendor_deleted', v.name);
 
   // Mark deleted in-memory immediately — applyData checks this before merging
   _locallyDeleted.add(vid);
@@ -9712,6 +9818,38 @@ function renderAdminRevenue(){
     + `<div class="sec"><span class="sec-t">🏪 By store${active.length?' · '+active.length:''}</span></div>`
     + (storeCards || `<div style="margin:0 16px 8px;font-size:12px;color:var(--t3);padding:10px 13px;background:var(--w);border:.5px solid var(--bd);border-radius:var(--rs)">No store had orders in this period.</div>`)
     + attentionBlock + gaps;
+}
+
+const LF_ADMIN_ACTION_LABELS = {
+  vendor_archived: '📦 Archived', vendor_unarchived: '✅ Unarchived',
+  vendor_paused: '⏸ Paused', vendor_reactivated: '✅ Reactivated',
+  vendor_featured: '⭐ Featured', vendor_unfeatured: 'Unfeatured',
+  vendor_deleted: '🗑️ Deleted', vendor_pin_reset: '🔑 PIN reset',
+  vendor_approved: '✅ Application approved', vendor_rejected: '✕ Application rejected'
+};
+// v-auditlog: fetched fresh each time the Insights page opens (see
+// goPage()), not kept live — see the note above lfLogAdminAction().
+async function renderAdminActivityLog(){
+  const host = el('a-activity-log');
+  if(!host) return;
+  let rows;
+  try{
+    const raw = await fbGet(ROOM_KEY+'/adminLog') || {};
+    rows = Object.values(raw).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,20);
+  }catch(e){
+    host.innerHTML = `<div style="font-size:12px;color:var(--t3);padding:10px 13px">Could not load — check your connection.</div>`;
+    return;
+  }
+  if(!rows.length){
+    host.innerHTML = `<div style="font-size:12px;color:var(--t3);padding:10px 13px;background:var(--w);border:.5px solid var(--bd);border-radius:var(--rs)">Nothing recorded yet — actions taken from now on show up here.</div>`;
+    return;
+  }
+  host.innerHTML = `<div style="background:var(--w);border:.5px solid var(--bd);border-radius:var(--rs);overflow:hidden">`
+    + rows.map(r=>`<div style="padding:10px 13px;border-bottom:.5px solid var(--bd);display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+        <div style="font-size:12px;color:var(--t1)"><b>${esc(LF_ADMIN_ACTION_LABELS[r.action]||r.action||'Action')}</b>${r.detail?' — '+esc(r.detail):''}</div>
+        <div style="font-size:10.5px;color:var(--t3);white-space:nowrap">${esc(timeSince(r.at))}</div>
+      </div>`).join('')
+    + `</div>`;
 }
 
 function openAddVendorModal(){
