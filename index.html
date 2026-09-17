@@ -3960,6 +3960,15 @@ function orderKind(o){ const k = o && o.kind;     return (k && MARKETPLACES[k]) 
 // picker) — an archived vendor must still be able to sign in to their own
 // dashboard, same reasoning as a draft vendor pre-Go-Live.
 function isVendorLive(v){ return !!v && v.live !== false && !v.archived; }
+// Paired with isVendorLive(): the one customer-facing explanation of WHY a
+// store/provider isn't live, shared by every entry point instead of each
+// hand-writing the same archived/not-yet-live ternary (openVendor(),
+// validateCartNow(), submitBooking() all had their own copy — a wording
+// change made in one was easy to miss in the others).
+function lfUnavailableMsg(v, noun){
+  noun = noun || 'store';
+  return '⚠️ That '+noun+(v && v.archived ? ' is no longer available' : ' is not available yet');
+}
 function mkt(idOrVendor){
   if(idOrVendor && typeof idOrVendor === 'object') return MARKETPLACES[vendorCat(idOrVendor)];
   return MARKETPLACES[idOrVendor] || MARKETPLACES.food;
@@ -4843,8 +4852,7 @@ function openVendor(vid){
   // directly. "Closed" has its own browsable state (v49); "not live yet"
   // does not exist for a customer at all.
   if(!isVendorLive(VENDORS[vid])){
-    const _v0 = VENDORS[vid];
-    showToast(_v0 && _v0.archived ? '⚠️ That store is no longer available' : '⚠️ That store is not available yet');
+    showToast(lfUnavailableMsg(VENDORS[vid]));
     return;
   }
   lfTrack('vendor_opened', { vendorId: vid, category: vendorCat(VENDORS[vid]) });
@@ -5018,7 +5026,7 @@ function validateCartNow(){
   // hours and item availability. Same gate, same fallback as the !v branch
   // above: an archived store is gone as far as this cart is concerned.
   if(!isVendorLive(v)){
-    showToast(v.archived ? '⚠️ That store is no longer available' : '⚠️ That store is not available yet');
+    showToast(lfUnavailableMsg(v));
     cart={}; updateCartBar(); goCust(); return false;
   }
 
@@ -5358,6 +5366,16 @@ function placeOrder(){
 }
 
 function confirmGcash(){
+  // v-archive followup: this screen can sit open for minutes while the
+  // customer leaves the app to send GCash payment — placeOrder() only
+  // validated the cart once, on the way IN to this screen, and this
+  // function used to call finalizeOrder() straight from here with no
+  // re-check of ANY kind, not hours, not sold-out, not liveness. That was
+  // already a pre-existing gap for the ordinary "vendor closed while you
+  // were mid-payment" case; the new isVendorLive() gate in validateCartNow()
+  // makes it also the exact archived-vendor checkout bypass the previous
+  // commit believed it had closed — it only reached the cash path.
+  if(!validateCartNow()) return;
   const ref=document.getElementById('gc-ref').value.trim();
   if(!ref){showToast('⚠️ Enter your GCash reference number');return;}
   const name=document.getElementById('cust-name').value.trim();
@@ -5682,7 +5700,7 @@ async function submitBooking(){
   // liveness, only hours/slot availability, so it could still be submitted
   // and land in the archived provider's dashboard as a live job.
   if(!isVendorLive(v)){
-    showToast(v.archived ? '⚠️ That provider is no longer available' : '⚠️ That provider is not available yet');
+    showToast(lfUnavailableMsg(v, 'provider'));
     goCust(); return;
   }
 
@@ -8627,6 +8645,24 @@ function lfNewSalt(){
 // Throttle guessing. Client-side only, so it is a speed bump, not a lock.
 let _adminFails = 0;
 
+// v-adminfast followup: true once the admin-only per-vendor order fan-out
+// has completed at least once this session. Showing the dashboard
+// immediately (see adminLogin()/adminCompleteSetup()) means the order-
+// derived stat tiles can briefly paint from whatever `orders` this device
+// already had before that fan-out lands — on a slow connection, "0 pending"
+// looks identical to "confirmed zero" but can just mean "not fetched yet",
+// exactly when an admin is checking for new work. updateAdminStats() shows
+// a loading placeholder on those tiles instead of a number until this flips.
+let _adminStatsSynced = false;
+// Bumped on every adminLogin()/adminCompleteSetup()/adminSignOut(). A quick
+// sign-out-then-back-in starts a SECOND background fan-out while the first
+// one is still in flight; without this, the first one's .then() can resolve
+// after the second login has begun and wrongly mark the new session as
+// synced from the old one's (possibly already-stale) data. Each fan-out
+// captures its own generation and only applies its result if nothing newer
+// has superseded it.
+let _adminLoginGen = 0;
+
 async function adminLogin(){
   const email=el('a-email').value.trim().toLowerCase();
   const pass=el('a-pass').value;
@@ -8699,7 +8735,16 @@ async function adminLogin(){
   renderAdminOrders();
   loadAdminSettingsForm();
   showToast('Welcome back! 🏢');
-  syncFromCloud();                  // pulls the full order set in the background
+  // Pulls the full order set in the background. Chained here rather than
+  // relying solely on refreshVisible() (called from inside applyData()),
+  // because the anti-flicker signature guard can skip that call entirely if
+  // this device's cached orders already happen to match — which would leave
+  // _adminStatsSynced stuck false and the tiles stuck on "…" forever.
+  const _myGen = ++_adminLoginGen;
+  syncFromCloud().then(()=>{
+    if(_myGen !== _adminLoginGen) return;   // superseded by a sign-out or another login
+    _adminStatsSynced=true; updateAdminStats(); renderAdminOrders();
+  });
 }
 
 // v55: signing out must also drop admin mode, otherwise the device keeps
@@ -8747,6 +8792,8 @@ async function adminPurgeOldOrders(){
 function adminSignOut(){
   _lfAdminMode = false;
   _adminFails = 0;
+  _adminStatsSynced = false;   // next login must show the loading state again
+  _adminLoginGen++;            // invalidate any in-flight fan-out from this session
   goCust();
   showToast('Signed out of admin');
 }
@@ -8796,12 +8843,16 @@ async function adminCompleteSetup(){
   _adminFails = 0;
   _lfAdminMode = true;
   // v-adminfast: same fix as adminLogin() — don't block the dashboard on the
-  // admin-only per-vendor order fan-out; show it now, let syncFromCloud()
-  // fill it in via refreshVisible() once the fan-out lands.
+  // admin-only per-vendor order fan-out; show it now, let the chained
+  // syncFromCloud() below fill in the real numbers once the fan-out lands.
   goPage('p-adash');
   updateAdminStats(); renderAdminVendors(); renderAdminOrders(); loadAdminSettingsForm();
   showToast('✅ Admin password set — it now works on every device');
-  syncFromCloud();
+  const _myGen = ++_adminLoginGen;
+  syncFromCloud().then(()=>{
+    if(_myGen !== _adminLoginGen) return;   // superseded by a sign-out or another login
+    _adminStatsSynced=true; updateAdminStats(); renderAdminOrders();
+  });
 }
 
 // v55: writes the new salted hash to the DATABASE, not localStorage, so the
@@ -8894,15 +8945,22 @@ function updateAdminStats(){
   const total=orders.length;
   const revenue=total*SERVICE_FEE;
   const pending=orders.filter(o=>['new','accepted','preparing','ready'].includes(o.status)).length;
-  el('a-total-orders').textContent=total;
-  el('a-total-revenue').textContent='₱'+revenue;
-  el('a-pending').textContent=pending;
+  // v-adminfast followup: while the post-login order fan-out is still in
+  // flight, `orders` can be missing real pending work this device just
+  // hasn't fetched yet. A numeral or a hidden badge both read as a settled
+  // fact ("confirmed zero") — exactly the wrong thing to show an admin
+  // scanning for new orders. "…" and leaving the badge alone (rather than
+  // asserting it hidden) don't claim an answer this device doesn't have yet.
+  const syncing = _lfAdminMode && !_adminStatsSynced;
+  el('a-total-orders').textContent = syncing ? '…' : total;
+  el('a-total-revenue').textContent = syncing ? '…' : '₱'+revenue;
+  el('a-pending').textContent = syncing ? '…' : pending;
   // v-archive: same isVendorLive() addition as applyHeroStats() — this tile
   // feeds that same customer-facing count when the admin hasn't overridden it.
   const activeVendorCount=Object.values(VENDORS).filter(v=>v.active && isVendorLive(v)).length;
   el('a-vendors-active').textContent=activeVendorCount;
   const badge=el('a-badge');
-  if(badge){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
+  if(badge && !syncing){badge.style.display=pending>0?'flex':'none';badge.textContent=pending;}
   // Auto-update vendor count on front page if admin hasn't overridden it
   if(!heroStats.vendorCount && el('hero-vendor-count')) el('hero-vendor-count').textContent=activeVendorCount;
   applyHeroStats();
