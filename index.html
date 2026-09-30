@@ -9192,8 +9192,8 @@ async function renderAdminApps(){
         ${a.outside ? `<div style="font-size:11.5px;color:var(--t2);margin-top:4px;line-height:1.45">📍 <b>Outside GRASS</b> · ${esc(a.address||'—')}</div>` : ''}
         <div style="font-size:10.5px;color:var(--t3);margin-top:4px">Applied ${esc(lfAppWhen(a.createdAt))} · sets their own PIN</div>
         <div class="av-acts" style="margin-top:10px">
-          <button class="oact p" onclick="approveApplication('${escJs(a.id)}')">✓ Approve</button>
-          <button class="oact d" onclick="rejectApplication('${escJs(a.id)}')">✕ Reject</button>
+          <button class="oact p" onclick="approveApplication('${escJs(a.id)}', this)">✓ Approve</button>
+          <button class="oact d" onclick="rejectApplication('${escJs(a.id)}', this)">✕ Reject</button>
         </div>
       </div>`;
     }).join('');
@@ -9217,10 +9217,25 @@ function lfUpdateAppBadge(n){
    admin's catalog may be large and a full overwrite is exactly the risk this
    whole feature was designed around. */
 let _apDeciding = false;     // one decision at a time
-async function approveApplication(id){
+async function approveApplication(id, btn){
   if(_apDeciding) return;
   _apDeciding = true;
-  try{ await _approveApplication(id); } finally { _apDeciding = false; }
+  // v-quickfix: the button used to give NO feedback while the writes below
+  // were in flight — on a slow connection that's up to several seconds of
+  // looking completely frozen, which is exactly why "I can't approve
+  // immediately because of the wifi" felt like the button was broken rather
+  // than just slow. isVendorLive() etc. don't need this: this fires once per
+  // tap, not on a poll.
+  const prevLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Approving…'; }
+  try{ await _approveApplication(id); }
+  finally {
+    _apDeciding = false;
+    // A no-op on success (renderAdminApps() already re-rendered this button
+    // out of existence) — this only visibly matters for a genuinely FAILED
+    // attempt, so the admin can see it's usable again and retry right away.
+    if(btn){ btn.disabled = false; btn.textContent = prevLabel; }
+  }
 }
 async function _approveApplication(id){
   // Fall back to fetching the row: relying on _lfApps being populated by a
@@ -9256,8 +9271,17 @@ async function _approveApplication(id){
     // The PIN the APPLICANT chose, carried across as a hash. The admin never
     // sees it and cannot recover it — only reset it.
     const cred = { salt:a.salt, hash:a.hash };
-    await fbSet(ROOM_KEY+'/pinHashes/'+vid, cred);
-    await fbSet(ROOM_KEY+'/vendors/'+vid, rec);
+    // v-quickfix: these two writes touch different nodes and neither depends
+    // on the other's result, so running them together (instead of one after
+    // the other) roughly halves the worst-case wait — two sequential 8s
+    // fbSet timeouts becomes one — before a slow-connection failure even
+    // shows up. The delete below still can't join this Promise.all: it must
+    // only happen once BOTH writes are confirmed, or a failure here could
+    // delete the application while leaving no vendor to show for it.
+    await Promise.all([
+      fbSet(ROOM_KEY+'/pinHashes/'+vid, cred),
+      fbSet(ROOM_KEY+'/vendors/'+vid, rec),
+    ]);
     // Local state only after both writes land, so a failure cannot leave a
     // hash for a vendor that does not exist waiting for the next pushState().
     VENDOR_PIN_HASHES[vid] = cred;
@@ -9277,12 +9301,19 @@ async function _approveApplication(id){
   showToast('✅ '+a.name+' approved — they sign in with their own PIN to finish setup');
 }
 
-async function rejectApplication(id){
+async function rejectApplication(id, btn){
   if(_apDeciding) return;
   const a = _lfApps[id] || await fbGet(lfAppNode(id)).catch(()=>null);
   if(!a) return;
   _apDeciding = true;
-  try{ await _rejectApplication(id, a); } finally { _apDeciding = false; }
+  // Same feedback gap as approveApplication() — see its comment.
+  const prevLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Rejecting…'; }
+  try{ await _rejectApplication(id, a); }
+  finally {
+    _apDeciding = false;
+    if(btn){ btn.disabled = false; btn.textContent = prevLabel; }
+  }
 }
 async function _rejectApplication(id, a){
   if(!confirm('Reject "'+a.name+'"?\n\nThey will see this on the vendor login screen and can apply again.')) return;
