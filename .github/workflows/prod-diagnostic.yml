@@ -1,6 +1,10 @@
-name: Production read-only diagnostic
+name: Production restore + read-only check
 
-# Throwaway: runs only on this branch, only reads. Never merge to main.
+# Throwaway: runs only on this branch. Never merge to main.
+#  1. prod-restore.js re-creates the stores erased on 2026-10-07. It only ever
+#     ADDS a store that is missing and was not deleted on purpose, and only
+#     adds a menu where none exists. It overwrites nothing.
+#  2. prod-diagnostic.js then reads the result back (read-only).
 on:
   push:
     branches: [claude/prod-diagnostic]
@@ -8,8 +12,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: prod-restore
+  cancel-in-progress: false
+
 jobs:
-  diagnose:
+  restore:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,6 +25,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Restore erased stores (adds missing stores only)
+        working-directory: tests
+        run: node prod-restore.js
       - name: Install headless browser
         working-directory: tests
         run: npm install && npx playwright install --with-deps chromium
