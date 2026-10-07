@@ -1,9 +1,11 @@
 name: Production restore + read-only check
 
 # Throwaway: runs only on this branch. Never merge to main.
-#  1. prod-restore.js re-creates the stores erased on 2026-10-07. It only ever
-#     ADDS a store that is missing and was not deleted on purpose, and only
-#     adds a menu where none exists. It overwrites nothing.
+#  1. prod-golive.js makes the 7 stores re-created on 2026-10-07 visible again
+#     (they came back as hidden drafts). It touches only stores that are still
+#     untouched drafts, sets live/open state, fills display fields only where
+#     missing and appends missing Feed-post items. It removes nothing.
+#     (prod-restore.js, the earlier step, found all 7 already re-created.)
 #  2. prod-diagnostic.js then reads the result back (read-only).
 on:
   push:
@@ -25,9 +27,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Restore erased stores (adds missing stores only)
+      - name: Make the restored stores visible (untouched drafts only)
         working-directory: tests
-        run: node prod-restore.js
+        run: node prod-golive.js
       - name: Install headless browser
         working-directory: tests
         run: npm install && npx playwright install --with-deps chromium
