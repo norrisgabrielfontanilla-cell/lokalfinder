@@ -6208,6 +6208,33 @@ function lfRevalidateVendorSession(){
   }
 }
 
+/* v66 — PUT A LOST LOGO BACK. On 2026-10-07 every store record was erased
+   (see pushState()) and the stores came back from order history, without
+   their photos. A signed-in vendor's phone still holds their logo in the
+   session card: lfSaveVendorSession() keeps the old logo whenever the record
+   has none. Once the catalog has loaded, a store with NO logo gets it back
+   from its own owner's phone. Only an empty field is filled — the app can
+   replace a logo but never remove one, so an empty logo is always a loss,
+   never a choice. One per-store save; a few tries at most. */
+let _lfLogoHealDone = false, _lfLogoHealTries = 0;
+function lfHealLogoFromSession(){
+  if(_lfLogoHealDone || _lfLogoHealTries >= 3 || !_catHandedOut) return;
+  const s = lfReadVendorSession();
+  if(!s || !s.vid || s.vid !== activeVendorId) return;
+  const v = VENDORS[s.vid];
+  if(!v) return;                         // store not back yet — try on a later sync
+  const logo = s.card && s.card.logo;
+  if(v.logo || typeof logo !== 'string' || !/^data:image\//.test(logo)){ _lfLogoHealDone = true; return; }
+  _lfLogoHealTries++;
+  v.logo = logo;
+  try{ applyVendorLogo(logo); }catch(e){}
+  pushState(s.vid).then(ok=>{
+    if(ok){ _lfLogoHealDone = true; return; }
+    // Not saved (catalog still loading, or offline): undo, retry next sync.
+    if(VENDORS[s.vid] && VENDORS[s.vid].logo === logo) delete VENDORS[s.vid].logo;
+  });
+}
+
 /* One place that tears a session down, so the UI can never be left showing a
    dashboard for a vendor we just signed out. */
 function lfEndVendorSession(msg){
@@ -11062,6 +11089,7 @@ async function syncFromCloud(){
     lastSyncTime = Date.now();
     // v56: the only place a live PIN rotation can reach a signed-in device.
     try{ lfRevalidateVendorSession(); }catch(e){}
+    try{ lfHealLogoFromSession(); }catch(e){}   // v66
     try{ await lfMigrateLegacyVendorSession(); }catch(e){}
   }catch(e){
     if(Date.now() - (window._lastSyncErrLog||0) > 30000){
@@ -13308,7 +13336,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 74; // ← bump this each release (and version.json)
+  const APP_VERSION = 75; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
