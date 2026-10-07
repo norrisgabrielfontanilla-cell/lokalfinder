@@ -367,7 +367,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 484 checks across twelve files,
+**Testing:** `tests/` holds a Playwright suite — 489 checks across twelve files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -551,9 +551,22 @@ Firebase RTDB emulator (v4.11.2):
 Publish it only after v65 is live, because every v73 save is a whole-node
 write and would fail. Side effect: the app can no longer seed an empty
 database, which is a room-root write. `firebase-rules.json`, the stricter
-target, now has the same per-store write rules. Restoring the erased stores
-(rebuilt from order and Feed history) needs the founder's sign-off; check
-`/vendors` before assuming it has happened.
+target, now has the same per-store write rules.
+
+**Recovery (2026-10-07).** Seven erased stores were re-created at 12:40 UTC
+by something outside this repo and its sessions, which was not identified.
+They came back as hidden drafts (`live:false`) with order-history menus. A
+one-off script then made them visible (open / paused / closed) and appended
+the items they had advertised in Feed posts. Store photos, covers and product
+photos had no surviving copy in the database. Four more stores (known only by
+their Feed posts) and the stores named only in the admin log were not restored.
+
+**Logo self-heal (v66).** A signed-in vendor's session card still holds their
+logo. `lfHealLogoFromSession()` runs after each sync, once the catalog is
+handed out, and puts that logo back into their store with `pushState(vid)`.
+It acts only when the store's logo is empty; the app can replace a logo but
+never remove one, so an empty logo is always a loss. It gives up after 3
+tries. Covers and product photos are not in the card; owners re-upload them.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.

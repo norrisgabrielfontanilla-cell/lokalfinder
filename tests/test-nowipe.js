@@ -162,6 +162,49 @@ async function open(browser, port, log, route){
   check('...and only that store — not the demo stores this phone holds', !db().vendors.pares && !db().vendors.sparkle);
   await E.ctx.close();
 
+  // ── 7. A logo lost in the wipe comes back from its owner's phone (v66) ──
+  // The stores came back from order history without photos; a signed-in
+  // vendor's session card still holds their logo.
+  const CARD = 'data:image/jpeg;base64,TE9HT0ZST01QSE9ORQ==';
+  const sess = (vid, logo) => ({ v: 1, vid, salt: '', hash: '', exp: Date.now() + 86400000,
+    card: { name: vid, sub: '', emoji: '🍲', logo, category: 'food' } });
+  const seedLogo = () => {
+    H.resetDB();
+    H.DB()[RK] = { vendors: {
+        vnologo: { id: 'vnologo', name: 'Lost Logo Store', emoji: '🍲', category: 'food', active: true },
+        vhaslogo: { id: 'vhaslogo', name: 'Has Logo Store', emoji: '🍲', category: 'food', active: true, logo: 'data:image/jpeg;base64,T0xETE9HTw==' },
+        other: { id: 'other', name: 'Other', emoji: '🍲', category: 'food', active: true } },
+      menu: { vnologo: [{ id: 'n1', name: 'Dish', emoji: '🍚', price: 90, avail: true }] }, rev: 1 };
+  };
+  seedLogo();
+  const L = await open(browser, port, log);
+  await L.page.evaluate(s => localStorage.setItem('lf-vsess', JSON.stringify(s)), sess('vnologo', CARD));
+  L.writes.length = 0;
+  await L.page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
+  await L.page.waitForFunction(() => typeof _catHandedOut !== 'undefined' && _catHandedOut, null, { timeout: 15000 });
+  await sleep(4500);
+  check('A store with no logo gets it back from its signed-in owner\'s phone', db().vendors.vnologo.logo === CARD, L.writes.join(' '));
+  check('...one store written, nothing else', L.writes.filter(w => /^(PUT|PATCH) \/(vendors|menu)/.test(w)).every(w => w === 'PUT /vendors/vnologo'));
+  await L.ctx.close();
+
+  seedLogo();
+  const L2 = await open(browser, port, log);
+  await L2.page.evaluate(s => localStorage.setItem('lf-vsess', JSON.stringify(s)), sess('vhaslogo', CARD));
+  L2.writes.length = 0;
+  await L2.page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
+  await L2.page.waitForFunction(() => typeof _catHandedOut !== 'undefined' && _catHandedOut, null, { timeout: 15000 });
+  await sleep(4500);
+  check('A store that has a logo keeps it — the phone\'s copy never replaces it', db().vendors.vhaslogo.logo === 'data:image/jpeg;base64,T0xETE9HTw==');
+  check('...and nothing is written', !L2.writes.some(w => /^(PUT|PATCH) \/(vendors|menu)/.test(w)), L2.writes.join(' '));
+  await L2.ctx.close();
+
+  seedLogo();
+  const L3 = await open(browser, port, log);
+  await L3.page.waitForFunction(() => _catHandedOut, null, { timeout: 15000 });
+  await sleep(4000);
+  check('A customer phone (no sign-in) writes no store at all', !L3.writes.some(w => /^(PUT|PATCH) \/(vendors|menu)/.test(w)) && !db().vendors.vnologo.logo, L3.writes.join(' '));
+  await L3.ctx.close();
+
   check('No uncaught page errors', log.errors.length === 0, log.errors.slice(0, 3).join(' | '));
   await browser.close(); srv.close();
   const failed = results.filter(r => !r.ok).length;
