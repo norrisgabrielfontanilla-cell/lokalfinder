@@ -11,6 +11,9 @@ function check(n, ok, d){ results.push({name:n, ok:!!ok, detail:d||''}); }
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil:'domcontentloaded' });
   await page.waitForFunction(() => typeof goCust==='function' && !!document.getElementById('mkt-row'), null, {timeout:15000});
   await page.waitForTimeout(1200);
+  // v65: nothing is saved until the store catalog has loaded (pushState()).
+  // On this empty stub that is the first sync after the database is seeded.
+  await page.waitForFunction(() => _catHandedOut, null, {timeout:15000});
 
   await page.evaluate(async () => {
     ['pares','sparkle'].forEach(id=>{

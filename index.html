@@ -3724,8 +3724,9 @@ const VENDORS = {
   kape:{id:'kape',name:'Kape At Ikaw',sub:'Tower 3 · Coffee · Open til 10PM',emoji:'☕',bg:'#FFF8F0',rating:'⭐ 4.7',min:'₱80',cats:['coffee','dessert'],active:true},
   adbuns:{id:'adbuns',name:'ADBUNS',sub:'Tower 1 · Silog · Open til 11PM',emoji:'🍳',bg:'#F5F0FF',rating:'⭐ 4.6',min:'₱109',cats:['rice'],active:true},
   // ── v54: CLEANING VERTICAL ──────────────────────────────────────────
-  // Seeded the same way the food vendors are: declared here, merged with
-  // whatever the cloud holds by applyData(), then written back by pushState().
+  // Seeded the same way the food vendors are: declared here and merged with
+  // whatever the cloud holds by applyData(). Since v65 a seed reaches the
+  // cloud only when someone edits that store (pushState(vid)).
   // `category` is what puts them in the Cleaning tab; everything else is the
   // ordinary vendor shape, so they flow through the existing vendor system.
   // openTime/closeTime double as the bookable window (see lfSlotsFor).
@@ -6260,14 +6261,17 @@ function lfEnterVendorPortal(vid, opts){
    An application is a row in /vendorApplications. It never enters VENDORS
    until it is approved. Two reasons, both learned the hard way:
 
-   1. pushState() is a FULL overwrite of /vendors, /menu AND /pinHashes from
-      whatever the device holds in memory. On the admin's phone that is the
-      whole catalog, so it is safe. On a stranger's phone that has not
-      finished its first sync, VENDORS is just the six hardcoded demo seeds —
-      so a signup calling pushState() would wipe every real vendor AND every
-      real PIN hash from the database. It would also pass every test, because
-      a test device has always synced by the time the test runs. So a signup
-      writes exactly ONE node and never calls pushState().
+   1. pushState() was a FULL overwrite of /vendors, /menu AND /pinHashes from
+      whatever the device held in memory. On a stranger's phone that has not
+      finished its first sync, VENDORS is just the hardcoded demo seeds — so
+      a signup calling pushState() would have wiped every real vendor AND
+      every real PIN hash from the database. It would also pass every test,
+      because a test device has always synced by the time the test runs. So
+      a signup writes exactly ONE node and never calls pushState().
+      This is exactly what happened on 2026-10-07 — not from a signup, from
+      a vendor's own phone that had loaded nothing. v65 made pushState() per-store and
+      refuse to run before the catalog has loaded, but the rule stands: a
+      public path writes its one node and nothing else.
 
    2. If a pending store lived in VENDORS it would have to be filtered out of
       buildVendorCards, buildTodaysPicks, buildHeroStrip, buildFeaturedBanner,
@@ -6617,7 +6621,7 @@ function handleCoverUpload(input){
       if(activeVendorId){
         VENDORS[activeVendorId].cover=dataUrl;
         applyVendorCoverUI(dataUrl);
-        pushState();
+        pushState(activeVendorId);
         showToast('✅ Cover photo updated!');
       }
     };
@@ -6630,7 +6634,7 @@ function removeCoverPhoto(){
   if(!activeVendorId) return;
   delete VENDORS[activeVendorId].cover;
   applyVendorCoverUI('');
-  pushState();
+  pushState(activeVendorId);
   showToast('Cover photo removed');
 }
 // The preview inside the vendor's own portal.
@@ -6664,7 +6668,7 @@ function handleLogoUpload(input){
       if(activeVendorId){
         VENDORS[activeVendorId].logo=dataUrl;
         applyVendorLogo(dataUrl);
-        pushState();
+        pushState(activeVendorId);
         showToast('✅ Logo updated!');
       }
     };
@@ -6703,7 +6707,7 @@ async function confirmClearOrderHistory(){
   if(!confirm(`Clear ${done.length} completed order${done.length>1?'s':''} from your list?`)) return;
   const prev = v.clearedBefore || 0;
   v.clearedBefore = Date.now();
-  const ok = await pushState();
+  const ok = await pushState(activeVendorId);
   if(ok === false){
     v.clearedBefore = prev;               // roll back so the list doesn't lie
     showToast('⚠️ Not saved — try again');
@@ -7031,7 +7035,7 @@ function saveVendorContact(){
     v.contact = '';
     inp.value = '';
     window._lfContactSaved = '';
-    pushState();
+    pushState(activeVendorId);
     updateVendorContactUI();
     showToast('✅ Contact number cleared');
     return;
@@ -7054,7 +7058,7 @@ function saveVendorContact(){
   }
   v.contact = p.e164;
   window._lfContactSaved = p.e164;
-  pushState();
+  pushState(activeVendorId);
   updateVendorContactUI();
   showToast('✅ Saved — customers can now Call or Text you');
 }
@@ -7076,7 +7080,7 @@ function saveStoreDesc(){
   const ta = el('v-store-desc'); if(!ta) return;
   const txt = ta.value.trim().slice(0,300);
   VENDORS[activeVendorId].desc = txt;
-  pushState();
+  pushState(activeVendorId);
   showToast(txt ? '✅ Store info saved! Customers can now see it.' : '✅ Store info cleared');
 }
 
@@ -7095,7 +7099,7 @@ function saveDeliveryFee(){
     v.deliveryMode = num === 0 ? 'free' : 'paid';
     if(el('v-delivery-fee')){ el('v-delivery-fee').disabled = false; el('v-delivery-fee').value = num; }
   }
-  pushState();
+  pushState(activeVendorId);
   // Refresh cart-page display in case customer is mid-checkout
   if(typeof renderCartPage === 'function' && document.getElementById('p-ccart') && document.getElementById('p-ccart').classList.contains('on')) renderCartPage();
   showToast('✅ Delivery fee saved!');
@@ -7287,7 +7291,7 @@ async function saveEditVendor(){
   if(comm > 0) VENDORS[vid].commission = comm; else delete VENDORS[vid].commission;
   if(pin){ await setVendorPin(vid, pin); try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); lfBumpRevs([vid]); }catch(e){} }
 
-  await pushState();
+  await pushState(vid);
   closeModal('modal-editvendor');
   renderAdminVendors();
   buildVendorCards(true);
@@ -7632,7 +7636,7 @@ function addPaymentAccount(){
   if(!accname){ showToast('⚠️ Enter account name'); return; }
   if(!VENDORS[activeVendorId].payments) VENDORS[activeVendorId].payments=[];
   VENDORS[activeVendorId].payments.push({type, number, accname, id: Date.now()});
-  pushState();
+  pushState(activeVendorId);
   closeModal('modal-addpayment');
   el('pay-number').value=''; el('pay-accname').value='';
   renderVendorPayments();
@@ -7643,7 +7647,7 @@ function removePaymentAccount(idx){
   if(!activeVendorId) return;
   if(!confirm('Remove this payment account?')) return;
   VENDORS[activeVendorId].payments.splice(idx,1);
-  pushState();
+  pushState(activeVendorId);
   renderVendorPayments();
   showToast('Payment account removed');
 }
@@ -8032,7 +8036,7 @@ function toggleStore(on){
     }
   }
   updateStoreStatusUI();
-  pushState();
+  pushState(activeVendorId);
   buildVendorCards();
   showToast(msg);
 }
@@ -8046,7 +8050,7 @@ function saveStoreHours(){
   VENDORS[activeVendorId].manualOverride=false; // schedule takes over again
   VENDORS[activeVendorId].manualUntil=0;
   applySchedule(activeVendorId);
-  pushState();
+  pushState(activeVendorId);
   showToast('✅ Hours saved: '+fmtTime(open)+' – '+fmtTime(close));
 }
 
@@ -8200,7 +8204,7 @@ function attemptGoLive(){
     return;
   }
   v.live = true;
-  pushState();
+  pushState(activeVendorId);
   lfTrack('vendor_go_live', { vendorId: v.id, category: vendorCat(v) });
   showToast('🚀 You\'re live! Customers can now find and order from '+v.name);
   renderGoLiveCard();
@@ -8572,7 +8576,7 @@ function saveEditItem(){
   showToast('✅ '+name+' updated!');
   // v48: if the write fails, put it back rather than leaving the vendor
   // believing a change saved that never left the phone.
-  pushState().then(okSave=>{
+  pushState(vid).then(okSave=>{
     if(okSave) return;
     const { item:cur }=_findItem(vid,itemId);
     if(cur) Object.assign(cur,before);
@@ -8589,7 +8593,7 @@ function deleteMenuItem(vid, itemId){
   arr.splice(idx,1);
   renderVendorMenu(vid);
   showToast('🗑 '+item.name+' removed from menu');
-  pushState().then(okSave=>{
+  pushState(vid).then(okSave=>{
     if(okSave) return;
     MENU[vid]=backup;
     renderVendorMenu(vid);
@@ -8609,7 +8613,7 @@ function toggleMenuItem(vid,itemId,chk){
   const row=document.getElementById('mi-'+item.id);
   if(row) row.style.opacity=want?'1':'0.5';
   showToast(want?'✓ Item now available':'🚫 Marked sold out — hidden from customers');
-  pushState().then(okSave=>{
+  pushState(vid).then(okSave=>{
     if(okSave) return;
     const { item:cur }=_findItem(vid,itemId);
     if(cur) cur.avail=prev;
@@ -8673,7 +8677,7 @@ function addMenuItemConfirm(){
   el('new-photo-placeholder').style.display=''; el('new-photo-text').style.display='';
   el('new-item-photo').value='';
   showToast('✅ '+name+' added to menu!');
-  pushState().then(okSave=>{
+  pushState(vidAdd).then(okSave=>{
     if(okSave) return;
     const arr=MENU[vidAdd]||[];
     const i=arr.findIndex(x=>x&&x.id===newItem.id);
@@ -9598,13 +9602,14 @@ async function deleteVendor(vid){
   // Write tombstone FIRST then vendor nodes — retry up to 10x on slow WiFi
   const _doDeleteSync = async () => {
     await fbSet(ROOM_KEY+'/deletedVendors/'+vid, {id:vid, ts:Date.now()});
+    // v65: delete exactly this store. It used to re-PUT the whole catalog
+    // from this phone's memory — the same full overwrite that erased every
+    // real store on 2026-10-07 (see pushState()).
     await Promise.all([
-      fbSet(ROOM_KEY+'/vendors', VENDORS),
-      fbSet(ROOM_KEY+'/menu', MENU),
-      fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
+      fbDelete(ROOM_KEY+'/vendors/'+vid),
+      fbDelete(ROOM_KEY+'/menu/'+vid),
+      fbDelete(ROOM_KEY+'/pinHashes/'+vid),
     ]);
-    // v64: the global /rev is no longer written (see pushState()). The
-    // tombstone needs no stamp — every phone reads /deletedVendors each sync.
     lfBumpRevs([vid]);
   };
 
@@ -10012,9 +10017,11 @@ function addVendorConfirm(){
   updateAdminStats();
   showToast('✅ '+name+' added to '+M.label+'!');
 
-  // Sync to Firebase in the background — doesn't block the screen
-  pushState().catch(()=>{
-    showToast('⚠️ '+name+' saved on screen but sync failed — check connection');
+  // Sync to Firebase in the background — doesn't block the screen.
+  // pushState() reports failure by returning false; it never rejects, so the
+  // .catch() this used to have could not fire.
+  pushState(id).then(ok=>{
+    if(!ok) showToast('⚠️ '+name+' saved on screen but sync failed — check connection');
   });
 }
 
@@ -10960,31 +10967,67 @@ async function pushOrders(oid=null){
   }catch(e){ console.error('pushOrders:', e); showToast('⚠️ Order saved locally, sync failed'); }
 }
 
-async function pushState(){
+async function pushState(vids){
   // v48: the old code paused syncing for a flat 1500ms, but fbSet allows up
   // to 8000ms and a full menu+vendors PUT carries every base64 photo — 2-15s
   // on condo LTE. The pause expired mid-flight, the 3s sync pulled stale
   // cloud data, and applyData wiped the vendor's edit. Now the pause covers
   // the whole write and is only released once the LAST in-flight write ends.
+  /* v65 — PER-STORE SAVES. This used to PUT the whole /vendors, /menu and
+     /pinHashes nodes from this phone's memory. On 2026-10-07 a phone that had
+     loaded NOTHING from the database (most likely a weak connection) saved —
+     and its memory held only the built-in demo catalog, so that is what
+     /vendors became: every real store, menu and PIN hash erased in one
+     write. Now:
+       • nothing is saved until this phone's memory holds the cloud catalog.
+         _cat alone is not enough: it is filled from the device cache before
+         any network call, while VENDORS is still the demo seeds — a save in
+         that window would put the demo ADBUNS over the real one. Only once
+         the catalog has been handed to applyData() (_catHandedOut) does
+         memory reflect it;
+       • the caller names the store it changed (pushState(vid)), and only
+         that store is written — only its record or menu, whichever differs
+         from the cloud copy — so a stale phone can at worst overwrite the
+         part of the store it edited. Other stores can differ from the cloud
+         too without anyone editing them (applySchedule() flips `active`
+         locally every minute), and writing those would push this phone's
+         possibly-old copy over newer data. With no argument, every
+         differing store is written;
+       • a store missing from this phone's memory is never deleted by
+         omission (deleteVendor() deletes explicitly);
+       • PIN hashes are never written here — every PIN change already writes
+         its own /pinHashes/{vid}, and rewriting them from memory is how a
+         stale phone would undo an admin's PIN reset. */
+  if(!_cat || !_catHandedOut){
+    // Deferred: most callers don't wait for this and show their own "saved"
+    // toast straight after the call — this one has to be left on screen.
+    setTimeout(()=>showToast('⏳ Still loading the stores — your change was not saved yet. Try again in a moment.'), 0);
+    return false;
+  }
+  // Only what actually differs from the cloud copy goes up: a sold-out toggle
+  // writes that store's menu, not its record (which carries the logo and
+  // cover photo, and may hold an admin's newer change). Something absent
+  // from this phone's memory is never written, so never deleted by omission.
+  const cv = _cat.vendors || {}, cm = _cat.menu || {};
+  const keys = vids === undefined
+    ? [...new Set([...Object.keys(VENDORS), ...Object.keys(MENU)])]
+    : [...new Set([].concat(vids).filter(Boolean))];
+  const recs = keys.filter(k=>VENDORS[k] !== undefined && lfStable(VENDORS[k]) !== lfStable(cv[k]));
+  const menus = keys.filter(k=>MENU[k] !== undefined && lfStable(lfMenuArr(MENU[k])) !== lfStable(lfMenuArr(cm[k])));
+  const changed = [...new Set([...recs, ...menus])];
+  if(!changed.length) return true;
   _pendingWrites++;
   syncPausedUntil = Date.now() + LF_PENDING_MS;
-  // v64: which stores this push changes, worked out BEFORE it lands — after,
-  // the cloud copy no longer shows the difference. Once the data is up they
-  // get a /revs stamp so other phones re-download only those stores. The old
-  // global /rev is no longer written: a v64 phone reads a /rev bump as "a
-  // pre-v64 phone saved something" and re-reads the whole catalog.
-  const changed = lfCatalogChanges();
   let landed = false;
   try{
-    // Write all nodes in parallel — one round-trip instead of three (much faster on slow connections)
     const res = await Promise.allSettled([
-      fbSet(ROOM_KEY+'/vendors', VENDORS),
-      fbSet(ROOM_KEY+'/menu', MENU),
-      fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
+      ...recs.map(k=>fbSet(ROOM_KEY+'/vendors/'+k, VENDORS[k])),
+      // [] is stored as "no node", exactly as RTDB does with an emptied menu.
+      ...menus.map(k=>fbSet(ROOM_KEY+'/menu/'+k, MENU[k])),
     ]);
     // Whatever landed is what other phones should now see — stamp it even
     // if a sibling write failed, or they would keep the old copy.
-    if(res.some(r=>r.status === 'fulfilled')) lfBumpRevs(changed || Object.keys(VENDORS));
+    if(res.some(r=>r.status === 'fulfilled')) lfBumpRevs(changed);
     const bad = res.find(r=>r.status === 'rejected');
     if(bad) throw bad.reason;
     landed = true;
@@ -11352,8 +11395,7 @@ async function lfFetchCatalogDelta(changed, revs, first){
       _cat.menu = _cat.menu || {};
       if(r.v) _cat.vendors[r.vid] = r.v; else delete _cat.vendors[r.vid];
       if(r.m) _cat.menu[r.vid] = r.m; else delete _cat.menu[r.vid];
-      // Only into a COMPLETE set: a partial one would make lfCatalogChanges()
-      // see every other store's hash as changed.
+      // Only into a set that was read whole — never start a partial one.
       if(r.h !== undefined && _cat.pinHashes){
         if(r.h) _cat.pinHashes[r.vid] = r.h; else delete _cat.pinHashes[r.vid];
       }
@@ -11368,9 +11410,9 @@ async function lfFetchCatalogDelta(changed, revs, first){
   }};
 }
 
-// pushState() compares local state with the cloud as last seen, to stamp only
-// the stores it is actually changing. Normalised the way RTDB stores data
-// (sorted keys; null, [] and {} dropped) so a no-op push stamps nothing.
+// pushState() compares local state with the cloud as last seen, to write and
+// stamp only what it is actually changing. Normalised the way RTDB stores
+// data (sorted keys; null, [] and {} dropped) so a no-op push writes nothing.
 function lfStable(x){
   const norm = v=>{
     if(v === null || v === undefined) return undefined;
@@ -11388,16 +11430,6 @@ function lfStable(x){
 // would make every comparison differ.
 const lfMenuArr = raw => Array.isArray(raw) ? raw
   : (raw && typeof raw === 'object') ? Object.keys(raw).sort((a,b)=>a-b).map(k=>raw[k]) : [];
-// null when the cloud copy isn't known yet — the caller then stamps every store.
-function lfCatalogChanges(){
-  if(!_cat || !_cat.vendors) return null;
-  const cv = _cat.vendors || {}, cm = _cat.menu || {};
-  const keys = new Set([...Object.keys(VENDORS), ...Object.keys(MENU), ...Object.keys(cv), ...Object.keys(cm)]);
-  return [...keys].filter(k=>
-    lfStable(VENDORS[k]) !== lfStable(cv[k]) ||
-    lfStable(lfMenuArr(MENU[k])) !== lfStable(lfMenuArr(cm[k])) ||
-    (_catPinsRead && !!_cat.pinHashes && lfStable(VENDOR_PIN_HASHES[k]) !== lfStable(_cat.pinHashes[k])));
-}
 
 // Stamps go out only AFTER the data they describe has landed, and are queued
 // in localStorage first: data that landed with a stamp that didn't would
@@ -13276,7 +13308,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 73; // ← bump this each release (and version.json)
+  const APP_VERSION = 74; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

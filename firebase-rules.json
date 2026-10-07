@@ -57,11 +57,12 @@
 
     "lokalfinder_grass": {
 
+      "//catalog-writes": "v65: /vendors, /menu and /pinHashes are writable ONE STORE AT A TIME ($vid), never as a whole node. On 2026-10-07 a phone that had loaded nothing PUT the whole /vendors, /menu and /pinHashes from its memory (the built-in demo stores) and erased every real store, menu and PIN hash. v65 builds only ever write /vendors/{id}, /menu/{id} and /pinHashes/{id}; this is what also stops OLDER builds still open on someone's phone from doing it again. Side effect: the app can no longer seed a brand-new EMPTY database (that is a write to the room root) — irrelevant once the database has data.",
       "vendors": {
         ".read": true,
-        ".write": true,
         ".validate": "newData.hasChildren() || !newData.exists()",
         "$vid": {
+          ".write": true,
           ".validate": "newData.hasChildren(['id','name'])",
           "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
           "sub":  { ".validate": "newData.isString() && newData.val().length <= 200" },
@@ -72,14 +73,14 @@
 
       "menu": {
         ".read": true,
-        ".write": true
+        "$vid": { ".write": true }
       },
 
       "//pinHashes": "Salted hashes of vendor PINs. NOT readable — this is what stops someone lifting every vendor's credential. Note the app seeds the six DEMO vendors' hashes in index.html itself, so those six are public regardless; rotate them from the admin panel before a real vendor uses one.",
       "//pinHashes-CONFLICT": "DO NOT PUBLISH THIS FILE UNMODIFIED WITHOUT READING THIS. Verified by reading index.html: verifyVendorPin(vid,pin) (~L5853) checks ONLY the in-memory VENDOR_PIN_HASHES object — it never fetches one vendor's hash on demand. VENDOR_PIN_HASHES is populated from two places: the six hardcoded DEMO seeds at boot, and lfFetchScoped() (~L10451), which does a single UNFILTERED fbGet(ROOM_KEY+'/pinHashes') as part of every catalog sync. With .read:false here, that GET returns permission-denied, lfFetchScoped()'s .catch(()=>null) silently swallows it, VENDOR_PIN_HASHES never receives real data, and verifyVendorPin() finds nothing for ANY vendor created after the six demo seeds — every real vendor's PIN is rejected as 'wrong' on any device that has not already cached it (a restored lf-vsess session survives; a fresh login does not). This is a genuine, unresolved conflict between this ruleset and the app's current architecture, not a rules bug — the correct fix is Firebase Auth (a server-verified PIN check, or per-vendor scoped read keyed to a real uid), which is a real architecture change and is intentionally NOT attempted here. Scoping this to a per-vendor exact-key read ($vid.read:true, like orders.$oid) would NOT meaningfully help either: vendor ids are already fully public via the world-readable /vendors node, so per-key access would be trivially equivalent to bulk access for the handful of vendors this app has — the real protection this node provides would be gone either way. Until Firebase Auth exists: publishing this file as-is breaks login for every non-demo vendor on a fresh device. Test in the Rules Playground against a real vendor id created after the six demo seeds before publishing to production.",
       "pinHashes": {
         ".read": false,
-        ".write": true
+        "$vid": { ".write": true }
       },
 
       "//pins": "LEGACY plaintext PINs from before v55. Left writable so the app can clear it, but never readable again. Delete this node entirely once every vendor has signed in once and been migrated to pinHashes.",

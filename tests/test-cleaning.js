@@ -19,6 +19,9 @@ const abort = r => r.abort();
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil:'domcontentloaded' });
   await page.waitForFunction(() => typeof goCust==='function' && typeof VENDORS==='object' && !!document.getElementById('mkt-row'), null, {timeout:15000});
   await page.waitForTimeout(1200);
+  // v65: nothing is saved until the store catalog has loaded (pushState()).
+  // On this empty stub that is the first sync after the database is seeded.
+  await page.waitForFunction(() => _catHandedOut, null, {timeout:15000});
 
   // Make Sparkle deterministically open & working every day for the test run.
   // pushState() so the 3s cloud sync doesn't overwrite it back to seeded hours.

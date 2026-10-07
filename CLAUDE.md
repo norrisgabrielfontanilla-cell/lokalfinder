@@ -96,11 +96,15 @@ that guard ever fails, someone has hardcoded a vertical again.
   ID token, no API key. Client-side PIN and admin-password checks are
   conveniences, bypassable from devtools. **Firebase security rules are the
   only real control.** `firebase-rules.json` in this repo is a ready-to-paste
-  ruleset; whether it has actually been published to the live project is NOT
-  verifiable from here, so confirm before claiming any data is protected.
-  The ruleset refuses an unfiltered read of `/orders` (only a `vendorId`
-  query or an exact-key read passes) and makes `/pinHashes` unreadable.
-  It requires `.indexOn: ["vendorId"]`, which it also declares.
+  ruleset, and it is **not published**: on 2026-10-07 a read-only check run
+  from GitHub Actions read the live `/orders` unfiltered and `/pinHashes`
+  without error, both of which this ruleset refuses. Treat the live database
+  as fully open (customer names, units and phones included) until rules are
+  published. The ruleset refuses an unfiltered read of `/orders` (only a
+  `vendorId` query or an exact-key read passes) and makes `/pinHashes`
+  unreadable. It requires `.indexOn: ["vendorId"]`, which it also declares.
+  See v65 below for `firebase-rules-stopgap.json`, the minimal set that is
+  safe to publish now.
 - Firebase is otherwise only used for **Cloud Messaging** (push
   notifications), loaded via the `firebase-app-compat` /
   `firebase-messaging-compat` CDN scripts — not for auth or data storage.
@@ -258,13 +262,14 @@ approves. `openVendorApply()` → `submitVendorApplication()` → admin
 
 - **An application is NOT a vendor.** It lives in `/vendorApplications/{id}`
   and only enters `VENDORS` on approval. Two reasons, both load-bearing:
-  1. **`pushState()` is a full overwrite** of `/vendors`, `/menu` AND
+  1. **`pushState()` was a full overwrite** of `/vendors`, `/menu` AND
      `/pinHashes` from the device's memory. On a stranger's phone that has not
-     finished its first sync, `VENDORS` is just the six hardcoded demo seeds —
-     so a signup calling `pushState()` **wipes the live catalog and every real
+     finished its first sync, `VENDORS` is just the hardcoded demo seeds —
+     so a signup calling `pushState()` **wiped the live catalog and every real
      PIN hash**. This was demonstrated, not theorised: injecting
-     `await pushState()` into the signup makes `test-signup.js` report
-     `hasReal:false, pinCount:6`. A signup writes exactly ONE node.
+     `await pushState()` into the signup made `test-signup.js` report
+     `hasReal:false, pinCount:6`. On 2026-10-07 it happened for real, from a
+     vendor's own phone (see v65). A signup writes exactly ONE node.
      **Never call `pushState()` from any public, unauthenticated path.**
   2. A pending store inside `VENDORS` would need filtering out of
      `buildVendorCards`, `buildTodaysPicks`, `buildHeroStrip`,
@@ -362,10 +367,16 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 457 checks across eleven files,
+**Testing:** `tests/` holds a Playwright suite — 484 checks across twelve files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
+
+A test that saves setup state (pinning a store's hours, say) must first
+`waitForFunction(() => _catHandedOut)`: since v65 nothing is saved before the
+catalog has loaded, and on the empty stub that is the first sync after the
+database is seeded, ~3.7s in. Before that the save is refused and the
+seeded copy later overwrites the setup.
 
 The stub **rejects paths without a `.json` suffix**, exactly as the real REST
 API does. Keep it that way: an earlier, looser stub accepted them and returned
@@ -443,8 +454,8 @@ rate. What changed, and the rules that keep it fixed:
 - **Catalog is change-gated.** `/revs/{vid}` is a stamp set by
   `lfBumpRevs()` **after** that store's data lands; the 3s poll reads this
   tiny map and fetches only the stores whose stamp moved (`lfFetchCatalog`).
-  `pushState()` works out which stores it changes (`lfCatalogChanges()`,
-  local state vs the last cloud copy `_cat`) before writing.
+  `pushState(vid)` compares that store's record and menu with the last cloud
+  copy `_cat` and writes and stamps only what differs (v65).
   **Any new code that writes `/vendors`, `/menu` or `/pinHashes` directly
   must call `lfBumpRevs([vid])` after the write lands, or other phones won't
   see it until the daily backstop.** `'_meta'` stamps `heroStats`.
@@ -490,6 +501,59 @@ so a genuine change re-downloads that store's photos, and a new device's first
 Feed visit downloads the posts it shows. Moving media to Firebase Storage or a
 CDN is the structural fix. `firebase-rules.json` declares `revs`; a published
 ruleset without it falls back to the once-a-minute full read.
+
+**Per-store saves (v65) — the 2026-10-07 wipe.** At 03:56:30 UTC (11:56 PH)
+one phone erased every real store, menu and PIN hash. A read-only diagnostic
+run from GitHub Actions (this environment cannot reach the live database)
+found `/vendors` holding exactly the ten built-in demo stores, `/pinHashes`
+exactly the six seeded demo hashes, and ADBUNS saved `active:false`. A phone
+running the pre-v64 build (v64 went live at 10:55 UTC, seven hours later)
+had applied nothing from the database, not even the tombstones. The most
+likely cause is that build's whole-database read on every open, Feed videos
+included, failing on a weak connection. ADBUNS was closed on that phone, and
+the old `pushState()` PUT the whole `/vendors`, `/menu` and `/pinHashes` from
+its memory. The v61 note above predicted exactly this for a signup. Customers then saw two stores, Pares (open) and ADBUNS
+(closed), because the other eight demo stores are tombstoned.
+
+- **Nothing is saved until the catalog has been handed to `applyData()`
+  (`_catHandedOut`)**; until then `pushState()` returns `false` with a "Still
+  loading the stores" toast. `_cat` alone is not enough: it is filled from the
+  IndexedDB cache before any network call, while `VENDORS` is still the demo
+  seeds, and a save in that window put the demo ADBUNS over the real one
+  (`test-nowipe.js` 1b fails without the guard). The toast is deferred with
+  `setTimeout` because most callers don't await and show their own "saved"
+  toast straight after the call.
+- **Callers name the store they changed: `pushState(vid)`.** Only that store's
+  record and/or menu, whichever differs from `_cat`, is written. Other stores
+  differ without anyone editing them (`applySchedule()` flips `active` locally
+  every minute), and writing those would push this phone's possibly-old copy
+  over newer data. A menu edit no longer re-uploads the store record and its
+  photos. `pushState()` with no argument writes every differing store; only
+  tests use it.
+- Nothing absent from this phone's memory is written, so nothing is deleted
+  by omission. `deleteVendor()` deletes `/vendors/{vid}`, `/menu/{vid}` and
+  `/pinHashes/{vid}` explicitly.
+- `pushState()` never writes PIN hashes. Every PIN change writes its own
+  `/pinHashes/{vid}`, and rewriting them from memory is how a stale phone
+  would undo an admin's PIN reset.
+- Demo seeds no longer reach the cloud unless someone edits that store.
+
+**Server-side guard.** `firebase-rules-stopgap.json` keeps today's open
+access but grants `.write` on `/vendors/$vid`, `/menu/$vid` and
+`/pinHashes/$vid` only, so a whole-node overwrite is refused even from an old
+build still open on someone's phone. It was checked against the official
+Firebase RTDB emulator (v4.11.2):
+- 37 raw REST checks;
+- the live v73 build replaying the incident: its PUTs to `/vendors`, `/menu`
+  and `/pinHashes` got 401 and every store survived;
+- v65 flows (saves, admin delete, a customer order) with zero refused writes.
+
+Publish it only after v65 is live, because every v73 save is a whole-node
+write and would fail. Side effect: the app can no longer seed an empty
+database, which is a room-root write. `firebase-rules.json`, the stricter
+target, now has the same per-store write rules. Restoring the erased stores
+(rebuilt from order and Feed history) needs the founder's sign-off; check
+`/vendors` before assuming it has happened.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
