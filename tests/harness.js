@@ -68,7 +68,15 @@ async function makePage(browser, log){
     const m = req.method();
     let body = null;
     try{ body = req.postData() ? JSON.parse(req.postData()) : null; }catch(e){}
-    if(m==='GET')         { return route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(get(p))}); }
+    if(m==='GET'){
+      let val = get(p);
+      // shallow=true behaves as in the real REST API: an object's children
+      // all come back as `true` (the Feed lists post ids this way).
+      if(u.searchParams.get('shallow') === 'true' && val && typeof val === 'object'){
+        const keys = {}; Object.keys(val).forEach(k=>{ keys[k] = true; }); val = keys;
+      }
+      return route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(val)});
+    }
     if(m==='PUT')         { set(p, body);   return route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(body)}); }
     if(m==='PATCH')       { patch(p, body); return route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(body)}); }
     if(m==='DELETE')      { set(p, null);   return route.fulfill({status:200, contentType:'application/json', body:'null'}); }
