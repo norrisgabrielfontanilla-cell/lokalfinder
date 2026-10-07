@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": true,
+    "lokalfinder_grass": {
+      "vendors":   { "$vid": { ".write": true } },
+      "menu":      { "$vid": { ".write": true } },
+      "pinHashes": { "$vid": { ".write": true } },
+      "orders":    { ".write": true, ".indexOn": ["vendorId"] },
+      "posts":     { ".write": true, ".indexOn": ["createdAt"] },
+      "$other":    { ".write": true }
+    }
+  }
+}
