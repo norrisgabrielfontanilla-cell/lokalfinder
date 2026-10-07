@@ -192,7 +192,14 @@
         }
       },
       "heroStats":      { ".read": true,  ".write": true },
-      "rev":            { ".read": true,  ".write": true }
+      "//rev": "v64: pre-v64 builds still bump this on every catalog save; a v64 phone that sees it move re-reads the whole catalog. v64 builds no longer write it.",
+      "rev":            { ".read": true,  ".write": true },
+      "//revs": "v64 change stamps: /revs/{vendorId} (plus '_meta' for heroStats) is set after that store's data lands, and every phone polls this small map to download only the stores that changed — see lfFetchCatalog in index.html. Without this entry a published ruleset denies it and phones fall back to a full catalog read once a minute.",
+      "revs": {
+        ".read": true,
+        ".write": true,
+        "$k": { ".validate": "newData.isNumber()" }
+      }
     }
   }
 }

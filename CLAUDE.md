@@ -362,7 +362,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 410 checks across ten files,
+**Testing:** `tests/` holds a Playwright suite — 457 checks across eleven files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -371,7 +371,11 @@ The stub **rejects paths without a `.json` suffix**, exactly as the real REST
 API does. Keep it that way: an earlier, looser stub accepted them and returned
 `200`, which turned a silently-failing write into an apparently-successful one
 and caused a bug to be mis-diagnosed. Never point a test run at the live
-`FB_URL`.
+`FB_URL`. It honours `shallow=true` (children come back as `true`, as the real
+API does — the Feed lists post ids that way) but ignores `orderBy`/`equalTo`/
+`limitToLast`, returning the whole node. A test that writes `/vendors` or
+`/menu` straight into the stub (simulating another phone) must also stamp
+`/revs/{vid}`, or the device under test will correctly not re-read it.
 
 **Order submission (v58/v59) — the success screen is never shown on faith:**
 `finalizeOrder()` and `submitBooking()` await the write BEFORE confirming
@@ -426,6 +430,66 @@ per-vendor fan-out for admin. The old full read ran every 3s on every device
 and re-downloaded every order ever placed plus every base64 menu photo.
 Orders are still only deleted by the admin **Archive old orders** control on
 the Insights page — there is no server to run a nightly job.
+
+**Data usage (v64) — download only what changed.** Every photo and video in
+this app is base64 *inside* the JSON (no CDN, no Storage), so any repeated
+read is paid in megabytes. Measured against the test stub with a modest
+catalog, the v63 build pulled ~55 MB/min per phone just sitting on Home
+(the catalog, every 3s), more on the Feed, and **every app open read the
+entire database root** (`tryBoot` → `fbGet(ROOM_KEY)`), Feed videos included.
+A Spark-plan month (10 GB) lasts a few hours of combined screen time at that
+rate. What changed, and the rules that keep it fixed:
+
+- **Catalog is change-gated.** `/revs/{vid}` is a stamp set by
+  `lfBumpRevs()` **after** that store's data lands; the 3s poll reads this
+  tiny map and fetches only the stores whose stamp moved (`lfFetchCatalog`).
+  `pushState()` works out which stores it changes (`lfCatalogChanges()`,
+  local state vs the last cloud copy `_cat`) before writing.
+  **Any new code that writes `/vendors`, `/menu` or `/pinHashes` directly
+  must call `lfBumpRevs([vid])` after the write lands, or other phones won't
+  see it until the daily backstop.** `'_meta'` stamps `heroStats`.
+- **`/rev` (global) is legacy.** v64 never writes it. Pre-v64 builds still
+  bump it (in parallel with their data), so a moved `/rev` makes a v64 phone
+  re-read the whole catalog, then once more 12s later.
+- **Not gated, read every tick:** `/deletedVendors` and the signed-in vendor's
+  own `/pinHashes/{vid}`. They're tiny, and v56 revocation must never depend on
+  the writer being a v64 build (`test-session.js` proves it with raw writes).
+- **Backstops:** a full catalog read at most once a day (`LF_CAT_SAFETY_MS`),
+  and once a minute if `/revs` is unreadable (rules published without it).
+- **Commit after apply.** `lfFetchScoped()` returns `d._commit`;
+  `syncFromCloud()` calls it only after `applyData(d)`. It drops reads that
+  raced a local write — if seen-stamps were recorded anyway, those changes
+  would never be fetched again.
+- **Device cache.** The last catalog seen is kept in IndexedDB (db
+  `lokalfinder`, store `kv`, key `catalog-v1`) so reopening the app costs the
+  stamps, not the photos. PIN hashes and legacy pins are **never** written
+  there. `_cat` is never shared with `VENDORS`/`MENU` (everything handed to
+  `applyData` is a clone) — a shared object would let local edits leak into
+  the "cloud copy" and hide them from the diff. Unsent stamps are queued in
+  localStorage `lf-rev-queue`.
+- **Startup** uses the same scoped read. A brand-new database is seeded only
+  after a shallow read of the room confirms it is empty — never inferred from
+  a failed read, which would wipe the live catalog. The old retry added a new
+  `setInterval` on every failure past the fifth, doubling the request rate
+  every 5s for as long as the database was unreachable; there is now one.
+- **Feed** (`LFN`): posts are immutable, so each is fetched once per session
+  (`_lfnPostCache`). The 25s poll reads `posts.json?shallow=true` (ids only,
+  no index needed) and fetches unseen ids. It opens with the newest 4
+  (`LFN_FEED_PAGE`) and loads more as you scroll, appending rather than
+  re-rendering. `lfnUid()` ids start with their creation time in base36,
+  which is how "newest" is known before downloading anything. The old
+  full-`/posts` fallback (every post ever, when the index was missing) is gone.
+- **Smaller pollers:** a customer re-reads finished orders (and their chat and
+  alerts) only on a 5-minute sweep (`lfOrderStillLive`); vendor alerts read the
+  newest 50 by `$key`; reviews every 60s instead of 8s. Without the `vendorId`
+  index, `/orders` is read whole once per 10s and shared — it used to be once
+  per vendor per tick on the admin dashboard.
+
+Still not fixed, by design: photos and videos remain base64 in the database,
+so a genuine change re-downloads that store's photos, and a new device's first
+Feed visit downloads the posts it shows. Moving media to Firebase Storage or a
+CDN is the structural fix. `firebase-rules.json` declares `revs`; a published
+ruleset without it falls back to the once-a-minute full read.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.

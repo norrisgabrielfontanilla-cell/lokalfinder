@@ -6063,7 +6063,7 @@ async function verifyVendorPin(vid, pin){
   // plaintext stops being the credential.
   if(LF_LEGACY_PINS[vid] && String(pin) === String(LF_LEGACY_PINS[vid])){
     await setVendorPin(vid, pin);
-    try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); }catch(e){}
+    try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); lfBumpRevs([vid]); }catch(e){}
     return true;
   }
   return false;
@@ -6835,7 +6835,25 @@ function renderChatPanel(){
   box.scrollTop = box.scrollHeight;
 }
 
+/* v64: chat used to be polled for every order a device had EVER placed (or,
+   for a vendor, every order they had ever received) — one request per order,
+   every 3s, forever, growing with history. Now each tick polls only orders
+   still in progress (or finished in the last half hour, see
+   lfOrderStillLive) plus whichever chat is open; the rest are swept every
+   LF_CHAT_SWEEP_MS, newest LF_CHAT_SWEEP_MAX first, for a late "thank you". */
+const LF_CHAT_SWEEP_MS = 5*60*1000, LF_CHAT_SWEEP_MAX = 30;
+let _lfChatSweepAt = 0, _lfChatBusy = false;
+function lfOrderTime(id){
+  const o = orders.find(x=>x.id === id);
+  return o ? (Number(o.updatedAt) || new Date(o.timestamp).getTime() || 0) : 0;
+}
 async function syncChats(){
+  // applyData() also calls this, so ticks can overlap on a slow link.
+  if(_lfChatBusy) return;
+  _lfChatBusy = true;
+  try{ await _syncChatsOnce(); } finally { _lfChatBusy = false; }
+}
+async function _syncChatsOnce(){
   const orderIds = new Set();
 
   // CUSTOMER: sync ALL orders placed on this device, not just the last one
@@ -6858,7 +6876,16 @@ async function syncChats(){
     // was redundant as well as dead. Removed.
   }
 
-  for(const oid of orderIds){
+  const all = [...orderIds];
+  let poll = all.filter(id=>id === activeChatOid || lfOrderStillLive(id));
+  if(Date.now() - _lfChatSweepAt >= LF_CHAT_SWEEP_MS){
+    _lfChatSweepAt = Date.now();
+    const live = new Set(poll);
+    poll = poll.concat(all.filter(id=>!live.has(id))
+      .sort((a,b)=>lfOrderTime(b) - lfOrderTime(a)).slice(0, LF_CHAT_SWEEP_MAX));
+  }
+
+  for(const oid of poll){
     try{
       const key = oid.replace(/[^a-zA-Z0-9]/g,'_');
       const msgs = await fbGet(ROOM_KEY+'/chats/'+key);
@@ -7200,6 +7227,7 @@ async function toggleFeatured(vid, on){
       ...staleFeatured.map(id=>fbPatch(ROOM_KEY+'/vendors/'+id, {featured:false})),
       fbPatch(ROOM_KEY+'/vendors/'+vid, {featured:on})
     ]));
+    lfBumpRevs([vid, ...staleFeatured]);
     // Reflect the now-authoritative clear list locally too, in case any of
     // those vendors were rendered as featured from this device's own memory.
     if(staleFeatured.some(id=>VENDORS[id] && VENDORS[id].featured)){
@@ -7257,7 +7285,7 @@ async function saveEditVendor(){
   VENDORS[vid].gcash = gcash;
   VENDORS[vid].min = min;
   if(comm > 0) VENDORS[vid].commission = comm; else delete VENDORS[vid].commission;
-  if(pin){ await setVendorPin(vid, pin); try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); }catch(e){} }
+  if(pin){ await setVendorPin(vid, pin); try{ await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]); lfBumpRevs([vid]); }catch(e){} }
 
   await pushState();
   closeModal('modal-editvendor');
@@ -7343,7 +7371,12 @@ async function pushNotif(userId, title, body, type='info'){
 async function loadNotifs(userId){
   const gen = ++_vendNotifGen;
   try{
-    const data = await fbGet(notifNode(userId));
+    // v64: only the newest 50 (the most this list ever shows) — the node
+    // grows with every order and was downloaded whole every 5s. Keys are
+    // Date.now() strings, so key order is time order; "$key" needs no index.
+    const r = await fetch(`${FB_URL}/${notifNode(userId)}.json?orderBy=${encodeURIComponent('"$key"')}&limitToLast=50`);
+    if(!r.ok) throw new Error('notifs read failed: '+r.status);
+    const data = await r.json();
     if(gen !== _vendNotifGen) return;   // a newer vendor fetch started since — drop this one
     vendNotifList = (data && typeof data==='object')
       ? Object.values(data).sort((a,b)=>b.ts-a.ts).slice(0,50)
@@ -7358,7 +7391,13 @@ async function loadNotifs(userId){
 
 // PRIVACY: load notifications for EVERY order this device placed, merged together.
 // A customer can only ever see alerts tied to their own order IDs — never anyone else's.
-async function loadCustomerNotifs(){
+// v64: every order was re-read every 5s. Now each order's alerts are kept from
+// the last read; a tick re-reads only orders still in progress, and all of
+// them every LF_CUST_SWEEP_MS or when the panel opens ({all:true}). A
+// finished order gets no new status alerts, so nothing goes missing.
+const _custNotifByOrder = {};
+let _custNotifSweepAt = 0;
+async function loadCustomerNotifs(opts){
   const gen = ++_custNotifGen;
   const ids = Array.from(new Set(myOrderIds||[]));
   if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
@@ -7366,16 +7405,20 @@ async function loadCustomerNotifs(){
     if(gen === _custNotifGen){ custNotifList=[]; renderNotifPanel(); updateNotifBadge(); }
     return;
   }
-  const merged = {};
-  for(const oid of ids){
+  const sweep = (opts && opts.all) || Date.now() - _custNotifSweepAt >= LF_CUST_SWEEP_MS;
+  if(sweep) _custNotifSweepAt = Date.now();
+  for(const oid of (sweep ? ids : ids.filter(lfOrderStillLive))){
     try{
       const data = await fbGet(notifNode('cust_'+oid));
-      if(data && typeof data==='object'){
-        Object.values(data).forEach(n=>{ if(n && n.id) merged[n.id]=n; });
-      }
+      _custNotifByOrder[oid] = (data && typeof data==='object') ? data : {};
     }catch(e){ /* skip this order, keep going */ }
   }
   if(gen !== _custNotifGen) return;   // a newer customer fetch started since — drop this one
+  const merged = {};
+  ids.forEach(oid=>{
+    const data = _custNotifByOrder[oid];
+    if(data) Object.values(data).forEach(n=>{ if(n && n.id) merged[n.id]=n; });
+  });
   custNotifList = Object.values(merged).sort((a,b)=>b.ts-a.ts).slice(0,50);
   renderNotifPanel();
   updateNotifBadge();
@@ -7549,7 +7592,7 @@ function openNotifPanel(role){
     el('notif-panel').style.display='flex';
     el('notif-panel-title').textContent='🔔 My Notifications';
     renderNotifPanel();   // paint whatever's already cached immediately, correct role
-    loadCustomerNotifs();
+    loadCustomerNotifs({ all:true });   // v64: the panel is the full history — re-read every order
     markCustomerNotifsRead();
     updateAppBadge(0);
     return;
@@ -8873,6 +8916,7 @@ async function adminPurgeOldOrders(){
     try{ await fbDelete(notifNode('cust_'+o.id)); }catch(e){}
   }
   const gone = new Set(done.map(o=>o.id));
+  lfInvalidateAllOrders();   // v64: or the shared fallback copy brings them straight back
   orders = orders.filter(o=>!gone.has(o.id));
   myOrderIds = myOrderIds.filter(id=>!gone.has(id));
   saveLocal();
@@ -9012,7 +9056,7 @@ async function saveHeroStats(){
   heroStats={vendorCount:vc, userCount:uc};
   try{ localStorage.setItem('lf-heroStats', JSON.stringify(heroStats)); }catch(e){}
   // Sync to Firebase so ALL devices show the same count
-  try{ await fbSet(ROOM_KEY+'/heroStats', heroStats); }catch(e){}
+  try{ await fbSet(ROOM_KEY+'/heroStats', heroStats); lfBumpRevs(['_meta']); }catch(e){}
   applyHeroStats(true);
   showToast('✅ Front page stats updated!');
 }
@@ -9282,6 +9326,7 @@ async function _approveApplication(id){
       fbSet(ROOM_KEY+'/pinHashes/'+vid, cred),
       fbSet(ROOM_KEY+'/vendors/'+vid, rec),
     ]);
+    lfBumpRevs([vid]);
     // Local state only after both writes land, so a failure cannot leave a
     // hash for a vendor that does not exist waiting for the next pushState().
     VENDOR_PIN_HASHES[vid] = cred;
@@ -9347,6 +9392,7 @@ async function resetVendorPin(vid){
   try{
     await setVendorPin(vid, pin);
     await fbSet(ROOM_KEY+'/pinHashes/'+vid, VENDOR_PIN_HASHES[vid]);
+    lfBumpRevs([vid]);
   }catch(e){
     showToast('⚠️ Could not save the new PIN — check your connection'); return;
   }
@@ -9426,6 +9472,7 @@ async function toggleVendorActive(vid){
     await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/vendors/'+vid, {
       suspended: v.suspended, active: v.active, manualOverride: v.manualOverride, manualUntil: v.manualUntil
     }));
+    lfBumpRevs([vid]);
   }catch(e){
     console.error('vendor active-state sync failed:', e);
     showToast('⚠️ Saved locally — sync failed, check your connection');
@@ -9495,6 +9542,7 @@ async function toggleVendorArchived(vid){
   showToast(nowArchived ? '📦 '+v.name+' archived — hidden from customers' : '✅ '+v.name+' unarchived — visible to customers again');
   try{
     await lfTrackedWrite(()=>fbPatch(ROOM_KEY+'/vendors/'+vid, {archived: nowArchived}));
+    lfBumpRevs([vid]);
   }catch(e){
     console.error('archive sync failed:', e);
     showToast('⚠️ Saved locally — sync failed, check your connection');
@@ -9554,8 +9602,10 @@ async function deleteVendor(vid){
       fbSet(ROOM_KEY+'/vendors', VENDORS),
       fbSet(ROOM_KEY+'/menu', MENU),
       fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
-      fbSet(ROOM_KEY+'/rev', Date.now()),
     ]);
+    // v64: the global /rev is no longer written (see pushState()). The
+    // tombstone needs no stamp — every phone reads /deletedVendors each sync.
+    lfBumpRevs([vid]);
   };
 
   let _attempt = 0;
@@ -9949,7 +9999,7 @@ function addVendorConfirm(){
     ...(M.scheduled ? {openTime:'08:00',closeTime:'18:00',closedDays:[]} : {})
   };
   MENU[id]=[];
-  setVendorPin(id, pin).then(()=>fbSet(ROOM_KEY+'/pinHashes/'+id, VENDOR_PIN_HASHES[id])).catch(()=>{});
+  setVendorPin(id, pin).then(()=>fbSet(ROOM_KEY+'/pinHashes/'+id, VENDOR_PIN_HASHES[id])).then(()=>lfBumpRevs([id])).catch(()=>{});
 
   // Update UI immediately — vendor shows up right away, no waiting
   rebuildVendorSelect();
@@ -10713,6 +10763,14 @@ async function fbGet(path){
   return r.json();
 }
 
+// Keys only — every child comes back as `true`. Costs a few bytes per child
+// however large the children are, and needs no index.
+async function fbGetShallow(path){
+  const r = await fetch(`${FB_URL}/${path}.json?shallow=true`);
+  if(!r.ok) throw new Error('FB shallow read failed: '+r.status);
+  return r.json();
+}
+
 async function fbSet(path, data, timeoutMs=8000){
   const controller = new AbortController();
   const timeout = setTimeout(()=>controller.abort(), timeoutMs);
@@ -10879,6 +10937,7 @@ async function lfTrackedWrite(fn){
   finally{
     _pendingWrites = Math.max(0, _pendingWrites - 1);
     _lastWriteDoneAt = Date.now();
+    lfInvalidateAllOrders();
     if(_pendingWrites === 0) syncPausedUntil = Date.now() + 700;
   }
 }
@@ -10909,15 +10968,25 @@ async function pushState(){
   // the whole write and is only released once the LAST in-flight write ends.
   _pendingWrites++;
   syncPausedUntil = Date.now() + LF_PENDING_MS;
+  // v64: which stores this push changes, worked out BEFORE it lands — after,
+  // the cloud copy no longer shows the difference. Once the data is up they
+  // get a /revs stamp so other phones re-download only those stores. The old
+  // global /rev is no longer written: a v64 phone reads a /rev bump as "a
+  // pre-v64 phone saved something" and re-reads the whole catalog.
+  const changed = lfCatalogChanges();
   let landed = false;
   try{
-    // Write all nodes in parallel — one round-trip instead of four (much faster on slow connections)
-    await Promise.all([
+    // Write all nodes in parallel — one round-trip instead of three (much faster on slow connections)
+    const res = await Promise.allSettled([
       fbSet(ROOM_KEY+'/vendors', VENDORS),
       fbSet(ROOM_KEY+'/menu', MENU),
       fbSet(ROOM_KEY+'/pinHashes', VENDOR_PIN_HASHES),
-      fbSet(ROOM_KEY+'/rev', Date.now()),
     ]);
+    // Whatever landed is what other phones should now see — stamp it even
+    // if a sibling write failed, or they would keep the old copy.
+    if(res.some(r=>r.status === 'fulfilled')) lfBumpRevs(changed || Object.keys(VENDORS));
+    const bad = res.find(r=>r.status === 'rejected');
+    if(bad) throw bad.reason;
     landed = true;
     return true;
   }catch(e){
@@ -10935,14 +11004,18 @@ async function pushState(){
 
 async function syncFromCloud(){
   if(Date.now() < syncPausedUntil){ return; }
+  lfFlushRevs();   // v64: re-send any change stamp that failed to go out
   const _issuedAt = Date.now();
   try{
     const d = await lfFetchScoped();
     // v48: if a write started or landed while this read was in flight, the
     // data we just received may predate it. Discard it — the next sync picks
     // up the truth 3s later — rather than overwriting fresher local state.
+    // v64: discarding is only safe because nothing was committed: the catalog
+    // records which stores it has seen in d._commit(), after applyData().
     if(_pendingWrites > 0 || _lastWriteDoneAt > _issuedAt) return;
     applyData(d);
+    if(d._commit) d._commit();
     lastSyncTime = Date.now();
     // v56: the only place a live PIN rotation can reach a signed-in device.
     try{ lfRevalidateVendorSession(); }catch(e){}
@@ -10984,39 +11057,400 @@ let _lfIndexWarned = false;
 // is actually signed in, not for all 500 residents browsing lunch.
 let _lfAdminMode = false;
 
+// v64: set once the vendorId query is refused for lack of an index (HTTP 400,
+// i.e. firebase-rules.json isn't published). Without the index the only way to
+// see a vendor's orders is to read /orders whole. That used to happen on every
+// 3s tick — and once PER VENDOR on the admin dashboard. Now it is one shared
+// read at most every LF_ORDERS_FALLBACK_MS, filtered per vendor locally.
+let _lfOrdersNoIndex = false;
+const LF_ORDERS_FALLBACK_MS = 10000;
+let _lfAllOrders = null, _lfAllOrdersAt = 0, _lfAllOrdersP = null;
+// Any local order write makes the shared copy stale; without this a vendor's
+// own Accept could be overwritten by a copy read seconds before it.
+function lfInvalidateAllOrders(){ _lfAllOrders = null; _lfAllOrdersAt = 0; }
+function lfAllOrders(){
+  if(_lfAllOrders && Date.now() - _lfAllOrdersAt < LF_ORDERS_FALLBACK_MS) return Promise.resolve(_lfAllOrders);
+  if(_lfAllOrdersP) return _lfAllOrdersP;
+  const issued = Date.now();
+  _lfAllOrdersP = fbGet(ROOM_KEY+'/orders').then(all=>{
+    all = all || {};
+    if(_pendingWrites === 0 && _lastWriteDoneAt <= issued){ _lfAllOrders = all; _lfAllOrdersAt = Date.now(); }
+    return all;
+  }).finally(()=>{ _lfAllOrdersP = null; });
+  return _lfAllOrdersP;
+}
+
 // One vendor's orders, via the indexed query the rules allow.
-// Falls back to a full read only if the index is missing — which means the
-// rules haven't been published yet, and in that case the full read is still
-// permitted. Once firebase-rules.json is live the fallback is denied too,
-// and the console warning is the signal to go publish it.
 async function lfOrdersForVendor(vid){
-  try{
+  if(!_lfOrdersNoIndex){
     const q = `orders.json?orderBy=${encodeURIComponent('"vendorId"')}&equalTo=${encodeURIComponent('"'+vid+'"')}`;
     const r = await fetch(`${FB_URL}/${ROOM_KEY}/${q}`);
-    if(!r.ok) throw new Error('index query failed: '+r.status);
-    return (await r.json()) || {};
-  }catch(e){
+    if(r.ok) return (await r.json()) || {};
+    if(r.status !== 400) throw new Error('orders query failed: '+r.status);
+    _lfOrdersNoIndex = true;
     if(!_lfIndexWarned){
       _lfIndexWarned = true;
-      console.warn('sync: /orders is missing .indexOn["vendorId"] — falling back to a full read. '+
-                   'Publish firebase-rules.json to fix this.', e);
+      console.warn('sync: /orders is missing .indexOn["vendorId"] — reading /orders whole every '+
+                   (LF_ORDERS_FALLBACK_MS/1000)+'s instead. Publish firebase-rules.json to fix this.');
     }
-    return (await fbGet(ROOM_KEY+'/orders').catch(()=>null)) || {};
   }
+  const all = await lfAllOrders();
+  const mine = {};
+  Object.keys(all).forEach(k=>{ const o = all[k]; if(o && o.vendorId === vid) mine[k] = o; });
+  return mine;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v64 — CHANGE-ONLY CATALOG SYNC
+   -----------------------------------------------------------------------
+   v55 scoped the ORDERS read, but the catalog — /vendors and /menu, with
+   every logo, cover and menu photo inside them as base64 — was still
+   downloaded whole every 3s by every open device: ~55 MB a minute per phone
+   with a modest catalog, a Spark-plan month of downloads in a few hours of
+   combined screen time. Now a device downloads a store only when it changed:
+
+   • /revs/{vid} — a stamp each writer sets AFTER that store's data has
+     landed (lfBumpRevs). The 3s poll reads this tiny map and fetches only
+     the stores whose stamp moved. '_meta' covers the hero stats.
+   • tombstones and the signed-in vendor's own PIN hash are NOT stamp-gated:
+     they are tiny and read every tick, so revocation (v56) never depends on
+     the writer being a v64 build.
+   • /rev — the old global stamp. Pre-v64 builds still set it on every
+     pushState(), in parallel with the data (so it can land first). A moved
+     /rev means "an old phone saved something": re-read everything, then
+     again LF_CAT_CONFIRM_MS later for data that landed after its stamp.
+   • a full read at most once a day as the backstop for a write that never
+     stamped anything, and once a minute if /revs itself is unreadable
+     (rules published without the revs entry).
+
+   The last catalog seen is kept in IndexedDB, so reopening the app costs the
+   stamps, not the photos. PIN hashes are never written there — memory only,
+   re-read once per session.
+
+   Nothing about what has been seen is recorded until the caller commits,
+   after applyData(): syncFromCloud() drops reads that raced a local write,
+   and a stamp recorded for a dropped read would never be fetched again.
+═══════════════════════════════════════════════════════════════════════ */
+
+// Every failure — no IndexedDB, private mode, quota, a hung open — resolves to
+// undefined, so callers behave exactly as if nothing had been cached.
+const lfIdb = (()=>{
+  let dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise(res=>{
+      let done = false;
+      const finish = v=>{ if(!done){ done = true; res(v); } };
+      setTimeout(()=>finish(null), 2000);
+      try{
+        if(!window.indexedDB){ finish(null); return; }
+        const req = indexedDB.open('lokalfinder', 1);
+        req.onupgradeneeded = ()=>{ try{ req.result.createObjectStore('kv'); }catch(e){} };
+        req.onsuccess = ()=>finish(req.result);
+        req.onerror = req.onblocked = ()=>finish(null);
+      }catch(e){ finish(null); }
+    });
+    return dbp;
+  }
+  function run(mode, fn){
+    return open().then(db=>new Promise(res=>{
+      if(!db){ res(undefined); return; }
+      try{
+        const tx = db.transaction('kv', mode);
+        const req = fn(tx.objectStore('kv'));
+        tx.oncomplete = ()=>res(req ? req.result : undefined);
+        tx.onerror = tx.onabort = ()=>res(undefined);
+      }catch(e){ res(undefined); }
+    })).catch(()=>undefined);
+  }
+  return { get: k=>run('readonly', s=>s.get(k)), set: (k,v)=>run('readwrite', s=>s.put(v, k)) };
+})();
+
+const LF_CAT_CACHE      = 'catalog-v1';
+const LF_CAT_SAFETY_MS  = 24*60*60*1000;
+const LF_CAT_CONFIRM_MS = 12000;
+const LF_CAT_NOREVS_MS  = 60000;
+let _cat = null;          // last catalog seen in the cloud — never shared with VENDORS/MENU
+let _catRevs = {};        // the /revs stamps _cat reflects
+let _catRev;              // the /rev stamp _cat reflects (undefined: no catalog yet)
+let _catFullAt = 0, _catConfirmAt = 0;
+let _catHandedOut = false;   // the session's first sync gets the whole catalog
+let _catPinsRead = false;    // pinHashes/pins are memory-only: read once per session
+let _catLoadP = null, _catSaveT = null;
+
+const lfClone = x => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
+
+function lfCatLoad(){
+  if(!_catLoadP) _catLoadP = lfIdb.get(LF_CAT_CACHE).then(c=>{
+    if(_cat || !c || c.v !== 1 || !c.cat || typeof c.cat !== 'object') return;
+    _cat = { vendors:c.cat.vendors||null, menu:c.cat.menu||null, deletedVendors:c.cat.deletedVendors||null,
+             heroStats:c.cat.heroStats||null, pinHashes:null, pins:null };
+    _catRevs = (c.revs && typeof c.revs === 'object') ? c.revs : {};
+    _catRev = c.rev === undefined ? null : c.rev;
+    _catFullAt = Number(c.fullAt) || 0;
+  }).catch(()=>{});
+  return _catLoadP;
+}
+function lfCatSave(){
+  clearTimeout(_catSaveT);
+  _catSaveT = setTimeout(()=>{
+    if(!_cat) return;
+    const pub = { vendors:_cat.vendors||null, menu:_cat.menu||null,
+                  deletedVendors:_cat.deletedVendors||null, heroStats:_cat.heroStats||null };
+    lfIdb.set(LF_CAT_CACHE, { v:1, cat:pub, revs:_catRevs, rev:_catRev === undefined ? null : _catRev, fullAt:_catFullAt });
+  }, 1500);
+}
+
+// Everything known, plus this tick's changes. Clones: applyData() puts these
+// objects straight into VENDORS, where local edits would otherwise reach _cat.
+function lfCatView(over){
+  over = over || {};
+  const base = lfClone(_cat) || {};
+  const v = Object.assign({}, base.vendors || {}, over.vendors || {});
+  (over._gone || []).forEach(k=>{ delete v[k]; });
+  const m = Object.assign({}, base.menu || {}, over.menu || {});
+  const ph = Object.assign({}, base.pinHashes || {}, over.pinHashes || {});
+  return {
+    vendors: Object.keys(v).length ? v : null,
+    menu: Object.keys(m).length ? m : null,
+    pinHashes: Object.keys(ph).length ? ph : null,
+    pins: over.pins || base.pins || null,
+    deletedVendors: ('deletedVendors' in over) ? over.deletedVendors : (base.deletedVendors || null),
+    heroStats: ('heroStats' in over) ? over.heroStats : (base.heroStats || null),
+  };
+}
+// Just this tick's changes. Tombstones and hero stats are tiny and always
+// included, so applyData() sees them on every sync exactly as before.
+function lfCatSmall(over){
+  const out = Object.assign({}, over || {});
+  delete out._gone;
+  if(!('deletedVendors' in out)) out.deletedVendors = _cat ? (lfClone(_cat.deletedVendors) || null) : null;
+  if(!('heroStats' in out)) out.heroStats = _cat ? (lfClone(_cat.heroStats) || null) : null;
+  return out;
+}
+
+async function lfFetchCatalog(){
+  await lfCatLoad();
+  const first = !_catHandedOut;
+  const now = Date.now();
+  const me = activeVendorId;
+  let revsOk = true, rev, revs, dv, myHash;
+  try{
+    [rev, revs, dv, myHash] = await Promise.all([
+      fbGet(ROOM_KEY+'/rev'),
+      fbGet(ROOM_KEY+'/revs').catch(()=>{ revsOk = false; return null; }),
+      // Security state is read on EVERY tick, never gated on stamps: a PIN
+      // reset or a store deletion must reach the affected phones even when
+      // the writer is an old build that stamps nothing (v56 revocation —
+      // lfRevalidateVendorSession and applyData's tombstones). Both tiny.
+      fbGet(ROOM_KEY+'/deletedVendors').catch(()=>undefined),
+      me ? fbGet(ROOM_KEY+'/pinHashes/'+me).catch(()=>undefined) : undefined,
+    ]);
+  }catch(e){
+    // Unreachable. A cached catalog still beats the demo stores at startup;
+    // show it, but record nothing.
+    if(first && _cat) return { data: lfCatView(null), commit: ()=>{ _catHandedOut = true; } };
+    throw e;
+  }
+  revs = (revs && typeof revs === 'object') ? revs : {};
+  const legacyMoved = !!_cat && rev !== _catRev;
+  let res;
+  if(!_cat || legacyMoved || (_catConfirmAt && now >= _catConfirmAt) ||
+     (!revsOk && now - _catFullAt >= LF_CAT_NOREVS_MS) || now - _catFullAt >= LF_CAT_SAFETY_MS){
+    res = await lfFetchCatalogFull(rev, revs, legacyMoved, now);
+  } else {
+    const changed = Object.keys(Object.assign({}, _catRevs, revs)).filter(k=>revs[k] !== _catRevs[k]);
+    res = (!changed.length && _catPinsRead)
+      ? { data: first ? lfCatView(null) : lfCatSmall(null), commit: ()=>{ _catHandedOut = true; } }
+      : await lfFetchCatalogDelta(changed, revs, first);
+  }
+  // The per-tick security reads are the freshest copies there are.
+  if(dv !== undefined) res.data.deletedVendors = lfClone(dv);
+  if(me && myHash) res.data.pinHashes = Object.assign({}, res.data.pinHashes || {}, { [me]: lfClone(myHash) });
+  const inner = res.commit;
+  res.commit = ()=>{
+    inner();
+    if(!_cat) return;
+    // Saved to disk only when the tombstones actually changed — not every 3s.
+    if(dv !== undefined && lfStable(dv) !== lfStable(_cat.deletedVendors)){ _cat.deletedVendors = dv; lfCatSave(); }
+    if(me && myHash !== undefined && _cat.pinHashes){
+      if(myHash) _cat.pinHashes[me] = myHash; else delete _cat.pinHashes[me];
+    }
+  };
+  return res;
+}
+
+async function lfFetchCatalogFull(rev, revs, legacyMoved, now){
+  const opt = p=>fbGet(ROOM_KEY+p).catch(()=>null);
+  // vendors, menu and tombstones must all arrive: recording a full read that
+  // silently lost one would hide it until the next day's backstop read.
+  const [vendors, menu, deletedVendors, pinHashes, pins, heroStats] = await Promise.all([
+    fbGet(ROOM_KEY+'/vendors'), fbGet(ROOM_KEY+'/menu'), fbGet(ROOM_KEY+'/deletedVendors'),
+    opt('/pinHashes'), opt('/pins'), opt('/heroStats'),
+  ]);
+  const full = { vendors, menu, pinHashes, pins, deletedVendors, heroStats };
+  const data = lfClone(full);
+  if(vendors === null && menu === null && rev == null && !Object.keys(revs).length){
+    // Possibly a brand-new database. Only a shallow read of the room can say
+    // so — never conclude it from a failed read, or a bad connection would
+    // re-seed (and so wipe) the live catalog.
+    try{ if((await fbGetShallow(ROOM_KEY)) === null) data._empty = true; }catch(e){}
+  }
+  return { data, commit: ()=>{
+    _cat = full;
+    _catRevs = Object.assign({}, revs);
+    _catRev = rev === undefined ? null : rev;
+    _catFullAt = now;
+    _catConfirmAt = legacyMoved ? now + LF_CAT_CONFIRM_MS : 0;
+    _catPinsRead = true;
+    _catHandedOut = true;
+    lfCatSave();
+  }};
+}
+
+async function lfFetchCatalogDelta(changed, revs, first){
+  const vids = changed.filter(k=>k !== '_meta');
+  const rows = await Promise.all(vids.map(vid=>Promise.all([
+    fbGet(ROOM_KEY+'/vendors/'+vid),
+    fbGet(ROOM_KEY+'/menu/'+vid),
+    fbGet(ROOM_KEY+'/pinHashes/'+vid).catch(()=>undefined),   // unreadable once the rules are published
+  ]).then(([v, m, h])=>({ vid, ok:true, v, m, h })).catch(()=>({ vid, ok:false }))));
+  // '_meta' = hero stats. (Tombstones are read every tick — lfFetchCatalog.)
+  const meta = changed.includes('_meta')
+    ? await fbGet(ROOM_KEY+'/heroStats').then(hs=>({ hs })).catch(()=>null)
+    : null;
+  let pins = null;
+  if(!_catPinsRead){
+    const [ph, lp] = await Promise.all([
+      fbGet(ROOM_KEY+'/pinHashes').catch(()=>null),
+      fbGet(ROOM_KEY+'/pins').catch(()=>null),
+    ]);
+    pins = { ph, lp };
+  }
+  const delta = {};
+  rows.forEach(r=>{
+    if(!r.ok) return;
+    if(r.v) (delta.vendors = delta.vendors || {})[r.vid] = r.v;
+    else (delta._gone = delta._gone || []).push(r.vid);
+    // RTDB deletes an emptied menu outright; pass an explicit [] so applyData
+    // clears the old one instead of keeping it.
+    (delta.menu = delta.menu || {})[r.vid] = r.m || [];
+    if(r.h) (delta.pinHashes = delta.pinHashes || {})[r.vid] = r.h;
+  });
+  if(meta) delta.heroStats = meta.hs;
+  if(pins){
+    if(pins.ph) delta.pinHashes = Object.assign({}, pins.ph, delta.pinHashes || {});
+    if(pins.lp) delta.pins = pins.lp;
+  }
+  const out = lfClone(delta);
+  return { data: first ? lfCatView(out) : lfCatSmall(out), commit: ()=>{
+    _cat = _cat || { vendors:null, menu:null, pinHashes:null, pins:null, deletedVendors:null, heroStats:null };
+    if(pins){ _cat.pinHashes = pins.ph || null; _cat.pins = pins.lp || null; _catPinsRead = true; }
+    rows.forEach(r=>{
+      if(!r.ok) return;   // its stamp stays unrecorded, so the next sync retries it
+      _cat.vendors = _cat.vendors || {};
+      _cat.menu = _cat.menu || {};
+      if(r.v) _cat.vendors[r.vid] = r.v; else delete _cat.vendors[r.vid];
+      if(r.m) _cat.menu[r.vid] = r.m; else delete _cat.menu[r.vid];
+      // Only into a COMPLETE set: a partial one would make lfCatalogChanges()
+      // see every other store's hash as changed.
+      if(r.h !== undefined && _cat.pinHashes){
+        if(r.h) _cat.pinHashes[r.vid] = r.h; else delete _cat.pinHashes[r.vid];
+      }
+      if(revs[r.vid] === undefined) delete _catRevs[r.vid]; else _catRevs[r.vid] = revs[r.vid];
+    });
+    if(meta){
+      _cat.heroStats = meta.hs;
+      if(revs._meta === undefined) delete _catRevs._meta; else _catRevs._meta = revs._meta;
+    }
+    _catHandedOut = true;
+    lfCatSave();
+  }};
+}
+
+// pushState() compares local state with the cloud as last seen, to stamp only
+// the stores it is actually changing. Normalised the way RTDB stores data
+// (sorted keys; null, [] and {} dropped) so a no-op push stamps nothing.
+function lfStable(x){
+  const norm = v=>{
+    if(v === null || v === undefined) return undefined;
+    if(Array.isArray(v)){ const a = v.map(norm).filter(e=>e !== undefined); return a.length ? a : undefined; }
+    if(typeof v === 'object'){
+      const o = {};
+      Object.keys(v).sort().forEach(k=>{ const n = norm(v[k]); if(n !== undefined) o[k] = n; });
+      return Object.keys(o).length ? o : undefined;
+    }
+    return v;
+  };
+  return JSON.stringify(norm(x)) || '';
+}
+// Not _normalizeMenu(): that assigns fresh random ids to id-less items, which
+// would make every comparison differ.
+const lfMenuArr = raw => Array.isArray(raw) ? raw
+  : (raw && typeof raw === 'object') ? Object.keys(raw).sort((a,b)=>a-b).map(k=>raw[k]) : [];
+// null when the cloud copy isn't known yet — the caller then stamps every store.
+function lfCatalogChanges(){
+  if(!_cat || !_cat.vendors) return null;
+  const cv = _cat.vendors || {}, cm = _cat.menu || {};
+  const keys = new Set([...Object.keys(VENDORS), ...Object.keys(MENU), ...Object.keys(cv), ...Object.keys(cm)]);
+  return [...keys].filter(k=>
+    lfStable(VENDORS[k]) !== lfStable(cv[k]) ||
+    lfStable(lfMenuArr(MENU[k])) !== lfStable(lfMenuArr(cm[k])) ||
+    (_catPinsRead && !!_cat.pinHashes && lfStable(VENDOR_PIN_HASHES[k]) !== lfStable(_cat.pinHashes[k])));
+}
+
+// Stamps go out only AFTER the data they describe has landed, and are queued
+// in localStorage first: data that landed with a stamp that didn't would
+// otherwise leave every other phone on the old copy until the daily backstop.
+const LF_REV_QUEUE = 'lf-rev-queue';
+const _lfBumpQ = new Map();   // key → sequence number, so a re-stamp during a send isn't lost
+let _lfBumpSeq = 0, _lfBumpBusy = false, _lfBumpRetryAt = 0;
+try{ JSON.parse(localStorage.getItem(LF_REV_QUEUE) || '[]').forEach(k=>_lfBumpQ.set(String(k), ++_lfBumpSeq)); }catch(e){}
+function lfBumpSave(){ try{ localStorage.setItem(LF_REV_QUEUE, JSON.stringify([..._lfBumpQ.keys()])); }catch(e){} }
+function lfBumpRevs(keys){
+  (keys || []).forEach(k=>{ if(k) _lfBumpQ.set(String(k), ++_lfBumpSeq); });
+  lfBumpSave();
+  _lfBumpRetryAt = 0;
+  return lfFlushRevs();
+}
+async function lfFlushRevs(){
+  if(_lfBumpBusy || !_lfBumpQ.size || Date.now() < _lfBumpRetryAt) return;
+  _lfBumpBusy = true;
+  const batch = [..._lfBumpQ.entries()];
+  // The fraction makes a stamp unequal to any another phone already recorded,
+  // even when two phones' clocks read the same millisecond.
+  const stamp = Date.now() + Math.random();
+  const body = {};
+  batch.forEach(([k])=>{ body[k] = stamp; });
+  let ok = false;
+  try{ await fbPatch(ROOM_KEY+'/revs', body); ok = true; }
+  catch(e){ _lfBumpRetryAt = Date.now() + 15000; }
+  _lfBumpBusy = false;
+  if(!ok) return;
+  batch.forEach(([k, s])=>{ if(_lfBumpQ.get(k) === s) _lfBumpQ.delete(k); });
+  lfBumpSave();
+  if(_lfBumpQ.size) return lfFlushRevs();
+}
+
+// v64: a finished order never changes again. Customers re-read every order
+// they placed once per LF_CUST_SWEEP_MS (and at startup) for their history,
+// and in between poll only the ones still in progress.
+const LF_CUST_SWEEP_MS = 5*60*1000;
+const LF_FINAL_STATUSES = ['delivered','declined','cancelled','canceled','completed'];
+let _lfCustSweepAt = 0;
+function lfOrderStillLive(id){
+  const o = orders.find(x=>x.id === id);
+  if(!o) return true;
+  if(!LF_FINAL_STATUSES.includes(o.status)) return true;
+  const t = Number(o.updatedAt) || new Date(o.timestamp).getTime() || 0;
+  return Date.now() - t < 30*60*1000;
 }
 
 async function lfFetchScoped(){
-  // Catalog: everything except the orders table.
-  const [vendors, menu, pinHashes, pins, deletedVendors, heroStatsNode] = await Promise.all([
-    fbGet(ROOM_KEY+'/vendors').catch(()=>null),
-    fbGet(ROOM_KEY+'/menu').catch(()=>null),
-    fbGet(ROOM_KEY+'/pinHashes').catch(()=>null),
-    fbGet(ROOM_KEY+'/pins').catch(()=>null),          // legacy, migration only
-    fbGet(ROOM_KEY+'/deletedVendors').catch(()=>null),
-    fbGet(ROOM_KEY+'/heroStats').catch(()=>null),
-  ]);
-
-  const d = { vendors, menu, pinHashes, pins, deletedVendors, heroStats: heroStatsNode, orders: {} };
+  // Catalog: only the stores that changed since the last sync (see above).
+  const { data: cat, commit } = await lfFetchCatalog();
+  const d = Object.assign({}, cat, { orders: {} });
+  let sweep = false;
 
   if(_lfAdminMode){
     // v55: the admin needs every order, but firebase-rules.json deliberately
@@ -11024,25 +11458,35 @@ async function lfFetchScoped(){
     // stops a stranger dumping every customer's details. So the admin asks the
     // same way a vendor does, once per vendor, and merges. More requests, but
     // it is admin-only and it keeps the rule that protects everyone else.
-    const vids = Object.keys(VENDORS).length ? Object.keys(VENDORS)
-                                             : Object.keys((vendors||{}));
-    const chunks = await Promise.all(vids.map(vid=>lfOrdersForVendor(vid).catch(()=>({}))));
-    chunks.forEach(c=>Object.assign(d.orders, c||{}));
+    if(_lfOrdersNoIndex){
+      d.orders = await lfAllOrders().catch(()=>({}));
+    } else {
+      const vids = Object.keys(VENDORS).length ? Object.keys(VENDORS)
+                                               : Object.keys((d.vendors||{}));
+      const chunks = await Promise.all(vids.map(vid=>lfOrdersForVendor(vid).catch(()=>({}))));
+      chunks.forEach(c=>Object.assign(d.orders, c||{}));
+    }
   } else if(activeVendorId){
     // Vendor: indexed query for just this vendor's orders.
-    d.orders = await lfOrdersForVendor(activeVendorId);
+    d.orders = await lfOrdersForVendor(activeVendorId).catch(()=>({}));
   } else {
     // Customer: fetch only the orders this device actually placed, by key.
     const ids = Array.from(new Set(myOrderIds||[]));
     if(lastPlacedOrderId && !ids.includes(lastPlacedOrderId)) ids.push(lastPlacedOrderId);
     // Cap the fan-out; saveLocal() already trims myOrderIds to the last 100.
-    const recent = ids.slice(-25);
+    let recent = ids.slice(-25);
+    sweep = Date.now() - _lfCustSweepAt >= LF_CUST_SWEEP_MS;
+    if(!sweep) recent = recent.filter(lfOrderStillLive);
     const rows = await Promise.all(recent.map(id=>{
       const key = id.replace(/[^a-zA-Z0-9]/g,'_');
       return fbGet(ROOM_KEY+'/orders/'+key).catch(()=>null);
     }));
     rows.forEach((o,i)=>{ if(o) d.orders[recent[i].replace(/[^a-zA-Z0-9]/g,'_')] = o; });
   }
+  Object.defineProperty(d, '_commit', { value: ()=>{
+    commit();
+    if(sweep) _lfCustSweepAt = Date.now();
+  }});
   return d;
 }
 
@@ -11185,30 +11629,37 @@ function refreshVisible(){
 
   // splash covers this — toast silenced (v-polish #3)
   // Boot with retry — Firebase free tier can have a slow cold start
-  let bootAttempts = 0;
+  let bootAttempts = 0, _booted = false, _bootRetry = null;
   async function tryBoot(){
+    if(_booted) return;
     bootAttempts++;
     try{
-      const existing = await fbGet(ROOM_KEY);
-      if(existing && existing.orders){
-        applyData(existing);
-        // toast silenced during open (splash) — v-polish #3
-      } else if(existing) {
-        applyData(existing);
-        // toast silenced during open (splash) — v-polish #3
-      } else {
-        // First time setup
+      // v64: the same scoped read as the 3s sync. This used to be
+      // fbGet(ROOM_KEY) — the entire database, every order, chat and Feed
+      // video ever stored — on every single app open.
+      const d = await lfFetchScoped();
+      if(d._empty){
+        // First time setup: only on a database a shallow read has confirmed
+        // is empty (see lfFetchCatalogFull), never after a failed read.
         await fbSet(ROOM_KEY, buildPayload());
-        // toast silenced during open (splash) — v-polish #3
+      } else {
+        applyData(d);
+        if(d._commit) d._commit();
       }
+      _booted = true;
+      if(_bootRetry){ clearInterval(_bootRetry); _bootRetry = null; }
     }catch(e){
       if(bootAttempts < 5){
         setTimeout(tryBoot, 1500);
-      } else {
+      } else if(!_bootRetry){
         console.warn('LokalFinder: connection delayed, will keep retrying in background');
         // slow-connection toast silenced during open — v-polish #3
-        // Keep retrying silently in background every 5s
-        setInterval(()=>{ if(orders.length===0) tryBoot(); }, 5000);
+        // ONE background retry. Every failure past the fifth used to start
+        // another setInterval here (and a customer with no orders never
+        // satisfied the old orders.length stop condition), so a database
+        // that stayed unreachable doubled this device's request rate every
+        // five seconds until the page froze.
+        _bootRetry = setInterval(tryBoot, 5000);
       }
     }
   }
@@ -11389,12 +11840,14 @@ window.LFN = (function(){
   const LFN_PENDING_MS = 44000;
   let _lfnPendingWrites = 0;
   let _lfnSyncPausedUntil = 0;
+  let _lfnLastWriteDoneAt = 0;
   async function lfnTrackedWrite(fn){
     _lfnPendingWrites++;
     _lfnSyncPausedUntil = Date.now() + LFN_PENDING_MS;
     try { return await fn(); }
     finally {
       _lfnPendingWrites = Math.max(0, _lfnPendingWrites - 1);
+      _lfnLastWriteDoneAt = Date.now();
       if(_lfnPendingWrites === 0) _lfnSyncPausedUntil = Date.now() + 700;
     }
   }
@@ -11436,30 +11889,65 @@ window.LFN = (function(){
 
   // ---------- Firebase sync (parallel, isolated) ----------
   const LF_POSTS_RECENT_LIMIT = 40;
-  let _lfPostsIndexWarned = false;
-  // v-feedvideo: /posts was an unscoped full read on every feed open even
-  // before video existed — the same architectural gap v55 closed for
-  // /orders (see lfOrdersForVendor() below applyData()), just never applied
-  // here because photos were small enough not to hurt. A video-carrying
-  // post history growing without bound makes that the wrong tradeoff now:
-  // every open would re-download every post ever made, video and all.
-  // Mirrors lfOrdersForVendor()'s exact shape — an indexed, limited query,
-  // falling back to a full read (with a one-time console warning) only if
-  // that index isn't published yet.
-  async function fetchRecentPosts(){
-    try{
-      const q = `posts.json?orderBy=${encodeURIComponent('"createdAt"')}&limitToLast=${LF_POSTS_RECENT_LIMIT}`;
-      const r = await fetch(`${FB_URL}/${ROOM_KEY}/${q}`);
-      if(!r.ok) throw new Error('index query failed: '+r.status);
-      return (await r.json()) || {};
-    }catch(e){
-      if(!_lfPostsIndexWarned){
-        _lfPostsIndexWarned = true;
-        console.warn('feed: /posts is missing .indexOn["createdAt"] — falling back to a full read. '+
-                     'Publish firebase-rules.json to fix this.', e);
+  // v64: posts never change once written (only created or deleted), so each
+  // one is downloaded ONCE per session and kept in _lfnPostCache. The poll
+  // reads only the list of post ids — shallow=true, a few bytes per post, no
+  // index needed — and fetches ids it has never seen. Before this, every
+  // Feed viewer re-downloaded the newest 40 posts, videos and all, every 25s
+  // (and every post ever made whenever the createdAt index was missing).
+  // The Feed also opens with just the newest LFN_FEED_PAGE posts and loads
+  // more as the customer scrolls (lfnFeedWantMore), rather than all 40 at
+  // once. lfnUid() ids begin with their creation time, which is what lets the
+  // newest be picked before anything is downloaded.
+  const LFN_FEED_PAGE = 4;
+  let _lfnFeedWant = LFN_FEED_PAGE;
+  const _lfnPostCache = new Map();   // post id → post
+  let _lfnPostIds = null;            // every id in /posts, newest first, from the last listing
+  function lfnPostTs(id){
+    const p = _lfnPostCache.get(id);
+    if(p && Number(p.createdAt)) return Number(p.createdAt);
+    const m = /^p_([0-9a-z]{8})/.exec(String(id));
+    return m ? parseInt(m[1], 36) : NaN;
+  }
+  // Two syncs can overlap (openFeed()'s forced one and the 8s tick) — they
+  // share one download per post instead of each fetching the same video.
+  const _lfnPostLoading = new Map();   // post id → in-flight read
+  function lfnLoadPosts(ids){
+    return Promise.all(ids.map(id=>{
+      if(_lfnPostCache.has(id)) return null;
+      if(!_lfnPostLoading.has(id)){
+        _lfnPostLoading.set(id, fbGet(POSTS_NODE + '/' + id).then(p=>{
+          if(p && typeof p === 'object') _lfnPostCache.set(id, Object.assign({}, p, { id: p.id || id }));
+        }).catch(()=>{}).finally(()=>{ _lfnPostLoading.delete(id); }));
       }
-      return (await fbGet(POSTS_NODE).catch(()=>null)) || {};
-    }
+      return _lfnPostLoading.get(id);
+    }));
+  }
+  // withBodies=false: just refresh the id list (the admin dashboard only
+  // needs to count recent posts, which the ids alone can do).
+  async function fetchRecentPosts(withBodies){
+    const listing = await fbGetShallow(POSTS_NODE);
+    const ids = (listing && typeof listing === 'object') ? Object.keys(listing) : [];
+    // An id that doesn't carry its creation time has to be read to be placed.
+    if(withBodies) await lfnLoadPosts(ids.filter(id=>!_lfnPostCache.has(id) && isNaN(lfnPostTs(id))));
+    _lfnPostIds = ids.filter(id=>!isNaN(lfnPostTs(id))).sort((a,b)=>lfnPostTs(b) - lfnPostTs(a));
+    // The newest page(s) wanted, plus anything already on screen — a new post
+    // arriving at the top must not push a loaded one off the bottom.
+    const onScreen = new Set(posts.map(p=>p.id));
+    const want = _lfnPostIds.filter((id, i)=>i < _lfnFeedWant || onScreen.has(id)).slice(0, LF_POSTS_RECENT_LIMIT);
+    if(withBodies) await lfnLoadPosts(want.filter(id=>!_lfnPostCache.has(id)));
+    const out = {};
+    want.forEach(id=>{ const p = _lfnPostCache.get(id); if(p) out[id] = p; });
+    return out;
+  }
+  // The customer is one post from the end of what's loaded: fetch the next page.
+  let _lfnLoadingMore = false;
+  function lfnFeedWantMore(){
+    if(_lfnLoadingMore || !_lfnPostIds || _lfnFeedWant >= Math.min(_lfnPostIds.length, LF_POSTS_RECENT_LIMIT)) return;
+    _lfnLoadingMore = true;
+    _lfnFeedWant += LFN_FEED_PAGE;
+    _lfnLastPostsFetchAt = 0;   // if this tick is skipped (a write in flight), the next one fetches
+    syncFromFB({ forcePosts:true }).finally(()=>{ _lfnLoadingMore = false; });
   }
   // v-feedvideo followup: a code review caught that the setInterval below
   // ran this completely unconditionally — every device, every 8s, forever,
@@ -11477,6 +11965,10 @@ window.LFN = (function(){
   function postsCurrentlyNeeded(){
     const cur = document.querySelector('.page.on');
     return !!cur && (cur.id === 'p-cfeed' || cur.id === 'p-adash');
+  }
+  function postsBodiesNeeded(){
+    const cur = document.querySelector('.page.on');
+    return !!cur && cur.id === 'p-cfeed';
   }
   // v-feedvideo followup: a code review caught that gating the FETCH on
   // page visibility wasn't enough — while the feed IS open (the actual
@@ -11502,11 +11994,16 @@ window.LFN = (function(){
   // only the expensive posts fetch to its own slower cadence.
   const LFN_POSTS_POLL_MS = 25000;
   let _lfnLastPostsFetchAt = 0;
+  // v64: reviews only feed star averages — a minute's lag is invisible, and
+  // this read ran every 8s on every open device whatever page it was on.
+  const LFN_REVIEWS_POLL_MS = 60000;
+  let _lfnLastReviewsAt = 0;
   async function syncFromFB(opts){
     // A publish/delete write is in flight (or just landed) — skip this whole
     // tick rather than let a read that started before it overwrite the
     // optimistic local state it just applied. See lfnTrackedWrite() above.
     if(Date.now() < _lfnSyncPausedUntil) return;
+    const issuedAt = Date.now();
     try {
       // forcePosts: openFeed() and the p-adash goPage hook pass this so the
       // very first fetch on opening the page is never held back by a stale
@@ -11515,13 +12012,20 @@ window.LFN = (function(){
       const forcePosts = !!(opts && opts.forcePosts);
       const wantPosts = postsCurrentlyNeeded() &&
         (forcePosts || Date.now() - _lfnLastPostsFetchAt >= LFN_POSTS_POLL_MS);
+      // Post bodies only where they're shown; the admin dashboard needs ids.
+      const withBodies = wantPosts && postsBodiesNeeded();
+      const wantReviews = forcePosts || Date.now() - _lfnLastReviewsAt >= LFN_REVIEWS_POLL_MS;
       const [postsData, reviewsData] = await Promise.all([
-        wantPosts ? fetchRecentPosts() : Promise.resolve(null),
-        fbGet(REVIEWS_NODE).catch(()=>null),
+        wantPosts ? fetchRecentPosts(withBodies) : Promise.resolve(null),
+        wantReviews ? fbGet(REVIEWS_NODE).catch(()=>undefined) : Promise.resolve(undefined),
       ]);
+      // The pause above only covers writes that began before this tick; one
+      // that began DURING it makes these results older than local state.
+      // Posts are cached by id, so dropping a stale listing costs nothing.
+      const raced = _lfnLastWriteDoneAt > issuedAt || Date.now() < _lfnSyncPausedUntil;
       let sig = null;
-      if(wantPosts){
-        _lfnLastPostsFetchAt = Date.now();
+      if(wantPosts) _lfnLastPostsFetchAt = Date.now();
+      if(withBodies && !raced){
         const fetched = postsData ? Object.values(postsData) : [];
         sig = fetched.map(x=>x.id).sort().join(',');
         posts = fetched;
@@ -11531,13 +12035,16 @@ window.LFN = (function(){
       // held the previous tick's value — as this did when the assignment ran
       // after the posts render — showed a stale average for the one tick
       // right after a review was submitted.
-      reviews = reviewsData ? Object.values(reviewsData) : [];
+      if(wantReviews && reviewsData !== undefined){
+        _lfnLastReviewsAt = Date.now();
+        if(!raced) reviews = reviewsData ? Object.values(reviewsData) : [];
+      }
       // _lfnLastPostsSig is NOT set here — renderFeed() itself stamps it
       // once it actually renders (see the comment there). Pre-setting it
       // here regardless of whether a render actually happened (e.g. the
       // Feed isn't the visible page right now) used to let it silently fall
       // out of sync with what's really on screen.
-      if(wantPosts && sig !== _lfnLastPostsSig) renderFeedIfVisible();
+      if(withBodies && !raced && sig !== _lfnLastPostsSig) renderFeedIfVisible();
       renderReviewsIfVisible();
       updateAdminExtras();
     } catch(e){ /* silent — don't disrupt main sync */ }
@@ -11589,9 +12096,20 @@ window.LFN = (function(){
   // nodes an old observer would be watching for nothing.
   let _lfnFeedMuted = true;
   let _lfnFeedObserver = null;
+  let _lfnMoreObserver = null;
   function lfnSetupFeedObserver(){
     if(_lfnFeedObserver){ _lfnFeedObserver.disconnect(); _lfnFeedObserver = null; }
+    if(_lfnMoreObserver){ _lfnMoreObserver.disconnect(); _lfnMoreObserver = null; }
     const scroller = document.querySelector('#p-cfeed .scrl');
+    // v64: reaching the second-to-last loaded post fetches the next page, so
+    // it is usually there before the customer gets to the end.
+    const cards = document.querySelectorAll('#lfn-feed-list .lfn-post');
+    if(scroller && cards.length && typeof IntersectionObserver === 'function'){
+      _lfnMoreObserver = new IntersectionObserver(entries=>{
+        if(entries.some(e=>e.isIntersecting)) lfnFeedWantMore();
+      }, { root: scroller, threshold: 0.5 });
+      _lfnMoreObserver.observe(cards[Math.max(0, cards.length - 2)]);
+    }
     const videos = document.querySelectorAll('#lfn-feed-list video');
     if(!scroller || !videos.length) return;
     _lfnFeedObserver = new IntersectionObserver((entries)=>{
@@ -11624,6 +12142,7 @@ window.LFN = (function(){
   function lfnPauseFeedVideos(){
     document.querySelectorAll('#lfn-feed-list video').forEach(v=>v.pause());
   }
+  let _lfnRenderedIds = [];   // post ids currently in #lfn-feed-list, in order
   function renderFeed(){
     const list = el('lfn-feed-list');
     if(!list) return;
@@ -11637,10 +12156,12 @@ window.LFN = (function(){
           <div class="lfn-empty-ttl">The feed is quiet.</div>
           <div class="lfn-empty-sub">When a neighbor posts what they're cooking today, it'll show up here. Vendors — tap the Post tab in your dashboard to share what's fresh. Neighbors — tap 📸 Post above to share what you're enjoying.</div>
         </div>`;
+      _lfnRenderedIds = [];
       lfnSetupFeedObserver();
       return;
     }
-    list.innerHTML = sorted.map(p => {
+    // v64: one post's card, also used to append newly loaded posts.
+    const lfnPostHTML = p => {
       const isMine = isMyPost(p);
       const canDelete = canDeletePost(p);
       // video wins over photo; photo wins over a gradient; older posts may
@@ -11766,7 +12287,20 @@ window.LFN = (function(){
             ${deleteBtn}
           </div>
         </div>`;
-    }).join('') + '<div style="height:20px"></div>';
+    };
+    const ids = sorted.map(p=>p.id);
+    // v64: more posts loaded BELOW the ones already on screen — add just
+    // those. The full rebuild restarts the video being watched, and the
+    // customer is always watching one when more load (they scrolled to it).
+    const end = list.lastElementChild;
+    const appendOnly = _lfnRenderedIds.length > 0 && ids.length > _lfnRenderedIds.length &&
+      _lfnRenderedIds.every((id, i)=>ids[i] === id) && !!end && end.classList.contains('lfn-feed-end');
+    if(appendOnly){
+      end.insertAdjacentHTML('beforebegin', sorted.slice(_lfnRenderedIds.length).map(lfnPostHTML).join(''));
+    } else {
+      list.innerHTML = sorted.map(lfnPostHTML).join('') + '<div class="lfn-feed-end" style="height:20px"></div>';
+    }
+    _lfnRenderedIds = ids;
     updateFeedCartBar();
     lfnSetupFeedObserver();
     // Stamp the signature guard here, in the one place every render path
@@ -11984,6 +12518,7 @@ window.LFN = (function(){
       if(stillCurrent) showToast('⚠️ Could not publish — check your connection and try again');
       return;
     }
+    _lfnPostCache.set(post.id, post);   // v64: it saved — never download our own upload back
     if(!stillCurrent) return;
     closeModal('lfn-modal-compose');
     showToast('✅ Posted to feed!');
@@ -12137,6 +12672,7 @@ window.LFN = (function(){
       if(stillCurrent) showToast('⚠️ Could not post — check your connection and try again');
       return;
     }
+    _lfnPostCache.set(post.id, post);   // v64: it saved — never download our own upload back
     if(!stillCurrent) return;
     closeModal('lfn-modal-ccompose');
     showToast('✅ Posted to feed!');
@@ -12154,6 +12690,7 @@ window.LFN = (function(){
     if(!confirm(confirmMsg)) return;
     // Remove locally
     posts = posts.filter(x=>x.id!==postId);
+    _lfnPostCache.delete(postId);
     // Remove from Firebase
     try {
       await lfnTrackedWrite(()=>fbDelete(POSTS_NODE + '/' + postId));
@@ -12313,16 +12850,12 @@ window.LFN = (function(){
     });
     const repeats = Object.values(counts).filter(n=>n>1).length;
     if(repeatEl) repeatEl.textContent = repeats;
-    // Posts in last 24h. v-feedvideo: `posts` is now the 40 most-recent
-    // community-wide (fetchRecentPosts()), not full history, so on a day
-    // with 40+ new posts this undercounts — it can only ever report the
-    // ones that happen to still be within the most-recent-40 window. Left
-    // as an honest limitation rather than a separate always-accurate query:
-    // this is a single-community app (see CLAUDE.md) where 40+ posts in a
-    // day would itself be a notable milestone, not the common case this
-    // stat needs to be exact for.
+    // Posts in last 24h. v64: counted from the id list (every post id carries
+    // its creation time), so it is exact and needs no post downloaded — it
+    // used to count only whatever fell inside the most-recent-40 window.
     const cutoff = Date.now() - 86400000;
-    const live = posts.filter(p=>p.createdAt > cutoff).length;
+    const live = _lfnPostIds ? _lfnPostIds.filter(id=>lfnPostTs(id) > cutoff).length
+                             : posts.filter(p=>p.createdAt > cutoff).length;
     if(postsEl) postsEl.textContent = live;
   }
 
@@ -12743,7 +13276,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 72; // ← bump this each release (and version.json)
+  const APP_VERSION = 73; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
