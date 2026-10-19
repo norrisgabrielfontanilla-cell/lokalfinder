@@ -1670,6 +1670,43 @@ select option { color: var(--t1); background: var(--w); }
   #lf-success-stage.on .lf-suc-ttl,#lf-success-stage.on .lf-suc-sub{animation:none !important;opacity:1;transform:none}
   .cta-spin{animation:none !important;border-top-color:rgba(255,255,255,.32)}
 }
+
+/* ═══ v67 — STORE INFO PAGER (customer vendor page) ═══
+   The vendor page pins its photo, name, stats and Store Info above the menu
+   and only the menu scrolls. A vendor's Store Info is free text — often a
+   dozen short lines with a blank line between each — so the old card could
+   swallow half a phone screen and leave the menu one row to browse in. It is
+   now a pager: the text is split into pages at the vendor's own blank lines
+   (lfPaginateStoreInfo) and you swipe sideways for more. Nothing is ever
+   clipped: the card is as tall as its tallest page and no taller. */
+.vd-info{margin-top:10px;background:linear-gradient(135deg,var(--gl),var(--s2));border:1px solid var(--bd);border-radius:10px;padding:8px 0 9px 12px;overflow:hidden}
+.vd-info-hd{display:flex;align-items:center;gap:6px;padding:0 12px 5px 0}
+.vd-info-pin{font-size:13px;line-height:1}
+.vd-info-ttl{font-size:11px;font-weight:800;color:var(--gd);letter-spacing:.4px;text-transform:uppercase}
+.vd-info-dots{margin-left:auto;display:flex;align-items:center;gap:5px}
+.vd-info-dots i{width:6px;height:6px;border-radius:3px;background:var(--gd);opacity:.32;transition:opacity .15s}
+.vd-info-dots i.on{width:14px;opacity:.9}
+.vd-info-count{font-size:11px;font-weight:800;color:var(--gd);opacity:.8;letter-spacing:.2px}
+.vd-info-track{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;border-radius:6px;
+  overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.vd-info-track::-webkit-scrollbar{display:none}
+.vd-info-track:focus-visible{outline:2px solid var(--g);outline-offset:-2px}
+/* padding-right matches the card's 12px left padding, so a card with ONE page
+   (no .multi) isn't lopsided — the card itself has no right padding, because
+   the next page's sliver has to be able to reach its edge. */
+.vd-info-pg{flex:0 0 100%;box-sizing:border-box;padding-right:12px;scroll-snap-align:start;scroll-snap-stop:always;
+  font-size:12.5px;line-height:1.45;color:var(--t2);white-space:pre-wrap;word-break:break-word}
+.vd-info-pg>div+div{margin-top:4px}
+/* More than one page: each page is a sliver narrower than the card, so the
+   start of the next one shows (faded) at the edge — the cue that this swipes.
+   The ::after spacer is what lets the LAST page reach the left edge. The 22px
+   and 14px here are LF_INFO_PEEK_PX / LF_INFO_PAD_PX (and the 12px above is
+   LF_INFO_PAD1_PX) in lfPaginateStoreInfo(), which measures text at exactly
+   these widths: change them together. */
+.vd-info-track.multi{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent)}
+.vd-info-track.multi .vd-info-pg{flex-basis:calc(100% - 22px);padding-right:14px}
+.vd-info-track.multi::after{content:'';flex:0 0 22px}
+@media(prefers-reduced-motion:reduce){.vd-info-dots i{transition:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2312,13 +2349,17 @@ select option { color: var(--t1); background: var(--w); }
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px" id="vd-delivery-lbl">Delivery</div><div id="vd-delivery" style="font-size:13px;font-weight:700;color:var(--t2)">By vendor</div></div>
       <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:2px">Rating</div><div id="vd-rating" style="font-size:13px;font-weight:700">⭐ 4.9</div></div>
     </div>
-    <!-- Store info from vendor (additive v28 — hidden unless vendor wrote one) -->
-    <div id="vd-desc-card" style="display:none;margin-top:10px;background:linear-gradient(135deg,var(--gl),var(--s2));border:1px solid var(--bd);border-radius:10px;padding:10px 12px">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-        <span style="font-size:13px">📌</span>
-        <span style="font-size:11px;font-weight:800;color:var(--gd);letter-spacing:.4px;text-transform:uppercase">Store Info</span>
+    <!-- Store info from vendor (additive v28 — hidden unless vendor wrote one).
+         v67: a swipeable pager, not a tall card — see lfPaginateStoreInfo(). -->
+    <div id="vd-desc-card" class="vd-info" style="display:none">
+      <div class="vd-info-hd">
+        <span class="vd-info-pin">📌</span>
+        <span class="vd-info-ttl">Store Info</span>
+        <span class="vd-info-dots" id="vd-info-dots" aria-hidden="true"></span>
       </div>
-      <div id="vd-desc-text" style="font-size:12.5px;color:var(--t2);line-height:1.5;white-space:pre-wrap;word-break:break-word"></div>
+      <!-- role/tabindex/aria-label are added by lfPaginateStoreInfo() only when
+           there is something to scroll: one page is plain text, not a tab stop. -->
+      <div id="vd-desc-text" class="vd-info-track"></div>
     </div>
   </div>
   <div class="scrl" id="vd-menu"></div>
@@ -2945,6 +2986,8 @@ select option { color: var(--t1); background: var(--w); }
         <textarea id="v-store-desc" maxlength="300" rows="3" placeholder="e.g. GCash only 💙 · Delivery ₱20 within Tower 1-2, ₱30 for Tower 3-5 · Pre-order before 10AM for lunch"
           style="width:100%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;font-weight:500;font-family:var(--ff);resize:none;line-height:1.45"
           oninput="if(el('v-desc-count'))el('v-desc-count').textContent=(300-this.value.length)+' left'"></textarea>
+        <!-- v67: the customer's Store Info swipes in pages, split at blank lines. -->
+        <div style="font-size:10px;line-height:1.4;color:rgba(255,255,255,.45);margin-top:5px">Tip: leave a blank line between topics (payment, delivery, prep time) — customers swipe through them.</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
           <div id="v-desc-count" style="font-size:10px;color:rgba(255,255,255,.45)">300 left</div>
           <button onclick="saveStoreDesc()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff)">Save Info</button>
@@ -4181,6 +4224,9 @@ function goBack(){
   const prev=pageHistory[pageHistory.length-1]||'p-chome';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(prev).classList.add('on');
+  // v67: a phone turned while the store page was hidden missed the resize
+  // re-layout of its Store Info pages (a no-op if the width is unchanged).
+  if(prev==='p-cvendor'){ try{ lfPaginateStoreInfo(); }catch(e){} }
 }
 
 // ═══ PORTALS ═══
@@ -4875,6 +4921,208 @@ function toggleFavFilter(){
   buildVendorCards(true);
 }
 
+/* ═══ v67 — STORE INFO PAGER ═══
+   A vendor writes their Store Info as free text (payment rules, delivery fee,
+   prep time). Shown whole it can take half a phone screen, and the vendor page
+   pins it above the menu, so the menu is left one row to browse in (see the
+   .vd-info CSS). This lays the text out as swipeable pages instead.
+
+   • Paragraphs are the vendor's own — split on blank lines, nothing reworded —
+     and are packed into pages up to LF_INFO_MAX_PX tall, measured in the real
+     font at the real width, not guessed from character counts.
+   • Everything a vendor can actually save (the editor stops at 300 characters)
+     is shown in full: the card grows to its tallest page, and a paragraph too
+     tall for a page is let go line by line so it can share pages. Only a
+     record far beyond anything the editor allows is cut, and it ends in "…".
+   • Text goes in with textContent — never innerHTML. This is vendor-written
+     text shown to customers.
+   • Measuring needs the page on screen: a hidden page has no width. So
+     lfRenderStoreInfo() only stores the text; openVendor() lays it out after
+     goPage(), and a ResizeObserver lays it out again whenever the card's width
+     changes (a phone turned, a window resized, the store page coming back on
+     screen by any route). */
+const LF_INFO_MAX_PX   = 96;  // ~5 lines: the tallest a page may grow before the next paragraph starts a new one
+const LF_INFO_GAP_PX   = 4;   // space between paragraphs on a page          (.vd-info-pg>div+div)
+const LF_INFO_PAD1_PX  = 12;  // right padding of a page when there is ONE   (.vd-info-pg)
+const LF_INFO_PEEK_PX  = 22;  // sliver of the next page left showing        (.vd-info-track.multi)
+const LF_INFO_PAD_PX   = 14;  // right padding of a page when there are several (same rule)
+const LF_INFO_MAX_DOTS = 8;   // more pages than this and the dots would crowd the title: show "2/12" instead
+// The editor stops at 300 characters, so this is ~7x what a vendor can save. It
+// exists because this database takes unauthenticated writes: without it one
+// tampered record makes every phone that opens the store measure 100,000
+// paragraphs (12.9s frozen in a test, against 35ms with a cap).
+const LF_INFO_MAX_CHARS = 2000;
+let _lfInfoText = '', _lfInfoW = 0, _lfInfoBound = false;
+
+function lfInfoBlocks(text){
+  return String(text||'').replace(/\r\n?/g,'\n').split(/\n[ \t]*\n/).map(b=>b.trim()).filter(Boolean);
+}
+
+// Heights of many strings at one width, with ONE layout: every string goes into
+// the measurer first and the heights are read back afterwards. (Reading between
+// writes forces a fresh layout per string — ~650 of them for a 330-paragraph record.)
+function lfInfoHeights(host, list, width, padRight){
+  const box = document.createElement('div');
+  box.style.cssText = 'position:absolute;visibility:hidden;left:0;top:0;width:'+Math.max(120, width)+'px';
+  const els = list.map(s=>{
+    const d = document.createElement('div');
+    d.className = 'vd-info-pg';
+    d.style.cssText = 'flex:none;width:100%;padding-right:'+padRight+'px';
+    d.textContent = s;
+    box.appendChild(d);
+    return d;
+  });
+  host.appendChild(box);
+  try{ return els.map(d=>d.offsetHeight); } finally { box.remove(); }
+}
+
+/* A sideways swipe that runs off either END of the pager has nothing left to
+   scroll, so the browser hands it to the page — and on Chromium phones that is
+   the swipe-back gesture: one swipe too far right on page 1 left the app for
+   the previous site. overscroll-behavior does not stop it (tried: contain and
+   none on the track, on html and on body — all still navigated in headless
+   Chromium), so the swipe is cancelled where it starts. Only a horizontal,
+   single-finger drag, only at an end, only while there are several pages —
+   vertical drags and pinch-zoom are untouched, and so is paging itself. The
+   listener has to be non-passive to be allowed to cancel; it only ever runs
+   for touches that start on this one card. */
+function lfInfoGuardEdges(track){
+  let sx = 0, sy = 0;
+  // Re-seeded whenever the set of fingers changes: after a pinch, the finger
+  // that is left is measured from where it IS, not from where the first one began.
+  const seed = e=>{ const p = e.touches[0]; if(p){ sx = p.clientX; sy = p.clientY; } };
+  track.addEventListener('touchstart', seed, {passive:true});
+  track.addEventListener('touchend', seed, {passive:true});
+  track.addEventListener('touchcancel', seed, {passive:true});
+  track.addEventListener('touchmove', e=>{
+    if(e.touches.length !== 1 || !e.cancelable || !track.classList.contains('multi')) return;
+    const p = e.touches[0], dx = p.clientX - sx, dy = p.clientY - sy;
+    if(Math.abs(dx) <= Math.abs(dy)) return;
+    const max = track.scrollWidth - track.clientWidth;
+    if((dx > 0 && track.scrollLeft <= 1) || (dx < 0 && track.scrollLeft >= max - 1)) e.preventDefault();
+  }, {passive:false});
+}
+
+function lfInfoSyncDots(){
+  const t = document.getElementById('vd-desc-text'), dots = document.getElementById('vd-info-dots');
+  if(!t || !dots || !dots.children.length) return;
+  const pg = t.firstElementChild;
+  if(!pg || !pg.offsetWidth) return;
+  const n = t.children.length;
+  const i = Math.min(n-1, Math.max(0, Math.round(t.scrollLeft / pg.offsetWidth)));
+  const first = dots.firstElementChild;
+  if(first.className === 'vd-info-count'){ first.textContent = (i+1)+'/'+n; return; }
+  for(let k=0;k<dots.children.length;k++) dots.children[k].classList.toggle('on', k===i);
+}
+
+// Back to a plain, empty card: no pages, no dots, none of the scroll-region attributes.
+function lfInfoClear(track, dots){
+  track.textContent = '';
+  track.className = 'vd-info-track';
+  ['role','tabindex','aria-label'].forEach(a=>track.removeAttribute(a));
+  dots.textContent = '';
+}
+
+// Sets what the card shows (or hides it). Pages are built by lfPaginateStoreInfo().
+// `raw` is whatever the record holds: anything but a string counts as "no info".
+function lfRenderStoreInfo(raw){
+  let text = (typeof raw === 'string' ? raw : '').trim();
+  if(text.length > LF_INFO_MAX_CHARS){
+    // Cut on a whole character (never between the two halves of an emoji) and say so.
+    text = text.slice(0, LF_INFO_MAX_CHARS - 1).replace(/[\uD800-\uDBFF]$/, '').replace(/\s+$/, '') + '…';
+  }
+  const card = document.getElementById('vd-desc-card'), track = document.getElementById('vd-desc-text'), dots = document.getElementById('vd-info-dots');
+  if(!card || !track || !dots) return;
+  if(!_lfInfoBound){
+    _lfInfoBound = true;
+    track.addEventListener('scroll', lfInfoSyncDots, {passive:true});
+    lfInfoGuardEdges(track);
+    const relayout = ()=>{ try{ lfPaginateStoreInfo(); }catch(e){} };
+    if(window.ResizeObserver){
+      let lastW = -1, raf = 0;
+      new ResizeObserver(entries=>{
+        const w = Math.round(entries[0].contentRect.width);
+        if(w === lastW) return;                 // only a change of WIDTH matters; laying out changes the height
+        lastW = w;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(relayout);  // a frame later, never inside the observer's own notification
+      }).observe(track);
+    } else {
+      let t = null;
+      window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(relayout, 150); });
+    }
+  }
+  if(!text){
+    _lfInfoText = ''; _lfInfoW = 0;
+    lfInfoClear(track, dots);
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  // The same text again (the same store reopened) needs no new layout.
+  if(text !== _lfInfoText){ _lfInfoText = text; _lfInfoW = 0; lfInfoClear(track, dots); }
+}
+
+// reset = a store was just opened: start on its first page.
+function lfPaginateStoreInfo(reset){
+  const track = document.getElementById('vd-desc-text'), dots = document.getElementById('vd-info-dots');
+  if(!track || !dots || !_lfInfoText) return;
+  const W = track.clientWidth;
+  if(!W) return;                                          // page not on screen yet — it is laid out when it is
+  if(W === _lfInfoW && track.childElementCount){          // already laid out for this width
+    if(reset){ track.scrollLeft = 0; lfInfoSyncDots(); }
+    return;
+  }
+
+  const pack = (width, padRight)=>{
+    const blocks = lfInfoBlocks(_lfInfoText);
+    const bh = lfInfoHeights(track, blocks, width, padRight);
+    const units = [], uh = [];
+    blocks.forEach((b, i)=>{
+      // A paragraph taller than a page is let go line by line, so its lines can share pages.
+      if(b.indexOf('\n') < 0 || bh[i] <= LF_INFO_MAX_PX){ units.push(b); uh.push(bh[i]); }
+      else b.split('\n').forEach(l=>{ l = l.trim(); if(l){ units.push(l); uh.push(-1); } });
+    });
+    const todo = [];
+    uh.forEach((h, i)=>{ if(h < 0) todo.push(i); });
+    if(todo.length){
+      const hs = lfInfoHeights(track, todo.map(i=>units[i]), width, padRight);
+      todo.forEach((i, k)=>{ uh[i] = hs[k]; });
+    }
+    const out = []; let cur = [], h = 0;
+    units.forEach((u, i)=>{
+      if(cur.length && h + LF_INFO_GAP_PX + uh[i] > LF_INFO_MAX_PX){ out.push(cur); cur = []; h = 0; }
+      h += (cur.length ? LF_INFO_GAP_PX : 0) + uh[i];
+      cur.push(u);
+    });
+    if(cur.length) out.push(cur);
+    return out;
+  };
+  let pages = pack(W, LF_INFO_PAD1_PX);                   // does it all fit on one full-width page?
+  if(pages.length > 1) pages = pack(W - LF_INFO_PEEK_PX, LF_INFO_PAD_PX);   // no: pages narrower by the peek
+
+  const multi = pages.length > 1;
+  lfInfoClear(track, dots);
+  track.className = 'vd-info-track' + (multi ? ' multi' : '');
+  pages.forEach(list=>{
+    const pg = document.createElement('div');
+    pg.className = 'vd-info-pg';
+    list.forEach(u=>{ const d = document.createElement('div'); d.textContent = u; pg.appendChild(d); });
+    track.appendChild(pg);
+  });
+  track.scrollLeft = 0;
+  if(multi){
+    // Only something that scrolls is a region, and a tab stop.
+    track.setAttribute('role', 'region');
+    track.setAttribute('tabindex', '0');
+    track.setAttribute('aria-label', 'Store info — swipe for more');
+    if(pages.length <= LF_INFO_MAX_DOTS) pages.forEach(()=>dots.appendChild(document.createElement('i')));
+    else { const c = document.createElement('span'); c.className = 'vd-info-count'; dots.appendChild(c); }
+  }
+  _lfInfoW = W;
+  lfInfoSyncDots();
+}
+
 // ═══ VENDOR DETAIL ═══
 function openVendor(vid){
   // v-priority-8: safety net. Every list a customer taps a vendor FROM
@@ -4970,16 +5218,10 @@ function openVendor(vid){
     }
   }
   }
-  // Store info card (additive v28 — shows only if vendor wrote a description)
-  try{
-    const descCard = document.getElementById('vd-desc-card');
-    const descText = document.getElementById('vd-desc-text');
-    if(descCard && descText){
-      const d = (v.desc||'').trim();
-      if(d){ descText.textContent = d; descCard.style.display = 'block'; }
-      else { descCard.style.display = 'none'; descText.textContent = ''; }
-    }
-  }catch(e){}
+  // Store info card (additive v28 — shows only if vendor wrote a description).
+  // v67: a swipeable pager. The text is set here; the pages are laid out after
+  // goPage() below, once the page is on screen and has a width to measure at.
+  try{ lfRenderStoreInfo(v.desc); }catch(e){}
   const menuEl=document.getElementById('vd-menu');
   // v49: the store page now states WHY you can't order — closed on the
   // schedule, or open but nothing left. An empty menu used to render as a
@@ -5034,6 +5276,7 @@ function openVendor(vid){
       </div>`).join('');
   menuEl.innerHTML+='<div style="height:80px"></div>';
   goPage('p-cvendor');
+  try{ lfPaginateStoreInfo(true); }catch(e){}   // v67: measuring needs the page on screen
   updateCartBar();
 }
 
@@ -13336,7 +13579,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 75; // ← bump this each release (and version.json)
+  const APP_VERSION = 76; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

@@ -367,7 +367,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 489 checks across twelve files,
+**Testing:** `tests/` holds a Playwright suite — 550 checks across thirteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -567,6 +567,69 @@ handed out, and puts that logo back into their store with `pushState(vid)`.
 It acts only when the store's logo is empty; the app can replace a logo but
 never remove one, so an empty logo is always a loss. It gives up after 3
 tries. Covers and product photos are not in the card; owners re-upload them.
+
+**Store Info pager (v67).** On the customer vendor page (`p-cvendor`) the
+photo, name, stats and Store Info are all pinned above `#vd-menu`, and only the
+menu scrolls. Store Info is free text (≤300 chars, `saveStoreDesc`), and the
+founder's real one is a dozen short lines with blank lines between them: the
+old card measured 397px and left the menu 51px on a 390×780 phone — **0px** on
+a 360×640 one. It is now a swipeable scroll-snap pager: 131px, menu 317px
+(177px at 360×640).
+
+- **Pages are made by `lfPaginateStoreInfo()`**: the vendor's own paragraphs
+  (split on blank lines, never reworded) are packed into pages up to
+  `LF_INFO_MAX_PX` (96px, ~5 lines), **measured in the real font at the real
+  width**, not guessed from character counts — all paragraphs in ONE layout
+  (`lfInfoHeights`; measuring one at a time forced a layout each). Measuring
+  needs the page on screen (a hidden page has no width), so
+  `lfRenderStoreInfo()` only stores the text and `openVendor()` calls
+  `lfPaginateStoreInfo(true)` after `goPage()`. A `ResizeObserver` on the card
+  lays it out again whenever its WIDTH changes — a phone turned, a window
+  resized, the store page coming back by any route — deferred a frame so it
+  never trips the observer's loop error; browsers without one fall back to the
+  `resize` event, and `goBack()` re-checks too. The vendor editor tells vendors
+  that a blank line starts a new topic.
+- **What is shown.** Everything a vendor can save (≤300) is shown in full: the
+  card is as tall as its tallest page, a paragraph too tall for a page is let
+  go line by line, and one very long line gets its own taller page. Text goes
+  in with `textContent`, never `innerHTML`. `LF_INFO_MAX_CHARS` (2000, ~7× the
+  editor limit) exists only because this database takes unauthenticated
+  writes: one tampered 300 KB record froze the page for **12.9s** without it
+  (35ms with). A cut ends in "…" and never lands inside an emoji. A value that
+  is not a string is treated as "no info".
+- With several pages each is `22px` narrower than the card, so the faded start
+  of the next shows at the edge (the swipe cue), and an `::after` spacer lets
+  the last page reach the left edge. A lone page has a 12px right gutter to
+  match the left (the card has no right padding, or the sliver couldn't reach
+  its edge). `LF_INFO_PEEK_PX` / `LF_INFO_PAD_PX` / `LF_INFO_PAD1_PX` must match
+  the CSS (`.vd-info-track.multi`, `.vd-info-pg`) — change them together. Past
+  `LF_INFO_MAX_DOTS` (8) pages the dots become a "2/12" counter.
+- Only something that scrolls is a focusable region: `role="region"`,
+  `tabindex="0"` and the "swipe for more" label are set when there are several
+  pages and removed otherwise, so a one-page card is not a pointless tab stop.
+- `#vd-desc-card` and its `style.display` ('none'/'block') are unchanged (the
+  aircon and cleaning suites read it); `#vd-desc-text` is now the track.
+- **The swipe-back trap.** A sideways swipe that runs off either end of the
+  pager is handed to the page, and on Chromium phones that is the swipe-BACK
+  gesture: one swipe too far right on page 1 left the app (the test saw the
+  browser go to `about:blank`). `overscroll-behavior` did **not** stop it —
+  `contain` and `none` on the track, on `html` and on `body` all still
+  navigated, and `touch-action` by position broke paging — so
+  `lfInfoGuardEdges()` cancels the touchmove (horizontal, one finger, at an
+  end, multi-page only; pinch and vertical drags untouched, and its origin is
+  re-seeded when a finger lifts so a pinch can't leave it stale). It is the one
+  non-passive touch listener in the app, and only for touches that start on this
+  card: keep it that narrow. It is NOT verified on real iOS Safari or Android
+  hardware — only headless Chromium with touch emulation is available here.
+- Test it with `Input.dispatchTouchEvent` (touchStart, a run of touchMoves,
+  touchEnd). `Input.synthesizeScrollGesture` fires pointer events in headless
+  Chromium but never scrolls, so it proves nothing. `tests/test-storeinfo.js`
+  (61 checks) pins the founder's real text, no text lost, no clipping, HTML
+  escaped, one paragraph / one-line-per-row / 300-char token / CRLF / 60 tiny
+  paragraphs / a 300 KB record / an emoji at the cut / a non-string value, the
+  gutter, a 320px resize, and rotation while the page is hidden. It runs in CI
+  on a newer Chromium with different fonts, so it waits for conditions and
+  keeps margin on every pixel limit — never assert an exact glyph width.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
