@@ -1764,6 +1764,18 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-condo-more{width:100%;min-height:44px;border:1px solid var(--bdm);border-radius:14px;background:#fff;color:var(--gd);font:800 13px var(--ff);cursor:pointer}
 .lf-condo-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.lf-condo-btn,button.lf-condo-card,.lf-condo-modal,.lf-condo-modal .modal-sheet{transition:none}}
+
+/* ═══ v79 — CONDO PICKER, admin panel card ═══
+   One full-width card under the six number tiles on the admin panel, built by
+   lfCondoAdminSync() only while the admin preview is on. It is 64px tall and the
+   whole card is the button. It reuses the picker card's icon, name and meta styles. */
+.lf-condo-adm{margin:14px 16px 0}
+.lf-condo-admbtn{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 14px 12px 12px;border:1px solid var(--bd);border-radius:18px;background:#fff;box-shadow:var(--sh);color:var(--t1);font-family:var(--ff);text-align:left;cursor:pointer;transition:transform .14s cubic-bezier(.34,1.5,.64,1)}
+.lf-condo-admbtn:active{transform:scale(.98)}
+.lf-condo-admbtn:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.lf-condo-go{flex:none;display:inline-flex;color:var(--t3)}
+.lf-condo-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-90deg)}
+@media(prefers-reduced-motion:reduce){.lf-condo-admbtn{transition:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -4252,6 +4264,14 @@ function showToast(msg){
 }
 
 // ═══ NAVIGATION ═══
+// v79: #app is overflow:hidden but still scrollable — the closed bottom sheets sit below its frame, so
+// the browser can scroll it by up to ~760px whenever it reveals an element (Tab, or the phone keyboard's
+// "Next", landing on a field inside a closed sheet moves it ~540px: reproduced on the live v78 file).
+// Nothing ever put it back, so every page after that showed shifted up with its header and first tiles
+// out of view. Each page change now starts from the top of the frame again.
+function lfUnshiftApp(){
+  try{ const a = document.getElementById('app'); if(a && (a.scrollTop || a.scrollLeft)){ a.scrollTop = 0; a.scrollLeft = 0; } }catch(e){}
+}
 function goPage(id){
   // ROLE GUARD: internal vendor pages require a logged-in vendor.
   // (p-vlogin is intentionally allowed so vendors can reach the login screen.)
@@ -4262,6 +4282,7 @@ function goPage(id){
   var _lb=document.getElementById('img-lightbox'); if(_lb && _lb.style.display!=='none') _lb.style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(id).classList.add('on');
+  lfUnshiftApp();
   if(id!==pageHistory[pageHistory.length-1]) pageHistory.push(id);
   if(id==='p-ccart')    { renderCartPage(); lfTrack('checkout_started', { itemCount: Object.values(cart).reduce((n,c)=>n+c.items.reduce((m,i)=>m+i.qty,0),0) }); }
   if(id==='p-chistory') renderOrderHistory();
@@ -4271,6 +4292,7 @@ function goPage(id){
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
+  if(id==='p-adash')    { try{ lfCondoAdminSync(); }catch(e){} }   // v79: the condo picker's card on the admin panel (admin preview only; a no-op for everyone else)
   if(id==='p-aorders')  renderAdminOrders();
   if(id==='p-avendors') { renderAdminVendors(); renderAdminApps(); }
   // v-auditlog: on demand here only, same reasoning as renderAdminApps()
@@ -4282,6 +4304,7 @@ function goBack(){
   const prev=pageHistory[pageHistory.length-1]||'p-chome';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById(prev).classList.add('on');
+  lfUnshiftApp();
   // v67: a phone turned while the store page was hidden missed the resize
   // re-layout of its Store Info pages (a no-op if the width is unchanged).
   if(prev==='p-cvendor'){ try{ lfPaginateStoreInfo(); }catch(e){} }
@@ -11022,7 +11045,11 @@ function updateTrackerFromStatus(){
    • Buildings are not always numbered. Names are shown exactly as stored and
      never generated. Unit stays free text.
    • Nothing is trusted: every record goes through lfCondoClean(), which caps
-     lengths and counts and drops what it does not recognise. */
+     lengths and counts and drops what it does not recognise.
+   • Two doors, one gate (v79): the header button on the customer Home, and a
+     card on the admin panel (lfCondoAdminSync). Both ask lfCondoAllowed() and
+     open the same sheet; the card exists because the only way to the header
+     button was admin > Live Posts > Home, and it could not be found. */
 const LF_CONDOS_BUILD   = true;                  // false = none of this ever runs (a release, not a switch: use version.json for that)
 const LF_GRASS_ROOM     = 'lokalfinder_grass';   // the legacy key — every GRASS order, store and PIN lives under it. Never change it.
 const LF_GRASS_CONDO    = 'grass-residences-quezon-city';
@@ -11246,6 +11273,48 @@ function lfCondoBuildButton(){
   return b;
 }
 
+// ── Admin panel card (v79) ──
+// The header button is on the customer Home, which an admin reaches only through
+// Live Posts > Home (Sign Out ends the admin session), and the founder could not find
+// that way. This card is the same door on the admin panel itself: one tap, the same gate
+// (lfCondoAllowed) and the same sheet. It is built here and removed when the gate closes,
+// so with the switch off the panel is the old markup exactly. Called from
+// goPage('p-adash'), inside try/catch.
+function lfCondoAdminSync(){
+  if(!LF_CONDOS_BUILD) return;
+  const grid = document.querySelector('#p-adash .stat-grid');
+  if(!grid) return;
+  let on = false;
+  try{ on = lfCondoAllowed(); }catch(e){ on = false; }
+  const have = document.getElementById('lf-condo-adm');
+  if(on){
+    if(!have) grid.insertAdjacentElement('afterend', lfCondoBuildAdminCard());
+  } else if(have){
+    have.remove(); lfCondoClose(true);
+  }
+  // As in the header: an admin session that has not learned the mode yet (or whose answer has gone stale) asks, then syncs again.
+  if(_lfAdminMode === true && (!_lfCondoModeAt || Date.now() - _lfCondoModeAt > LF_CONDO_MODE_TTL)){
+    lfCondoModeRead().then(()=>{ try{ lfCondoAdminSync(); }catch(e){} });
+  }
+}
+function lfCondoBuildAdminCard(){
+  const box = document.createElement('div');
+  box.id = 'lf-condo-adm'; box.className = 'lf-condo-adm';
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = 'lf-condo-adm-btn'; b.className = 'lf-condo-admbtn';
+  b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
+  const ph = document.createElement('span'); ph.className = 'lf-condo-ph'; ph.setAttribute('aria-hidden', 'true'); ph.innerHTML = LF_CONDO_SVG.pin;
+  const tx = document.createElement('span'); tx.className = 'lf-condo-tx';
+  const nm = document.createElement('span'); nm.className = 'lf-condo-nm'; nm.textContent = 'Condo picker';
+  const mt = document.createElement('span'); mt.className = 'lf-condo-mt'; mt.textContent = 'Admin preview — residents do not see this yet';
+  tx.append(nm, mt);
+  const go = document.createElement('span'); go.className = 'lf-condo-go'; go.setAttribute('aria-hidden', 'true'); go.innerHTML = LF_CONDO_SVG.chev;
+  b.append(ph, tx, go);
+  b.addEventListener('click', ()=>lfCondoOpen(b));
+  box.appendChild(b);
+  return box;
+}
+
 // ── "Choose your condo" sheet (the app's own .modal / .modal-sheet) ──
 let _lfCondoSheet = null, _lfCondoQuery = '', _lfCondoCity = '', _lfCondoDev = '', _lfCondoShown = LF_CONDO_PAGE, _lfCondoChipSig = null;
 function lfCondoSheet(){
@@ -11399,7 +11468,8 @@ function lfCondoRender(focusFrom){
   }
   el('lf-condo-sr').textContent = rows.length ? rows.length + (rows.length === 1 ? ' condo' : ' condos') : 'No condos match';
 }
-function lfCondoOpen(){
+let _lfCondoFrom = null;   // the button that opened the sheet (the header's or the admin panel's): it says "expanded", and focus goes back to it
+function lfCondoOpen(from){
   try{
     if(!lfCondoAllowed()) return;
     const m = lfCondoSheet();
@@ -11411,7 +11481,9 @@ function lfCondoOpen(){
     void m.offsetWidth;                                           // so the slide-up starts from its closed position
     m.classList.add('on');
     document.addEventListener('keydown', lfCondoKeys, true);      // (the same function twice is one listener)
-    const b = el('lf-condo-btn'); if(b) b.setAttribute('aria-expanded', 'true');
+    const b = (from && from.setAttribute) ? from : el('lf-condo-btn');
+    _lfCondoFrom = b || null;
+    if(b) b.setAttribute('aria-expanded', 'true');
     el('lf-condo-ttl').focus({ preventScroll: true });
   }catch(e){
     console.warn('condos: the picker failed to open:', e);
@@ -11424,7 +11496,8 @@ function lfCondoClose(quiet){
   if(!m) return;
   m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
   document.removeEventListener('keydown', lfCondoKeys, true);
-  const b = document.getElementById('lf-condo-btn');
+  const from = _lfCondoFrom; _lfCondoFrom = null;
+  const b = (from && document.body.contains(from)) ? from : document.getElementById('lf-condo-btn');
   if(b) b.setAttribute('aria-expanded', 'false');
   if(!quiet && b){ try{ b.focus({ preventScroll: true }); }catch(e){} }
 }
@@ -14071,7 +14144,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 78; // ← bump this each release (and version.json)
+  const APP_VERSION = 79; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

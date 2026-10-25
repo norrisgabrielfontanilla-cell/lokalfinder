@@ -1,5 +1,6 @@
-// CONDO DIRECTORY — Phase A (v78): the data model, the room resolver, and the
-// "Choose your condo" picker that only an admin can see.
+// CONDO DIRECTORY — Phase A (v78, v79): the data model, the room resolver, and the
+// "Choose your condo" picker that only an admin can see — from the header on the
+// customer Home and (v79) from a card on the admin panel itself.
 //
 // Phase A is deliberately inert. It adds a record shape for a condo (with
 // buildings that are NOT always "Tower N"), one function that decides which
@@ -49,6 +50,9 @@ async function session(browser, port, log, o = {}){
   await page.addInitScript(ls => { for (const k in ls) { try { localStorage.setItem(k, ls[k]); } catch (e) {} } },
                            Object.assign({ 'lf-splash-seen': '1' }, o.ls || {}));
   await page.addInitScript(() => { window.CARDS_IDS = () => [...document.querySelectorAll('#lf-condo-list .lf-condo-card')].map(c => c.dataset.id).join(','); });
+  // #app is overflow:hidden but still scrollable (the closed bottom sheets sit below its frame, so it can scroll up to ~760px), and the
+  // browser tool's own click scrolls it now and then. Anything that measures where a thing is on screen puts the frame back first.
+  await page.addInitScript(() => { window.UNSHIFT = () => { const a = document.getElementById('app'); if (a) { a.scrollTop = 0; a.scrollLeft = 0; } }; });
   if (o.init) await page.addInitScript(o.init);
   if (o.version !== undefined) await page.route(VJSON, answer(o.version));
   if (o.src) await page.route('**/index.html*', route => route.fulfill({ status: 200, contentType: 'text/html', body: o.src }));
@@ -163,6 +167,7 @@ const SAMPLES = () => {
 
   // 44px target: the pill is ~24px tall, the tap area reaches 6px above and 14px below.
   const hit = await A.page.evaluate(() => {
+    UNSHIFT();
     const b = document.getElementById('lf-condo-btn'), r = b.getBoundingClientRect(), cx = r.x + r.width / 2;
     const at = (x, y) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest('#lf-condo-btn')); };
     return { h: Math.round(r.height), above: at(cx, r.y - 5), below: at(cx, r.bottom + 13), left: at(r.x - 5, r.y + 12), right: at(r.right + 5, r.y + 12),
@@ -521,7 +526,7 @@ const SAMPLES = () => {
     await N.page.waitForSelector('#lf-condo-btn', { timeout: 8000 });
     await N.page.evaluate(() => { document.querySelector('.lf-condo-name').textContent = 'Eastwood Parkview Residences Tower Complex'; });
     await sleep(150);
-    const g = await N.page.evaluate(() => { const b = document.getElementById('lf-condo-btn').getBoundingClientRect(), c = document.querySelector('.lf2-hbtns').getBoundingClientRect(), n = document.querySelector('.lf-condo-name');
+    const g = await N.page.evaluate(() => { UNSHIFT(); const b = document.getElementById('lf-condo-btn').getBoundingClientRect(), c = document.querySelector('.lf2-hbtns').getBoundingClientRect(), n = document.querySelector('.lf-condo-name');
       return { right: Math.round(b.right), clusterLeft: Math.round(c.left), cut: n.scrollWidth > n.clientWidth, pin: getComputedStyle(document.querySelector('.lf-condo-ic')).display, overflowX: document.documentElement.scrollWidth > innerWidth }; });
     check('At ' + w + 'px a long name is cut with an ellipsis and stays clear of the Vendor/cart buttons', g.right <= g.clusterLeft - 2 && g.cut && !g.overflowX, JSON.stringify(g));
     if (w <= 380) check('At ' + w + 'px the pin icon is dropped to leave the name its room', g.pin === 'none', g.pin);
@@ -534,16 +539,169 @@ const SAMPLES = () => {
   const B = await session(browser, port, log, { version: V_ADMIN, src: off, ls: { 'lf-condo': 'sample-whatever' } });
   await adminSignIn(B.page);
   await goHome(B.page);
+  await B.page.evaluate(() => goPage('p-adash'));                                              // the admin panel too (v79)
   await B.page.waitForFunction(() => performance.now() > 7000, null, { timeout: 30000 });   // past the app's own update check (~4s), so a mode read would have happened too
   await sleep(300);
   await B.page.evaluate(() => { lfCondoAdd({ id: 'sample-garden-residences', name: 'x' }); localStorage.setItem('lf-condo', 'sample-garden-residences'); lfCondoOpen(); });
-  const bo2 = await B.page.evaluate(() => ({ btn: !!document.getElementById('lf-condo-btn'), sub: document.querySelector('#lf-brand-tap .lf2-sub').outerHTML, room: lfRoomKey(), sheet: !!document.getElementById('modal-condo') }));
-  check('LF_CONDOS_BUILD=false: admin + "condos":"admin" still shows nothing, the room is GRASS even with a condo stored, and the picker will not open',
-        !bo2.btn && bo2.sub === GRASS_SUB && bo2.room === 'lokalfinder_grass' && !bo2.sheet, JSON.stringify(bo2));
+  const bo2 = await B.page.evaluate(() => ({ btn: !!document.getElementById('lf-condo-btn'), card: !!document.getElementById('lf-condo-adm'), sub: document.querySelector('#lf-brand-tap .lf2-sub').outerHTML, room: lfRoomKey(), sheet: !!document.getElementById('modal-condo') }));
+  check('LF_CONDOS_BUILD=false: admin + "condos":"admin" still shows nothing (no pill, no admin-panel card), the room is GRASS even with a condo stored, and the picker will not open',
+        !bo2.btn && !bo2.card && bo2.sub === GRASS_SUB && bo2.room === 'lokalfinder_grass' && !bo2.sheet, JSON.stringify(bo2));
   check('LF_CONDOS_BUILD=false: not even the mode is read (only the app\'s own update check fetches version.json)', versionFetches(B.reqs) === 1, 'fetches=' + versionFetches(B.reqs));
   await B.ctx.close();
 
-  // ═════ 13. THE SOURCE ITSELF ═════
+  // ═════ 13. THE ADMIN PANEL CARD (v79) ═════
+  // v78's only way to the pill was admin > Live Posts > Home, and the founder could not find it. The admin panel now carries
+  // its own card: the same gate, the same sheet, nothing else.
+  const KIDS = () => [...document.querySelector('#p-adash .scrl').children].map(c => c.tagName + '#' + c.id + '.' + c.className).join('|');
+  const P0 = await session(browser, port, log, { version: V_ADMIN });
+  await P0.page.waitForFunction(() => performance.now() > 7000, null, { timeout: 30000 });
+  const oldKids = await P0.page.evaluate(KIDS);
+  check('Resident: nothing of the card exists on the admin page (no card, no button, no style hook) until an admin signs in',
+        await P0.page.evaluate(() => !document.getElementById('lf-condo-adm') && !document.getElementById('lf-condo-adm-btn') && !document.querySelector('.lf-condo-admbtn')));
+  // nothing sends a resident there, but if they did (a script, a stale link): still no card, and no mode read of their own
+  const fetchesBefore = versionFetches(P0.reqs);
+  await P0.page.evaluate(() => { goPage('p-adash'); goPage('p-adash'); });
+  await sleep(1200);
+  const resAdm = await P0.page.evaluate(() => ({ card: !!document.getElementById('lf-condo-adm'), mode: _lfCondoMode, at: _lfCondoModeAt, page: document.querySelector('.page.on').id }));
+  check('Resident who reaches the admin panel anyway: no card, the mode is never read for them (no version.json request), nothing stored',
+        !resAdm.card && resAdm.mode === 'off' && resAdm.at === 0 && resAdm.page === 'p-adash' && versionFetches(P0.reqs) === fetchesBefore, JSON.stringify(resAdm) + ' fetches ' + fetchesBefore + ' -> ' + versionFetches(P0.reqs));
+  await P0.ctx.close();
+
+  const P = await session(browser, port, log, { version: V_ADMIN });
+  await adminSignIn(P.page);
+  // nothing here visits Home: the card must come up on the admin panel by itself, even with three quick arrivals while the mode read is in flight
+  await P.page.evaluate(() => { goPage('p-adash'); goPage('p-adash'); goPage('p-adash'); });
+  await P.page.waitForSelector('#lf-condo-adm-btn', { timeout: 10000 });
+  await P.page.waitForFunction(() => performance.now() > 7000, null, { timeout: 30000 });
+  await sleep(2800);   // the "Welcome back" toast has gone
+  const a1 = await P.page.evaluate(() => {
+    UNSHIFT();
+    const c = document.getElementById('lf-condo-adm-btn'), r = c.getBoundingClientRect(), grid = document.querySelector('#p-adash .stat-grid'), nav = document.querySelector('#p-adash .bnav');
+    return { count: document.querySelectorAll('#lf-condo-adm').length, tag: c.tagName, type: c.type, popup: c.getAttribute('aria-haspopup'), expanded: c.getAttribute('aria-expanded'),
+             name: c.querySelector('.lf-condo-nm').textContent, meta: c.querySelector('.lf-condo-mt').textContent, afterGrid: grid.nextElementSibling && grid.nextElementSibling.id,
+             tiles: grid.children.length, liveTile: !!document.querySelector('#p-adash .stat-cell[onclick="LFN.openFeed()"]'),
+             h: Math.round(r.height), w: Math.round(r.width), top: Math.round(r.top), bottom: Math.round(r.bottom), navTop: Math.round(nav.getBoundingClientRect().top), vw: innerWidth,
+             page: document.querySelector('.page.on').id, pill: !!document.getElementById('lf-condo-btn') };
+  });
+  check('Admin + "condos":"admin": the Condo picker card is on the admin panel after sign-in, once, with no trip to Home (3 quick arrivals still make one card)',
+        a1.page === 'p-adash' && !a1.pill && a1.count === 1, JSON.stringify(a1));
+  check('It sits right under the six number tiles (which are all still there, Live Posts included)', a1.afterGrid === 'lf-condo-adm' && a1.tiles === 6 && a1.liveTile, JSON.stringify(a1));
+  check('It is a real <button> saying "Condo picker" and that this is an admin preview, with aria-haspopup=dialog and aria-expanded=false',
+        a1.tag === 'BUTTON' && a1.type === 'button' && a1.name === 'Condo picker' && /Admin preview/.test(a1.meta) && a1.popup === 'dialog' && a1.expanded === 'false', JSON.stringify(a1));
+  check('The whole card is the tap target: 44px or taller, nearly as wide as the screen', a1.h >= 44 && a1.w >= a1.vw - 48, a1.h + 'x' + a1.w + ' of ' + a1.vw);
+  check('It is on the first screen, clear of the bottom bar (no scrolling to find it)', a1.top > 0 && a1.bottom <= a1.navTop, a1.top + '..' + a1.bottom + ' nav ' + a1.navTop);
+  check('Three arrivals made one mode read: the only version.json requests are the app\'s own update check and one read of the mode', versionFetches(P.reqs) === 2, 'fetches=' + versionFetches(P.reqs));
+
+  await P.page.click('#lf-condo-adm-btn');
+  await P.page.waitForSelector('#modal-condo.on', { timeout: 5000 });
+  await sleep(450);
+  const a2 = await P.page.evaluate(() => {
+    UNSHIFT();
+    const m = document.getElementById('modal-condo'), c = document.getElementById('lf-condo-adm-btn'), nav = document.querySelector('#p-adash .bnav').getBoundingClientRect();
+    const over = document.elementFromPoint(nav.x + nav.width / 2, nav.y + nav.height / 2);
+    return { expanded: c.getAttribute('aria-expanded'), focus: document.activeElement && document.activeElement.id, ids: CARDS_IDS(), over: !!(over && over.closest('#modal-condo')),
+             page: document.querySelector('.page.on').id, inert: m.inert, note: !document.getElementById('lf-condo-note').hidden };
+  });
+  check('Tapping the card opens the same "Choose your condo" sheet over the admin panel, focus on its title, the card says expanded', a2.page === 'p-adash' && !a2.inert && a2.focus === 'lf-condo-ttl' && a2.expanded === 'true' && a2.note, JSON.stringify(a2));
+  check('...it lists GRASS, and it covers the admin bottom bar (nothing behind it can be tapped)', a2.ids === GRASS_ID && a2.over, JSON.stringify(a2));
+  await P.page.keyboard.press('Escape'); await sleep(300);
+  const a3 = await P.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), focus: document.activeElement && document.activeElement.id, expanded: document.getElementById('lf-condo-adm-btn').getAttribute('aria-expanded') }));
+  check('Esc closes it and focus goes back to the card that opened it', !a3.on && a3.focus === 'lf-condo-adm-btn' && a3.expanded === 'false', JSON.stringify(a3));
+  await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  await P.page.click('#lf-condo-x'); await sleep(300);
+  check('The close button closes it and focus goes back to the card', await P.page.evaluate(() => !document.getElementById('modal-condo').classList.contains('on') && document.activeElement.id === 'lf-condo-adm-btn'));
+  await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  await P.page.mouse.click(195, 20); await sleep(300);
+  check('Tapping the backdrop closes it and focus goes back to the card', await P.page.evaluate(() => !document.getElementById('modal-condo').classList.contains('on') && document.activeElement.id === 'lf-condo-adm-btn'));
+  await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  await P.page.click('#lf-condo-list .lf-condo-card'); await sleep(300);
+  const a4 = await P.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), stored: localStorage.getItem('lf-condo'), room: ROOM_KEY, focus: document.activeElement.id }));
+  check('Choosing the condo you are already in closes the sheet: nothing stored, room unchanged, focus back on the card', !a4.on && a4.stored === null && a4.room === 'lokalfinder_grass' && a4.focus === 'lf-condo-adm-btn', JSON.stringify(a4));
+
+  // the other tabs and back: still exactly one card, and the panel keeps working
+  const tabs = await P.page.evaluate(() => { const seen = []; for (const t of ['orders', 'vendors', 'revenue', 'dash', 'orders', 'dash']) { goAdminTab(t); seen.push(document.querySelector('.page.on').id); } return { seen: seen.join(','), cards: document.querySelectorAll('#lf-condo-adm').length }; });
+  check('Walking through the admin tabs and back keeps exactly one card and lands on the right pages', tabs.cards === 1 && tabs.seen === 'p-aorders,p-avendors,p-arevenue,p-adash,p-aorders,p-adash', JSON.stringify(tabs));
+
+  // the two doors share one sheet: it must go back to whichever one opened it
+  await P.page.click('#p-adash .stat-cell[onclick="LFN.openFeed()"]');
+  await P.page.waitForFunction(() => document.querySelector('.page.on').id === 'p-cfeed', null, { timeout: 8000 });
+  await P.page.click('#p-cfeed .bnav .bni:first-child');
+  await P.page.waitForSelector('#lf-condo-btn', { timeout: 10000 });
+  await P.page.click('#lf-condo-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  const b1 = await P.page.evaluate(() => ({ pill: document.getElementById('lf-condo-btn').getAttribute('aria-expanded'), card: document.getElementById('lf-condo-adm-btn').getAttribute('aria-expanded') }));
+  await P.page.keyboard.press('Escape'); await sleep(300);
+  const b2 = await P.page.evaluate(() => ({ focus: document.activeElement.id, pill: document.getElementById('lf-condo-btn').getAttribute('aria-expanded'), card: document.getElementById('lf-condo-adm-btn').getAttribute('aria-expanded') }));
+  check('Opened from the header pill: only the pill says expanded, and focus goes back to the pill (not to the card)', b1.pill === 'true' && b1.card === 'false' && b2.focus === 'lf-condo-btn' && b2.pill === 'false' && b2.card === 'false', JSON.stringify([b1, b2]));
+  await P.page.evaluate(() => goPage('p-adash'));
+  await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  await P.page.keyboard.press('Escape'); await sleep(300);
+  check('...and back on the admin panel the card is still the one that gets focus', await P.page.evaluate(() => document.activeElement.id === 'lf-condo-adm-btn' && document.querySelectorAll('#lf-condo-adm').length === 1));
+
+  // sign out and back in: no second card
+  await P.page.click('#p-adash button[onclick="adminSignOut()"]');
+  await P.page.waitForFunction(() => document.querySelector('.page.on').id === 'p-chome', null, { timeout: 5000 });
+  await adminSignIn(P.page);
+  await P.page.waitForFunction(() => document.querySelector('.page.on').id === 'p-adash', null, { timeout: 8000 });
+  await sleep(300);
+  check('Signing out and back in still leaves exactly one card', await P.page.evaluate(() => document.querySelectorAll('#lf-condo-adm').length === 1));
+
+  // motion
+  await P.page.emulateMedia({ reducedMotion: 'no-preference' });
+  const t1 = await P.page.evaluate(() => getComputedStyle(document.getElementById('lf-condo-adm-btn')).transitionDuration);
+  await P.page.emulateMedia({ reducedMotion: 'reduce' });
+  const t2 = await P.page.evaluate(() => getComputedStyle(document.getElementById('lf-condo-adm-btn')).transitionDuration);
+  await P.page.emulateMedia({ reducedMotion: 'no-preference' });
+  check('Motion: the card has a press transition, and prefers-reduced-motion turns it off', parseFloat(t1) > 0 && t2 === '0s', t1 + ' / ' + t2);
+
+  // the flag, for the card: only "admin" / "on" shows it, everything else is OFF
+  const cardFlag = async (body, label, expectCard) => {
+    await P.page.unroute(VJSON); await P.page.route(VJSON, answer(body));
+    await P.page.evaluate(() => { _lfCondoModeAt = 1; goPage('p-adash'); });                     // the 5-minute answer has gone stale
+    await P.page.waitForFunction(() => _lfCondoModeAt > 1 && !_lfCondoModeP, null, { timeout: 8000 });
+    await sleep(150);
+    const has = await P.page.evaluate(() => document.querySelectorAll('#lf-condo-adm').length);
+    check(label, has === (expectCard ? 1 : 0), 'cards=' + has);
+  };
+  await cardFlag(JSON.stringify({ version: 79, condos: 'on' }), 'Admin panel + "condos":"on": the card shows (Phase A: still admin only)', true);
+  await cardFlag(JSON.stringify({ version: 79, condos: 'off' }), 'Admin panel + "condos":"off": no card', false);
+  await cardFlag(V_ADMIN, 'Admin panel + "condos":"admin" again: the card is back (and only one)', true);
+  await cardFlag(JSON.stringify({ version: 79 }), 'Admin panel + the field missing: no card', false);
+  await cardFlag(JSON.stringify({ version: 79, condos: 'ADMIN' }), 'Admin panel + wrong case ("ADMIN"): no card', false);
+  await cardFlag(JSON.stringify({ version: 79, condos: true }), 'Admin panel + a boolean instead of a word: no card', false);
+  await cardFlag('this is not json', 'Admin panel + a garbage version.json: no card', false);
+  await cardFlag('', 'Admin panel + an empty version.json: no card', false);
+  await cardFlag('404', 'Admin panel + version.json 404: no card', false);
+  await cardFlag('fail', 'Admin panel + the network failing: no card', false);
+  await cardFlag(V_ADMIN, 'Back on after the file says "admin" again', true);
+
+  // the kill switch, with the sheet open from the card
+  await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
+  await P.page.unroute(VJSON); await P.page.route(VJSON, answer(JSON.stringify({ version: 79, condos: 'off' })));
+  await P.page.evaluate(() => { _lfCondoModeAt = 1; goPage('p-adash'); });
+  await P.page.waitForFunction(() => !document.getElementById('lf-condo-adm'), null, { timeout: 8000 });
+  const k = await P.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), inert: document.getElementById('modal-condo').inert, hidden: document.getElementById('modal-condo').getAttribute('aria-hidden'),
+                                           leftover: document.querySelectorAll('[id^="lf-condo-adm"], .lf-condo-admbtn').length }));
+  check('Kill switch: flipping version.json to "off" removes the card and closes an open sheet, with no reload', !k.on && k.inert && k.hidden === 'true' && k.leftover === 0, JSON.stringify(k));
+  check('...and the admin panel is the old markup again (the same children as a resident\'s copy of the page)', (await P.page.evaluate(KIDS)) === oldKids, oldKids);
+  check('No request in the admin-panel session touched a condo path in the database', condoDbTraffic(P.reqs) === 0);
+  await P.ctx.close();
+
+  // narrow phones, and a short one
+  for (const [w, h] of [[360, 640], [320, 640]]) {
+    const N = await session(browser, port, log, { version: V_ADMIN, width: w });
+    await N.page.setViewportSize({ width: w, height: h });
+    await adminSignIn(N.page);
+    await N.page.waitForSelector('#lf-condo-adm-btn', { timeout: 10000 });
+    await sleep(2800);
+    const g = await N.page.evaluate(() => { UNSHIFT(); const r = document.getElementById('lf-condo-adm-btn').getBoundingClientRect(), nav = document.querySelector('#p-adash .bnav').getBoundingClientRect();
+      return { left: Math.round(r.left), right: Math.round(r.right), h: Math.round(r.height), bottom: Math.round(r.bottom), navTop: Math.round(nav.top), overflowX: document.documentElement.scrollWidth > innerWidth,
+               clipped: document.querySelector('.lf-condo-mt').scrollWidth > document.querySelector('.lf-condo-tx').clientWidth + 1 }; });
+    check('At ' + w + 'x' + h + ' the card fits the screen (no sideways scroll, text wraps instead of overflowing), is 44px or taller, and is clear of the bottom bar',
+          g.left >= 0 && g.right <= w && g.h >= 44 && g.bottom <= g.navTop && !g.overflowX && !g.clipped, JSON.stringify(g));
+    await N.ctx.close();
+  }
+
+  // ═════ 14. THE SOURCE ITSELF ═════
   const start = SRC.indexOf('v78 — CONDO DIRECTORY, PHASE A (admin preview)');
   const end = SRC.indexOf('//  SYNC ENGINE — Firebase Realtime Database');
   const block = SRC.slice(start, end);
@@ -553,7 +711,7 @@ const SAMPLES = () => {
   check('The block makes exactly one network call: the version.json mode read', calls.length === 1 && /fetch\('version\.json\?_='/.test(block), 'fetch calls: ' + calls.length);
   const inner = block.replace(/\/\*[\s\S]*?\*\//g, '').match(/\.innerHTML\s*=[^\n]*/g) || [];
   check('Every innerHTML in the block is a constant (the SVG icons, or the sheet\'s fixed markup): no record data goes through it',
-        inner.length === 3 && inner.every(l => /LF_CONDO_SVG\.|= svg;|=\s*$/.test(l)), JSON.stringify(inner));
+        inner.length === 5 && inner.every(l => /LF_CONDO_SVG\.|= svg;|=\s*$/.test(l)), JSON.stringify(inner));
   check('ROOM_KEY is set by the resolver, and the literal GRASS key appears only as LF_GRASS_ROOM in the block',
         /const ROOM_KEY = lfRoomKey\(\);/.test(SRC) && !/const ROOM_KEY = 'lokalfinder_grass'/.test(SRC) && (block.match(/'lokalfinder_grass'/g) || []).length === 1);
   const code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -564,11 +722,13 @@ const SAMPLES = () => {
   check('version.json carries a valid condos mode ("admin" for the Phase A release)', ['off', 'admin', 'on'].indexOf(VERSION.condos) >= 0, JSON.stringify(VERSION));
   check('The header hooks are in goPage and goBack, each inside try/catch',
         /if\(id==='p-chome'\)\s*\{ try\{ lfCondoHeaderSync\(\); \}catch\(e\)\{\} \}/.test(SRC) && /if\(prev==='p-chome'\)\{ try\{ lfCondoHeaderSync\(\); \}catch\(e\)\{\} \}/.test(SRC));
+  check('The admin panel hook is in goPage, inside try/catch, and the original admin line is untouched',
+        /if\(id==='p-adash'\)\s*\{ try\{ lfCondoAdminSync\(\); \}catch\(e\)\{\} \}/.test(SRC) && /if\(id==='p-adash'\)\s*\{ updateAdminStats\(\); renderAdminVendors\(\); renderAdminOrders\(\); renderAdminApps\(\); \}/.test(SRC));
 
   const hardErrors = log.errors.filter(e => !/favicon|OneSignal|firebase|net::ERR/i.test(e));
   check('No uncaught page errors across the whole run', hardErrors.length === 0, hardErrors.join(' | '));
 
-  console.log('\n  test-condos.js — the condo directory, Phase A (v78)\n');
+  console.log('\n  test-condos.js — the condo directory, Phase A (v78, v79)\n');
   let fail = 0;
   results.forEach(r => {
     if (r.ok) console.log('  PASS   ' + r.name);
