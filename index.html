@@ -1707,6 +1707,63 @@ select option { color: var(--t1); background: var(--w); }
 .vd-info-track.multi .vd-info-pg{flex-basis:calc(100% - 22px);padding-right:14px}
 .vd-info-track.multi::after{content:'';flex:0 0 22px}
 @media(prefers-reduced-motion:reduce){.vd-info-dots i{transition:none}}
+
+/* ═══ v78 — CONDO PICKER (Phase A, admin preview) ═══
+   The header button replaces nothing: the old .lf2-sub line is hidden while it
+   shows and comes back untouched when it does not. The pill is 24px tall, so the
+   header is ~7px taller while it shows (72 -> 79px beside a one-line subtitle;
+   only an admin sees it in Phase A). ::after widens the TAP target to 44px —
+   6px up, 14px down (the free space under the header, short of the search pill)
+   and 6px either side. */
+.lf-condo-btn{position:relative;display:inline-flex;align-items:center;gap:4px;margin:1px 0 0 -2px;padding:4px 8px 4px 6px;border:1px solid rgba(14,138,90,.22);border-radius:999px;background:var(--gl);color:var(--gd);font:700 11px/14px var(--ff);letter-spacing:.1px;cursor:pointer;transition:transform .14s cubic-bezier(.34,1.5,.64,1),background .15s;
+  /* never wider than the room beside the Vendor + cart buttons (20+20 padding, 44 mark + 11 gap, 132 buttons, 12 air), and no wider than the 430px app: a long name is cut with an ellipsis instead of pushing them off */
+  max-width:min(calc(100vw - 239px),191px)}
+.lf-condo-btn::after{content:'';position:absolute;inset:-7px -7px -15px}   /* offsets are from the padding box (inside the 1px border): -7/-15 = 6px above and 14px below the pill's edge = 44px */
+.lf-condo-btn:active{transform:scale(.96);background:var(--s3)}
+.lf-condo-btn:focus-visible,.lf-condo-card:focus-visible,.lf-condo-chip:focus-visible,.lf-condo-x:focus-visible,.lf-condo-more:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.lf-condo-ic{display:inline-flex;flex:none}
+.lf-condo-ic svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.lf-condo-name{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:380px){.lf-condo-btn .lf-condo-ic:first-child{display:none}.lf-condo-btn{padding-left:9px}}   /* on a 360px phone the pin costs the name its last letters */
+.lf-condo-sheet{display:flex;flex-direction:column;max-height:88%}
+.lf-condo-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.lf-condo-top .modal-ttl{margin-bottom:0}
+.lf-condo-top .modal-ttl:focus{outline:none}
+.lf-condo-x{flex:none;width:44px;height:44px;margin-right:-10px;border:none;border-radius:50%;background:transparent;color:var(--t3);font-size:18px;line-height:1;cursor:pointer}
+.lf-condo-note{margin:0 0 12px;padding:7px 10px;border-radius:10px;background:var(--acl);color:#92400E;font-size:11.5px;font-weight:700;line-height:1.35}
+.lf-condo-note[hidden],.lf-condo-chips[hidden]{display:none}
+.lf-condo-find{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:12px;padding:0 14px;background:var(--s2);border:1px solid var(--bd);border-radius:14px}
+.lf-condo-find:focus-within{border-color:var(--g);box-shadow:0 0 0 3px rgba(14,138,90,.12)}
+.lf-condo-find svg{flex:none;width:15px;height:15px;stroke:var(--t3);fill:none;stroke-width:2;stroke-linecap:round}
+.lf-condo-find input{flex:1;min-width:0;border:none;background:transparent;outline:none;font:600 16px var(--ff);color:var(--t1)}   /* 16px: iOS zooms the page for anything smaller */
+.lf-condo-chips{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.lf-condo-row{display:flex;gap:8px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.lf-condo-row::-webkit-scrollbar{display:none}
+.lf-condo-chip{flex:none;min-height:44px;padding:0 16px;border:1px solid var(--bdm);border-radius:999px;background:#fff;color:var(--t2);font:700 12.5px var(--ff);cursor:pointer}
+.lf-condo-chip[aria-pressed="true"]{background:var(--g);border-color:var(--g);color:#fff}
+.lf-condo-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:2px 4px 4px;list-style:none;display:flex;flex-direction:column;gap:10px}
+.lf-condo-list:focus{outline:none}
+.lf-condo-card{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:12px;border:1px solid var(--bd);border-radius:18px;background:#fff;box-shadow:var(--sh);color:var(--t1);font-family:var(--ff);text-align:left}
+button.lf-condo-card{cursor:pointer;transition:transform .14s cubic-bezier(.34,1.5,.64,1)}
+button.lf-condo-card:active{transform:scale(.98)}
+.lf-condo-card.cur{border-color:var(--g);background:var(--gl)}
+.lf-condo-ph{flex:none;width:48px;height:48px;border-radius:14px;background:var(--gl);color:var(--g);display:flex;align-items:center;justify-content:center}
+.lf-condo-card.cur .lf-condo-ph{background:#fff}
+.lf-condo-ph svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lf-condo-tx{flex:1;min-width:0;display:block}
+.lf-condo-nm{display:block;font-size:15px;font-weight:800;letter-spacing:-.2px;line-height:1.2;overflow-wrap:anywhere}
+.lf-condo-mt{display:block;margin-top:3px;font-size:12px;line-height:1.35;color:var(--t3);overflow-wrap:anywhere}
+.lf-condo-tags{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.lf-condo-tag{padding:5px 8px;border-radius:999px;font-size:10.5px;font-weight:800;line-height:1;white-space:nowrap}
+.lf-condo-tag.live{background:var(--g);color:#fff}
+.lf-condo-tag.coming{background:var(--acl);color:#92400E}
+.lf-condo-tag.closed{background:var(--s3);color:var(--t2)}
+.lf-condo-tag.cur{background:#fff;border:1px solid var(--bdm);color:var(--gd)}
+.lf-condo-tag.warn{background:var(--rl);color:#991B1B}
+.lf-condo-empty{padding:22px 10px;text-align:center;font-size:13px;line-height:1.5;color:var(--t3)}
+.lf-condo-more{width:100%;min-height:44px;border:1px solid var(--bdm);border-radius:14px;background:#fff;color:var(--gd);font:800 13px var(--ff);cursor:pointer}
+.lf-condo-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.lf-condo-btn,button.lf-condo-card,.lf-condo-modal,.lf-condo-modal .modal-sheet{transition:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -4210,6 +4267,7 @@ function goPage(id){
   if(id==='p-chistory') renderOrderHistory();
   if(id==='p-vlogin')   { try{ lfResetVendorLoginFilter(); }catch(e){}
                           try{ lfRefreshAppStatus(); }catch(e){} }
+  if(id==='p-chome')    { try{ lfCondoHeaderSync(); }catch(e){} }   // v78: the condo button (admin preview only; a no-op for everyone else)
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
@@ -4227,6 +4285,7 @@ function goBack(){
   // v67: a phone turned while the store page was hidden missed the resize
   // re-layout of its Store Info pages (a no-op if the width is unchanged).
   if(prev==='p-cvendor'){ try{ lfPaginateStoreInfo(); }catch(e){} }
+  if(prev==='p-chome'){ try{ lfCondoHeaderSync(); }catch(e){} }   // v78: same hook as goPage('p-chome')
 }
 
 // ═══ PORTALS ═══
@@ -10937,13 +10996,446 @@ function updateTrackerFromStatus(){
 
 
 
+/* ═══ v78 — CONDO DIRECTORY, PHASE A (admin preview) ═══
+   LokalFinder serves one community today. This is the first step towards a
+   resident of ANY condo finding theirs: a data model for a condo, the one
+   function that decides which database room the app uses, and a picker. In
+   this phase none of it can change what a resident sees, reads or writes.
+
+   Rules that must hold (tests/test-condos.js proves each):
+   • GRASS is the default and the fallback. lfRoomKey() returns the legacy GRASS
+     room unless a known condo says otherwise — and in this phase the only known
+     condo IS GRASS. Any error returns GRASS too: this feature failing must
+     never blank the app.
+   • Residents never see it. The picker needs an admin session AND
+     "condos":"admin" (or "on") in version.json. A resident's phone renders
+     nothing, makes no extra request, and keeps the old header markup.
+   • A failed or missing mode read means OFF. Putting "condos":"off" in
+     version.json and pushing is the kill switch: no update banner, no reload.
+   • No database access. The directory is code (and, in a later phase, a static
+     file shipped with the app) — not a Firebase node. This database takes
+     unauthenticated writes, so anything it held could be defaced and
+     "unverified" would not stay hidden.
+   • A condo's room is DERIVED from its id (GRASS: the legacy key; any other:
+     'lf_c_'+id), never read off a record, so a tampered record cannot point a
+     resident at somebody else's room.
+   • Buildings are not always numbered. Names are shown exactly as stored and
+     never generated. Unit stays free text.
+   • Nothing is trusted: every record goes through lfCondoClean(), which caps
+     lengths and counts and drops what it does not recognise. */
+const LF_CONDOS_BUILD   = true;                  // false = none of this ever runs (a release, not a switch: use version.json for that)
+const LF_GRASS_ROOM     = 'lokalfinder_grass';   // the legacy key — every GRASS order, store and PIN lives under it. Never change it.
+const LF_GRASS_CONDO    = 'grass-residences-quezon-city';
+const LF_CONDO_KEY      = 'lf-condo';            // this device's chosen condo id; missing, deleted or invalid means GRASS
+const LF_CONDO_ID_RE    = /^[a-z0-9][a-z0-9-]{1,62}$/;
+const LF_CONDO_MODE_TTL = 5*60*1000;             // how long a read of the remote mode is trusted (the update check's own cadence)
+const LF_CONDO_PAGE     = 20;                    // cards drawn before "Show more": the list has to stay fast with hundreds
+const LF_CONDO_MAX_BLDG = 60;
+const LF_CONDO_KINDS    = ['tower','building','wing','phase','block','villa','podium','other'];
+const LF_CONDO_STATUS   = { live:'Live', coming:'Coming soon', closed:'Not yet open' };
+const LF_CONDO_SVG = {
+  pin:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+  find: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>'
+};
+
+// Text from a record: control and bidi-override characters out, whitespace
+// collapsed, cut to `max` without leaving half an emoji.
+function lfCondoStr(v, max){
+  if(typeof v !== 'string') return '';
+  let s = v.replace(/[\u0000-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,' ').replace(/\s+/g,' ').trim();
+  if(s.length > max){ s = s.slice(0,max); if(/[\ud800-\udbff]$/.test(s)) s = s.slice(0,-1); s = s.trim(); }
+  return s;
+}
+function lfCondoStrs(v, maxItems, maxLen){
+  if(!Array.isArray(v)) return [];
+  const out = [];
+  for(let i = 0; i < v.length && i < maxItems*4 && out.length < maxItems; i++){   // the scan is capped too: a hostile list of junk must not cost a full pass
+    const s = lfCondoStr(v[i], maxLen);
+    if(s && out.indexOf(s) < 0) out.push(s);
+  }
+  return out;
+}
+// For search: lower-case, accents folded ("Parañaque" finds "paranaque"), punctuation to spaces.
+// Built with new RegExp, not a literal: a browser too old for \p{L} would reject a literal
+// while the whole script is being parsed and the app would not start; this only costs it
+// the non-Latin part of the search.
+let LF_CONDO_WORD;
+try{ LF_CONDO_WORD = new RegExp('[^\\p{L}\\p{N}]+', 'gu'); }catch(e){ LF_CONDO_WORD = /[^a-z0-9]+/g; }
+function lfCondoNorm(s){
+  return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(LF_CONDO_WORD,' ').trim();
+}
+
+// Buildings arrive keyed by a stable id (so a rename or a reorder never changes an
+// id) or as an array. Out comes an array in display order. A building with no name
+// is dropped, never given one.
+function lfCondoBuildings(raw){
+  const rows = Array.isArray(raw) ? raw.slice(0, LF_CONDO_MAX_BLDG*2).map((b,i)=>[b && b.id != null ? b.id : 'b'+(i+1), b])
+             : (raw && typeof raw === 'object') ? Object.keys(raw).slice(0, LF_CONDO_MAX_BLDG*2).map(k=>[k, raw[k]]) : [];
+  const out = [], seen = Object.create(null);
+  rows.forEach((row, i)=>{
+    const b = row[1];
+    if(!b || typeof b !== 'object' || out.length >= LF_CONDO_MAX_BLDG) return;
+    const id = String(b.id != null ? b.id : row[0]);
+    if(!/^[a-z0-9][a-z0-9_-]{0,30}$/.test(id) || seen[id]) return;
+    const name = lfCondoStr(b.name, 40);
+    if(!name) return;
+    seen[id] = true;
+    const o = { id, name, kind: LF_CONDO_KINDS.indexOf(b.kind) >= 0 ? b.kind : 'other',
+                order: (typeof b.order === 'number' && isFinite(b.order)) ? b.order : i + 1 };
+    if(typeof b.floors === 'number' && b.floors >= 1 && b.floors <= 150) o.floors = Math.floor(b.floors);
+    const note = lfCondoStr(b.note, 120); if(note) o.note = note;
+    const sp = b.sitePos;
+    if(sp && typeof sp === 'object'){
+      const p = {};
+      ['row','col'].forEach(k=>{ if(typeof sp[k] === 'number' && sp[k] >= 0 && sp[k] <= 40) p[k] = Math.floor(sp[k]); });
+      const pod = lfCondoStr(sp.podium, 12); if(pod) p.podium = pod;
+      if(Object.keys(p).length) o.sitePos = p;
+    }
+    out.push(o);
+  });
+  return out.sort((a,b)=>a.order - b.order);
+}
+
+// The room a condo's data lives in. Derived, never stored (see the rules above).
+function lfCondoRoom(id){ return id === LF_GRASS_CONDO ? LF_GRASS_ROOM : 'lf_c_' + id; }
+
+// One record, however it arrived. Returns a clean copy or null (no usable id or name).
+function lfCondoClean(raw){
+  if(!raw || typeof raw !== 'object') return null;
+  const id = typeof raw.id === 'string' ? raw.id : '';
+  const name = lfCondoStr(raw.name, 80);
+  if(!LF_CONDO_ID_RE.test(id) || !name) return null;
+  const c = {
+    id, name,
+    aliases:   lfCondoStrs(raw.aliases, 10, 80),
+    developer: lfCondoStr(raw.developer, 80),
+    city:      lfCondoStr(raw.city, 80),
+    barangay:  lfCondoStr(raw.barangay, 80),
+    address:   lfCondoStr(raw.address, 160),
+    status:    (typeof raw.status === 'string' && Object.prototype.hasOwnProperty.call(LF_CONDO_STATUS, raw.status)) ? raw.status : 'closed',   // own keys only: "constructor" is not a status
+    buildings: lfCondoBuildings(raw.buildings),
+    siteNote:  lfCondoStr(raw.siteNote, 300),
+    landmarks: lfCondoStrs(raw.landmarks, 12, 80),
+    unitHint:  lfCondoStr(raw.unitHint, 40),
+    source:    lfCondoStrs(raw.source, 6, 300).filter(u=>/^https:\/\/\S+$/.test(u)),
+    verifiedAt: (typeof raw.verifiedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.verifiedAt)) ? raw.verifiedAt : '',
+    confidence: ['confirmed','likely','unverified'].indexOf(raw.confidence) >= 0 ? raw.confidence : 'unverified',
+    visible:   raw.visible === true,
+    room:      lfCondoRoom(id)
+  };
+  // Coordinates only as a real pair. Half a pair is dropped: the other half is never guessed.
+  if(typeof raw.lat === 'number' && typeof raw.lng === 'number' && isFinite(raw.lat) && isFinite(raw.lng)
+     && Math.abs(raw.lat) <= 90 && Math.abs(raw.lng) <= 180){ c.lat = raw.lat; c.lng = raw.lng; }
+  c.hay = lfCondoNorm([c.name].concat(c.aliases, [c.developer, c.city, c.barangay], c.buildings.map(b=>b.name)).join(' '));
+  return c;
+}
+
+// The reference record, confirmed by the founder (Towers 1-5). Everything that has
+// not been confirmed — developer, barangay, address, floors, coordinates — is blank
+// on purpose: a guess here would be shown to residents as a fact.
+const LF_GRASS_RAW = {
+  id: LF_GRASS_CONDO, name: 'GRASS Residences', aliases: ['SM Grass'], city: 'Quezon City',
+  status: 'live', confidence: 'confirmed', verifiedAt: '2026-10-25', visible: true,
+  buildings: {
+    'tower-1': { name:'Tower 1', kind:'tower', order:1 }, 'tower-2': { name:'Tower 2', kind:'tower', order:2 },
+    'tower-3': { name:'Tower 3', kind:'tower', order:3 }, 'tower-4': { name:'Tower 4', kind:'tower', order:4 },
+    'tower-5': { name:'Tower 5', kind:'tower', order:5 }
+  }
+};
+// id -> clean record. Built on first use, so a resident's boot does no work for it.
+let _lfCondoDir = null;
+function lfCondoDir(){
+  if(!_lfCondoDir){
+    _lfCondoDir = Object.create(null);
+    const g = lfCondoClean(LF_GRASS_RAW);
+    if(g) _lfCondoDir[g.id] = g;
+  }
+  return _lfCondoDir;
+}
+// Where later phases feed the directory in. GRASS is built in and cannot be replaced by anything loaded.
+function lfCondoAdd(raw){
+  const c = lfCondoClean(raw);
+  if(!c || c.id === LF_GRASS_CONDO) return null;
+  lfCondoDir()[c.id] = c;
+  return c;
+}
+function lfCondoById(id){ return (typeof id === 'string' && LF_CONDO_ID_RE.test(id)) ? (lfCondoDir()[id] || null) : null; }
+function lfCondoStored(){
+  try{
+    const v = localStorage.getItem(LF_CONDO_KEY);
+    return (typeof v === 'string' && LF_CONDO_ID_RE.test(v)) ? v : '';
+  }catch(e){ return ''; }
+}
+function lfCondoCurrent(){ return lfCondoById(lfCondoStored()) || lfCondoById(LF_GRASS_CONDO); }
+
+// The one line every database path hangs off (const ROOM_KEY, just below).
+// Phase A: always GRASS. A device with nothing stored never builds the directory.
+function lfRoomKey(){
+  try{
+    if(!LF_CONDOS_BUILD) return LF_GRASS_ROOM;
+    const id = lfCondoStored();
+    if(!id) return LF_GRASS_ROOM;
+    const c = lfCondoById(id);
+    return (c && c.room) ? c.room : LF_GRASS_ROOM;
+  }catch(e){ return LF_GRASS_ROOM; }
+}
+
+// ── Remote mode: "off" | "admin" | "on", from version.json ──
+// Read only after an admin signs in (a resident's phone never asks), once per
+// LF_CONDO_MODE_TTL. A failed read is "off".
+let _lfCondoMode = 'off', _lfCondoModeAt = 0, _lfCondoModeP = null;
+function lfCondoModeRead(){
+  if(_lfCondoModeP) return _lfCondoModeP;
+  _lfCondoModeP = (async ()=>{
+    let m = 'off';
+    try{
+      const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
+      if(r.ok){ const j = await r.json(); const v = j && j.condos; m = (v === 'admin' || v === 'on') ? v : 'off'; }
+    }catch(e){ m = 'off'; }
+    _lfCondoMode = m; _lfCondoModeAt = Date.now(); _lfCondoModeP = null;
+    return m;
+  })();
+  return _lfCondoModeP;
+}
+// Phase A: an admin session is required whatever the file says. "on" (everyone)
+// belongs to the phase that adds a read at boot; until then it only means "admin".
+function lfCondoAllowed(){
+  return LF_CONDOS_BUILD && _lfAdminMode === true && (_lfCondoMode === 'admin' || _lfCondoMode === 'on');
+}
+
+// ── Header button ──
+// The old ".lf2-sub" line is hidden while the button shows and comes back
+// untouched when it does not, so "off" is the old markup exactly. Called from
+// goPage('p-chome') / goBack(), both inside try/catch.
+function lfCondoHeaderSync(){
+  if(!LF_CONDOS_BUILD) return;
+  const sub = document.querySelector('#lf-brand-tap .lf2-sub');
+  if(!sub) return;
+  let on = false;
+  try{ on = lfCondoAllowed(); }catch(e){ on = false; }
+  const have = document.getElementById('lf-condo-btn');
+  if(on){
+    if(!have){ sub.hidden = true; sub.insertAdjacentElement('afterend', lfCondoBuildButton()); }
+    else lfCondoLabel(have);
+  } else if(have){
+    have.remove(); sub.hidden = false; lfCondoClose(true);
+  }
+  // An admin session that has not learned the mode yet (or whose answer has gone
+  // stale) asks, then syncs again. A resident never gets here: _lfAdminMode is false.
+  if(_lfAdminMode === true && (!_lfCondoModeAt || Date.now() - _lfCondoModeAt > LF_CONDO_MODE_TTL)){
+    lfCondoModeRead().then(()=>{ try{ lfCondoHeaderSync(); }catch(e){} });
+  }
+}
+function lfCondoLabel(b){
+  const c = lfCondoCurrent();
+  const name = c ? c.name : 'GRASS Residences';
+  b.querySelector('.lf-condo-name').textContent = name;
+  b.setAttribute('aria-label', 'Choose your condo. Current: ' + name);
+}
+function lfCondoBuildButton(){
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = 'lf-condo-btn'; b.className = 'lf-condo-btn';
+  b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
+  const ic = (svg)=>{ const s = document.createElement('span'); s.className = 'lf-condo-ic'; s.setAttribute('aria-hidden', 'true'); s.innerHTML = svg; return s; };
+  const nm = document.createElement('span'); nm.className = 'lf-condo-name';
+  b.append(ic(LF_CONDO_SVG.pin), nm, ic(LF_CONDO_SVG.chev));
+  lfCondoLabel(b);
+  // stopPropagation: the wordmark block around it counts taps towards the unadvertised admin door.
+  b.addEventListener('click', e=>{ e.stopPropagation(); lfCondoOpen(); });
+  return b;
+}
+
+// ── "Choose your condo" sheet (the app's own .modal / .modal-sheet) ──
+let _lfCondoSheet = null, _lfCondoQuery = '', _lfCondoCity = '', _lfCondoDev = '', _lfCondoShown = LF_CONDO_PAGE, _lfCondoChipSig = null;
+function lfCondoSheet(){
+  if(_lfCondoSheet && document.body.contains(_lfCondoSheet)) return _lfCondoSheet;
+  const host = (el('modal-switch') || {}).parentNode || el('app') || document.body;   // same container as the other sheets, so it is clipped to the app frame
+  const m = document.createElement('div');
+  m.className = 'modal lf-condo-modal'; m.id = 'modal-condo';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'lf-condo-ttl');
+  m.setAttribute('aria-hidden', 'true'); m.inert = true;
+  m.innerHTML =
+    '<div class="modal-sheet lf-condo-sheet">'+
+      '<div class="modal-handle"></div>'+
+      '<div class="lf-condo-top">'+
+        '<div class="modal-ttl" id="lf-condo-ttl" tabindex="-1">Choose your condo</div>'+
+        '<button type="button" class="lf-condo-x" id="lf-condo-x" aria-label="Close">✕</button>'+
+      '</div>'+
+      '<div class="lf-condo-note" id="lf-condo-note">Admin preview — residents do not see this yet.</div>'+
+      '<div class="lf-condo-find" role="search">'+LF_CONDO_SVG.find+
+        '<input type="search" id="lf-condo-q" placeholder="Search name, city or building" aria-label="Search condos" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">'+
+      '</div>'+
+      '<div class="lf-condo-chips" id="lf-condo-chips" hidden></div>'+
+      '<ul class="lf-condo-list" id="lf-condo-list" tabindex="-1"></ul>'+
+      '<div class="lf-condo-sr" id="lf-condo-sr" role="status" aria-live="polite"></div>'+
+    '</div>';
+  host.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target === m) lfCondoClose(); });          // the backdrop
+  m.querySelector('#lf-condo-x').addEventListener('click', ()=>lfCondoClose());
+  m.querySelector('#lf-condo-q').addEventListener('input', e=>{ _lfCondoQuery = e.target.value; _lfCondoShown = LF_CONDO_PAGE; lfCondoRender(); });
+  _lfCondoSheet = m;
+  return m;
+}
+// While the sheet is open Esc closes it and Tab stays inside it — wherever focus happens
+// to be (a tap on an empty part of the sheet drops focus to <body>, and the title, where
+// focus starts, is not in the tab order). Registered on open, removed on close.
+function lfCondoKeys(e){
+  const m = _lfCondoSheet;
+  if(!m || !m.classList.contains('on')) return;
+  if(e.key === 'Escape'){ e.stopPropagation(); lfCondoClose(); return; }
+  if(e.key !== 'Tab') return;
+  const f = Array.from(m.querySelectorAll('button, input')).filter(n=>!n.disabled && n.offsetParent !== null);
+  if(!f.length) return;
+  const first = f[0], last = f[f.length-1], at = document.activeElement;
+  if(!m.contains(at)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if(e.shiftKey && (at === first || at === el('lf-condo-ttl'))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && at === last){ e.preventDefault(); first.focus(); }
+}
+// "5 towers", "1 building", "3 wings"; a mix of kinds says "buildings".
+function lfCondoBuildingLabel(c){
+  const n = c.buildings.length;
+  if(!n) return '';
+  const kinds = Array.from(new Set(c.buildings.map(b=>b.kind)));
+  const noun = (kinds.length === 1 && kinds[0] !== 'other') ? kinds[0] : 'building';
+  return n + ' ' + noun + (n === 1 ? '' : 's');
+}
+function lfCondoVisible(admin){
+  const d = lfCondoDir();
+  return Object.keys(d).map(k=>d[k]).filter(c=>admin || (c.visible && c.confidence === 'confirmed'));   // nothing unverified reaches a resident
+}
+function lfCondoCard(c, cur){
+  const isCur = !!cur && c.id === cur.id;
+  const li = document.createElement('li');
+  // Only the current condo does anything when tapped (it just closes the sheet). Opening a
+  // condo's page and switching to it arrive in later phases; until then no other card is a button.
+  const card = document.createElement(isCur ? 'button' : 'div');
+  if(isCur){ card.type = 'button'; card.setAttribute('aria-current', 'true'); card.addEventListener('click', ()=>lfCondoClose()); }
+  card.className = 'lf-condo-card' + (isCur ? ' cur' : '');
+  card.dataset.id = c.id;
+  const ph = document.createElement('span'); ph.className = 'lf-condo-ph'; ph.setAttribute('aria-hidden', 'true'); ph.innerHTML = LF_CONDO_SVG.pin;
+  const tx = document.createElement('span'); tx.className = 'lf-condo-tx';
+  const nm = document.createElement('span'); nm.className = 'lf-condo-nm'; nm.textContent = c.name;
+  const mt = document.createElement('span'); mt.className = 'lf-condo-mt';
+  mt.textContent = [[c.developer, c.city].filter(Boolean).join(' · '), lfCondoBuildingLabel(c)].filter(Boolean).join(' · ');
+  tx.append(nm, mt);
+  const tags = document.createElement('span'); tags.className = 'lf-condo-tags';
+  const tag = (cls, txt)=>{ const t = document.createElement('span'); t.className = 'lf-condo-tag ' + cls; t.textContent = txt; tags.appendChild(t); };
+  tag(c.status, LF_CONDO_STATUS[c.status]);
+  if(isCur) tag('cur', 'Current');
+  if(c.confidence !== 'confirmed') tag('warn', 'Unverified');     // only an admin sees these two
+  if(!c.visible) tag('warn', 'Hidden');
+  card.append(ph, tx, tags);
+  li.appendChild(card);
+  return li;
+}
+// Chips only exist when there is something to choose between: with one city (or
+// none) there is no row at all. Rebuilt only when the set of values changes, so a
+// tapped chip keeps focus.
+function lfCondoRenderChips(all){
+  const box = el('lf-condo-chips');
+  const uniq = k => Array.from(new Set(all.map(c=>c[k]).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const cities = uniq('city'), devs = uniq('developer');
+  if(_lfCondoCity && cities.indexOf(_lfCondoCity) < 0) _lfCondoCity = '';
+  if(_lfCondoDev && devs.indexOf(_lfCondoDev) < 0) _lfCondoDev = '';
+  const sig = cities.join('|') + '#' + devs.join('|');
+  if(sig !== _lfCondoChipSig){
+    _lfCondoChipSig = sig;
+    box.replaceChildren();
+    const row = (label, all_, vals, pick)=>{
+      if(vals.length < 2) return;
+      const r = document.createElement('div'); r.className = 'lf-condo-row'; r.setAttribute('role', 'group'); r.setAttribute('aria-label', label);
+      [''].concat(vals).forEach(v=>{
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-condo-chip';
+        b.dataset.v = v; b.textContent = v || all_;
+        b.addEventListener('click', ()=>{ pick(v); _lfCondoShown = LF_CONDO_PAGE; lfCondoRender(); });
+        r.appendChild(b);
+      });
+      box.appendChild(r);
+    };
+    row('City', 'All cities', cities, v=>{ _lfCondoCity = v; });
+    row('Developer', 'All developers', devs, v=>{ _lfCondoDev = v; });
+    box.hidden = !box.firstChild;
+  }
+  box.querySelectorAll('.lf-condo-row').forEach(r=>{
+    const sel = r.getAttribute('aria-label') === 'City' ? _lfCondoCity : _lfCondoDev;
+    r.querySelectorAll('.lf-condo-chip').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.v === sel)));
+  });
+}
+function lfCondoRender(focusFrom){
+  const list = el('lf-condo-list');
+  const all = lfCondoVisible(_lfAdminMode === true);
+  const cur = lfCondoCurrent();
+  lfCondoRenderChips(all);
+  const q = lfCondoNorm(_lfCondoQuery), tokens = q ? q.split(' ') : [];
+  const rows = all.filter(c=>(!_lfCondoCity || c.city === _lfCondoCity) && (!_lfCondoDev || c.developer === _lfCondoDev)
+                             && tokens.every(t=>c.hay.indexOf(t) >= 0))
+    .sort((a,b)=>{
+      if(cur && a.id === cur.id) return -1;                       // the current condo stays pinned on top
+      if(cur && b.id === cur.id) return 1;
+      if(tokens[0]){ const pa = a.hay.indexOf(tokens[0]) === 0 ? 0 : 1, pb = b.hay.indexOf(tokens[0]) === 0 ? 0 : 1; if(pa !== pb) return pa - pb; }
+      return a.name.localeCompare(b.name);
+    });
+  const shown = rows.slice(0, _lfCondoShown);
+  const frag = document.createDocumentFragment();
+  shown.forEach(c=>frag.appendChild(lfCondoCard(c, cur)));
+  if(!shown.length){
+    const e = document.createElement('li'); e.className = 'lf-condo-empty';
+    e.textContent = tokens.length ? 'No condo matches “' + _lfCondoQuery.trim().slice(0, 40) + '”. Check the spelling, or try a building name.' : 'No condos to show yet.';
+    frag.appendChild(e);
+  }
+  if(rows.length > shown.length){
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.className = 'lf-condo-more'; b.textContent = 'Show more (' + (rows.length - shown.length) + ')';
+    b.addEventListener('click', ()=>{ const was = shown.length; _lfCondoShown += LF_CONDO_PAGE; lfCondoRender(was); });
+    li.appendChild(b); frag.appendChild(li);
+  }
+  list.replaceChildren(frag);
+  if(typeof focusFrom === 'number'){
+    // "Show more" was just pressed and has been replaced: bring the first new row into view and
+    // keep focus inside the sheet (on the next "Show more", or on the list itself).
+    const first = list.children[focusFrom]; if(first) first.scrollIntoView({ block: 'nearest' });
+    (list.querySelector('.lf-condo-more') || list).focus({ preventScroll: true });
+  }
+  el('lf-condo-sr').textContent = rows.length ? rows.length + (rows.length === 1 ? ' condo' : ' condos') : 'No condos match';
+}
+function lfCondoOpen(){
+  try{
+    if(!lfCondoAllowed()) return;
+    const m = lfCondoSheet();
+    _lfCondoQuery = ''; _lfCondoCity = ''; _lfCondoDev = ''; _lfCondoShown = LF_CONDO_PAGE; _lfCondoChipSig = null;
+    el('lf-condo-q').value = '';
+    el('lf-condo-note').hidden = (_lfCondoMode === 'on');
+    lfCondoRender();
+    m.inert = false; m.removeAttribute('aria-hidden');
+    void m.offsetWidth;                                           // so the slide-up starts from its closed position
+    m.classList.add('on');
+    document.addEventListener('keydown', lfCondoKeys, true);      // (the same function twice is one listener)
+    const b = el('lf-condo-btn'); if(b) b.setAttribute('aria-expanded', 'true');
+    el('lf-condo-ttl').focus({ preventScroll: true });
+  }catch(e){
+    console.warn('condos: the picker failed to open:', e);
+    try{ lfCondoClose(true); }catch(_){}
+    showToast('⚠️ Condo picker unavailable');
+  }
+}
+function lfCondoClose(quiet){
+  const m = _lfCondoSheet;
+  if(!m) return;
+  m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', lfCondoKeys, true);
+  const b = document.getElementById('lf-condo-btn');
+  if(b) b.setAttribute('aria-expanded', 'false');
+  if(!quiet && b){ try{ b.focus({ preventScroll: true }); }catch(e){} }
+}
+
 // ═══════════════════════════════════════════════════════
 //  SYNC ENGINE — Firebase Realtime Database (free tier)
 //  No setup needed — uses a shared public database
 // ═══════════════════════════════════════════════════════
 
 const FB_URL = 'https://lokalfinder-ec57f-default-rtdb.asia-southeast1.firebasedatabase.app';
-const ROOM_KEY = 'lokalfinder_grass';
+const ROOM_KEY = lfRoomKey();   // v78: 'lokalfinder_grass' in every case until Phase C — see lfRoomKey()
 
 let lastPlacedOrderId = null;
 let knownOrderIds = new Set();
@@ -13579,7 +14071,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 77; // ← bump this each release (and version.json)
+  const APP_VERSION = 78; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
