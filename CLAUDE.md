@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 685 checks across fourteen files,
+**Testing:** `tests/` holds a Playwright suite — 731 checks across fifteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -639,7 +639,7 @@ a 360×640 one. It is now a swipeable scroll-snap pager: 131px, menu 317px
 vendor application and the two admin selects) offered Tower 1–4 and Ground
 Floor; GRASS has five towers. Tower 5 was added as its own one-line release.
 
-**Condo directory — Phase A (v78): an admin-only preview, not something
+**Condo directory — Phase A (v78, v79): an admin-only preview, not something
 residents have.** The founder's master prompt (2026-10-25) asks for a picker so a
 resident of ANY Metro Manila condo can find theirs. It is built in phases, each
 approved by the founder before the next; **only Phase A exists** (data model,
@@ -668,7 +668,7 @@ founder's answers are in the "Condo Directory — Phase 0" doc. Decisions taken
 
 What Phase A contains (one block in `index.html`, between
 `/* ═══ v78 — CONDO DIRECTORY, PHASE A` and the SYNC ENGINE comment, plus CSS
-before `</style>` and two hooks):
+before `</style>` and three hooks — Home, Back, and (v79) the admin panel):
 
 - **`lfRoomKey()` decides `ROOM_KEY`** (`const ROOM_KEY = lfRoomKey();`). It
   returns `'lokalfinder_grass'` unless the device's `lf-condo` names a record in
@@ -702,11 +702,33 @@ before `</style>` and two hooks):
   switch, not security** — `_lfAdminMode` is a client variable like every other
   admin gate here.
 - **How to see it on the live site.** Sign in as admin (5 taps on the wordmark,
-  or `#admin`), tap the **Live Posts** tile (it opens the customer Feed with the
-  admin session intact), then tap **Home** at the bottom. That is the only
-  route: the admin dashboard has no customer-view button, **Sign Out ends the
+  or `#admin`). **Since v79 the admin panel has its own "Condo picker" card**,
+  right under the six number tiles: one tap opens the sheet, with no navigation.
+  v78 had only the other route — tap the **Live Posts** tile (it opens the
+  customer Feed with the admin session intact), then **Home** at the bottom — and
+  the founder could not find it. It still works and is the only way to see the
+  header pill. The admin panel has no customer-view button, **Sign Out ends the
   admin session**, and so does a reload (`_lfAdminMode` lives in memory).
-  `tests/test-condos.js` walks this route with real taps.
+  `tests/test-condos.js` walks both routes with real taps.
+- **Admin panel card (v79).** `lfCondoAdminSync()` (hook: `goPage('p-adash')`, in
+  try/catch, on its own line so the original admin line is untouched) builds a
+  full-width card after `#p-adash .stat-grid` when `lfCondoAllowed()` and removes
+  it when not. It is **never static markup**, so a resident's copy of the page —
+  and an admin with the switch off — are the old markup exactly (the test
+  compares the children of `#p-adash .scrl`). It asks for the mode the way the
+  header does, so an admin who never visits Home still gets it, and three quick
+  arrivals make one read. `lfCondoOpen(from)` / `_lfCondoFrom` give the sheet one
+  opener: that button says "expanded" and gets focus back (the pill or the card,
+  whichever opened it). The two new icons add two more constant `innerHTML`s (5 in
+  the block, all constants). **Why it exists:** the founder reported "no live post
+  on admin" and "there no button" (a screenshot of the customer Home, where the
+  button is hidden by design). The Live Posts tile is in v76 and v78 (checked in
+  the source and in a screenshot of the v78 build), so the cause of that report
+  was **not established** — a cached older build, another address, another
+  screen, or the pushed-up app frame described below all fit. The card does not
+  depend on that tile. If the founder still sees no card after the update, ask
+  for a screenshot of the admin panel: no card means an older build or the
+  switch is off.
 - **Header button** replaces nothing: `.lf2-sub` is hidden while the pill shows
   and restored untouched when it does not. The pill is 24px tall, so the header
   is **~7px taller while it shows (72 → 79px** beside a one-line subtitle; the
@@ -734,9 +756,13 @@ before `</style>` and two hooks):
   `ROOM_KEY`, no timer, observer or scroll/touch listener, and every `innerHTML`
   in it is a constant (record text goes through `textContent`).
 
-`tests/test-condos.js` (135 checks) drives it: a resident's phone is
+`tests/test-condos.js` (171 checks) drives it: a resident's phone is
 untouched (header markup byte for byte, no extra request, no condo path in the
 database), the flag matrix (admin/on/off/missing/garbage/404/network failure),
+the v79 admin panel card (once, under the tiles, on the first screen, 44px+, the
+same flag matrix, the kill switch with the sheet open, one mode read for three
+quick arrivals, focus back to whichever door opened the sheet, 360/320px, and a
+resident who reaches the admin panel anyway gets no card and no mode read),
 the picker through the real UI (open, close, Esc, backdrop, focus, Tab trap,
 44px hit-testing, the 5-tap door still works and the pill does not count),
 named (non-numbered) buildings, a single-building condo, a condo with no
@@ -744,8 +770,9 @@ kitchens, search, chips, pagination, the kill switch with the sheet open,
 sign-out, the resolver against 16 hostile stored values, hostile records
 (prototype pollution, markup in names, 300 KB), 500 condos on a 4×-slowed CPU,
 reduced motion, 360/320px headers, `LF_CONDOS_BUILD=false`, a browser without
-`\p{L}`, and source-level guards. The 13
-existing suites are the control.
+`\p{L}`, and source-level guards. `tests/test-frame.js` (10 checks, v79) pins the
+app-frame guard: it reproduces the push-up with a real Tab press, fails on the live
+v78 file (6 of 10) and passes on v79. The 13 older suites are the control.
 
 **Control:** those 13 suites (550 checks) pass identically on the live v76 file and
 on this build, and a resident session of the two builds matches in room, header
@@ -766,6 +793,60 @@ webfont — the tests have no web fonts, and the name may be cut there), GitHub'
 CI (a newer Chromium with other fonts runs it on push), and push delivery (no
 push, service-worker, ordering or database line is touched by the diff).
 
+**v79 control and checks (2026-10-25).** Against the live v78 file, a resident
+session (5 runs each): the same room, element ids, header markup, `localStorage`
+keys, store ids, `<select>` options, DOM node count (1953 / 1953) and request log
+(30 / 30, no path differs); startup within noise (DOMContentLoaded median 228 ms
+live, 238 ms new); no errors. An admin session with the switch **off**: the admin
+panel is identical, children and markup; with it **on** the only difference is
+`#lf-condo-adm`, and the header pill (via Live Posts > Home) is identical. All 15
+suites (731 checks) pass on a frozen copy of the build. **Mutation check:** the 15
+new breakages (M37–M51: the card ignoring the gate, not leaving when the switch goes
+off, a duplicate per arrival, focus going to the wrong door, no ask for the mode, a
+missing hook, a card 40% wide, reduced motion ignored, a frame that is not put back
+in `goPage` / `goBack`, or is rewritten when already at the top) are each caught;
+M48 (a resident who reaches the admin panel reading the mode) was missed until a
+check was added for it. M02, M13 and M18, whose code v79 touched, are still caught.
+The 33 older breakages target code v79 did not change and were not re-run for it.
+**Stress:** the condo suite ran 12 times, three at once, on a busy machine: 12 of
+12 passed (before the frame reset was added to its geometry checks about 4 in 9
+failed — the flake described below). **Not verified:** a real phone (the card at
+360px in the real webfont; the keyboard behaviour above on iOS and Android), the
+live site (this environment cannot reach it), and why the founder saw no Live
+Posts tile.
+
+**The app frame can be pushed out of place (found while testing v79; fixed in
+v79 by a safety net, not at the root).** `#app` is `overflow:hidden` but still
+scrollable: the closed bottom sheets sit below the frame (translated 100% down), so
+`#app.scrollHeight` is ~1604 against an 844px frame — the same in the live v78 file
+— and the browser scrolls it, by up to ~760px, whenever it reveals an element.
+**Tab, or the phone keyboard's "Next", on the admin login or the vendor PIN screen
+lands on a field inside a CLOSED sheet (`#new-item-name` in `modal-additem`) and
+pushes the whole frame up ~542px; nothing put it back**, so every page after that
+showed shifted up. Measured on the live v78 file: the admin panel opened with its
+six number tiles at y = -449…-164, **Live Posts included, off the top of the screen
+with no way to scroll back** (`tests/test-frame.js`, which fails on v78 for exactly
+this). That is one plausible cause of the founder's "there is no live post on
+admin"; it has **not** been shown to have happened on their phone.
+- **v79 fix = a safety net:** `lfUnshiftApp()` (before `goPage`) puts the frame back
+  to 0 on every `goPage()` and `goBack()`, writes nothing when it is already 0, and
+  cannot throw. Nothing in the app scrolls `#app` on purpose (a test asserts it), so
+  nothing wanted is undone.
+- **NOT fixed (the root cause):** fields in closed sheets are still focusable, so a
+  login screen can still be pushed up *until the next page change* (and a keyboard
+  user can still Tab into a field they cannot see). The clean fix is
+  `.modal:not(.on){visibility:hidden}` with `transition:opacity .25s,visibility 0s
+  linear .25s` (and `visibility 0s` on `.modal.on`), which keeps the fade. It
+  touches all nine sheets, so it is its own release, with a test per sheet — not
+  bundled into a condo release. `overflow:clip` on `#app` was rejected: it changes
+  how a phone keyboard reveals a field inside an open sheet, and that cannot be
+  tested here.
+- **Tests that measure where something is on screen must reset the frame first**
+  (`UNSHIFT()` in `tests/test-condos.js`): Playwright's own `click()` scrolls `#app`
+  now and then (seen: 90, 356, 760px), and the header button's tap-target check
+  failed about 4 runs in 9 under load until it did — a flake that was in v78's copy
+  of the test too and could have blocked a deploy.
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -777,7 +858,11 @@ residents never had it). Full: restore `index.html` and `version.json` from the
 last release **but with both version numbers raised above the broken one**
 (the banner fires only for a higher number); phones that never tap the banner
 stay on the old build until they next reload. Phase A writes nothing to the
-database, so there is nothing there to undo.
+database, so there is nothing there to undo. v79 sits on top of v78 (the admin
+card and the frame guard); rolling back v79 alone means restoring the v78 files
+with both version numbers raised to 80. The frame guard cannot be switched off from
+`version.json` — it is plain navigation code — so a problem with it is a rollback,
+not a switch.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
