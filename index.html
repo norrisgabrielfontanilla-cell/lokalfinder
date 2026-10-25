@@ -2773,7 +2773,7 @@ select option { color: var(--t1); background: var(--w); }
 
       <label class="flbl">Tower / Location</label>
       <select class="finp" id="ap-loc" style="-webkit-appearance:none" onchange="apLocChanged()">
-        <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+        <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Tower 5</option><option>Ground Floor</option>
         <option value="__outside">📍 Outside GRASS Residences</option>
       </select>
       <!-- v62: a provider whose base is elsewhere. Shown only when they pick
@@ -3430,7 +3430,7 @@ select option { color: var(--t1); background: var(--w); }
     <input class="finp" id="nv-emoji" type="text" placeholder="🍖" maxlength="2" style="font-size:22px;text-align:center">
     <label class="flbl">Tower / Location</label>
     <select class="finp" id="nv-loc" style="-webkit-appearance:none">
-      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Tower 5</option><option>Ground Floor</option>
     </select>
     <!-- v54: which marketplace this vendor belongs to. Options are generated
          from MARKETPLACES, so adding a new vertical adds it here for free. -->
@@ -3486,7 +3486,7 @@ select option { color: var(--t1); background: var(--w); }
     <input class="finp" id="ev-emoji" type="text" maxlength="2" style="font-size:22px;text-align:center">
     <label class="flbl">Tower / Location</label>
     <select class="finp" id="ev-loc" style="-webkit-appearance:none">
-      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Ground Floor</option>
+      <option>Tower 1</option><option>Tower 2</option><option>Tower 3</option><option>Tower 4</option><option>Tower 5</option><option>Ground Floor</option>
     </select>
     <label class="flbl">Category</label>
     <input class="finp" id="ev-cat" type="text" placeholder="e.g. BBQ, Filipino, Coffee">
@@ -13579,7 +13579,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 76; // ← bump this each release (and version.json)
+  const APP_VERSION = 77; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
