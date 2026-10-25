@@ -44,8 +44,12 @@ Bookings reuse the food status *strings* (`new`→`accepted`→`preparing`→
   page.
 - `firebase-messaging-sw.js`, `OneSignalSDKWorker.js` — push notification
   service workers (Firebase Cloud Messaging + OneSignal both present).
-- `version.json` — a single `{"version": N}` counter the app polls
-  (`fetch('version.json?_=...')`) to detect new deployments and prompt reload.
+- `version.json` — `{"version": N, "v": N, "condos": "off|admin|on"}`. The app
+  polls it (`fetch('version.json?_=...')`) to detect new deployments and prompt
+  reload; `N` must equal `APP_VERSION` in `index.html` or the banner never
+  fires, and it only fires for a HIGHER number, so a rollback has to raise both.
+  `condos` (v78) is the remote switch for the condo picker — see below. Old
+  builds ignore it.
 - `.github/workflows/deploy-pages.yml` — CI/CD: on push to `main`, builds
   `landing/`, assembles `index.html` + service workers + built landing site
   into `_site/`, and deploys to **GitHub Pages**. No other hosting/backend
@@ -367,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 550 checks across thirteen files,
+**Testing:** `tests/` holds a Playwright suite — 685 checks across fourteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -630,6 +634,150 @@ a 360×640 one. It is now a swipeable scroll-snap pager: 131px, menu 317px
   gutter, a 320px resize, and rotation while the page is hidden. It runs in CI
   on a newer Chromium with different fonts, so it waits for conditions and
   keeps margin on every pixel limit — never assert an exact glyph width.
+
+**Tower 5 (v77).** The three Tower / Location dropdowns (`ap-loc` on the
+vendor application and the two admin selects) offered Tower 1–4 and Ground
+Floor; GRASS has five towers. Tower 5 was added as its own one-line release.
+
+**Condo directory — Phase A (v78): an admin-only preview, not something
+residents have.** The founder's master prompt (2026-10-25) asks for a picker so a
+resident of ANY Metro Manila condo can find theirs. It is built in phases, each
+approved by the founder before the next; **only Phase A exists** (data model,
+room resolver, GRASS-only picker). B (illustrated cards and detail page), C
+(separate rooms, requests, interest), D (admin tools, CSV import), E (research
+and the Tier 1 import) and F (map) are not built. The plan, risks and the
+founder's answers are in the "Condo Directory — Phase 0" doc. Decisions taken
+(2026-10-25, "all as recommended"):
+
+- Pilot research is **Quezon City, 10–15 Tier 1 condos** (Phase E), then other
+  cities. **A vendor serves ONE condo**; one in two condos applies twice.
+  Condo **requests need admin approval** and become a research item, never a
+  public condo. **"Notify me" collects no contact details** — counts only.
+  **No real condo photos**: pictures are drawn in code from the record.
+- **The verified directory ships as a static file with the app — not a Firebase
+  node.** Firebase is for what changes at runtime (each condo's room, requests,
+  interest counts). This database takes unauthenticated writes, so a `/condos`
+  node could be defaced and "unverified" would not stay hidden. **Unverified
+  condos are never written to any database**; they stay in the CSV.
+- **One admin (the founder) for every room.** `adminLogin()` lets whoever types
+  `#admin` first claim a room that has no `/adminAuth` yet, so each new room's
+  admin must be set when the room is created.
+- **Before a second condo is public:** upgrade Firebase to Blaze (the free plan
+  was already 7.9× over its download limit) and publish
+  `firebase-rules-stopgap.json` extended to the new nodes. Neither is done.
+
+What Phase A contains (one block in `index.html`, between
+`/* ═══ v78 — CONDO DIRECTORY, PHASE A` and the SYNC ENGINE comment, plus CSS
+before `</style>` and two hooks):
+
+- **`lfRoomKey()` decides `ROOM_KEY`** (`const ROOM_KEY = lfRoomKey();`). It
+  returns `'lokalfinder_grass'` unless the device's `lf-condo` names a record in
+  the directory — and at boot the directory holds only GRASS, so in this phase
+  it is always GRASS. Any error, bad storage or hostile value returns GRASS. A
+  condo's room is **derived** (`'lf_c_' + id`), never read off a record.
+  `lokalfinder_grass` must not change: every GRASS order, store and PIN is
+  under it.
+- **Data model** — `lfCondoClean()` is the only way a record gets in. Fields:
+  `id` (`^[a-z0-9][a-z0-9-]{1,62}$`), `name`, `aliases[]`, `developer`, `city`,
+  `barangay`, `address`, `lat`/`lng` (only as a pair), `status`
+  (`live|coming|closed`, own keys only), `buildings` (`id, name, kind, order,
+  floors?, note?, sitePos?` — kind is tower/building/wing/phase/block/villa/
+  podium/other; names shown exactly as stored, **never generated as "Tower N"**),
+  `siteNote`, `landmarks[]`, `unitHint`, `source[]` (https only), `verifiedAt`,
+  `confidence`, `visible`. Everything is capped; unknown keys are dropped; a
+  300 KB hostile record sanitizes in milliseconds. A resident would see only
+  `visible && confidence === 'confirmed'`.
+- **GRASS is built in** (`LF_GRASS_RAW`, Towers 1–5, live, confirmed) and cannot
+  be replaced by anything loaded. **Developer, barangay, address, floors and
+  coordinates are blank on purpose** — none has been confirmed, and a guess
+  would be shown as a fact. Say the developer and it is one word.
+- **Visibility: `_lfAdminMode` AND `"condos":"admin"|"on"` in `version.json`.**
+  The mode is read only after an admin signs in (a resident's phone makes no
+  request of its own and keeps the old header markup), once per 5 minutes; a
+  failed, missing or garbage read means **off**. **Kill switch: set
+  `"condos":"off"` in `version.json` and push** — it takes effect on the next
+  navigation of any admin session, with no update banner and no reload. `"on"`
+  (everyone) is reserved: it needs a boot-time read that Phase A does not have.
+  `LF_CONDOS_BUILD = false` is the hard off (a release). **This is a visibility
+  switch, not security** — `_lfAdminMode` is a client variable like every other
+  admin gate here.
+- **How to see it on the live site.** Sign in as admin (5 taps on the wordmark,
+  or `#admin`), tap the **Live Posts** tile (it opens the customer Feed with the
+  admin session intact), then tap **Home** at the bottom. That is the only
+  route: the admin dashboard has no customer-view button, **Sign Out ends the
+  admin session**, and so does a reload (`_lfAdminMode` lives in memory).
+  `tests/test-condos.js` walks this route with real taps.
+- **Header button** replaces nothing: `.lf2-sub` is hidden while the pill shows
+  and restored untouched when it does not. The pill is 24px tall, so the header
+  is **~7px taller while it shows (72 → 79px** beside a one-line subtitle; the
+  old subtitle wraps to two lines in some fonts, which hides this — measure it
+  with the line forced to one). Only admins see it in Phase A; where it goes for
+  residents is a Phase B/C decision. Its tap area is 44px, made by `::after` —
+  offsets are measured from the padding box, which is why they are `-7/-15`, not
+  `-6/-14` (the first version was 42px and a test caught it). It `stopPropagation()`s because
+  `#lf-brand-tap` counts taps towards the unadvertised admin door.
+  Hooks: `goPage('p-chome')` and `goBack()`, each in try/catch.
+- **The sheet** reuses the app's `.modal` / `.modal-sheet` in the same container
+  as `modal-switch`; `role=dialog`, focus into the title, Tab trapped, Esc and
+  backdrop close, focus returns, `inert` + `aria-hidden` when closed, 16px
+  search (smaller makes iOS zoom). Search covers name, aliases, developer, city,
+  barangay and building names with accents folded. City / developer chips exist
+  only when there are two or more values. 20 cards at a time, then "Show more".
+  Only the **current** condo's card is a button; other cards are plain rows
+  until a later phase gives them something to do (no dead buttons).
+- **Deliberately not built yet:** "Near me" (no record has confirmed
+  coordinates), "Can't find your condo? Add it" and "Notify me" (Phase C, they
+  write to the database), the condo detail page and tap-a-tower (Phase B),
+  switching condo and the cart guard (Phase C).
+- **Phase A touches no database.** The only network call in the block is the
+  `version.json` mode read; the block contains no `fb*` call, no `FB_URL`, no
+  `ROOM_KEY`, no timer, observer or scroll/touch listener, and every `innerHTML`
+  in it is a constant (record text goes through `textContent`).
+
+`tests/test-condos.js` (135 checks) drives it: a resident's phone is
+untouched (header markup byte for byte, no extra request, no condo path in the
+database), the flag matrix (admin/on/off/missing/garbage/404/network failure),
+the picker through the real UI (open, close, Esc, backdrop, focus, Tab trap,
+44px hit-testing, the 5-tap door still works and the pill does not count),
+named (non-numbered) buildings, a single-building condo, a condo with no
+kitchens, search, chips, pagination, the kill switch with the sheet open,
+sign-out, the resolver against 16 hostile stored values, hostile records
+(prototype pollution, markup in names, 300 KB), 500 condos on a 4×-slowed CPU,
+reduced motion, 360/320px headers, `LF_CONDOS_BUILD=false`, a browser without
+`\p{L}`, and source-level guards. The 13
+existing suites are the control.
+
+**Control:** those 13 suites (550 checks) pass identically on the live v76 file and
+on this build, and a resident session of the two builds matches in room, header
+markup, element ids, `localStorage` keys, store ids and request log (30 requests
+each, 12 runs, no path differs); the only DOM difference is the three Tower 5
+options. (The home page's "today's picks" are shuffled, so two runs of even the
+LIVE file differ — compare structure, not strings.) Startup is within noise
+(DOMContentLoaded median 199 ms live, 172 ms new). **Mutation check:** 36
+deliberate breakages of the new code are each caught — 33 on the first pass; the
+3 misses were weaknesses in the tests, not the code (a timing check that could
+pass by luck, a crash the runner did not count, a focus test that could not reach
+its branch), repaired and re-run. **Measured, 500 condos on a 4×-slowed CPU:** the
+list opens in ~15–19 ms (median; worst ~30), a keystroke takes ≤16 ms, and 20
+cards are 223 DOM nodes — the planned "<150 nodes" budget was a guess and is
+dropped; the rule is 20 cards at a time. **Not verified:** real iOS Safari /
+Android (the sheet with the software keyboard; the pill at 360px in the real
+webfont — the tests have no web fonts, and the name may be cut there), GitHub's
+CI (a newer Chromium with other fonts runs it on push), and push delivery (no
+push, service-worker, ordering or database line is touched by the diff).
+
+**Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
+character. Phase A hit it twice — bidirectional-override characters ended up in
+the source. After editing, scan for control, zero-width and bidi characters
+(U+0000–0008, U+200B–200F, U+202A–202E, U+2060–2069, U+FEFF); the live file has
+exactly nine U+200D (emoji joiners) and nothing else.
+
+**Rollback.** Fastest: `"condos":"off"` in `version.json` (admin sessions only —
+residents never had it). Full: restore `index.html` and `version.json` from the
+last release **but with both version numbers raised above the broken one**
+(the banner fires only for a higher number); phones that never tap the banner
+stay on the old build until they next reload. Phase A writes nothing to the
+database, so there is nothing there to undo.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
