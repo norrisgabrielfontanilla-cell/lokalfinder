@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 1293 checks across twenty files,
+**Testing:** `tests/` holds a Playwright suite — 1453 checks across twenty-one files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -659,6 +659,10 @@ founder's answers are in the "Condo Directory — Phase 0" doc. Decisions taken
   interest counts). This database takes unauthenticated writes, so a `/condos`
   node could be defaced and "unverified" would not stay hidden. **Unverified
   condos are never written to any database**; they stay in the CSV.
+  **Overridden by the founder on 2026-10-26 (v85):** "as a admin i can add condos and if i add condos it will be shown on the customers side with a seperate icon".
+  Condos an admin adds from the app are now saved for everyone in `condoDirectory` (see "Shared condo directory (v85)"), each as `confidence:"confirmed"` (the admin is the
+  authority) and shown to customers unless the admin hides it. The defacement risk named here is real and accepted for now; the rules drafts and the Blaze plan below are what
+  reduce it. A condo the admin only *drafts* is still never written anywhere.
 - **One admin (the founder) for every room.** `adminLogin()` lets whoever types
   `#admin` first claim a room that has no `/adminAuth` yet, so each new room's
   admin must be set when the room is created.
@@ -1143,11 +1147,11 @@ at 4×, against budgets of 300 / 100 / 150) and the 12 runs were repeated: 12 of
 and scroll restoration, which the tests can only simulate), the live site (this environment cannot reach it), and push
 delivery (no push, service-worker or ordering line is touched).
 
-**Condos for customers (v83): a "Condos" icon on the customer Home bar, and the view it opens. Ships dark: `version.json` keeps `"condos":"admin"`, so customers see nothing until it says `"on"`.**
+**Condos for customers (v83): a "Condos" icon on the customer Home bar, and the view it opens. Shipped dark (`"condos":"admin"`); v85 turned it on (`"on"`) and made the icon conditional on there being another condo to show: see "Shared condo directory (v85)" below.**
 The founder asked (2026-10-26) "i want a customers to see other condos on a seperate icon". This is that icon and the view a
 customer gets from it, and nothing else. **With only GRASS confirmed, a customer would see exactly one condo (their own) until
-real, verified condos are added to the directory** — so the switch stays at `"admin"` until the founder says "turn it on" and
-there is something to show.
+other condos are added to the directory.** That is why it shipped at `"admin"`; **v85 (below) made the directory shared, so an admin
+can add condos from the app, turned the switch on, and made the icon appear only when there is another condo to show.**
 
 - **`"on"` now means two things; do not mix them up.** (1) The *admin* gate is unchanged: `lfCondoAllowed()` = an admin session AND
   `"admin"` or `"on"` in the file. The header pill, the admin card, the Condos pipeline tab, drafts, pictures-with-samples all
@@ -1187,7 +1191,7 @@ there is something to show.
   app yet."; *coming* → "…coming soon to this condo. You cannot order here yet."; otherwise "…not open in this condo yet."
   `lfCondoOpen` is gated per view (`res ? lfCondoNavAllowed() : lfCondoAllowed()`): a customer cannot reach the admin's view by
   any call from devtools. `lfCondoClose` clears the flag. **Do not mark a second condo `live` in the directory until switching
-  condos exists (Phase C)** — its page would say "live here" with nothing to tap; use `coming`.
+  condos exists (Phase C)** — its page would say "live here" with nothing to tap; use `coming`. (v85: the editor's Status box defaults to Coming soon and says so.)
 - **What it does not do, on purpose.** No switching, no "Notify me", no "Request my condo" (they write to the database: they need
   the paid Firebase plan and published rules, which are the founder's to do), no analytics (there is none in this app, so how often
   customers tap the icon cannot be counted — `lfTrack` has no sink). It reads and writes **nothing** in any database; the block has
@@ -1220,7 +1224,8 @@ there is something to show.
 All 19 suites (1260 checks) pass on a frozen copy of the final build.
 **Not verified:** a real phone (the 5-item bar in the real webfont; Safari's tap focus on a `<button>` styled as a bar item), the live
 site and the live `version.json` (this environment cannot reach them), how the deploy's ~13-minute test job delays a kill switch, and
-push delivery (no push, service-worker or ordering line is touched).
+push delivery (no push, service-worker or ordering line is touched). GitHub's CI has since run the suite: the deploy run for v83 (run 40283036073,
+main 04aed6b) passed all 19 suites.
 
 **Photo uploads that tell the truth (v84): a vendor's logo, cover photo and menu-item photos. Not flag-gated: every vendor gets it on the update.**
 The founder asked (2026-10-26) "why i cant add photos". Every upload path was driven with test photos against the live v83 file
@@ -1269,7 +1274,105 @@ What changed (`lfPhotoJpeg` + `lfPhotoFail`, just above the cover handler; `hand
   only the three vendor photo handlers changed (plus one new helper), and no customer page is touched.
 - **Not verified:** a real phone's file picker (iOS HEIC conversion, Android gallery and camera), the live site, and what the live
   database does with a write once the free plan is over its limit (this environment cannot reach it) — what v84 guarantees is that a
-  write the database refuses is now reported as "not saved" instead of "updated".
+  write the database refuses is now reported as "not saved" instead of "updated". GitHub's CI has since run the suite: the deploy run for v84
+  (run 40288371659, main 074ff30) passed all 20 suites.
+
+**Shared condo directory (v85): "Add condo" now saves the condo for everyone, and customers see it under the Condos icon. `version.json` is `"condos":"on"`.**
+The founder said (2026-10-26), after "as a customer where can i see other condos? this is total nonsense": "the instruction is simple as a admin i can
+add condos and if i add condos it will be shown on the customers side with a seperate icon". Until v85 a condo an admin added was a *private draft
+on their own phone* (v81), so no customer could ever see one. v85 is that one flow and nothing more: **no switching condos, no "Notify me", no
+ordering in another condo** (those are Phase C, and need the cart guard, a paid Firebase plan and published rules).
+
+- **Where it lives: two nodes at the database ROOT** (condos span rooms), the same pattern as the pipeline. `condoDirectory/{condoId}` is one record
+  per condo (name, city, developer, barangay, address, aliases, site note, `status` `live|coming|closed`, `visible`, `confidence`, buildings keyed by
+  their own ids with name/kind/order/floors, `createdAt`, `updatedAt`) and `condoDirRev` is a stamp: a number (`Date.now()*1000 + 0..999`, a safe
+  integer) that every write changes. **A save is ONE multi-path PATCH of the root** (`lfPipePatchRoot`): the record and the stamp land together or not
+  at all. Never `pushState()`, never a write to a whole node, nothing under `lokalfinder_grass`. The id is the key and never a field; the room is derived
+  (`lfCondoRoom`), never stored. One JS block between `/* ═══ v85 — SHARED CONDO DIRECTORY` and `function openAddVendorModal` (everything is `lfSh…`),
+  CSS `.lf-dr-pub`, `.lf-dr-show`, `.lf-dr-priv`, and small hooks listed below.
+- **Who writes, who reads.** An admin session writes (`lfCondoAllowed()`: admin signed in AND `"condos":"admin"|"on"`). Reading is for whoever the switch
+  lets see condos: customers when the file says exactly `"on"`, an admin when it says `"admin"` or `"on"` (`lfShWanted()`). **A phone that may not see
+  condos makes no request about them** (off, `"admin"` with nobody signed in, a missing field, `"ON"`, a fault, `LF_CONDOS_BUILD=false`), proven in §1 of
+  `tests/test-condoshared.js`.
+- **What customers pay.** The phone reads the stamp (`GET /condoDirRev.json`, a number) and downloads the directory (`GET /condoDirectory.json?orderBy="$key"&limitToFirst=300`)
+  only when the stamp is not the one it holds. A look happens from the Home bar (`goPage('p-chome')`, `goBack()`, and the update check's hand-over, so an
+  open app looks about every 5 minutes), when the Condos list is opened, and — forced — when an admin opens the Condos page or taps Refresh. At most once per 20 s
+  (`LF_SH_EVERY`) unless forced; a forced look that arrives during a look is answered right after it (`_lfSh.again`). **No timer of its own.** The last directory is
+  kept on the phone (`localStorage['lf-condo-shared']` = `{v:1, rev, at, condos:{id: record}}`, trusted 30 days, **never stored over 250,000 characters**, read once at the start), so the icon is
+  there at once on a later visit; a phone that will not store it still works; when the database says there is nothing (no stamp) the phone forgets its copy and the
+  icon goes. A stamp that moved but whose directory could not be downloaded keeps the OLD stamp, so the next look tries again. The data-usage rules of v64 still hold:
+  `tests/test-datausage.js` now allows `/condoDirRev` (a few bytes, at most twice in its idle window) and nothing else new.
+- **The customer's icon is there only when there is something else to show** (`lfShOthers()`: another condo that is visible AND confirmed); **an admin always has it**
+  (a preview). So with nothing shared, `"on"` changes nothing a customer sees (it costs the stamp read); the first "Add condo" makes the icon appear on the next look
+  (about 4 s for a newly opened app, ≤5 minutes for an open one) — **and customers must have taken the v85 update** (the usual banner). When the last other condo goes,
+  the icon goes but a list that is open stays open. `lfCondoNavSync(noKick)` holds the rule; `lfShViews()` redraws the icon, an open list and an open Condos page, but
+  **only when what the screens would show changed** (`lfShSig()`): a keyboard user's focus is not taken away by the follow-up read after their own save.
+- **The editor** (`#modal-draft`, the v81 sheet) has a "What customers see" group: **Status** (Coming soon / Not yet open / Live; default Coming soon; the hint says customers
+  cannot switch condos yet, so Coming soon is usually right) and, for a condo already saved for everyone, **Show to customers** (`visible`). The primary button is **Add condo**
+  (a new condo, or a private draft being published: same id, so its stage record stays attached, and the private copy is removed from the phone) or **Save changes** (a shared
+  condo). **"Save as a private draft instead"** is the v81 path, unchanged (`#lf-dr-save`; a draft still never leaves the phone and still ignores the status). `_lfDraft.mode` is
+  `'new' | 'draft' | 'shared'`; `lfDraftPublishClick` is the sheet around `lfShSave`. Shared rows on the Condos page have an Edit button (and a "Hidden" tag when not shown); GRASS has none.
+  Delete needs the name typed (re-checked by the handler) and has **no Undo** (hiding is the reversible way, and the delete section says so); a condo that has a stage record leaves an
+  orphan row, as drafts do. New condos are written `confidence:"confirmed"`: the admin is the authority, and that is what lets `lfCondoVisible(false)` show them. What the editor does not
+  show (nearby places, unit format, links, a building's own note and site-map position, coordinates) is carried over on an edit, not dropped.
+- **"Saved" is said only after the write lands, and the failure modes are told apart.** `lfShSave` / `lfShDelete` never throw; they answer `{ok, msg, busy, gone, unsure}`. A write that fails
+  and is looked up as not landed: "Could not save. Nothing was changed." A write whose answer is lost and whose look-up also fails: **"Could not confirm that it was saved: it may have gone
+  through. Tap Add condo again; that will not make a copy."** (saying "nothing was changed" there would be a guess). A retry of the same typing reuses its id (`_lfSh.pend`), so a write that landed
+  is overwritten, never copied; an edit retried after its own landed attempt is recognised (`pend.updated`) and not sent again; a new condo checks that its id is free in the database first
+  (`?shallow=true`) and takes `-2`… if another phone used it; a draft whose id is taken is refused; **an edit or a delete on a stale screen is refused** ("changed or removed on another phone": the
+  record's `updatedAt` is read first and must equal what the sheet opened with); `updatedAt` is `max(now, previous+1)`, so it never goes backwards even when a phone's clock is behind; a save in
+  flight keeps the sheet open (Cancel, ✕, Esc and the backdrop do nothing) and the buttons off, and a second save answers `busy`; signing out mid-save takes the sheet away and the write that was sent still lands.
+- **Everything from the database is untrusted** (`lfShClean`, `lfShBuild`): an id must match the condo id pattern and is never GRASS's, `sample-` or `preview-`; fields are copied one by one from a fixed
+  list (`LF_SH_FIELDS`, **never `Object.assign`**: a stored `__proto__` key made a hidden record visible in a test of exactly that mutation); everything goes through `lfCondoClean`; 300 keys are looked at and
+  150 kept; markup is text; an unknown status is "Not yet open"; a record is shown to customers only if `visible === true` AND `confidence === 'confirmed'`. **A shared condo can never be the *current* condo and
+  gives no room** (`lfCondoCurrent`, `lfRoomKey` ignore `.shared`): switching is Phase C.
+- **Older code touched, all deliberately:** `lfCondoNavSync` (icon rule, cache, look), `lfCondoOpen` (look), `lfPipeLoad` (forced look), `lfPipeRows` / `lfPipeRowEl` / `lfPipeResidentsSee` / `lfPipeMoveSync`
+  (shared rows; the Move sheet says customers see the status set when editing, not the stage), the Condos page header ("Add condos here. Moving a stage is planning only."), `lfCondoPageNote` (admin notes for
+  a shared condo), `lfCondoCurrent` / `lfRoomKey`, `lfArtThumb`'s cache key (now includes building kinds: an admin can change a kind without touching floors), the v81 editor and toolbar text. The v81 source guard (no
+  fetch / `fb*` / timers / extra storage in the drafts block) still holds: the editor reaches the sharing only through `lfShSave`, `lfShDelete`, `lfShBusy` and `lfShCustomersLine`.
+- **SECURITY: read this.** The database has no login and its rules are not published, so *anyone with a browser can add, change or remove a condo that customers see*, exactly as they can write vendors and orders
+  today (and can make every customer phone download a large directory whenever the stamp changes: the 300-key cap limits the count, not the bytes). `firebase-rules-stopgap.json` and `firebase-rules.json`
+  now carry per-record rules for both nodes (an id of the usual shape that is never GRASS's or a sample / preview id, field lengths, the three status words, building types, floors 1 to 150, no unknown fields,
+  no whole-node write, the stamp cannot be deleted, a record's `updatedAt` cannot go backwards). **Proven on the Firebase RTDB emulator (v4.11.2): 55 raw REST checks per file, and the real app
+  replayed against them** (add, a customer's read, hide / show, a deliberately fooled stale edit refused BY THE DATABASE, delete; exactly one refused write in the run, the deliberate one). They are **not published**:
+  do that, and move Firebase off the free plan (already over its download limit), before relying on this for more than a handful of condos. Unchanged emulator finding: the strict file needs its `"//"` documentation
+  keys stripped before the emulator accepts it; the stopgap loads as it is.
+- **Rolling back:** `"condos":"off"` (or `"admin"`) in `version.json`: the icon goes for customers on their next read of the file (once the deploy has finished: ~4 s after the app opens, or within 5 minutes if it is
+  open). The records stay in the database and are harmless (nothing else reads them); delete `condoDirectory` and `condoDirRev` in the Firebase console if wanted. A fault in the sharing switches only the sharing
+  off for that session (`lfShFail`: a toast for an admin, nothing for a customer; the icon and what was already loaded stay). Full: restore v84's `index.html` and `version.json` with both numbers raised above the
+  broken one (86 if 85 is live).
+- **Tests.** `tests/test-condoshared.js` (160 checks), real taps against the stub database, two phones sharing it: a phone that may not see condos makes no request (four kinds of file); a customer with nothing shared pays one
+  stamp read; an admin adds a condo (the sheet, every refusal, exactly one PATCH with exactly two keys, the record as typed, the toast, the row, focus) and a customer on another phone gets the icon and the condo and its page;
+  the stamp decides what is downloaded (a copy with the current stamp downloads nothing; a changed stamp downloads once, capped at 300; the 20 s gate; a forced look; a read that fails changes nothing; a stamp that moved
+  but a directory that cannot be read keeps the old stamp; a forced look during a look is not lost; an older copy never replaces fresh data); edit, hide / show, rename, stale edit, delete (typed name, stale delete, already
+  gone, fails, lost answer); a save that fails, is lost with and without a working look-up (edit and new), collides on an id, is refused for a taken name, runs in flight (buttons, sheet, `busy`), or meets a sign-out; a
+  customer that calls the functions; a private draft still private and publishable; a hostile database (markup, `__proto__` and `constructor`, GRASS / sample / preview ids, bad ids, junk records, 300 KB notes, 500
+  buildings, 400 records); the phone's copy (30 / 31 days, 14 malformed forms, over the size limit, no stamp, a phone that will not store, one that holds too big a directory); the icon rule; the switch and the hard
+  off; faults on an admin's and a customer's phone; keyboard, targets and labels; 390 / 360 / 320 / desktop; source guards. **Older suites changed on purpose:** `test-condopublic.js` (phones are told there is always another
+  condo, so the suite stays about the SWITCH; the v83 source slice ends at the v85 marker; the two shared GETs are expected), `test-condoart.js` and `test-condos.js` (the shared GETs are expected, writes and any other
+  condo path are not), `test-pipeline.js` (the header text; the forged-move check now judges writes and condo paths, not every request in a 600 ms window: the 3-second catalog poll landed in it under load), `test-datausage.js` (the stamp).
+
+**v85 control and checks (2026-10-26).** Against the live v84 file (main 074ff30), a customer's phone (4 runs each, interleaved, empty database): with the file `"off"` the same room, element ids, header
+markup, Home page DOM (the shuffled picks left out), `localStorage` keys, store ids, `<select>` options, DOM node count (1975 / 1975) and request log (30 / 30, no path differs); no errors; startup within noise
+(DOMContentLoaded median 321 ms live, 305 new). With the file `"on"` and nothing shared: the live build shows the Condos icon (5 bar items) and the new one does not (4: there is no other condo to show), and the new one makes
+exactly one more request, `GET condoDirRev.json` (30 → 31); nothing else differs. As shipped (live file `"admin"`, new file `"on"`): the same extra request, the same 4-item bar, and one more key,
+`lf-condo-pub`. (A "home page DOM differs" line in one run of that case was run-to-run noise: compared head to head the Home markup was identical.) An admin signed in: switch `"off"`, the four admin pages and
+the Home page are identical and the requests 77 / 77; switch `"admin"` or `"on"`, identical once the Condos tab and the icon are taken out, plus the same one request (77 → 78).
+**Rules, on the Firebase RTDB emulator (v4.11.2):** 55 raw REST checks on each of the two files (the stricter file with its `"//"` documentation keys stripped, as before: the emulator rejects the file as committed, unchanged
+finding), all passing; a record or a stamp of any wrong shape, a whole-node write, a wiped stamp, an older `updatedAt` and GRASS's, `sample-` and `preview-` ids are each refused. The real v85 app replayed against the stopgap
+file: 14 / 14 (a real add, a customer's read, hide and show, a deliberately fooled stale edit refused by the database, delete; exactly one refused write in the run). Against the stricter file the same flows are accepted and
+the only refusals are the known reads of `/pins`, `/pinHashes` and `/reviews` (the reason that file is not the one to publish now).
+**Mutation check:** 93 deliberate breakages of the new code (X01–X93: who may read, how often, what is trusted, the phone's copy, the icon rule, the redraws, every part of a save and a delete, the stale-screen and
+lost-answer handling, the editor, the Condos page, the pictures, and things that must never appear in the block). The first pass (92) caught 91: 68 by a named check and 23 by a named step that never happened (`step()` records
+a failed check before it stops the run, so no catch is a bare crash). **X10** (the 300-key scan cap) was missed twice over: the 150-record cap hid it in the hostile directory, and the URL check matched `limitToFirst=300` inside
+`3000`. A dedicated scan fixture (100 valid records, 200 junk keys, 50 more valid records) and an anchored URL check were added, with **X93** to isolate the scan; both are now caught. Two further improvements came from
+reading the results rather than from a miss: an effective `__proto__` fixture (the first one had its own `visible`, which shadowed the inherited one, so `Object.assign` would not have been noticed), and the follow-up-read check now
+waits for the read instead of sleeping, so a busy machine cannot hide a redraw.
+**Stress:** the new suite ran 12 times, three at once, on a busy machine: 12 of 12 passed (160 / 160 each).
+All 21 suites (1453 checks) pass on a frozen copy of the final build (EXIT 0).
+**Not verified:** a real phone (the editor and the 5-item bar in the real webfont, the on-screen keyboard over the new Status box and checkbox, Safari's tap focus on the checkbox label), the live site and the live database
+(this environment cannot reach them), what the live database does with these writes once the free plan is over its limit (a write it refuses is reported as "could not save", and a lost answer as "could not confirm"),
+the rules on the production service (the emulator is the same engine, but nothing is published), and push delivery (no push, service-worker or ordering line is touched).
 
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
@@ -1312,6 +1415,11 @@ Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the icon and an open
 (the workflow runs the whole test suite first, ~13 minutes). A fault inside the icon already switches only the icon off for that session
 (`lfCondoPubFail`). Full: restore v82's `index.html` and `version.json` with both numbers raised above the broken one (84 if 83 is live);
 the memory key `lf-condo-pub` is harmless without the code and expires by itself. v83 stores nothing in any database, so there is nothing to undo.
+
+**Rolling back v85 (the shared condo directory).** Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the customers' icon goes on their next read of the file
+(once the deploy has finished), and an admin's editor still saves for everyone only while the switch is `"admin"` or `"on"`. The records stay in `condoDirectory` / `condoDirRev` and are
+harmless (nothing else reads them); delete them in the Firebase console if wanted. A fault inside the sharing switches only the sharing off for that session (`lfShFail`). Full: restore v84's
+`index.html` and `version.json` with both numbers raised above the broken one (86 if 85 is live). A phone keeps `lf-condo-shared`, which is harmless without the code.
 
 **Rolling back v84 (photo uploads).** Not flag-gated, so a rollback is a release: restore v83's `index.html` and `version.json` with both
 numbers raised above the broken one (85 if 84 is live). Nothing is stored differently (photos are the same JPEG data URLs at the same sizes),

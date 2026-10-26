@@ -6,9 +6,9 @@ npm install
 ./run.sh
 ```
 
-1293 checks across twenty suites, all driving the real `index.html` in headless
+1453 checks across twenty-one suites, all driving the real `index.html` in headless
 Chromium. `run.sh` runs them all; run it before and after any change to `index.html`.
-Set `LF_BAIL=1` to make `test-drafts.js`, `test-condos.js`, `test-condoart.js`, `test-condopublic.js` and `test-photos.js` stop at their first failing check (the
+Set `LF_BAIL=1` to make `test-drafts.js`, `test-condos.js`, `test-condoart.js`, `test-condopublic.js`, `test-photos.js` and `test-condoshared.js` stop at their first failing check (the
 mutation runner uses it: it only needs to know that the suite notices).
 
 | Suite | Covers |
@@ -33,6 +33,7 @@ mutation runner uses it: it only needs to know that the suite notices).
 | `test-condoart.js` | v82: the admin pictures and pages — a resident's phone untouched, the layout as plain numbers (rows, spacing, heights, "+N more", an empty plot), a picture on every card, the page (tap a tower or a row, keyboard, Back / Esc / ✕, focus, scroll position), the twelve made-up sample condos (marked, in memory only, never in the directory), drafts and hostile records, 44px and reduced motion, phone and desktop layouts, a fault that switches off only the pictures, 500 condos on a slowed CPU, and source guards. |
 | `test-condopublic.js` | v83: the customers' Condos icon and view — the switch read through the real update check (20 phones: what was remembered × what the file said), the icon (markup, 390/360/320px, corner hit-test, focus ring, the Back route), real taps, the customer's view against a poisoned directory (unverified / hidden / draft / sample records never appear), an admin's two views kept apart, the kill switch with a page open, the phone's memory, the hard off, five kinds of fault, source guards. |
 | `test-photos.js` | v84: a vendor's logo, cover and menu-item photos tell the truth — saved and announced only after the write lands, a failed or refused save puts the old photo back and says "not saved", a damaged or non-image file says so and writes nothing, a transparent PNG gets a white background, the file box is emptied, sizes stay capped. |
+| `test-condoshared.js` | v85: the shared condo directory — a phone that may not see condos makes no request about them; a customer pays one stamp read, and gets the icon and the condo once an admin has added one (the icon only when there is another condo to show); the stamp decides what is downloaded (current stamp: nothing; changed: once, capped; the 20 s gate; a forced look; failures change nothing); add, edit, hide / show, rename and delete are each ONE patch of the root with exactly two keys; a save that fails, is lost (with and without a working look-up), collides on an id, runs in flight, meets a stale screen or a sign-out; a private draft still private and publishable; a hostile database (markup, `__proto__`, GRASS / sample ids, junk, 300 KB notes, 400 records); the phone's copy; the switch and the hard off; a fault that switches off only the sharing; keyboard, 44px / 16px, phone and desktop layouts; source guards. |
 
 ## The one rule
 

@@ -59,6 +59,9 @@ async function session(browser, port, log, o = {}){
   if (o.src) await page.route('**/index.html*', route => route.fulfill({ status: 200, contentType: 'text/html', body: o.src }));
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof goCust === 'function' && typeof lfCondoNavSync === 'function', null, { timeout: 20000 });
+  // v85: the icon is also there only when there is another condo to show. This suite is about the SWITCH (v83), so every phone here is told there always is one;
+  // the real rule, with real condos in the database, is tested in test-condoshared.js.
+  await page.evaluate(() => { window.lfShOthers = function () { return true; }; try { lfCondoNavSync(true); } catch (e) {} });
   // o.spy: count what the update check hands to the app (installed well inside the 4 seconds before the check first runs)
   if (o.spy) await page.evaluate(() => { window.__handed = []; const f = window.lfCondoModeFromFile; window.lfCondoModeFromFile = function (d) { window.__handed.push(d && typeof d === 'object' ? (d.condos === undefined ? '<missing>' : JSON.stringify(d.condos)) : String(d)); return f.apply(this, arguments); }; });
   // o.swallow: the update check's hand-over goes nowhere, so anything the app learns it must have learned for itself
@@ -140,7 +143,10 @@ const PAGE = () => {
 const WORDS = /admin|draft|sample|unverified|hidden|preview/i;     // words that belong to the admin's view, never the customer's
 const hardErrors = log => log.errors.filter(e => !/favicon|OneSignal|firebase|net::ERR/i.test(e));
 // A request that names a condo, a sample or a draft, in its address or its body. (Not "any write": the first seconds of a session seed the stub database, which is nothing to do with condos.)
-const aboutCondos = (reqs, from = 0) => reqs.slice(from).filter(r => /condo|lf_c_|preview|sample|draft|lf-condo/i.test(decodeURIComponent(r.u).replace(/version\.json.*/, '')) || /condo|lf_c_|preview|sample|draft/i.test(r.b || ''));
+// v85: a phone that may see condos reads the shared directory's stamp (condoDirRev) and, when it has changed, the directory (condoDirectory). Those two GETs are expected here
+// (test-condoshared.js pins down that a phone that may NOT see condos makes none); any other condo path, and any write, is what this check is for.
+const sharedRead = r => r.m === 'GET' && /\/(condoDirRev|condoDirectory)\.json/.test(r.u.split('?')[0]);
+const aboutCondos = (reqs, from = 0) => reqs.slice(from).filter(r => !sharedRead(r) && (/condo|lf_c_|preview|sample|draft|lf-condo/i.test(decodeURIComponent(r.u).replace(/version\.json.*/, '')) || /condo|lf_c_|preview|sample|draft/i.test(r.b || '')));
 
 (async () => {
   const srv = await H.startServer(); const port = srv.address().port;
@@ -618,7 +624,7 @@ const aboutCondos = (reqs, from = 0) => reqs.slice(from).filter(r => /condo|lf_c
 
   // ═════ 10. THE SOURCE ITSELF ═════
   const MARK = '/* ═══ v83 — CONDOS FOR CUSTOMERS ═══\n   The founder asked';
-  const start = SRC.indexOf(MARK), end = SRC.indexOf('function openAddVendorModal(){');
+  const v85 = SRC.indexOf('/* ═══ v85 — SHARED CONDO DIRECTORY ═══', SRC.indexOf(MARK) + 1), start = SRC.indexOf(MARK), end = v85 > 0 ? v85 : SRC.indexOf('function openAddVendorModal(){');   // (v85: the v83 block ends where the next block begins, as the v80 and v81 slices do)
   const block = SRC.slice(start, end);
   const code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   check('Found the v83 block in the source', start > 0 && end > start && block.length > 3000 && SRC.indexOf(MARK, start + 10) < 0, start + '..' + end);
