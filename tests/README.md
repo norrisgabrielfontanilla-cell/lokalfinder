@@ -6,8 +6,8 @@ npm install
 ./run.sh
 ```
 
-367 checks across nine suites, all driving the real `index.html` in headless
-Chromium.
+905 checks across sixteen suites, all driving the real `index.html` in headless
+Chromium. `run.sh` runs them all; run it before and after any change to `index.html`.
 
 | Suite | Covers |
 | --- | --- |
@@ -20,6 +20,13 @@ Chromium.
 | `test-session.js` | Vendor session persistence: offline reopen, revocation, expiry, pre-v56 migration. |
 | `test-signup.js` | Self-serve vendor onboarding, incl. a cold-device guard that a signup cannot wipe the live catalog. |
 | `test-aircon.js` | The aircon vertical end to end, plus a LEAK GUARD that registers a 4th vertical at runtime and asserts no code change is needed. |
+| `test-vlogin.js` | The vendor login store picker (v63): vertical tabs, grouping, filter reset, offline boot; its own LEAK GUARD. |
+| `test-datausage.js` | v64: only what changed is downloaded (change-gated catalog, feed paging, device cache). |
+| `test-nowipe.js` | v65: per-store saves, nothing saved before the catalog has loaded — the 2026-10-07 wipe. |
+| `test-storeinfo.js` | v67: the swipeable Store Info pager on the vendor page. |
+| `test-condos.js` | v78/v79: the condo directory, the room resolver and the admin-only picker. |
+| `test-frame.js` | v79: the app frame is put back on every page change. |
+| `test-pipeline.js` | v80: the admin Condo Pipeline, P1 — a resident's phone untouched, the switch, the fifth tab, a move (one atomic write, stale / failed / lost-answer / in-flight cases), sample condos never written, hostile data, 500 condos, keyboard and reduced motion, phone and desktop, a fault that switches off only this section, and source guards. |
 
 ## The one rule
 

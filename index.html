@@ -1776,6 +1776,74 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-condo-go{flex:none;display:inline-flex;color:var(--t3)}
 .lf-condo-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-90deg)}
 @media(prefers-reduced-motion:reduce){.lf-condo-admbtn{transition:none}}
+
+/* ═══ v80 — CONDO PIPELINE, P1 (admin only) ═══
+   A plain list on the admin's own light-on-green look. The glossy dark pie is P2 and
+   will sit in its own dark card above this list. Everything here is 44px or taller to
+   tap, and nothing depends on colour alone (every stage also says its name). */
+.lf-pipe-refresh{flex:none;min-width:44px;min-height:44px;padding:0 14px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font:700 12px var(--ff);cursor:pointer}
+.lf-pipe-refresh:active{background:rgba(255,255,255,.22)}
+.lf-pipe-dot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%}
+.lf-pipe-counts{display:flex;flex-wrap:wrap;gap:6px;padding:14px 16px 0}
+.lf-pipe-count{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--w);border:1px solid var(--bd);font-size:11.5px;font-weight:700;color:var(--t2)}
+.lf-pipe-count b{color:var(--t1)}
+.lf-pipe-count.zero{opacity:.6}
+.lf-pipe-sw{display:flex;align-items:center;gap:10px;min-height:44px;margin:10px 16px 0;padding:0 14px;background:var(--w);border:1px solid var(--bd);border-radius:14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer}
+.lf-pipe-sw input{flex:none;width:20px;height:20px;accent-color:var(--g)}
+.lf-pipe-list{list-style:none;margin:12px 16px 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.lf-pipe-row{background:var(--w);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:12px 14px}
+.lf-pipe-r1,.lf-pipe-r2{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lf-pipe-r1{align-items:flex-start}
+.lf-pipe-r2{margin-top:6px}
+.lf-pipe-nm{min-width:0;font-size:15px;font-weight:800;letter-spacing:-.2px;line-height:1.25;color:var(--t1);overflow-wrap:anywhere}
+.lf-pipe-tag{margin-left:8px;padding:2px 7px;border-radius:999px;background:var(--acl);color:#92400E;font-size:10px;font-weight:800;vertical-align:middle;white-space:nowrap}
+.lf-pipe-chip{flex:none;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.lf-pipe-mt{min-width:0;font-size:12px;line-height:1.35;color:var(--t3);overflow-wrap:anywhere}
+.lf-pipe-mv{flex:none;min-width:68px;min-height:44px;padding:0 16px;border:1px solid var(--bdm);border-radius:12px;background:var(--w);color:var(--gd);font:800 13px var(--ff);cursor:pointer;transition:transform .14s cubic-bezier(.34,1.5,.64,1)}
+.lf-pipe-mv:active{transform:scale(.96)}
+.lf-pipe-mv:focus-visible,.lf-pipe-opt:focus-visible,.lf-pipe-x:focus-visible,.lf-pipe-more:focus-visible,.lf-pipe-btn:focus-visible,.lf-pipe-link:focus-visible,.lf-pipe-refresh:focus-visible,.lf-pipe-sw:focus-within{outline:2px solid var(--g);outline-offset:2px}
+.lf-pipe-more{width:100%;min-height:44px;border:1px solid var(--bdm);border-radius:14px;background:var(--w);color:var(--gd);font:800 13px var(--ff);cursor:pointer}
+.lf-pipe-empty{padding:22px 10px;text-align:center;font-size:13px;line-height:1.5;color:var(--t3)}
+.lf-pipe-h{padding:20px 18px 8px;font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--t1)}
+.lf-pipe-log{margin:0 16px;background:var(--w);border:.5px solid var(--bd);border-radius:var(--rs);overflow:hidden}
+.lf-pipe-logrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 13px;border-bottom:.5px solid var(--bd)}
+.lf-pipe-logrow:last-child{border-bottom:none}
+.lf-pipe-logrow.muted{display:block;font-size:12px;color:var(--t3)}
+.lf-pipe-logt{min-width:0;font-size:12px;line-height:1.4;color:var(--t1);overflow-wrap:anywhere}
+.lf-pipe-logw{flex:none;font-size:10.5px;color:var(--t3);white-space:nowrap}
+.lf-pipe-note{margin:14px 16px 0;padding:14px;background:var(--w);border:1px solid var(--bd);border-radius:18px}
+.lf-pipe-note-t{font-size:14px;font-weight:800;color:var(--t1)}
+.lf-pipe-note-s{margin:4px 0 10px;font-size:12px;color:var(--t3)}
+.lf-pipe-btn{min-height:44px;padding:0 18px;border:none;border-radius:12px;background:var(--g);color:#fff;font:800 13px var(--ff);cursor:pointer}
+.lf-pipe-link{min-height:44px;padding:0 4px;border:none;background:none;color:var(--gd);font:800 12px var(--ff);text-decoration:underline;cursor:pointer}
+.lf-pipe-offline{margin:12px 16px 0;padding:6px 12px;border-radius:12px;background:var(--acl);color:#92400E;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lf-pipe-skel{height:64px;margin-bottom:10px;border-radius:18px;background:linear-gradient(90deg,var(--s3),var(--s2),var(--s3));background-size:200% 100%;animation:lfPipeSk 1.3s linear infinite}
+@keyframes lfPipeSk{from{background-position:200% 0}to{background-position:-200% 0}}
+.lf-pipe-sheet{display:flex;flex-direction:column;max-height:92%;overflow-y:auto}
+.lf-pipe-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.lf-pipe-top .modal-ttl{margin-bottom:0;overflow-wrap:anywhere}
+.lf-pipe-top .modal-ttl:focus{outline:none}
+.lf-pipe-x{flex:none;width:44px;height:44px;margin-right:-10px;border:none;border-radius:50%;background:transparent;color:var(--t3);font-size:18px;line-height:1;cursor:pointer}
+.lf-pipe-sheet > *{flex:none}   /* a short phone scrolls the sheet; it never squeezes the note box */
+.lf-pipe-now{margin:0 0 10px;font-size:12px;line-height:1.4;color:var(--t3)}
+.lf-pipe-stages{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.lf-pipe-opt{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1.5px solid var(--bd);border-radius:999px;background:var(--w);color:var(--t1);font:800 13px var(--ff);cursor:pointer}
+.lf-pipe-opt input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.lf-pipe-opt:focus-within{outline:2px solid var(--g);outline-offset:2px}
+.lf-pipe-opt.on{border-color:var(--g);background:var(--gl)}
+.lf-pipe-opt.off{opacity:.55;cursor:default}
+.lf-pipe-means{min-height:18px;margin:0 0 12px;font-size:12px;line-height:1.4;color:var(--t2)}
+.lf-pipe-sheet .flbl{text-transform:none;letter-spacing:0;font-size:12.5px}   /* the name to type is shown as it is written */
+.lf-pipe-sheet .finp{font-size:16px;margin-bottom:12px}   /* 16px: iOS zooms the page for anything smaller */
+.lf-pipe-confirm{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--s2);font-size:12.5px;line-height:1.5;color:var(--t2)}
+.lf-pipe-confirm strong{color:var(--t1)}
+.lf-pipe-sample-note{margin-top:6px;font-weight:800;color:#92400E}
+.lf-pipe-err{margin:0 0 12px;padding:9px 12px;border-radius:12px;background:var(--rl);color:#991B1B;font-size:12.5px;font-weight:700;line-height:1.4}
+.lf-pipe-err[hidden],.lf-pipe-sheet [hidden]{display:none}
+.lf-pipe-acts{display:flex;gap:10px}
+.lf-pipe-acts .oact{min-height:48px}
+.lf-pipe-acts .oact:disabled{opacity:.5;cursor:default}
+@media(prefers-reduced-motion:reduce){.lf-pipe-modal,.lf-pipe-modal .modal-sheet,.lf-pipe-mv{transition:none}.lf-pipe-skel{animation:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -4298,6 +4366,9 @@ function goPage(id){
   // v-auditlog: on demand here only, same reasoning as renderAdminApps()
   // above — not added to refreshVisible(), which runs on every 3s sync tick.
   if(id==='p-arevenue') { renderAdminRevenue(); renderAdminActivityLog(); }
+  if(id!=='p-apipe')    { try{ lfPipeLeave(); }catch(e){} }   // v80: the move sheet never outlives its page, and the pipeline leaves with the admin session
+  if(id==='p-adash' || id==='p-aorders' || id==='p-avendors' || id==='p-arevenue') { try{ lfPipeSync(); }catch(e){ lfPipeFail(e); } }   // v80: the Condos tab (admin preview only; a no-op for everyone else)
+  if(id==='p-apipe')    { try{ lfPipeOpen(); }catch(e){ lfPipeFail(e); } }   // v80: the condo pipeline page
 }
 function goBack(){
   pageHistory.pop();
@@ -10312,6 +10383,563 @@ async function renderAdminActivityLog(){
     + `</div>`;
 }
 
+/* ═══ v80 — CONDO PIPELINE, P1 (admin only) ═══
+   Where each condo stands on the way to going live, as the founder's own planning.
+   P1 is the data and the move: seven stages, a plain list, one tap and one
+   confirmation sentence to move a condo, and a log of every move.
+
+   Rules that must hold (tests/test-pipeline.js proves each):
+   • Admin only, behind the SAME gate as the condo picker: lfCondoAllowed() — an
+     admin session AND "condos":"admin"|"on" in version.json. A resident's phone
+     builds none of this, makes no request for it, and keeps every page as it was.
+   • A stage is planning only, and not a secret (the database has no login). In P1 it
+     changes nothing a resident sees, and the confirmation says so. (A later "Publish"
+     step is the only way it could.)
+   • Stores, menus, orders and PINs are never touched. The only nodes written are
+     condoPipeline/{condoId} and condoLog/{id}, at the database root, because the
+     pipeline spans condos.
+   • One condo, one record. The condo's facts stay in the Part 1 directory; the
+     pipeline holds only the founder's planning fields, keyed by the same id.
+   • A move is ONE multi-path update: the stage and its log entry land together or
+     not at all. Never pushState(), never a PUT over a node, never the whole tree.
+   • Nothing is confirmed on faith: "moved" appears only after the write lands, and
+     a screen that went stale gets "someone moved this", not a silent overwrite.
+   • Whatever comes back from the database is untrusted: an id must match the condo
+     id pattern, a stage must be one of the seven words, text is cut and shown with
+     textContent. The database has no login, so nothing here is private: keep notes
+     free of names, phones and prices.
+   • A fault here switches off only this section (lfPipeFail), never the admin area. */
+const LF_PIPE_ORDER = ['live','launching','talks','next','researching','hold','closed'];   // the pie's order (P2)
+const LF_PIPE_FLOW  = ['researching','next','talks','launching','live','hold','closed'];   // the order a condo moves through
+const LF_PIPE_STAGES = {
+  live:        { label:'Live',        means:'At least one store is open and taking real orders' },
+  launching:   { label:'Launching',   means:'Stores signed; menus and test orders in progress' },
+  talks:       { label:'In talks',    means:"You are speaking to stores or the condo's admin" },
+  next:        { label:'Next up',     means:'Chosen as the next condo, not started' },
+  researching: { label:'Researching', means:'On the list; facts being gathered or checked' },
+  hold:        { label:'On hold',     means:'Planned or live, stopped for now' },
+  closed:      { label:'Closed',      means:'Stopped, or the condo declined' }
+};
+// [dot, text, tint]: the text on its tint is at least 4.5:1 (the test checks it)
+const LF_PIPE_COLOR = {
+  live:['#12B76A','#065F46','#D1FAE5'], launching:['#3B82F6','#1D4ED8','#DBEAFE'], talks:['#F59E0B','#92400E','#FEF3C7'],
+  next:['#14B8A6','#0F766E','#CCFBF1'], researching:['#8B5CF6','#5B21B6','#EDE9FE'], hold:['#64748B','#334155','#E2E8F0'], closed:['#B4443C','#991B1B','#FEE2E2']
+};
+const LF_PIPE_NOTE_REQUIRED = { hold:true, closed:true };   // a reason is the point of these two
+const LF_PIPE_NODE = 'condoPipeline', LF_PIPE_LOGNODE = 'condoLog';
+const LF_PIPE_PAGE = 20;                                    // rows drawn before "Show more"
+// Labelled sample condos for trying the screen. In memory only: never written, never mixed into a real record.
+const LF_PIPE_SAMPLES = [
+  { id:'sample-01', name:'Sample Condo 01', city:'Sample City A', buildings:4, stage:'live' },
+  { id:'sample-02', name:'Sample Condo 02', city:'Sample City A', buildings:2, stage:'launching' },
+  { id:'sample-03', name:'Sample Condo 03', city:'Sample City B', buildings:3, stage:'launching' },
+  { id:'sample-04', name:'Sample Condo 04', city:'Sample City B', buildings:1, stage:'talks' },
+  { id:'sample-05', name:'Sample Condo 05', city:'Sample City C', buildings:5, stage:'talks' },
+  { id:'sample-06', name:'Sample Condo 06', city:'Sample City C', buildings:2, stage:'talks' },
+  { id:'sample-07', name:'Sample Condo 07', city:'Sample City A', buildings:6, stage:'next' },
+  { id:'sample-08', name:'Sample Condo 08', city:'Sample City D', buildings:3, stage:'next' },
+  { id:'sample-09', name:'Sample Condo 09', city:'Sample City D', buildings:2, stage:'researching' },
+  { id:'sample-10', name:'Sample Condo 10', city:'Sample City B', buildings:4, stage:'researching' },
+  { id:'sample-11', name:'Sample Condo 11', city:'Sample City C', buildings:1, stage:'hold' },
+  { id:'sample-12', name:'Sample Condo 12', city:'Sample City D', buildings:3, stage:'closed' }
+];
+let _lfPipeOff = false;   // set when this section failed: it stays off for the session and nothing else is affected
+let _lfPipe = { rec: Object.create(null), log: [], state: 'idle', at: 0, shown: LF_PIPE_PAGE, sample: false,
+                sampleStage: Object.create(null), sampleLog: [], busy: false, move: null };
+
+function lfPipeEl(tag, cls, text){
+  const n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text != null) n.textContent = text;
+  return n;
+}
+const lfPipeIsId    = id => typeof id === 'string' && LF_CONDO_ID_RE.test(id);
+const lfPipeIsStage = s  => typeof s === 'string' && LF_PIPE_ORDER.indexOf(s) >= 0;
+const lfPipeDate    = v  => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : '';
+const lfPipeNum     = v  => (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0;
+const lfPipeDefaultStage = id => id === LF_GRASS_CONDO ? 'live' : 'researching';   // no record = Researching; GRASS starts at Live
+function lfPipeManilaDate(ms){ return new Date(ms + 8*3600000).toISOString().slice(0,10); }
+function lfPipeLogId(ms){ return ms.toString(36) + Math.random().toString(36).slice(2,6); }   // sorts by time, like the admin log's ids
+
+// A record, or a log entry, as it comes back from a database anyone can write to.
+function lfPipeCleanRec(raw){
+  const r = (raw && typeof raw === 'object') ? raw : {};
+  return { stage: lfPipeIsStage(r.stage) ? r.stage : '', prevStage: lfPipeIsStage(r.prevStage) ? r.prevStage : '',
+           stageAt: lfPipeNum(r.stageAt), touchedAt: lfPipeNum(r.touchedAt), liveAt: lfPipeDate(r.liveAt) };
+}
+function lfPipeCleanLog(raw){
+  const e = (raw && typeof raw === 'object') ? raw : null;
+  if(!e || !lfPipeIsId(e.condo) || !lfPipeIsStage(e.from) || !lfPipeIsStage(e.to) || !lfPipeNum(e.at)) return null;
+  return { condo: e.condo, at: e.at, from: e.from, to: e.to, note: lfCondoStr(e.note, 200) };
+}
+
+// ── the rows: the Part 1 directory, plus any pipeline record whose condo is no longer in it, plus the samples ──
+function lfPipeStageOf(r){
+  if(r.sample){
+    if(_lfPipe.sampleStage[r.id]) return _lfPipe.sampleStage[r.id];
+    const s = LF_PIPE_SAMPLES.find(x => x.id === r.id);
+    return s ? s.stage : 'researching';
+  }
+  const rec = _lfPipe.rec[r.id];
+  return (rec && rec.stage) ? rec.stage : lfPipeDefaultStage(r.id);
+}
+function lfPipeRows(){
+  const out = [], seen = Object.create(null);
+  let dir = [];
+  try{ dir = lfCondoVisible(true); }catch(e){ dir = []; }
+  dir.forEach(c => {
+    seen[c.id] = true;
+    out.push({ id:c.id, name:c.name, city:c.city, blabel:lfCondoBuildingLabel(c), verified:!!(c.visible && c.confidence === 'confirmed'), sample:false });
+  });
+  if(_lfPipe.sample) LF_PIPE_SAMPLES.forEach(s => {
+    seen[s.id] = true;
+    out.push({ id:s.id, name:s.name, city:s.city, blabel:s.buildings + (s.buildings === 1 ? ' building' : ' buildings'), verified:true, sample:true });
+  });
+  // a stage someone set must not vanish because its condo left the directory
+  Object.keys(_lfPipe.rec).forEach(id => { if(!seen[id]) out.push({ id, name:id, city:'', blabel:'', verified:false, sample:false, orphan:true }); });
+  out.forEach(r => { r.stage = lfPipeStageOf(r); r.rec = r.sample ? null : (_lfPipe.rec[r.id] || null); });
+  out.sort((a,b) => (LF_PIPE_ORDER.indexOf(a.stage) - LF_PIPE_ORDER.indexOf(b.stage)) || String(a.name).localeCompare(String(b.name)));
+  return out;
+}
+// What residents would see in that stage. P1 shows it as a preview only: residents' status changes with a release.
+function lfPipeResidentsSee(r, to){
+  if(to === 'live') return 'Live';
+  if(to === 'launching' || to === 'talks') return 'Coming soon';
+  if(to === 'next') return r.verified ? 'Not yet open' : 'nothing (hidden until it is verified)';
+  if(to === 'hold') return (r.stage === 'live' || r.stage === 'launching' || !!(r.rec && r.rec.liveAt)) ? 'On hold' : 'nothing (hidden)';
+  return 'nothing (hidden)';
+}
+
+// ── reading and writing: the pipeline's own two calls, each with a timeout ──
+async function lfPipeGet(path, query){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 8000);
+  try{
+    const r = await fetch(FB_URL + '/' + path + '.json' + (query || ''), { signal: c.signal });
+    if(!r.ok) throw new Error('FB read failed: ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+// ONE multi-path update at the root: every key is a path, and they land together or not at all.
+async function lfPipePatchRoot(updates){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 8000);
+  try{
+    const r = await fetch(FB_URL + '/.json', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(updates), signal:c.signal });
+    if(!r.ok) throw new Error('FB update failed: ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+async function lfPipeLoad(){
+  if(_lfPipe.state === 'loading') return;
+  _lfPipe.state = 'loading'; lfPipeRender();
+  try{
+    const got = await Promise.all([ lfPipeGet(LF_PIPE_NODE), lfPipeGet(LF_PIPE_LOGNODE, '?orderBy=%22%24key%22&limitToLast=50') ]);
+    const rec = Object.create(null), log = [];
+    if(got[0] && typeof got[0] === 'object') Object.keys(got[0]).forEach(id => { if(lfPipeIsId(id)) rec[id] = lfPipeCleanRec(got[0][id]); });
+    if(got[1] && typeof got[1] === 'object') Object.keys(got[1]).forEach(k => { const e = lfPipeCleanLog(got[1][k]); if(e){ e.id = k; log.push(e); } });
+    log.sort((a,b) => b.at - a.at);
+    _lfPipe.rec = rec; _lfPipe.log = log.slice(0, 50); _lfPipe.at = Date.now(); _lfPipe.state = 'ready';
+  }catch(e){
+    _lfPipe.state = _lfPipe.at ? 'offline' : 'error';   // data from earlier in this visit is still worth showing
+  }
+  lfPipeRender();
+}
+
+// ── the screen ──
+function lfPipeChip(stage){
+  const col = LF_PIPE_COLOR[stage], chip = lfPipeEl('span', 'lf-pipe-chip');
+  chip.style.background = col[2]; chip.style.color = col[1];
+  const dot = lfPipeEl('i', 'lf-pipe-dot'); dot.style.background = col[0]; dot.setAttribute('aria-hidden', 'true');
+  chip.append(dot, LF_PIPE_STAGES[stage].label);
+  return chip;
+}
+function lfPipeRowEl(r){
+  const li = lfPipeEl('li', 'lf-pipe-row');
+  li.dataset.id = r.id;
+  const top = lfPipeEl('div', 'lf-pipe-r1'), nm = lfPipeEl('span', 'lf-pipe-nm', r.name);
+  if(r.sample) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag', 'Sample'));
+  top.append(nm, lfPipeChip(r.stage));
+  const bot = lfPipeEl('div', 'lf-pipe-r2');
+  const meta = [r.city, r.blabel, (r.rec && r.rec.stageAt) ? 'moved ' + lfAppWhen(r.rec.stageAt) : ''].filter(Boolean).join(' · ');
+  const b = lfPipeEl('button', 'lf-pipe-mv', 'Move'); b.type = 'button';
+  b.setAttribute('aria-label', 'Move ' + r.name + ', now ' + LF_PIPE_STAGES[r.stage].label);
+  b.addEventListener('click', () => lfPipeGuard(() => lfPipeOpenMove(r.id, b)));
+  bot.append(lfPipeEl('span', 'lf-pipe-mt', meta), b);
+  li.append(top, bot);
+  return li;
+}
+function lfPipeRender(){
+  const host = document.getElementById('lf-pipe-body');
+  if(!host) return;
+  const s = _lfPipe.state, frag = document.createDocumentFragment();
+  if(s === 'error' || ((s === 'idle' || s === 'loading') && !_lfPipe.at)){
+    const box = lfPipeEl('div', 'lf-pipe-note');
+    if(s === 'error'){
+      box.append(lfPipeEl('div', 'lf-pipe-note-t', 'Could not load the pipeline'), lfPipeEl('div', 'lf-pipe-note-s', 'Check your connection. Nothing was changed.'));
+      const again = lfPipeEl('button', 'lf-pipe-btn', 'Try again'); again.type = 'button';
+      again.addEventListener('click', () => lfPipeGuardAsync(lfPipeLoad));
+      box.appendChild(again);
+    }else{
+      for(let i = 0; i < 3; i++) box.appendChild(lfPipeEl('div', 'lf-pipe-skel'));
+      box.setAttribute('aria-busy', 'true');
+    }
+    frag.appendChild(box);
+    host.replaceChildren(frag);
+    return;
+  }
+  if(s === 'offline'){
+    const off = lfPipeEl('div', 'lf-pipe-offline', 'Offline: showing what this phone loaded ' + lfAppWhen(_lfPipe.at) + '. ');
+    const again = lfPipeEl('button', 'lf-pipe-link', 'Try again'); again.type = 'button';
+    again.addEventListener('click', () => lfPipeGuardAsync(lfPipeLoad));
+    off.appendChild(again);
+    frag.appendChild(off);
+  }
+  const rows = lfPipeRows();
+  // counts per stage (P2 turns these into the pie)
+  const counts = lfPipeEl('div', 'lf-pipe-counts');
+  counts.setAttribute('role', 'group'); counts.setAttribute('aria-label', 'Condos per stage');
+  LF_PIPE_ORDER.forEach(k => {
+    const n = rows.filter(r => r.stage === k).length, c = lfPipeEl('span', 'lf-pipe-count' + (n ? '' : ' zero'));
+    c.dataset.stage = k;
+    const dot = lfPipeEl('i', 'lf-pipe-dot'); dot.style.background = LF_PIPE_COLOR[k][0]; dot.setAttribute('aria-hidden', 'true');
+    c.append(dot, LF_PIPE_STAGES[k].label + ' ', lfPipeEl('b', '', String(n)));
+    counts.appendChild(c);
+  });
+  frag.appendChild(counts);
+  // sample switch: in memory only
+  const sw = lfPipeEl('label', 'lf-pipe-sw'), cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.id = 'lf-pipe-sample'; cb.checked = _lfPipe.sample;
+  cb.addEventListener('change', () => {
+    _lfPipe.sample = cb.checked; _lfPipe.shown = LF_PIPE_PAGE; lfPipeRender();
+    const again = document.getElementById('lf-pipe-sample');            // the list was redrawn: keep the keyboard where it was
+    if(again){ try{ again.focus({ preventScroll: true }); }catch(e){} }
+  });
+  sw.append(cb, lfPipeEl('span', '', 'Try it with sample condos (nothing is saved)'));
+  frag.appendChild(sw);
+  // the list, 20 at a time
+  const list = lfPipeEl('ul', 'lf-pipe-list');
+  list.id = 'lf-pipe-list'; list.tabIndex = -1;
+  if(!rows.length){
+    list.appendChild(lfPipeEl('li', 'lf-pipe-empty', 'No condos in the pipeline yet.'));
+  }else{
+    rows.slice(0, _lfPipe.shown).forEach(r => list.appendChild(lfPipeRowEl(r)));
+    if(rows.length > _lfPipe.shown){
+      const li = lfPipeEl('li'), more = lfPipeEl('button', 'lf-pipe-more', 'Show more (' + (rows.length - _lfPipe.shown) + ')'); more.type = 'button';
+      more.addEventListener('click', () => {
+        const was = _lfPipe.shown;
+        _lfPipe.shown += LF_PIPE_PAGE; lfPipeRender();
+        // the button that was pressed has been replaced: put the keyboard on the first new row
+        const first = document.querySelector('#lf-pipe-list li:nth-child(' + (was + 1) + ') .lf-pipe-mv') || document.querySelector('#lf-pipe-list .lf-pipe-more') || document.getElementById('lf-pipe-list');
+        if(first){ try{ first.focus({ preventScroll: true }); }catch(e){} }
+      });
+      li.appendChild(more); list.appendChild(li);
+    }
+  }
+  frag.appendChild(list);
+  // the log: real moves, plus the samples' own while the switch is on
+  frag.appendChild(lfPipeEl('div', 'lf-pipe-h', 'Recent moves'));
+  const names = Object.create(null);
+  rows.forEach(r => { names[r.id] = r.name; });
+  let log = _lfPipe.log.slice();
+  if(_lfPipe.sample) log = log.concat(_lfPipe.sampleLog);
+  log.sort((a,b) => b.at - a.at);
+  const logBox = lfPipeEl('div', 'lf-pipe-log');
+  logBox.id = 'lf-pipe-log';
+  if(!log.length){
+    logBox.appendChild(lfPipeEl('div', 'lf-pipe-logrow muted', 'No moves yet. Every move you make is recorded here.'));
+  }else{
+    log.slice(0, 20).forEach(e => {
+      const row = lfPipeEl('div', 'lf-pipe-logrow'), t = lfPipeEl('div', 'lf-pipe-logt');
+      t.append(lfPipeEl('b', '', names[e.condo] || e.condo), ': ' + LF_PIPE_STAGES[e.from].label + ' → ' + LF_PIPE_STAGES[e.to].label + (e.note ? ' — ' + e.note : ''));
+      if(e.sample) t.appendChild(lfPipeEl('span', 'lf-pipe-tag', 'Sample'));
+      row.append(t, lfPipeEl('div', 'lf-pipe-logw', lfAppWhen(e.at)));
+      logBox.appendChild(row);
+    });
+  }
+  frag.appendChild(logBox);
+  host.replaceChildren(frag);
+}
+
+// ── the move sheet (the app's own .modal, like the condo picker) ──
+let _lfPipeSheet = null;
+function lfPipeSheet(){
+  if(_lfPipeSheet && document.body.contains(_lfPipeSheet)) return _lfPipeSheet;
+  const host = (el('modal-switch') || {}).parentNode || el('app') || document.body;   // same container as the other sheets: clipped to the app frame
+  const m = document.createElement('div');
+  m.className = 'modal lf-pipe-modal'; m.id = 'modal-pipe';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'lf-pipe-ttl');
+  m.setAttribute('aria-hidden', 'true'); m.inert = true;
+  m.innerHTML =
+    '<div class="modal-sheet lf-pipe-sheet">'+
+      '<div class="modal-handle"></div>'+
+      '<div class="lf-pipe-top"><div class="modal-ttl" id="lf-pipe-ttl" tabindex="-1">Move condo</div>'+
+        '<button type="button" class="lf-pipe-x" id="lf-pipe-x" aria-label="Close">✕</button></div>'+
+      '<div class="lf-pipe-now" id="lf-pipe-now"></div>'+
+      '<div class="lf-pipe-stages" id="lf-pipe-stages" role="radiogroup" aria-label="Move to"></div>'+
+      '<div class="lf-pipe-means" id="lf-pipe-means" aria-live="polite"></div>'+
+      '<label class="flbl" for="lf-pipe-note" id="lf-pipe-notelbl">Note</label>'+
+      '<textarea class="finp" id="lf-pipe-note" maxlength="200" rows="2" placeholder="Optional. No names, phones or prices." autocomplete="off"></textarea>'+
+      '<div id="lf-pipe-typedwrap" hidden><label class="flbl" for="lf-pipe-typed" id="lf-pipe-typedlbl">Type the name to confirm</label>'+
+        '<input class="finp" id="lf-pipe-typed" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+      '<div class="lf-pipe-confirm" id="lf-pipe-confirm" aria-live="polite"></div>'+
+      '<div class="lf-pipe-err" id="lf-pipe-err" role="alert" hidden></div>'+
+      '<div class="lf-pipe-acts"><button type="button" class="oact g" id="lf-pipe-cancel">Cancel</button>'+
+        '<button type="button" class="oact p" id="lf-pipe-go" disabled>Move</button></div>'+
+    '</div>';
+  host.appendChild(m);
+  m.addEventListener('click', e => { if(e.target === m) lfPipeCloseMove(); });                 // the backdrop
+  m.querySelector('#lf-pipe-x').addEventListener('click', () => lfPipeCloseMove());
+  m.querySelector('#lf-pipe-cancel').addEventListener('click', () => lfPipeCloseMove());
+  m.querySelector('#lf-pipe-go').addEventListener('click', () => lfPipeGuardAsync(lfPipeConfirmMove));
+  m.querySelector('#lf-pipe-note').addEventListener('input', lfPipeMoveSync);
+  m.querySelector('#lf-pipe-typed').addEventListener('input', lfPipeMoveSync);
+  _lfPipeSheet = m;
+  return m;
+}
+function lfPipeKeys(e){
+  const m = _lfPipeSheet;
+  if(!m || !m.classList.contains('on')) return;
+  if(e.key === 'Escape'){ e.stopPropagation(); lfPipeCloseMove(); return; }
+  if(e.key !== 'Tab') return;
+  const f = Array.from(m.querySelectorAll('button, input, textarea')).filter(n => !n.disabled && n.offsetParent !== null);
+  if(!f.length) return;
+  const first = f[0], last = f[f.length-1], at = document.activeElement;
+  if(!m.contains(at)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if(e.shiftKey && (at === first || at === el('lf-pipe-ttl'))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && at === last){ e.preventDefault(); first.focus(); }
+}
+function lfPipeOpenMove(id, opener){
+  if(!lfCondoAllowed() || _lfPipeOff) return;
+  const r = lfPipeRows().find(x => x.id === id);
+  if(!r) return;
+  const m = lfPipeSheet();
+  _lfPipe.move = { id, row:r, to:'', opener:opener || null, lid:'' };
+  el('lf-pipe-ttl').textContent = 'Move ' + r.name;
+  el('lf-pipe-now').textContent = 'Now: ' + LF_PIPE_STAGES[r.stage].label + '. ' + LF_PIPE_STAGES[r.stage].means + '.';
+  const box = el('lf-pipe-stages');
+  box.replaceChildren();
+  // real radio buttons inside labels: the arrow keys and the screen reader work without any code of mine
+  LF_PIPE_FLOW.forEach(k => {
+    const lab = lfPipeEl('label', 'lf-pipe-opt' + (k === r.stage ? ' off' : '')), inp = document.createElement('input');
+    inp.type = 'radio'; inp.name = 'lf-pipe-to'; inp.value = k;
+    if(k === r.stage) inp.disabled = true;
+    inp.addEventListener('change', () => { if(inp.checked && _lfPipe.move){ _lfPipe.move.to = k; lfPipeMoveSync(); } });
+    const dot = lfPipeEl('i', 'lf-pipe-dot'); dot.style.background = LF_PIPE_COLOR[k][0]; dot.setAttribute('aria-hidden', 'true');
+    lab.append(inp, dot, lfPipeEl('span', '', LF_PIPE_STAGES[k].label + (k === r.stage ? ' (current)' : '')));
+    box.appendChild(lab);
+  });
+  el('lf-pipe-note').value = ''; el('lf-pipe-typed').value = '';
+  el('lf-pipe-err').hidden = true;
+  lfPipeMoveSync();
+  m.inert = false; m.removeAttribute('aria-hidden');
+  void m.offsetWidth;                                   // so the slide-up starts from its closed position
+  m.classList.add('on');
+  document.addEventListener('keydown', lfPipeKeys, true);
+  el('lf-pipe-ttl').focus({ preventScroll: true });
+}
+function lfPipeCloseMove(quiet){
+  const m = _lfPipeSheet;
+  if(!m) return;
+  if(_lfPipe.busy && !quiet) return;                    // a write is in flight: stay, so its result is never lost
+  m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', lfPipeKeys, true);
+  const mv = _lfPipe.move; _lfPipe.move = null;
+  if(!quiet && mv && mv.opener && document.body.contains(mv.opener)){ try{ mv.opener.focus({ preventScroll: true }); }catch(e){} }
+}
+// Everything the sheet shows follows from (condo, chosen stage, note, typed name).
+function lfPipeMoveState(){
+  const mv = _lfPipe.move;
+  if(!mv) return null;
+  const to = mv.to, r = mv.row, note = lfCondoStr((el('lf-pipe-note') || {}).value, 200);
+  const needTyped = r.id === LF_GRASS_CONDO && !r.sample;
+  const typedOk = !needTyped || lfCondoStr((el('lf-pipe-typed') || {}).value, 80).toLowerCase() === String(r.name).toLowerCase();
+  const noteOk = !to || !LF_PIPE_NOTE_REQUIRED[to] || note.length >= 3;
+  return { mv, to, r, note, needTyped, typedOk, noteOk, ok: !!to && typedOk && noteOk && !_lfPipe.busy };
+}
+function lfPipeMoveSync(){
+  const st = lfPipeMoveState();
+  if(!st) return;
+  const { r, to, needTyped } = st;
+  el('lf-pipe-stages').querySelectorAll('.lf-pipe-opt').forEach(b => {
+    const inp = b.querySelector('input');
+    b.classList.toggle('on', !!inp && inp.checked);
+  });
+  el('lf-pipe-means').textContent = to ? LF_PIPE_STAGES[to].means + '.' : '';
+  const need = !!(to && LF_PIPE_NOTE_REQUIRED[to]);
+  el('lf-pipe-notelbl').textContent = need ? 'Reason (required)' : 'Note (optional)';
+  el('lf-pipe-note').placeholder = need ? 'Why? No names, phones or prices.' : 'Optional. No names, phones or prices.';
+  el('lf-pipe-typedwrap').hidden = !needTyped;
+  el('lf-pipe-typedlbl').textContent = 'Type "' + r.name + '" to confirm';
+  const box = el('lf-pipe-confirm');
+  box.replaceChildren();
+  const strong = t => lfPipeEl('strong', '', t);
+  if(!to){
+    box.textContent = 'Pick the stage to move to.';
+  }else{
+    box.append('Move ', strong(r.name), ' from ', strong(LF_PIPE_STAGES[r.stage].label), ' to ', strong(LF_PIPE_STAGES[to].label),
+               '. Residents will see: ', strong(lfPipeResidentsSee(r, to)),
+               ". That is a preview: residents' status changes only with a release. Stores, menus and orders are not touched.");
+    if(r.sample) box.appendChild(lfPipeEl('div', 'lf-pipe-sample-note', 'Sample condo: nothing is saved.'));
+  }
+  const go = el('lf-pipe-go');
+  go.disabled = !st.ok;
+  go.textContent = _lfPipe.busy ? 'Moving…' : (to ? 'Move to ' + LF_PIPE_STAGES[to].label : 'Move');
+}
+function lfPipeMoveErr(msg){
+  const e = el('lf-pipe-err');
+  if(!e) return;
+  e.textContent = msg; e.hidden = !msg;
+}
+async function lfPipeConfirmMove(){
+  const st = lfPipeMoveState();
+  if(!st || !st.to || _lfPipe.busy) return;
+  if(!lfCondoAllowed() || _lfPipeOff){ lfPipeRemove(); return; }
+  // the button's state is not the gate: check again
+  if(!st.noteOk){ lfPipeMoveErr('A short reason is required for ' + LF_PIPE_STAGES[st.to].label + '.'); return; }
+  if(!st.typedOk){ lfPipeMoveErr('Type the name exactly to confirm.'); return; }
+  const mv = st.mv, r = st.r, to = st.to, from = r.stage, note = st.note;
+  lfPipeMoveErr('');
+  _lfPipe.busy = true; lfPipeMoveSync();
+  try{
+    if(r.sample){
+      const now = Date.now();
+      _lfPipe.sampleStage[r.id] = to;
+      _lfPipe.sampleLog.unshift({ id:'sample-' + now, condo:r.id, at:now, from, to, note, sample:true });
+    }else{
+      // 1. the screen may be stale: ask where this condo stands NOW
+      const nowStage = await lfPipeGet(LF_PIPE_NODE + '/' + r.id + '/stage');
+      const effective = lfPipeIsStage(nowStage) ? nowStage : lfPipeDefaultStage(r.id);
+      if(effective !== from){
+        _lfPipe.busy = false;
+        lfPipeCloseMove(true);
+        showToast('⚠️ Someone moved ' + r.name + ' since you opened it. Showing the latest.');
+        lfPipeGuardAsync(lfPipeLoad);
+        return;
+      }
+      // 2. one atomic update: the stage, its history and the log entry together
+      const now = Date.now();
+      if(!mv.lid) mv.lid = lfPipeLogId(now);     // a retry reuses it, so a write that did land is never logged twice
+      const base = LF_PIPE_NODE + '/' + r.id + '/', up = {};
+      up[base + 'stage'] = to; up[base + 'prevStage'] = from; up[base + 'stageAt'] = now; up[base + 'touchedAt'] = now;
+      if(to === 'live' && !(r.rec && r.rec.liveAt)) up[base + 'liveAt'] = lfPipeManilaDate(now);
+      up[LF_PIPE_LOGNODE + '/' + mv.lid] = { condo:r.id, at:now, from, to, note, by:'admin' };
+      try{ await lfPipePatchRoot(up); }
+      catch(err){
+        // a timeout can mean it landed: look before calling it a failure
+        let landed = null;
+        try{ landed = await lfPipeGet(LF_PIPE_LOGNODE + '/' + mv.lid); }catch(_){}
+        if(!(landed && landed.to === to && landed.condo === r.id)) throw err;
+      }
+      // 3. only now does the screen change
+      const rec = _lfPipe.rec[r.id] || { stage:'', prevStage:'', stageAt:0, touchedAt:0, liveAt:'' };
+      rec.stage = to; rec.prevStage = from; rec.stageAt = now; rec.touchedAt = now;
+      if(up[base + 'liveAt']) rec.liveAt = up[base + 'liveAt'];
+      _lfPipe.rec[r.id] = rec;
+      _lfPipe.log.unshift({ id:mv.lid, condo:r.id, at:now, from, to, note });
+      _lfPipe.log = _lfPipe.log.slice(0, 50);
+    }
+    _lfPipe.busy = false;
+    lfPipeCloseMove(true);
+    lfPipeRender();
+    showToast('✅ ' + r.name + ' moved to ' + LF_PIPE_STAGES[to].label);
+    const back = document.querySelector('#lf-pipe-list li[data-id="' + r.id + '"] .lf-pipe-mv') || document.getElementById('lf-pipe-list');
+    if(back){ try{ back.focus({ preventScroll: true }); }catch(e){} }
+  }catch(err){
+    _lfPipe.busy = false;
+    lfPipeMoveSync();
+    lfPipeMoveErr('Could not move it. Nothing was changed. Check your connection and try again.');
+  }
+}
+
+// ── the Condos tab and the page: built by script only while the gate allows, so with it closed every page is the old markup ──
+function lfPipeTabEl(){
+  const t = document.createElement('div');
+  t.className = 'bni lf-pipe-tab'; t.setAttribute('role', 'button'); t.tabIndex = 0; t.setAttribute('aria-label', 'Condo pipeline');
+  t.innerHTML = '<svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/></svg><span style="color:rgba(255,255,255,.4)">Condos</span>';
+  const go = () => lfPipeGuard(lfPipeGo);
+  t.addEventListener('click', go);
+  t.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+  return t;
+}
+function lfPipeBuildPage(){
+  let p = document.getElementById('p-apipe');
+  if(p) return p;
+  const after = document.getElementById('p-arevenue');
+  if(!after) return null;
+  p = document.createElement('div'); p.className = 'page'; p.id = 'p-apipe';
+  p.innerHTML =
+    '<div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>'+
+    '<div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;gap:10px">'+
+      '<div><div style="font-size:17px;font-weight:700;color:#fff">Condo pipeline</div>'+
+        '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Planning only. Residents see nothing change.</div></div>'+
+      '<button type="button" class="lf-pipe-refresh" id="lf-pipe-refresh">Refresh</button>'+
+    '</div>'+
+    '<div class="scrl"><div id="lf-pipe-body"></div><div style="height:80px"></div></div>'+
+    '<div class="bnav" style="background:#0F4A32;border-color:rgba(255,255,255,.1)">'+
+      '<div class="bni" onclick="goAdminTab(\'dash\')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span style="color:rgba(255,255,255,.4)">Dashboard</span></div>'+
+      '<div class="bni" onclick="goAdminTab(\'orders\')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span style="color:rgba(255,255,255,.4)">All Orders</span></div>'+
+      '<div class="bni" onclick="goAdminTab(\'vendors\')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span style="color:rgba(255,255,255,.4)">Vendors</span></div>'+
+      '<div class="bni" onclick="goAdminTab(\'revenue\')"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,.4)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span style="color:rgba(255,255,255,.4)">Insights</span></div>'+
+      '<div class="bni on" aria-current="page"><svg viewBox="0 0 24 24" style="stroke:#acc9c0"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/></svg><span style="color:#acc9c0">Condos</span></div>'+
+    '</div>';
+  after.insertAdjacentElement('afterend', p);
+  p.querySelector('#lf-pipe-refresh').addEventListener('click', () => lfPipeGuardAsync(lfPipeLoad));
+  return p;
+}
+function lfPipeGo(){
+  if(!lfCondoAllowed() || _lfPipeOff) return;
+  if(lfPipeBuildPage()) goPage('p-apipe');
+}
+// Called from goPage() on each admin page, inside try/catch.
+function lfPipeSync(){
+  if(_lfPipeOff || !LF_CONDOS_BUILD) return;
+  let on = false;
+  try{ on = lfCondoAllowed(); }catch(e){ on = false; }
+  ['p-adash','p-aorders','p-avendors','p-arevenue'].forEach(id => {
+    const nav = document.querySelector('#' + id + ' .bnav');
+    if(!nav) return;
+    if(on && !nav.querySelector('.lf-pipe-tab')) nav.appendChild(lfPipeTabEl());
+  });
+  if(!on) lfPipeRemove();                          // the tabs, the page and the sheet all leave together
+  // As in the picker's card: an admin session that has not learned the mode yet (or whose answer has gone stale) asks, then syncs again.
+  if(_lfAdminMode === true && (!_lfCondoModeAt || Date.now() - _lfCondoModeAt > LF_CONDO_MODE_TTL)){
+    lfCondoModeRead().then(() => { try{ lfPipeSync(); }catch(e){ lfPipeFail(e); } });
+  }
+}
+function lfPipeOpen(){
+  if(!lfCondoAllowed() || _lfPipeOff){ goPage('p-adash'); return; }
+  lfPipeRender();
+  lfPipeLoad();
+}
+function lfPipeRemove(){
+  document.querySelectorAll('.lf-pipe-tab').forEach(t => t.remove());
+  try{ lfPipeCloseMove(true); }catch(e){}
+  const m = document.getElementById('modal-pipe');
+  if(m) m.remove();
+  _lfPipeSheet = null;
+  const p = document.getElementById('p-apipe');
+  if(p){
+    const wasOn = p.classList.contains('on');
+    p.remove();
+    if(wasOn) goPage('p-adash');
+  }
+}
+// Called from goPage() on every page except the pipeline's own. The move sheet never outlives its page (a Sign Out or
+// a notification tap can change the page under it), and when the admin session has ended nothing of the pipeline is
+// left in the page: no tab, no page, no sheet. A resident's phone has none of these, so this is two failed lookups.
+function lfPipeLeave(){
+  if(_lfPipeSheet && _lfPipeSheet.classList.contains('on')) lfPipeCloseMove(true);
+  if(_lfAdminMode !== true && (document.getElementById('p-apipe') || document.querySelector('.lf-pipe-tab') || _lfPipeSheet)) lfPipeRemove();
+}
+// A fault in the pipeline switches off the pipeline, and nothing else.
+function lfPipeFail(e){
+  _lfPipeOff = true;
+  try{ console.warn('pipeline: switched off for this session:', e); }catch(_){}
+  try{ lfPipeRemove(); }catch(_){}
+  try{ showToast('⚠️ Condo pipeline unavailable'); }catch(_){}
+}
+function lfPipeGuard(fn){ try{ return fn(); }catch(e){ lfPipeFail(e); } }
+function lfPipeGuardAsync(fn){ try{ Promise.resolve(fn()).catch(lfPipeFail); }catch(e){ lfPipeFail(e); } }
+
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
   const sel=el('nv-mkt');
@@ -14144,7 +14772,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 79; // ← bump this each release (and version.json)
+  const APP_VERSION = 80; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

@@ -28,6 +28,10 @@ function set(p, val){
   else n[s[s.length-1]] = val;
 }
 function patch(p, val){
+  // A multi-path update, as the real REST API does it: when a key is itself a path
+  // ("condoPipeline/x/stage"), each key is written at that path under p, all together.
+  const keys = (val && typeof val === 'object') ? Object.keys(val) : [];
+  if(keys.some(k => k.indexOf('/') >= 0)){ keys.forEach(k => set(p + '/' + k, val[k])); return; }
   const cur = get(p);
   set(p, Object.assign({}, (cur&&typeof cur==='object')?cur:{}, val));
 }
@@ -48,8 +52,9 @@ function startServer(){
   });
 }
 
-async function makePage(browser, log){
-  const ctx = await browser.newContext({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true });
+async function makePage(browser, log, ctxOpts){
+  // ctxOpts (optional) overrides the phone-shaped default, e.g. a desktop-sized, non-touch window.
+  const ctx = await browser.newContext(Object.assign({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true }, ctxOpts || {}));
   const page = await ctx.newPage();
 
   // Fake RTDB
