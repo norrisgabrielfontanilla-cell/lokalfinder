@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 1260 checks across nineteen files,
+**Testing:** `tests/` holds a Playwright suite — 1293 checks across twenty files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -1222,6 +1222,55 @@ All 19 suites (1260 checks) pass on a frozen copy of the final build.
 site and the live `version.json` (this environment cannot reach them), how the deploy's ~13-minute test job delays a kill switch, and
 push delivery (no push, service-worker or ordering line is touched).
 
+**Photo uploads that tell the truth (v84): a vendor's logo, cover photo and menu-item photos. Not flag-gated: every vendor gets it on the update.**
+The founder asked (2026-10-26) "why i cant add photos". Every upload path was driven with test photos against the live v83 file
+(`tests/test-photos.js` run on it: 5 of its first 27 checks passed). A normal photo **does** save. What failed, and what a vendor
+would have seen as "I can't add photos":
+- **A photo the phone could not read** (a damaged file, a format the browser cannot decode) did **nothing and said nothing**.
+- **The logo and the cover said "updated" whether or not the save landed.** A write that failed (offline, or the database refusing
+  it) or was refused by the app itself ("Still loading the stores") left the new photo on screen, announced as a success; the next
+  3-second sync then applied the cloud copy and the photo vanished. (A refused save was announced "✅ Logo updated!" a moment before
+  "⏳ Still loading the stores — your change was not saved yet".) The menu-item add/edit flows already rolled back on failure (v48).
+- **A transparent PNG logo came out with a black background** (the picture goes through a JPEG, which has no transparency).
+- **The same photo could not be picked twice in a row** (logo, menu item): the file box was never emptied, so after a failed save
+  choosing the same photo again fired no change event.
+
+Who can add photos at all: **only the store itself, signed in with its PIN** — logo: the dashed LOGO box at the top right of the
+store dashboard; cover: "📷 Tap to add a cover photo" in its settings; menu item: Add item / Edit item → "Tap to upload photo". The
+**admin panel has no photo buttons** (not in "Add vendor", not in the vendor list). **Condos have none on purpose**: their pictures are
+drawn from the record (approved plan, 2026-10-25): photos are base64 inside the database (the biggest download cost, and the plan is
+already over its limit), and the database takes writes from anyone. If real condo photos are ever wanted, the way that costs the
+database nothing is static files shipped with the app (the deploy copies named files, so a `condo-photos/` folder needs one more `cp`
+line in `.github/workflows/deploy-pages.yml`). Feed posts have their own photo handlers (they already told the truth) and are untouched.
+
+What changed (`lfPhotoJpeg` + `lfPhotoFail`, just above the cover handler; `handleLogoUpload`, `handleCoverUpload`, `previewPhoto`):
+- **One reader** for all three: `lfPhotoJpeg(file, {side|width, q})` → a JPEG data URL (logo 200px longest side q.85, cover 1200px
+  wide q.78, menu photo 400px q.78 — as before), **never enlarging**, **white painted first** (transparency is white, not black), a
+  **plain sentence** for every way it can fail: "Couldn't read that photo — try a JPG or PNG, or take a new one" (the file would not
+  read, the image would not decode, or the browser reports 0 × 0 — an SVG with no size in Safari), "That is not a photo — choose a JPG
+  or PNG" (a non-image type). A failure changes nothing and writes nothing.
+- **The file box is emptied** right after a pick (all three).
+- **Logo and cover: "⏳ Saving …" while it uploads, "✅ … updated!" only once `pushState` says it landed.** If it did not, the old photo
+  is put back **in memory and on screen** (a store that had none goes back to having none: the key is deleted, the emoji comes back)
+  and the vendor reads "⚠️ Logo / Cover photo not saved — check your connection and try again". For a refusal the app's own deferred
+  "Still loading the stores…" toast lands a moment later and is what stays on screen (it is the more exact one).
+- `pushState()` is untouched. `fbSet` fails at once on a dead network and after 8 s on a hung write, so on a very weak connection a
+  vendor can see "not saved" for a write that did reach the server; the next sync shows the truth either way.
+- **Tests:** `tests/test-photos.js` (33 checks): each path with real `setInputFiles` against the stub database — a normal photo saved at
+  the right size and announced after the write (a delayed write proves "updated" does not come first), a refused save, a write that
+  fails, a store with no logo before, a damaged file, a non-image, a reader that errors, a 0 × 0 picture, a transparent PNG (corner
+  pixel white, centre pixel still red), a 48-megapixel photo, a small photo (not enlarged), size budgets, the file box emptied, the
+  menu add and edit flows, and source guards. 25 deliberate breakages (W01–W25) are each caught by a named check.
+  **Test-design finding:** forcing the "stores not loaded" refusal by setting `_catHandedOut = false` races the app's own sync (and the
+  one the sign-in starts): either re-hands the catalog out within milliseconds and the save then *succeeds*. The test pauses the sync
+  (`syncPausedUntil`), waits 0.9 s for an in-flight read to land, and only then closes saving. "Nothing was written" counts writes to
+  `/vendors/` and `/menu/` only: change stamps and push tokens go out in the background.
+- All 20 suites (1293 checks) pass on a frozen copy of the final build. Not compared against the live file the way the condo releases were:
+  only the three vendor photo handlers changed (plus one new helper), and no customer page is touched.
+- **Not verified:** a real phone's file picker (iOS HEIC conversion, Android gallery and camera), the live site, and what the live
+  database does with a write once the free plan is over its limit (this environment cannot reach it) — what v84 guarantees is that a
+  write the database refuses is now reported as "not saved" instead of "updated".
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -1263,6 +1312,10 @@ Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the icon and an open
 (the workflow runs the whole test suite first, ~13 minutes). A fault inside the icon already switches only the icon off for that session
 (`lfCondoPubFail`). Full: restore v82's `index.html` and `version.json` with both numbers raised above the broken one (84 if 83 is live);
 the memory key `lf-condo-pub` is harmless without the code and expires by itself. v83 stores nothing in any database, so there is nothing to undo.
+
+**Rolling back v84 (photo uploads).** Not flag-gated, so a rollback is a release: restore v83's `index.html` and `version.json` with both
+numbers raised above the broken one (85 if 84 is live). Nothing is stored differently (photos are the same JPEG data URLs at the same sizes),
+so nothing needs undoing in the database.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
