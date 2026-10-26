@@ -1888,6 +1888,48 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-dr-sheet .lf-pipe-btn{width:100%;margin-bottom:12px}
 .lf-dr-sheet .lf-dr-badd .lf-pipe-btn,.lf-dr-sheet .lf-dr-quick .lf-pipe-btn{width:auto;margin-bottom:0}
 @media(prefers-reduced-motion:reduce){.lf-pipe-ed{transition:none}}
+/* ═══ v82 — CONDO PICTURES AND PAGES (admin only) ═══
+   A card's picture replaces the pin; the page is a second view inside the same sheet (the list's
+   parts are hidden while it is open). Every target is 44px or taller and the picture's own text
+   is decoration (aria-hidden): the buttons over it and the list under it carry the words. */
+.lf-condo-ph.art{width:64px;height:50px;border-radius:12px;background:transparent;overflow:hidden}
+.lf-condo-ph.art svg{display:block;width:64px;height:50px;stroke:none}
+.lf-condo-tag.sample{background:#E0E7FF;color:#3730A3}
+.lf-condo-sheet.lf-pg-on > :not(.lf-pg):not(.modal-handle):not(.lf-condo-sr){display:none}
+.lf-pg{flex:1;min-height:0;display:flex;flex-direction:column}
+.lf-pg[hidden]{display:none}
+.lf-pg-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.lf-pg-top .lf-condo-x{margin-right:-10px}
+.lf-pg-back{min-height:44px;padding:0 14px 0 6px;border:none;border-radius:12px;background:transparent;color:var(--gd);font:800 14px var(--ff);cursor:pointer}
+.lf-pg-back:focus-visible,.lf-pg-b:focus-visible,.lf-art-b:focus-visible,.lf-condo-sample:focus-visible,.lf-pg-top .lf-condo-x:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.lf-pg-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 6px}
+.lf-pg-ttl{margin:0 0 8px;font-size:20px;font-weight:800;letter-spacing:-.4px;line-height:1.2;color:var(--t1);overflow-wrap:anywhere}
+.lf-pg-ttl:focus{outline:none}
+.lf-pg-body .lf-condo-tags{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;margin-bottom:12px}
+.lf-art{position:relative}
+.lf-art-svg{display:block;width:100%;height:auto}
+.lf-art-lbl{fill:var(--t2);font:700 10px var(--ff)}
+.lf-art-hit{position:absolute;inset:0}
+.lf-art-b{position:absolute;transform:translateX(-50%);min-width:44px;min-height:44px;padding:0;border:none;border-radius:8px;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lf-art-b[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--g)}
+.lf-art-t.sel{animation:lfArtPop .34s cubic-bezier(.34,1.56,.64,1);transform-box:fill-box;transform-origin:50% 100%}
+@keyframes lfArtPop{0%{transform:translateY(0)}45%{transform:translateY(-5px)}100%{transform:translateY(0)}}
+.lf-art-cap{min-height:22px;margin:8px 2px 4px;font-size:13.5px;font-weight:700;line-height:1.4;color:var(--t1)}
+.lf-pg-h{margin:14px 2px 6px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--t3)}
+.lf-pg-bl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.lf-pg-b{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--bd);border-radius:14px;background:#fff;color:var(--t1);font-family:var(--ff);text-align:left;cursor:pointer}
+.lf-pg-b[aria-pressed="true"]{border-color:var(--g);background:var(--gl)}
+.lf-pg-bn{min-width:0;font-size:14.5px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.lf-pg-bm{flex:none;font-size:12px;color:var(--t3)}
+.lf-pg-facts{margin:14px 0 0;display:flex;flex-direction:column;gap:10px}
+.lf-pg-f dt{font-size:11.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--t3)}
+.lf-pg-f dd{margin:2px 0 0;font-size:14px;line-height:1.45;color:var(--t1);overflow-wrap:anywhere}
+.lf-pg-note{margin:16px 0 4px;padding:8px 12px;border-radius:12px;background:var(--acl);color:#92400E;font-size:12px;font-weight:700;line-height:1.4}
+.lf-condo-foot{flex:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+.lf-condo-foot[hidden]{display:none}
+.lf-condo-sample{width:100%;min-height:44px;border:1px dashed var(--bdm);border-radius:14px;background:transparent;color:var(--gd);font:800 13px var(--ff);cursor:pointer}
+.lf-condo-foot-s{margin-top:6px;font-size:11.5px;line-height:1.4;color:var(--t3)}
+@media(prefers-reduced-motion:reduce){.lf-art-t.sel{animation:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -10994,6 +11036,7 @@ function lfPipeRemove(){
 // left in the page: no tab, no page, no sheet. A resident's phone has none of these, so this is two failed lookups.
 function lfPipeLeave(){
   try{ lfDraftLeave(); }catch(e){}
+  try{ lfArtLeave(); }catch(e){}
   if(_lfPipeSheet && _lfPipeSheet.classList.contains('on')) lfPipeCloseMove(true);
   if(_lfAdminMode !== true && (document.getElementById('p-apipe') || document.querySelector('.lf-pipe-tab') || _lfPipeSheet)) lfPipeRemove();
 }
@@ -11612,6 +11655,319 @@ function lfDraftFail(e){
   try{ showToast('⚠️ Condo drafts unavailable'); }catch(_){}
 }
 function lfDraftGuard(fn){ try{ return fn(); }catch(e){ lfDraftFail(e); } }
+
+/* ═══ v82 — CONDO PICTURES AND PAGES (admin only) ═══
+   Phase B of the approved plan, cut down to what an admin can use today: every card in the
+   picker gets a small picture, and tapping a card opens that condo's page (a larger picture
+   whose buildings can be tapped, the building list, and the facts that are known). That is all.
+
+   Rules that must hold (tests/test-condoart.js proves each):
+   • Same gate as the picker: lfCondoAllowed(). A resident's phone builds none of it.
+   • A picture is DRAWN from the condo's own record: one tower per building, in stored order,
+     taller when the floors are known. No photo, logo or render is copied, linked or embedded,
+     and nothing is invented: a condo with no buildings listed is drawn as an empty plot.
+   • Nothing here touches a database, a timer, an observer or a scroll / touch listener. Record
+     text goes in with textContent or setAttribute only, and the colours come from a fixed
+     palette picked by a hash of the condo's id, never from the record.
+   • "Sample" condos (the admin's preview of how pictures and pages look for different kinds of
+     condos) are made up in this file, marked, kept in memory, never saved, never added to the
+     directory, and never mixed into a real record.
+   • A fault switches off the pictures and pages and nothing else: the picker falls back to the
+     plain cards it had before (lfArtFail). */
+const LF_ART_NS = 'http://www.w3.org/2000/svg';
+const LF_ART_ROW = 6;                                      // towers in one row of the page's picture: the most whose 44px buttons still fit side by side at phone width
+const LF_ART_MAX = 12;                                     // towers the page's picture draws (two rows); the list under it always has every building
+const LF_ART_THUMB = 5;                                    // towers a card's picture draws
+const LF_ART_PAL = [
+  { sky:'#EAF6F0', ground:'#CFE6D5', body:'#BFE3D0', shade:'#8FCBAE', roof:'#0E8A5A', win:'#FFF3C4', leaf:'#5DB98A' },
+  { sky:'#E8F4F6', ground:'#CBE3E6', body:'#B9DEE3', shade:'#86C3CB', roof:'#0F6F7A', win:'#FFF3C4', leaf:'#58AEB8' },
+  { sky:'#FBF3E6', ground:'#EBDDC2', body:'#F0D9B0', shade:'#E0BC84', roof:'#B9792B', win:'#FFFBEA', leaf:'#8DB85D' },
+  { sky:'#EAF0FA', ground:'#D3DDEE', body:'#C3D5F0', shade:'#9DB8E2', roof:'#3B63B8', win:'#FFF3C4', leaf:'#6FB3A2' },
+  { sky:'#FAEDEC', ground:'#EBD5D2', body:'#F2CFCB', shade:'#E3A8A2', roof:'#B5483F', win:'#FFF3C4', leaf:'#7DB56A' },
+  { sky:'#F1EDFA', ground:'#DDD5EE', body:'#D6CCEE', shade:'#B8A9DF', roof:'#6B4FB5', win:'#FFF3C4', leaf:'#76B58E' }
+];
+let _lfArtOff = false;                                     // set when the pictures or pages failed: off for the session, nothing else affected
+let _lfArtPreview = false;                                 // the admin's "sample condos" switch (memory only)
+let _lfArtSamples = null;
+let _lfArtPage = { id: null, from: null, el: null, scroll: 0 };
+const _lfArtThumbs = new Map();                            // a card's picture, drawn once per condo and copied
+
+function lfArtHash(s){ let h = 2166136261; s = String(s); for(let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function lfArtPal(id){ return LF_ART_PAL[lfArtHash(id) % LF_ART_PAL.length]; }
+function lfArtEl(tag, attrs, parent){
+  const e = document.createElementNS(LF_ART_NS, tag);
+  for(const k in attrs) e.setAttribute(k, String(attrs[k]));
+  if(parent) parent.appendChild(e);
+  return e;
+}
+const lfArtClamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function lfArtFloors(b){ return b.floors ? b.floors + (b.floors === 1 ? ' floor' : ' floors') : ''; }
+// "Tower 3 · Tower · 40 floors" — the same words for the picture's caption, a button's label and the list row.
+function lfArtDescribe(b){ return [b.name, LF_DRAFT_KIND_LABEL[b.kind] || 'Building', lfArtFloors(b)].filter(Boolean).join(' · '); }
+
+// ── where each tower goes, as plain numbers (so the picture can be checked without looking at it) ──
+// big: the page's picture, 320 wide, up to 6 towers a row, two rows past 6. thumb: a card's, 72 x 56.
+function lfArtHeight(b, big){
+  const lo = big ? 58 : 22, hi = big ? 112 : 42;
+  if(b.kind === 'villa') return Math.round(lo * .8);                     // a villa is low-rise whatever its floors say, a podium lower still
+  if(b.kind === 'podium') return Math.round(lo * .7);
+  if(!b.floors) return Math.round(lo + (hi - lo) * .4);                  // floors unknown: a neutral height, never a guess at a number
+  return Math.round(lo + (hi - lo) * lfArtClamp((b.floors - 4) / 56, 0, 1));
+}
+function lfArtLayout(c, big){
+  const n = c.buildings.length, W = big ? 320 : 72;
+  const drawn = Math.min(n, big ? LF_ART_MAX : LF_ART_THUMB);
+  const sizes = (big && drawn > LF_ART_ROW) ? [Math.ceil(drawn / 2), Math.floor(drawn / 2)] : [drawn];
+  const rowH = big ? 134 : 56, H = big ? sizes.length * rowH + 22 : 56;
+  const cells = [];
+  let idx = 0;
+  sizes.forEach((k, r) => {
+    const gap = big ? 15 : 3, cw = big ? Math.min(44, Math.floor((304 - (k - 1) * gap) / Math.max(k, 1))) : 11;   // six a row: 38 wide and 53 apart, so at the narrowest phone (a picture 278px wide) the tower buttons' centres are still 46px apart
+    const x0 = Math.round((W - (k * cw + (k - 1) * gap)) / 2), base = big ? (r + 1) * rowH : 50;
+    for(let j = 0; j < k; j++, idx++) cells.push({ i: idx, x: x0 + j * (cw + gap), w: cw, h: lfArtHeight(c.buildings[idx], big), base });
+  });
+  return { W, H, big, drawn, more: n - drawn, rows: sizes.length, rowH, cells };
+}
+
+// ── drawing ──
+function lfArtWindows(c, cell, big, ti){
+  const cols = cell.w >= 30 ? 3 : 2, m = big ? 6 : 2.4, cw = (cell.w - 2 * m) / cols, ww = Math.max(1.6, cw * .55), wh = big ? 6 : 3;
+  const step = big ? 13 : 7, rows = Math.max(0, Math.min(big ? 8 : 4, Math.floor((cell.h - (big ? 16 : 8)) / step)));
+  const seed = lfArtHash(c.id) + ti * 7;
+  let d = '';
+  for(let r = 0; r < rows; r++) for(let k = 0; k < cols; k++){
+    if((seed + r * 3 + k * 5) % 5 === 0) continue;                          // a few dark windows, the same ones every time
+    d += 'M' + (cell.x + m + k * cw + (cw - ww) / 2).toFixed(1) + ' ' + (cell.base - cell.h + (big ? 10 : 5) + r * step).toFixed(1) + 'h' + ww.toFixed(1) + 'v' + wh + 'h-' + ww.toFixed(1) + 'z';
+  }
+  return d;
+}
+function lfArtShort(name){ return name.length > 8 ? name.slice(0, 7) + '…' : name; }
+function lfArtDraw(c, big){
+  const lay = lfArtLayout(c, big), pal = lfArtPal(c.id);
+  const svg = lfArtEl('svg', { viewBox: '0 0 ' + lay.W + ' ' + lay.H, class: 'lf-art-svg', focusable: 'false', 'aria-hidden': 'true' });
+  lfArtEl('rect', { width: lay.W, height: lay.H, rx: big ? 14 : 8, fill: pal.sky }, svg);
+  for(let r = 0; r < lay.rows; r++){
+    const base = big ? (r + 1) * lay.rowH : 50;
+    lfArtEl('rect', { x: big ? 8 : 4, y: base, width: lay.W - (big ? 16 : 8), height: big ? 8 : 5, rx: big ? 4 : 2.5, fill: pal.ground }, svg);
+    const row = lay.cells.filter(c => c.base === base);
+    if(big && (!row.length || row[0].x >= 34)){                             // a tree at each end of the row, where it would not hide behind a tower
+      [16, lay.W - 16].forEach(x => { lfArtEl('rect', { x: x - 1.5, y: base - 9, width: 3, height: 9, fill: pal.shade }, svg); lfArtEl('circle', { cx: x, cy: base - 14, r: 8, fill: pal.leaf }, svg); });
+    }
+  }
+  if(!lay.drawn){                                                           // no buildings listed: an empty plot, not invented towers
+    const base = big ? lay.rowH : 50, w = big ? 44 : 14, h = big ? 64 : 24;
+    lfArtEl('rect', { x: (lay.W - w) / 2, y: base - h, width: w, height: h, rx: big ? 6 : 3, fill: 'none', stroke: pal.roof, 'stroke-width': big ? 2 : 1.2, 'stroke-dasharray': big ? '5 4' : '3 2.5', opacity: .55 }, svg);
+  }
+  lay.cells.forEach((cell, ti) => {
+    const g = lfArtEl('g', { class: 'lf-art-t', 'data-i': cell.i }, svg), top = cell.base - cell.h, rx = big ? 5 : 2.5;
+    lfArtEl('rect', { class: 'lf-art-body', x: cell.x, y: top, width: cell.w, height: cell.h, rx, fill: pal.body }, g);
+    lfArtEl('rect', { x: cell.x + cell.w * .64, y: top + 1, width: cell.w * .36 - 1, height: cell.h - 1, rx: rx - 1, fill: pal.shade }, g);
+    if(c.buildings[cell.i].kind === 'villa') lfArtEl('path', { d: 'M' + (cell.x - 1.5) + ' ' + (top + 1) + 'L' + (cell.x + cell.w / 2) + ' ' + (top - (big ? 10 : 5)) + 'L' + (cell.x + cell.w + 1.5) + ' ' + (top + 1) + 'z', fill: pal.roof }, g);   // a pitched roof
+    else lfArtEl('rect', { x: cell.x - 1, y: top - (big ? 4 : 2), width: cell.w + 2, height: big ? 5 : 3, rx: big ? 2.5 : 1.5, fill: pal.roof }, g);
+    const wd = lfArtWindows(c, cell, big, ti);
+    if(wd) lfArtEl('path', { d: wd, fill: pal.win }, g);
+    if(big && lay.drawn <= LF_ART_ROW * 2){
+      const t = lfArtEl('text', { class: 'lf-art-lbl', x: cell.x + cell.w / 2, y: cell.base + 19, 'text-anchor': 'middle' }, g);
+      t.textContent = lfArtShort(c.buildings[cell.i].name);
+    }
+  });
+  if(big && lay.more > 0){
+    const t = lfArtEl('text', { class: 'lf-art-lbl', x: lay.W - 12, y: lay.H - 6, 'text-anchor': 'end' }, svg);
+    t.textContent = '+' + lay.more + ' more';
+  }
+  return { svg, lay };
+}
+// A card's picture: drawn once per condo (and per set of floors), then copied.
+function lfArtThumb(c){
+  const key = c.id + '|' + c.buildings.slice(0, LF_ART_THUMB).map(b => b.floors || 0).join(',') + '|' + c.buildings.length;
+  let svg = _lfArtThumbs.get(key);
+  if(!svg){
+    if(_lfArtThumbs.size > 200) _lfArtThumbs.clear();
+    svg = lfArtDraw(c, false).svg;
+    _lfArtThumbs.set(key, svg);
+  }
+  return svg.cloneNode(true);
+}
+// The page's picture with a real button over each tower (a 44px target at least, centred on the tower).
+function lfArtSite(c, pick){
+  const d = lfArtDraw(c, true), lay = d.lay, box = document.createElement('div');
+  box.className = 'lf-art'; box.appendChild(d.svg);
+  const hit = document.createElement('div'); hit.className = 'lf-art-hit';
+  lay.cells.forEach(cell => {
+    const b = document.createElement('button'), bd = c.buildings[cell.i];
+    b.type = 'button'; b.className = 'lf-art-b'; b.dataset.i = String(cell.i);
+    b.setAttribute('aria-label', lfArtDescribe(bd)); b.setAttribute('aria-pressed', 'false');
+    b.style.left = ((cell.x + cell.w / 2) / lay.W * 100).toFixed(2) + '%';
+    b.style.top = ((cell.base - cell.h) / lay.H * 100).toFixed(2) + '%';
+    b.style.width = (cell.w / lay.W * 100).toFixed(2) + '%';
+    b.style.height = (cell.h / lay.H * 100).toFixed(2) + '%';
+    b.addEventListener('click', () => lfArtGuard(() => pick(cell.i)));
+    hit.appendChild(b);
+  });
+  box.appendChild(hit);
+  return box;
+}
+
+// ── the condos this admin can look at: the directory, their drafts, and (if switched on) the samples ──
+function lfArtSampleList(){
+  if(_lfArtOff || !_lfArtPreview || !LF_CONDOS_BUILD || _lfAdminMode !== true) return [];
+  if(!_lfArtSamples){
+    const bs = (kind, floors, names) => names.map((n, i) => ({ id:'b' + (i + 1), name:n, kind, order:i + 1, floors: Array.isArray(floors) ? floors[i % floors.length] : floors }));
+    const tw = (n, floors) => Array.from({ length: n }, (_, i) => ({ id:'b' + (i + 1), name:'Tower ' + (i + 1), kind:'tower', order:i + 1, floors: Array.isArray(floors) ? floors[i % floors.length] : floors }));
+    const raw = [
+      { id:'preview-01', name:'Sample Heights', developer:'Sample Developer', city:'Quezon City', barangay:'Sample Barangay', status:'live', buildings: tw(8, [38, 42, 45, 40]), landmarks:['Sample Mall', 'Sample Station'], unitHint:'Tower, floor, unit' },
+      { id:'preview-02', name:'Sample Gardens', developer:'Sample Developer', city:'Makati', status:'coming', buildings: bs('building', [12, 15, 18], ['Maple', 'Oak', 'Pine', 'Cedar']) },
+      { id:'preview-03', name:'Sample Residences', city:'Pasig', status:'coming', buildings: [{ id:'b1', name:'Tower A', kind:'tower', order:1, floors:32 }, { id:'b2', name:'Tower B', kind:'tower', order:2, floors:28 }], siteNote:'Two towers around a shared garden.' },
+      { id:'preview-04', name:'Sample Villas', developer:'Sample Developer', city:'Taguig', status:'closed', buildings: bs('villa', 0, ['Villa 1', 'Villa 2', 'Villa 3', 'Villa 4', 'Villa 5', 'Villa 6']) },
+      { id:'preview-05', name:'Sample Park Phases', city:'Mandaluyong', status:'live', buildings: bs('phase', [25, 30, 35], ['Phase 1', 'Phase 2', 'Phase 3']) },
+      { id:'preview-06', name:'Sample Point', city:'Quezon City', status:'closed', buildings: [{ id:'b1', name:'The Point', kind:'building', order:1, floors:52 }] },
+      { id:'preview-07', name:'Sample Wings', developer:'Another Sample Developer', city:'Manila', status:'coming', buildings: [{ id:'b1', name:'East Wing', kind:'wing', order:1, floors:20 }, { id:'b2', name:'West Wing', kind:'wing', order:2, floors:20 }, { id:'b3', name:'Podium', kind:'podium', order:3, floors:4 }] },
+      { id:'preview-08', name:'Sample Towers Without Floors', city:'Pasay', status:'closed', buildings: tw(4, 0) },
+      { id:'preview-09', name:'Sample Grand Estate With A Very Long Name Indeed', developer:'Another Sample Developer', city:'Parañaque', status:'coming', buildings: bs('block', [10, 14, 22, 8], ['Block A', 'Block B', 'Block C', 'Block D', 'Block E', 'Block F', 'Block G', 'Block H', 'Block I', 'Block J', 'Block K', 'Block L']), address:'A made-up address that is long enough to wrap across more than one line on a small phone' },
+      { id:'preview-10', name:'Sample Not Listed Yet', city:'Makati', status:'coming', buildings: [] },
+      { id:'preview-11', name:'Sample Many Blocks', city:'Caloocan', status:'closed', buildings: bs('block', 0, Array.from({ length: 14 }, (_, i) => 'Block ' + (i + 1))) },
+      { id:'preview-12', name:'Sample Mixed Use', developer:'Sample Developer', city:'Muntinlupa', status:'coming', buildings: [{ id:'b1', name:'Office Tower', kind:'tower', order:1, floors:30 }, { id:'b2', name:'Mall Podium', kind:'podium', order:2, floors:5 }, { id:'b3', name:'Garden Villa', kind:'villa', order:3 }, { id:'b4', name:'Annex', kind:'other', order:4, floors:9 }] }
+    ];
+    _lfArtSamples = [];
+    raw.forEach(r => { const c = lfCondoClean(Object.assign({}, r, { visible:false, confidence:'unverified' })); if(c){ c.sample = true; _lfArtSamples.push(c); } });
+  }
+  return _lfArtSamples;
+}
+function lfArtFind(id){
+  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList(), lfArtSampleList());
+  return all.find(c => c.id === id) || null;
+}
+
+// ── a card: the picture, and a tap that opens the page ──
+function lfArtCardPicture(c, ph){                                            // ph = the card's picture box; the old pin stays if anything goes wrong
+  if(_lfArtOff) return;
+  try{ ph.replaceChildren(lfArtThumb(c)); ph.classList.add('art'); }
+  catch(e){ _lfArtOff = true; try{ console.warn('condo pictures: switched off for this session:', e); }catch(_){} }
+}
+
+// ── the page ──
+function lfArtPageShell(){
+  if(_lfArtPage.el && document.body.contains(_lfArtPage.el)) return _lfArtPage.el;
+  const sheet = document.querySelector('#modal-condo .lf-condo-sheet');
+  if(!sheet) return null;
+  const mk = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; };
+  const pg = mk('div', 'lf-pg'); pg.id = 'lf-pg'; pg.hidden = true;
+  const top = mk('div', 'lf-pg-top');
+  const back = mk('button', 'lf-pg-back', '‹ All condos'); back.type = 'button'; back.id = 'lf-pg-back';
+  const x = mk('button', 'lf-condo-x', '✕'); x.type = 'button'; x.id = 'lf-pg-x'; x.setAttribute('aria-label', 'Close');
+  top.append(back, x);
+  const body = mk('div', 'lf-pg-body'); body.id = 'lf-pg-body';
+  pg.append(top, body);
+  sheet.appendChild(pg);
+  back.addEventListener('click', () => lfArtGuard(() => lfArtPageBack()));
+  x.addEventListener('click', () => lfArtGuard(() => lfCondoClose()));
+  _lfArtPage.el = pg;
+  return pg;
+}
+function lfArtPageFill(body, c){
+  const mk = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; };
+  body.replaceChildren();
+  const h = mk('h2', 'lf-pg-ttl', c.name); h.id = 'lf-pg-ttl'; h.tabIndex = -1;
+  body.appendChild(h);
+  body.appendChild(lfCondoTagsEl(c, !!lfCondoCurrent() && lfCondoCurrent().id === c.id));
+  const cap = mk('div', 'lf-art-cap', c.buildings.length ? 'Tap a building to see its name and floors.' : 'The buildings of this condo are not listed yet.');
+  cap.id = 'lf-pg-cap'; cap.setAttribute('role', 'status'); cap.setAttribute('aria-live', 'polite');
+  const list = mk('ul', 'lf-pg-bl'); list.id = 'lf-pg-bl';
+  const pick = i => {
+    const b = c.buildings[i]; if(!b) return;
+    body.querySelectorAll('[data-i]').forEach(n => { if(n.tagName === 'BUTTON') n.setAttribute('aria-pressed', String(+n.dataset.i === i)); });
+    body.querySelectorAll('g.lf-art-t').forEach(g => { g.classList.remove('sel'); if(+g.getAttribute('data-i') === i){ void g.getBoundingClientRect(); g.classList.add('sel'); } });
+    cap.textContent = lfArtDescribe(b);
+  };
+  body.appendChild(lfArtSite(c, pick));
+  body.appendChild(cap);
+  c.buildings.forEach((b, i) => {
+    const li = document.createElement('li'), btn = mk('button', 'lf-pg-b'); btn.type = 'button'; btn.dataset.i = String(i); btn.setAttribute('aria-pressed', 'false');
+    btn.append(mk('span', 'lf-pg-bn', b.name), mk('span', 'lf-pg-bm', [LF_DRAFT_KIND_LABEL[b.kind] || 'Building', lfArtFloors(b)].filter(Boolean).join(' · ')));
+    btn.addEventListener('click', () => lfArtGuard(() => pick(i)));
+    li.appendChild(btn); list.appendChild(li);
+  });
+  if(c.buildings.length){ body.appendChild(mk('div', 'lf-pg-h', c.buildings.length === 1 ? 'Building' : 'Buildings')); body.appendChild(list); }
+  const facts = [['Developer', c.developer], ['City', c.city], ['Barangay', c.barangay], ['Address', c.address],
+                 ['Also called', c.aliases.join(', ')], ['Nearby', c.landmarks.join(', ')], ['Unit format', c.unitHint], ['About the site', c.siteNote]].filter(f => f[1]);
+  if(facts.length){
+    const dl = mk('dl', 'lf-pg-facts');
+    facts.forEach(f => { const row = mk('div', 'lf-pg-f'); row.append(mk('dt', '', f[0]), mk('dd', '', f[1])); dl.appendChild(row); });
+    body.appendChild(dl);
+  }
+  body.appendChild(mk('div', 'lf-pg-note', c.sample ? 'Sample — made up to show how a page looks. It is not saved anywhere.'
+                                         : c.draft ? 'Draft — saved on this phone only. Edit it on the Condos page.'
+                                         : 'Admin preview — residents cannot see or choose this condo yet.'));
+}
+function lfArtPageOpen(id, from){
+  if(_lfArtOff || !lfCondoAllowed()) return;
+  const c = lfArtFind(id); if(!c) return;
+  const pg = lfArtPageShell(); if(!pg) return;
+  const list = el('lf-condo-list');
+  _lfArtPage.scroll = list ? list.scrollTop : 0;
+  lfArtPageFill(el('lf-pg-body'), c);
+  _lfArtPage.id = id; _lfArtPage.from = from || null;
+  pg.parentNode.classList.add('lf-pg-on'); pg.hidden = false;
+  el('modal-condo').setAttribute('aria-labelledby', 'lf-pg-ttl');
+  el('lf-pg-ttl').focus({ preventScroll: true });
+  el('lf-pg-body').scrollTop = 0;
+}
+// Back to the list. Returns true when a page was open (so Esc knows it has been used).
+function lfArtPageBack(quiet){
+  const pg = _lfArtPage.el;
+  if(!pg || pg.hidden) return false;
+  pg.hidden = true; pg.parentNode.classList.remove('lf-pg-on');
+  const m = el('modal-condo'); if(m) m.setAttribute('aria-labelledby', 'lf-condo-ttl');
+  const id = _lfArtPage.id, from = _lfArtPage.from; _lfArtPage.id = null; _lfArtPage.from = null;
+  const list = el('lf-condo-list'); if(list) list.scrollTop = _lfArtPage.scroll;
+  if(!quiet){
+    const card = (from && document.body.contains(from)) ? from : (id ? document.querySelector('#lf-condo-list .lf-condo-card[data-id="' + id + '"]') : null);
+    try{ (card || list || el('lf-condo-ttl')).focus({ preventScroll: true }); }catch(e){}
+  }
+  return true;
+}
+function lfArtPageEsc(){ try{ return lfArtPageBack(); }catch(e){ lfArtFail(e); return false; } }
+function lfArtPageReset(){ try{ lfArtPageBack(true); }catch(e){} }
+
+// ── the sample switch, under the list ──
+function lfArtFoot(){
+  const list = el('lf-condo-list'); if(!list) return null;
+  let f = el('lf-condo-foot');
+  if(f && document.body.contains(f)) return f;
+  f = document.createElement('div'); f.className = 'lf-condo-foot'; f.id = 'lf-condo-foot';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-condo-sample'; b.id = 'lf-condo-sample';
+  const s = document.createElement('div'); s.className = 'lf-condo-foot-s'; s.id = 'lf-condo-foot-s';
+  f.append(b, s);
+  b.addEventListener('click', () => lfArtGuard(() => {
+    _lfArtPreview = !_lfArtPreview; _lfCondoShown = LF_CONDO_PAGE; lfCondoRender();
+    try{ b.focus({ preventScroll: true }); }catch(e){}
+  }));
+  list.after(f);
+  return f;
+}
+function lfArtFootSync(){
+  const f = lfArtFoot(); if(!f) return;
+  const on = LF_CONDOS_BUILD && _lfAdminMode === true && !_lfArtOff;
+  f.hidden = !on;
+  if(!on) return;
+  const b = el('lf-condo-sample');
+  b.textContent = _lfArtPreview ? 'Hide the sample condos' : 'Preview with sample condos';
+  b.setAttribute('aria-pressed', String(_lfArtPreview));
+  el('lf-condo-foot-s').textContent = _lfArtPreview ? 'Twelve made-up condos are mixed into the list, each marked Sample. They are never saved.' : 'See how pictures and pages look for different kinds of condos. Nothing is saved.';
+}
+
+// ── leaving, and a fault that switches only this off ──
+function lfArtLeave(){
+  if(_lfAdminMode !== true){ _lfArtPreview = false; lfArtPageReset(); }
+}
+function lfArtFail(e){
+  _lfArtOff = true;
+  try{ console.warn('condo pictures: switched off for this session:', e); }catch(_){}
+  try{ lfArtPageReset(); }catch(_){}
+  try{ const m = _lfCondoSheet; if(m && m.classList.contains('on')) lfCondoRender(); }catch(_){}
+  try{ showToast('⚠️ Condo pictures unavailable'); }catch(_){}
+}
+function lfArtGuard(fn){ try{ return fn(); }catch(e){ lfArtFail(e); } }
 
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
@@ -12653,7 +13009,7 @@ function lfCondoSheet(){
 function lfCondoKeys(e){
   const m = _lfCondoSheet;
   if(!m || !m.classList.contains('on')) return;
-  if(e.key === 'Escape'){ e.stopPropagation(); lfCondoClose(); return; }
+  if(e.key === 'Escape'){ e.stopPropagation(); if(lfArtPageEsc()) return; lfCondoClose(); return; }     // v82: on a page, Esc goes back to the list first
   if(e.key !== 'Tab') return;
   const f = Array.from(m.querySelectorAll('button, input')).filter(n=>!n.disabled && n.offsetParent !== null);
   if(!f.length) return;
@@ -12674,31 +13030,42 @@ function lfCondoVisible(admin){
   const d = lfCondoDir();
   return Object.keys(d).map(k=>d[k]).filter(c=>admin || (c.visible && c.confidence === 'confirmed'));   // nothing unverified reaches a resident
 }
-function lfCondoCard(c, cur){
-  const isCur = !!cur && c.id === cur.id;
-  const li = document.createElement('li');
-  // Only the current condo does anything when tapped (it just closes the sheet). Opening a
-  // condo's page and switching to it arrive in later phases; until then no other card is a button.
-  const card = document.createElement(isCur ? 'button' : 'div');
-  if(isCur){ card.type = 'button'; card.setAttribute('aria-current', 'true'); card.addEventListener('click', ()=>lfCondoClose()); }
-  card.className = 'lf-condo-card' + (isCur ? ' cur' : '');
-  card.dataset.id = c.id;
-  const ph = document.createElement('span'); ph.className = 'lf-condo-ph'; ph.setAttribute('aria-hidden', 'true'); ph.innerHTML = LF_CONDO_SVG.pin;
-  const tx = document.createElement('span'); tx.className = 'lf-condo-tx';
-  const nm = document.createElement('span'); nm.className = 'lf-condo-nm'; nm.textContent = c.name;
-  const mt = document.createElement('span'); mt.className = 'lf-condo-mt';
-  mt.textContent = [[c.developer, c.city].filter(Boolean).join(' · '), lfCondoBuildingLabel(c)].filter(Boolean).join(' · ');
-  tx.append(nm, mt);
+// The tags a condo wears, on its card and on its page.
+function lfCondoTagsEl(c, isCur){
   const tags = document.createElement('span'); tags.className = 'lf-condo-tags';
   const tag = (cls, txt)=>{ const t = document.createElement('span'); t.className = 'lf-condo-tag ' + cls; t.textContent = txt; tags.appendChild(t); };
-  if(c.draft){ tag('warn', 'Draft'); }                            // a draft is hidden and unverified by definition: one word says it
+  if(c.sample){ tag('sample', 'Sample'); tag(c.status, LF_CONDO_STATUS[c.status]); }   // v82: a made-up condo says so, and shows a status so the badges can be seen
+  else if(c.draft){ tag('warn', 'Draft'); }                       // a draft is hidden and unverified by definition: one word says it
   else{
     tag(c.status, LF_CONDO_STATUS[c.status]);
     if(isCur) tag('cur', 'Current');
     if(c.confidence !== 'confirmed') tag('warn', 'Unverified');     // only an admin sees these two
     if(!c.visible) tag('warn', 'Hidden');
   }
-  card.append(ph, tx, tags);
+  return tags;
+}
+function lfCondoCard(c, cur){
+  const isCur = !!cur && c.id === cur.id;
+  const li = document.createElement('li');
+  const ph = document.createElement('span'); ph.className = 'lf-condo-ph'; ph.setAttribute('aria-hidden', 'true'); ph.innerHTML = LF_CONDO_SVG.pin;
+  lfArtCardPicture(c, ph);                                        // v82: the pin becomes a picture drawn from the record (the pin stays if that fails)
+  // v82: every card opens its condo's page. If the pictures and pages failed (lfArtFail), the cards are what they were in v78:
+  // only the current condo is a button (it just closes the sheet), and no other card is, so there is no dead button.
+  const pages = !_lfArtOff;
+  const card = document.createElement((isCur || pages) ? 'button' : 'div');
+  if(isCur || pages){
+    card.type = 'button';
+    if(isCur) card.setAttribute('aria-current', 'true');
+    card.addEventListener('click', pages ? ()=>lfArtGuard(()=>lfArtPageOpen(c.id, card)) : ()=>lfCondoClose());
+  }
+  card.className = 'lf-condo-card' + (isCur ? ' cur' : '');
+  card.dataset.id = c.id;
+  const tx = document.createElement('span'); tx.className = 'lf-condo-tx';
+  const nm = document.createElement('span'); nm.className = 'lf-condo-nm'; nm.textContent = c.name;
+  const mt = document.createElement('span'); mt.className = 'lf-condo-mt';
+  mt.textContent = [[c.developer, c.city].filter(Boolean).join(' · '), lfCondoBuildingLabel(c)].filter(Boolean).join(' · ');
+  tx.append(nm, mt);
+  card.append(ph, tx, lfCondoTagsEl(c, isCur));
   li.appendChild(card);
   return li;
 }
@@ -12737,7 +13104,7 @@ function lfCondoRenderChips(all){
 }
 function lfCondoRender(focusFrom){
   const list = el('lf-condo-list');
-  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList());   // v81: an admin also sees their own drafts (none for anyone else)
+  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList(), lfArtSampleList());   // v81: an admin also sees their own drafts; v82: and the samples, if they switched them on (none of it for anyone else)
   const cur = lfCondoCurrent();
   lfCondoRenderChips(all);
   const q = lfCondoNorm(_lfCondoQuery), tokens = q ? q.split(' ') : [];
@@ -12771,6 +13138,7 @@ function lfCondoRender(focusFrom){
     (list.querySelector('.lf-condo-more') || list).focus({ preventScroll: true });
   }
   el('lf-condo-sr').textContent = rows.length ? rows.length + (rows.length === 1 ? ' condo' : ' condos') : 'No condos match';
+  try{ lfArtFootSync(); }catch(e){ lfArtFail(e); }                // v82: the sample switch under the list
 }
 let _lfCondoFrom = null;   // the button that opened the sheet (the header's or the admin panel's): it says "expanded", and focus goes back to it
 function lfCondoOpen(from){
@@ -12798,6 +13166,7 @@ function lfCondoOpen(from){
 function lfCondoClose(quiet){
   const m = _lfCondoSheet;
   if(!m) return;
+  try{ lfArtPageReset(); }catch(e){}                                // v82: the sheet always opens on the list
   m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
   document.removeEventListener('keydown', lfCondoKeys, true);
   const from = _lfCondoFrom; _lfCondoFrom = null;
@@ -15448,7 +15817,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 81; // ← bump this each release (and version.json)
+  const APP_VERSION = 82; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

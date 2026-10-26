@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 1027 checks across seventeen files,
+**Testing:** `tests/` holds a Playwright suite — 1119 checks across eighteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -747,10 +747,12 @@ before `</style>` and three hooks — Home, Back, and (v79) the admin panel):
   only when there are two or more values. 20 cards at a time, then "Show more".
   Only the **current** condo's card is a button; other cards are plain rows
   until a later phase gives them something to do (no dead buttons).
+  **(v82: every card is now a button that opens its condo's page — see "Condo pictures and pages". The
+  Phase A behaviour is what the picker falls back to if the pictures fail.)**
 - **Deliberately not built yet:** "Near me" (no record has confirmed
   coordinates), "Can't find your condo? Add it" and "Notify me" (Phase C, they
-  write to the database), the condo detail page and tap-a-tower (Phase B),
-  switching condo and the cart guard (Phase C).
+  write to the database), the condo detail page and tap-a-tower (Phase B;
+  **built admin-only in v82**), switching condo and the cart guard (Phase C).
 - **Phase A touches no database.** The only network call in the block is the
   `version.json` mode read; the block contains no `fb*` call, no `FB_URL`, no
   `ROOM_KEY`, no timer, observer or scroll/touch listener, and every `innerHTML`
@@ -1050,6 +1052,95 @@ Safari (headless Chromium with the permission granted only; the fallback selects
 limits and private browsing (simulated by making `setItem` throw), the live site and database (this environment cannot
 reach them), and push delivery (no push, service-worker or ordering line is touched).
 
+**Condo pictures and pages (v82): admin only. A resident sees nothing different, and nothing is stored or sent.**
+The founder asked (2026-10-26) "as a customer where can i see other condo options?". The honest answer is still "nowhere":
+residents cannot choose another condo until there are stores in it, a paid Firebase plan and published rules (none of
+which this file can do). What an admin can do today is look at the condos: this is Phase B of the approved plan cut down
+to that, and nothing more. Same gate as the picker (`lfCondoAllowed()`).
+
+- **A picture on every card.** The pin in the picker is replaced by a small picture drawn from the condo's own record
+  (`lfArtThumb`, 72 × 56): one tower per building, in stored order, five at most. Every card is now a button that opens its
+  condo's **page**. (In v78 only the current condo was a button, because no other card had anything to do.)
+- **The page** (`#lf-pg`, a second view inside the same `#modal-condo` sheet: `.lf-pg-on` hides the search, chips and list, and
+  the sheet's `aria-labelledby` follows the page title). Back (‹ All condos), ✕ (closes the whole sheet), Esc (page → list, then
+  closes), focus to the title on open and back to the card on Back, and the list's scroll position is put back. It shows: a
+  larger picture whose towers are real buttons, a caption that names the tapped building ("Tower 3 · Tower · 45 floors"), the
+  building list (every building, however many), and **only the facts that are known** (developer, city, barangay, address,
+  other names, landmarks, unit format, site notes): GRASS shows its city and "SM Grass" and nothing else, because nothing else
+  is confirmed. A note says whether it is a real condo ("Admin preview — residents cannot see or choose this condo yet."), a
+  draft, or a sample. **Not built, on purpose:** "Make this my condo" (switching rooms is Phase C and needs the cart guard),
+  "Notify me" and "I want to sell here" (they would write to the database; and a button that does nothing is a dead button),
+  a kitchens count (no data), a sky that follows Manila time and the drifting clouds / twinkling windows / scooter of the plan
+  (they add nothing for choosing a condo and cost battery on cheap phones).
+- **Drawing** (`lfArtLayout` gives the numbers, `lfArtDraw` the SVG, built with `createElementNS`; no `innerHTML` in the block).
+  The page's picture is 320 wide: up to **six towers in a row, 38 wide and 53 apart**, so at the narrowest phone (a 278px-wide
+  picture) the 44px buttons over them still do not touch; seven or more are **two rows** (4+3 … 6+6), twelve are drawn at
+  most, and a "+N more" label says the rest (the list under it always has every building). Height follows floors (58 for 4 or
+  fewer, 112 for 60 or more, clamped); **unknown floors get a neutral 80, never a made-up number**; a villa is low (46) with a
+  pitched roof and a podium lower (41), whatever their floors say. **A condo with no buildings listed is drawn as an empty
+  dashed plot, never as invented towers.** Colours come from one of six fixed palettes picked by an FNV-1a hash of the condo's
+  **id**, never from the record, so a condo always looks the same; the dark windows are the same ones every time. Names in the
+  picture are cut to 8 characters (the list and the buttons have the full name) and the SVG is `aria-hidden`.
+  A card's picture is drawn once per condo and set of floors and copied (`_lfArtThumbs`, 200 at most).
+- **The tower buttons** are HTML `<button>`s laid over the SVG (`left/top/width/height` in percent of the viewBox, `min-width` and
+  `min-height` 44px, centred on the tower), each named like its caption and `aria-pressed`; the list rows do the same. Picking one
+  marks the tower (a short bounce, off under reduced motion), the caption, and the matching button and row.
+- **Sample condos** (`LF_ART_SAMPLES`, built in `lfArtSampleList()`): a "Preview with sample condos" switch under the list (admin
+  only, off to begin with) mixes twelve made-up condos into the picker, ids `preview-01` … `preview-12`, each tagged **Sample**
+  and wearing a status so the badges can be seen, built to show the shapes: eight towers with floors, named buildings (Maple,
+  Oak, Pine, Cedar), villas without floors, phases, a single building, wings with a podium, towers without floors, twelve
+  blocks with a long name, a condo with no buildings listed, fourteen blocks, and mixed kinds. They are made by
+  `lfCondoClean` (hidden, unverified), kept in memory, **never added to the directory, saved or sent**, and the switch resets
+  when the admin session ends. A draft cannot use a `preview-` id (v81).
+- **A fault switches off the pictures and pages and nothing else** (`lfArtFail` → `_lfArtOff`): the picker redraws with the
+  pin, the cards are what they were in v78 (only the current condo is a button and it closes the sheet), the switch goes, one
+  toast. A fault drawing one card's picture leaves the pin on that card and switches the pictures off for the session.
+- **Hooks (all small, in `try/catch` or behind `lfArtGuard`):** `lfCondoCard` (picture, every card a button), new
+  `lfCondoTagsEl` (the tags, shared with the page), `lfCondoRender` (the samples beside the drafts, and `lfArtFootSync`),
+  `lfCondoKeys` (Esc steps back from a page first), `lfCondoClose` (the page is reset), `lfPipeLeave` (`lfArtLeave`: signing out
+  switches the samples off). One JS block between `/* ═══ v82 — CONDO PICTURES AND PAGES` and `function openAddVendorModal`,
+  CSS `.lf-art*`, `.lf-pg*`, `.lf-condo-foot` before `</style>`. The Phase A source guards in `tests/test-condos.js` are
+  untouched: the block lives outside the range they scan, and the picker's own `innerHTML` count is unchanged.
+- **Existing tests changed on purpose** (`tests/test-condos.js`, now 172 checks): the picker's buttons are Close, the current
+  card and the sample switch; Shift+Tab from the title wraps to the sample switch; the current condo's card opens its page
+  instead of closing the sheet; every card is a button; 20 cards now carry their pictures (under 800 nodes, was 400), and
+  after a page Esc, Esc closes the sheet. `test-drafts.js`'s hook guard accepts the samples next to the drafts.
+- **Tests.** `tests/test-condoart.js` (91 checks), real taps and keys: a resident's phone untouched; the layout as plain numbers
+  (rows, 38–44 wide and 50+ apart, heights, "+N more", an empty plot, the trees); a picture on every card; the page (tap a
+  tower or a row, Enter and Space, Back / Esc / ✕, focus, the list's scroll position even if the browser forgot it); the
+  twelve samples, one page per shape; drafts and hostile records (markup, 500 buildings, `__proto__` keys); Tab trapped on a
+  page, 44px, reduced motion; 390 / 360 / 320 / desktop layouts; the switch, sign-out, the hard off and three faults; 500
+  condos on a 4×-slowed CPU (it measures the code's own time, not the wait for the next frame, which a busy machine
+  stretches); and source guards (no fetch, no storage, no `innerHTML`, no timers, in the block).
+
+**v82 control and checks (2026-10-26).** Against the live v81 file (main 1342914), a resident session (5 runs each): the same
+room, element ids, header markup, `localStorage` keys, store ids, `<select>` options, DOM node count (2063 / 2063) and request
+log (30 / 30, no path differs); no errors; startup within noise (DOMContentLoaded median 287 ms live, 281 ms new). An admin
+session with the switch **off**: the four admin pages identical, markup and element ids, and the requests (77 / 77). With it
+**on**: the four pages identical once the Condos tab is taken out, the Condos page identical, and the picker sheet differs only
+by the new classes (the picture, the foot and its switch) and one more button. (The request count sometimes differed by one
+whole 3-second poll tick, in either direction: with the order alternated four times, live / new were 98 / 85, 98 / 98, 85 / 85
+and 98 / 85. Timer noise, not the build.)
+**Mutation check:** 94 deliberate breakages of the new code (A01–A115: every gate, the samples, the drawing numbers, the
+palette, the buttons, the page's focus / Back / Esc / ✕ / scroll, the cards, the fault guard, size and motion, text as markup,
+a request, a timer or a storage write slipping in). The first pass caught 89. Five were missed: **A18** (towers packed 3 apart:
+the test let any spacing through that kept 44px buttons apart, and the first version of the mutation, 8 apart, was a legal
+layout, so it was replaced); **A25** (random dark windows: the "same picture twice" check compared a picture with its own
+cached copy); **A60 / A62 / A87** (a page not starting at its top, the list's place not put back, the sample switch losing the
+keyboard), which Chromium hides because it keeps a hidden list's scroll position, resets a hidden page and focuses a clicked
+button; the tests now simulate what Safari or Firefox may do (forget the position, open a page over a page, a tap that does not
+focus). Nine more were caught only by a crashed run (A31, A66, A70, A76, A77, A90, A91, A94, A95) and one (A111, a building name
+written as markup) only by an unrelated speed check, because the test's hostile name was cut to 40 characters by the record limit
+and never became an element. All 15 were re-run on the strengthened tests and are each caught by a named check. The other 79
+were last run on the first pass's version of the tests, which has only gained checks and named failures since.
+**Stress:** the new suite ran 12 times, three at once, on a busy machine. A first round of 12 had two failures, both the speed
+check (a page opening in a median of 180 ms against a 150 ms budget, under three browsers and a 4× throttle); it timed two
+animation frames, which a busy machine stretches. It now times the code itself (open ~100 ms, a keystroke ~27 ms, a page ~21 ms
+at 4×, against budgets of 300 / 100 / 150) and the 12 runs were repeated: 12 of 12 passed.
+**Not verified:** a real phone (the page at 360px in the real webfont, the picture on a low-end Android, Safari's tap focus
+and scroll restoration, which the tests can only simulate), the live site (this environment cannot reach it), and push
+delivery (no push, service-worker or ordering line is touched).
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -1079,6 +1170,11 @@ admin's next navigation (up to 5 minutes later); the drafts stay on the phone un
 database ever held them. A fault inside the drafts already switches only the drafts off for that session (`lfDraftFail`).
 Full: restore v80's `index.html` and `version.json` with both numbers raised above the broken one (82 if 81 is live). An
 admin who rolled back keeps their drafts in the browser's storage but cannot see them until the feature is back.
+
+**Rolling back v82 (condo pictures and pages).** Fastest: `"condos":"off"` in `version.json` (the picker goes with it, on an
+admin's next navigation). A fault inside the pictures or pages already switches only them off for that session (`lfArtFail`:
+the picker falls back to the v78 cards). Full: restore v81's `index.html` and `version.json` with both numbers raised above
+the broken one (83 if 82 is live). v82 stores and sends nothing, so there is nothing to undo.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.

@@ -25,7 +25,11 @@ const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
 
 const results = [];
-function check(n, ok, d){ results.push({ name: n, ok: !!ok, detail: d == null ? '' : String(d) }); }
+function check(n, ok, d){
+  results.push({ name: n, ok: !!ok, detail: d == null ? '' : String(d) });
+  // LF_BAIL=1 stops at the first failing check (the mutation runner only needs to know that the suite notices)
+  if (!ok && process.env.LF_BAIL) { console.log('> FAIL < ' + n + '   [' + (d == null ? '' : String(d)) + ']'); process.exit(1); }
+}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const VJSON = '**/version.json*';
@@ -197,14 +201,14 @@ const SAMPLES = () => {
   check('GRASS card: name, "Quezon City · 5 towers" (no developer is shown because none is confirmed), Live + Current',
         c1[0].name === 'GRASS Residences' && c1[0].meta === 'Quezon City · 5 towers' && c1[0].tags.join(',') === 'Live,Current', JSON.stringify(c1[0]));
   check('No "undefined" / "null" / "NaN" anywhere in the sheet', !/undefined|null|NaN/.test(s1.text), s1.text);
-  check('No dead buttons: the only buttons are Close and the current condo (no Add, no Near me, no chips with one condo)',
-        s1.buttons.length === 2 && !s1.chips, JSON.stringify(s1.buttons));
+  check('No dead buttons: the only buttons are Close, the current condo (it opens its page, v82) and the admin\'s sample switch (v82) (no Add, no Near me, no chips with one condo)',
+        s1.buttons.length === 3 && s1.buttons.join() === 'lf-condo-x,lf-condo-card cur,lf-condo-sample' && !s1.chips, JSON.stringify(s1.buttons));
   check('The current card is a button marked aria-current', await A.page.evaluate(() => { const c = document.querySelector('#lf-condo-list .lf-condo-card'); return c.tagName === 'BUTTON' && c.getAttribute('aria-current') === 'true'; }));
 
   // keyboard: Tab never leaves the sheet; Esc closes and gives focus back
   await A.page.keyboard.press('Shift+Tab');
   check('Shift+Tab from the title (where focus starts) wraps to the end of the sheet instead of escaping it',
-        await A.page.evaluate(() => { const a = document.activeElement; return !!a.closest('#modal-condo') && a.classList.contains('lf-condo-card'); }));
+        await A.page.evaluate(() => { const a = document.activeElement; return !!a.closest('#modal-condo') && a.id === 'lf-condo-sample'; }));      // v82: the sample switch is now the last control in the sheet
   const trapped = [];
   for (let i = 0; i < 8; i++) { await A.page.keyboard.press('Tab'); trapped.push(await A.page.evaluate(() => !!(document.activeElement && document.activeElement.closest('#modal-condo')))); }
   check('Tab cycles inside the sheet (8 presses, focus never leaves)', trapped.every(Boolean), trapped.join(','));
@@ -234,8 +238,8 @@ const SAMPLES = () => {
   check('Tapping the backdrop closes it', await A.page.evaluate(() => !document.getElementById('modal-condo').classList.contains('on')));
   await A.page.click('#lf-condo-btn'); await A.page.waitForSelector('#modal-condo.on'); await sleep(400);
   await A.page.click('#lf-condo-list .lf-condo-card'); await sleep(300);
-  const s3 = await A.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), stored: localStorage.getItem('lf-condo'), room: ROOM_KEY }));
-  check('Choosing the condo you are already in just closes the sheet: nothing stored, room unchanged', !s3.on && s3.stored === null && s3.room === 'lokalfinder_grass', JSON.stringify(s3));
+  const s3 = await A.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), page: !!document.getElementById('lf-pg') && !document.getElementById('lf-pg').hidden, stored: localStorage.getItem('lf-condo'), room: ROOM_KEY }));
+  check('Tapping the condo you are already in opens its page (v82; in v78 it only closed the sheet) and the sheet stays open: nothing stored, room unchanged', s3.on && s3.page && s3.stored === null && s3.room === 'lokalfinder_grass', JSON.stringify(s3));
 
   // the pill sits inside the wordmark that counts taps toward the unadvertised admin door
   await A.page.evaluate(() => { const b = document.getElementById('lf-condo-btn'); for (let i = 0; i < 6; i++) b.click(); lfCondoClose(true); });
@@ -260,8 +264,8 @@ const SAMPLES = () => {
   check('No developer given: no stray separator', by('sample-draft-condo').meta === 'Parañaque · 1 block', JSON.stringify(by('sample-draft-condo')));
   check('An admin sees Unverified and Hidden on a draft (Live is its status; the other two say it is not shown to residents)',
         by('sample-draft-condo').tags.join(',') === 'Live,Unverified,Hidden', JSON.stringify(by('sample-draft-condo')));
-  check('Only the current condo is a button; the other cards do nothing, so they are not buttons (no dead buttons)',
-        c2.filter(c => c.tag === 'BUTTON').map(c => c.id).join(',') === GRASS_ID, c2.map(c => c.id + ':' + c.tag).join(' '));
+  check('Every card is a button that opens its condo\'s page (v82; in v78 only the current condo was a button, because no other card had anything to do, and a button that does nothing is a dead button)',
+        c2.length === 5 && c2.every(c => c.tag === 'BUTTON'), c2.map(c => c.id + ':' + c.tag).join(' '));
   const chips = await A.page.evaluate(() => ({ hidden: document.getElementById('lf-condo-chips').hidden,
     rows: [...document.querySelectorAll('.lf-condo-row')].map(r => ({ label: r.getAttribute('aria-label'), chips: [...r.querySelectorAll('button')].map(b => b.textContent + ':' + b.getAttribute('aria-pressed')) })) }));
   check('With five cities there is a City row (All + each city, A to Z, "All" pressed); one developer means no Developer row',
@@ -493,7 +497,7 @@ const SAMPLES = () => {
   check('Each keystroke re-filters 500 condos in under 300ms on a 4x slower CPU (worst of 7: ' + Math.max(...keys) + 'ms)', Math.max(...keys) < 300, keys.join(','));
   await S.page.evaluate(() => { document.getElementById('lf-condo-q').value = ''; document.getElementById('lf-condo-q').dispatchEvent(new Event('input', { bubbles: true })); });
   const dom = await S.page.evaluate(() => ({ cards: document.querySelectorAll('#lf-condo-list .lf-condo-card').length, nodes: document.querySelectorAll('#lf-condo-list *').length }));
-  check('Only 20 cards are ever in the DOM for 501 condos (' + dom.nodes + ' nodes)', dom.cards === 20 && dom.nodes < 400, JSON.stringify(dom));
+  check('Only 20 cards are ever in the DOM for 501 condos (' + dom.nodes + ' nodes; v82: each card also carries its small picture, about 25 more)', dom.cards === 20 && dom.nodes < 800, JSON.stringify(dom));
   // Scrolling is the browser's own: the block has no scroll/touch/resize listener, no timer, no
   // animation-frame loop (asserted against the source in section 13), so there is no per-frame work to time.
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
@@ -615,8 +619,10 @@ const SAMPLES = () => {
   check('Tapping the backdrop closes it and focus goes back to the card', await P.page.evaluate(() => !document.getElementById('modal-condo').classList.contains('on') && document.activeElement.id === 'lf-condo-adm-btn'));
   await P.page.click('#lf-condo-adm-btn'); await P.page.waitForSelector('#modal-condo.on'); await sleep(400);
   await P.page.click('#lf-condo-list .lf-condo-card'); await sleep(300);
-  const a4 = await P.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), stored: localStorage.getItem('lf-condo'), room: ROOM_KEY, focus: document.activeElement.id }));
-  check('Choosing the condo you are already in closes the sheet: nothing stored, room unchanged, focus back on the card', !a4.on && a4.stored === null && a4.room === 'lokalfinder_grass' && a4.focus === 'lf-condo-adm-btn', JSON.stringify(a4));
+  const a4 = await P.page.evaluate(() => ({ on: document.getElementById('modal-condo').classList.contains('on'), page: !!document.getElementById('lf-pg') && !document.getElementById('lf-pg').hidden, stored: localStorage.getItem('lf-condo'), room: ROOM_KEY, focus: document.activeElement.id }));
+  check('Tapping the condo you are already in opens its page (v82) with focus on its title: nothing stored, room unchanged', a4.on && a4.page && a4.stored === null && a4.room === 'lokalfinder_grass' && a4.focus === 'lf-pg-ttl', JSON.stringify(a4));
+  await P.page.keyboard.press('Escape'); await sleep(200); await P.page.keyboard.press('Escape'); await sleep(300);
+  check('Esc steps back from the page to the list and Esc again closes the sheet, with focus back on the card that opened it', await P.page.evaluate(() => !document.getElementById('modal-condo').classList.contains('on') && document.activeElement.id === 'lf-condo-adm-btn'));
 
   // the other tabs and back: still exactly one card, and the panel keeps working
   const tabs = await P.page.evaluate(() => { const seen = []; for (const t of ['orders', 'vendors', 'revenue', 'dash', 'orders', 'dash']) { goAdminTab(t); seen.push(document.querySelector('.page.on').id); } return { seen: seen.join(','), cards: document.querySelectorAll('#lf-condo-adm').length }; });
