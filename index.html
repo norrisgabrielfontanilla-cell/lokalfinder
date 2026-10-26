@@ -7122,6 +7122,46 @@ function vendorLogout(){
   showToast('Logged out of vendor portal');
 }
 
+/* v84: every photo a vendor picks (logo, cover, menu item) goes through this one reader.
+   Before, a photo the phone could not read (a damaged file, a format the browser cannot decode)
+   did NOTHING and said nothing; a transparent PNG logo came out with a black background (a JPEG
+   has no transparency); the same photo could not be picked twice in a row (the file box was never
+   emptied); and the logo and the cover said "updated" whether or not the save landed, so a photo
+   shown on screen could vanish at the next sync. Now: a plain sentence for the first, white behind
+   the picture for the second, the box emptied for the third, and for the fourth the old photo put
+   back with a "not saved" message.
+   o = { side: longest side in px } or { width: px }, q = JPEG quality. Resolves with a data URL. */
+function lfPhotoJpeg(file, o){
+  return new Promise((resolve, reject)=>{
+    const bad = ()=>reject({ lfPhoto: "Couldn't read that photo — try a JPG or PNG, or take a new one" });
+    if(file.type && !/^image\//i.test(file.type)){ reject({ lfPhoto: 'That is not a photo — choose a JPG or PNG' }); return; }
+    const reader = new FileReader();
+    reader.onerror = bad;
+    reader.onload = e=>{
+      const tmp = new Image();
+      tmp.onerror = bad;
+      tmp.onload = ()=>{
+        try{
+          if(!tmp.width || !tmp.height){ bad(); return; }
+          const sc = Math.min(1, o.width ? o.width/tmp.width : o.side/Math.max(tmp.width, tmp.height));
+          const cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(tmp.width*sc)); cv.height = Math.max(1, Math.round(tmp.height*sc));
+          const g = cv.getContext('2d');
+          g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);        // white behind a transparent picture, not black
+          g.drawImage(tmp, 0, 0, cv.width, cv.height);
+          resolve(cv.toDataURL('image/jpeg', o.q));
+        }catch(err){ bad(); }
+      };
+      tmp.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function lfPhotoFail(e){
+  if(!(e && e.lfPhoto)) console.warn('photo:', e);
+  showToast('⚠️ ' + ((e && e.lfPhoto) || "Couldn't add that photo — try again"));
+}
+
 /* v57: cover photo. Same resize-to-canvas path as the logo, at banner
    proportions and a tighter JPEG quality — this is the largest image the app
    stores, it goes into an RTDB row as base64, and every device that opens the
@@ -7130,26 +7170,22 @@ function vendorLogout(){
 function triggerCoverUpload(){ el('v-cover-input').click(); }
 function handleCoverUpload(input){
   const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const tmp=new Image();
-    tmp.onload=()=>{
-      const maxW=1200, sc=Math.min(1, maxW/tmp.width);
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
-      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
-      const dataUrl=cv.toDataURL('image/jpeg',.78);
-      if(activeVendorId){
-        VENDORS[activeVendorId].cover=dataUrl;
-        applyVendorCoverUI(dataUrl);
-        pushState(activeVendorId);
-        showToast('✅ Cover photo updated!');
-      }
-    };
-    tmp.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
-  input.value='';
+  input.value='';                                  // v84: so the same photo can be picked again (after a failed save, say)
+  lfPhotoJpeg(file,{width:1200,q:.78}).then(dataUrl=>{
+    const vid=activeVendorId;
+    if(!vid||!VENDORS[vid]) return;
+    const prev=VENDORS[vid].cover;
+    VENDORS[vid].cover=dataUrl;
+    applyVendorCoverUI(dataUrl);
+    showToast('⏳ Saving cover photo…');          // v84: a photo can take a few seconds on a weak connection; "updated" is said only once it has landed
+    return pushState(vid).then(ok=>{
+      if(ok){ showToast('✅ Cover photo updated!'); return; }
+      // v84: it did not save (offline, or the stores had not loaded yet): put the old cover back rather than leave a photo on screen that the next sync would wipe
+      if(VENDORS[vid]){ if(prev===undefined) delete VENDORS[vid].cover; else VENDORS[vid].cover=prev; }
+      if(activeVendorId===vid) applyVendorCoverUI(prev||'');
+      showToast('⚠️ Cover photo not saved — check your connection and try again');
+    });
+  }).catch(lfPhotoFail);
 }
 function removeCoverPhoto(){
   if(!activeVendorId) return;
@@ -7175,27 +7211,23 @@ function triggerLogoUpload(){
 
 function handleLogoUpload(input){
   const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const tmp=new Image();
-    tmp.onload=()=>{
-      // Resize to max 200px
-      const max=200, sc=Math.min(1,max/Math.max(tmp.width,tmp.height));
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
-      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
-      const dataUrl=cv.toDataURL('image/jpeg',.85);
-      // Save to vendor
-      if(activeVendorId){
-        VENDORS[activeVendorId].logo=dataUrl;
-        applyVendorLogo(dataUrl);
-        pushState(activeVendorId);
-        showToast('✅ Logo updated!');
-      }
-    };
-    tmp.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
+  input.value='';                                  // v84: so the same photo can be picked again
+  // Resize to max 200px
+  lfPhotoJpeg(file,{side:200,q:.85}).then(dataUrl=>{
+    const vid=activeVendorId;
+    if(!vid||!VENDORS[vid]) return;
+    const prev=VENDORS[vid].logo;
+    VENDORS[vid].logo=dataUrl;
+    applyVendorLogo(dataUrl);
+    showToast('⏳ Saving logo…');
+    return pushState(vid).then(ok=>{
+      if(ok){ showToast('✅ Logo updated!'); return; }
+      // v84: it did not save: put the old logo back (see handleCoverUpload)
+      if(VENDORS[vid]){ if(prev===undefined) delete VENDORS[vid].logo; else VENDORS[vid].logo=prev; }
+      if(activeVendorId===vid) applyVendorLogo(prev||'');
+      showToast('⚠️ Logo not saved — check your connection and try again');
+    });
+  }).catch(lfPhotoFail);
 }
 
 function applyVendorLogo(logo){
@@ -9148,23 +9180,14 @@ function openAddItemModal(){ el('modal-additem').classList.add('on'); }
 function previewPhoto(input, imgId, placeholderId, textId){
   const file=input.files[0];
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    // downscale to max 400px so menu photos stay small enough to sync
-    const tmp=new Image();
-    tmp.onload=()=>{
-      const max=400, sc=Math.min(1,max/Math.max(tmp.width,tmp.height));
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(tmp.width*sc); cv.height=Math.round(tmp.height*sc);
-      cv.getContext('2d').drawImage(tmp,0,0,cv.width,cv.height);
-      const img=el(imgId);
-      img.src=cv.toDataURL('image/jpeg',.78); img.style.display='block';
-      el(placeholderId).style.display='none';
-      el(textId).style.display='none';
-    };
-    tmp.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
+  input.value='';                                  // v84: so the same photo can be picked again
+  // downscale to max 400px so menu photos stay small enough to sync
+  lfPhotoJpeg(file,{side:400,q:.78}).then(dataUrl=>{
+    const img=el(imgId);
+    img.src=dataUrl; img.style.display='block';
+    el(placeholderId).style.display='none';
+    el(textId).style.display='none';
+  }).catch(lfPhotoFail);
 }
 
 function addMenuItemConfirm(){
@@ -15963,7 +15986,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 83; // ← bump this each release (and version.json)
+  const APP_VERSION = 84; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
