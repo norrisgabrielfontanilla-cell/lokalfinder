@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 731 checks across fifteen files,
+**Testing:** `tests/` holds a Playwright suite — 905 checks across sixteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -807,7 +807,7 @@ missing hook, a card 40% wide, reduced motion ignored, a frame that is not put b
 in `goPage` / `goBack`, or is rewritten when already at the top) are each caught;
 M48 (a resident who reaches the admin panel reading the mode) was missed until a
 check was added for it. M02, M13 and M18, whose code v79 touched, are still caught.
-The 33 older breakages target code v79 did not change and were not re-run for it.
+The 33 older breakages were re-run against the v79 build and are all still caught (33/33).
 **Stress:** the condo suite ran 12 times, three at once, on a busy machine: 12 of
 12 passed (before the frame reset was added to its geometry checks about 4 in 9
 failed — the flake described below). **Not verified:** a real phone (the card at
@@ -847,6 +847,116 @@ admin"; it has **not** been shown to have happened on their phone.
   failed about 4 runs in 9 under load until it did — a flake that was in v78's copy
   of the test too and could have blocked a deploy.
 
+**Condo pipeline — P1 (v80): the founder's planning list. Admin only; it changes
+nothing a resident sees.** Part 2 of the founder's master prompt (2026-10-25, "Admin
+Condo Pipeline control room"). Built in phases, each approved before the next;
+**only P1 exists.** P2 (the dark glossy 3D pie, KPI cards, stage tiles), P3 (table,
+detail page, notes, offline cache), P4 (needs-attention strip, yearly targets,
+resident-demand counts, backup / restore), P5 (connect to research and to what
+residents see) and P6 (map) are **not built**. The plan and the founder's answers
+("all as recommended") are in the "Condo Pipeline — plan" document. P1 is: seven
+stages, a log of every move, a plain list, one tap and one confirmation sentence to
+move a condo, and rules drafts proven on the emulator.
+
+- **Same gate as the picker:** `lfCondoAllowed()` — an admin session AND
+  `"condos":"admin"|"on"` in `version.json`. One switch for both. `"condos":"off"`
+  removes the tab, the page and any open sheet on the next navigation of an admin
+  session (the mode is cached 5 minutes). A resident's phone builds none of it and
+  makes no request for it.
+- **Where it is.** A fifth bottom-bar item, "Condos", added by script to the four
+  admin pages (`lfPipeSync`), opening `#p-apipe` (built on first use). One JS block
+  between `/* ═══ v80 — CONDO PIPELINE, P1` and `function openAddVendorModal`
+  (everything is `lfPipe…`), CSS `.lf-pipe-*` before `</style>`, and three hooks in
+  `goPage` (`lfPipeLeave`, `lfPipeSync`, `lfPipeOpen`), each in try/catch.
+  `refreshVisible()` and `lfFetchScoped()` are not touched: the page is read on demand,
+  never in the 3s poll.
+- **Seven stages** (`LF_PIPE_STAGES`): Live, Launching, In talks, Next up,
+  Researching, On hold, Closed. No record = Researching; **GRASS with no record =
+  Live.** The Part 1 directory holds the facts; the pipeline holds only the founder's
+  planning, keyed by the same condo id.
+- **Data — at the database ROOT, not under the room, because it spans condos:**
+  `condoPipeline/{condoId}` (`stage`, `prevStage`, `stageAt`, `touchedAt`, `liveAt`;
+  later phases add `notes`, `nextAction`, `nextDue`, `launchTarget`) and
+  `condoLog/{id}` (`{condo, at, from, to, note, by:'admin'}`; ids sort by time).
+- **A move is ONE write:** a multi-path PATCH of `FB_URL + '/.json'` carrying the
+  stage, its history, both timestamps, `liveAt` (first move to Live only; a Manila
+  calendar date) and the log entry — they land together or not at all.
+  **Never `pushState()`, never a PUT over a node, nothing under `lokalfinder_grass`.**
+  Before writing, the app reads `condoPipeline/{id}/stage`; if it differs from what
+  the screen showed it says "Someone moved this since you opened it", reloads and
+  writes nothing. The log id is made once per move and **reused on retry**; after a
+  failed answer the app looks for the log entry, so a write that landed but whose answer
+  was lost is reported as done, not sent again. "Moved" appears only after the write
+  lands; a failure leaves the screen and the database as they were. A write in flight
+  cannot be closed over or sent twice.
+- **The confirmation says what residents would see — as a preview.** In P1 nothing
+  changes for residents ("residents' status changes only with a release"). **GRASS needs
+  its name typed**; On hold and Closed need a reason (3+ characters). The confirm
+  function re-checks every one of these: the disabled button is not the gate.
+- **Sample condos** (12, "Sample Condo NN", tagged "Sample") are in memory only: they
+  never reach the database and are never mixed into a real record.
+- **Everything from the database is untrusted:** an id must match the condo-id pattern,
+  a stage must be one of the seven words, a date must be YYYY-MM-DD, text is capped and
+  shown with `textContent`, records live in a null-prototype map, and a 300 KB record
+  does not freeze the page. **"Planning only" is not "secret":** until rules are
+  published (and there is a real login) anyone can read and write these nodes, so keep
+  notes free of names, phones and prices — the sheet says so.
+- **A fault switches off only this section** (`lfPipeFail`): the tab, page and sheet go;
+  the admin area, Insights, Pause and the v79 picker card are untouched. `lfPipeLeave`
+  closes the sheet on any page change and removes the pipeline when the admin session
+  ends (Sign Out) — without it the sheet stayed on screen over the customer Home.
+- **Rules drafts — not published** (`firebase-rules-stopgap.json`,
+  `firebase-rules.json`): `condoPipeline`, `condoLog`, `condoTargets`. A stage can only
+  change if the writer names the stage it saw (compare-and-set), records cannot be
+  deleted, the log is append-only, and no whole-node write is allowed. **Proven on the
+  Firebase RTDB emulator (v4.11.2):** 45 raw REST checks per file, and the real app
+  replayed against them (12/12 with the stopgap file: the move lands whole, a stale or
+  fooled write is refused by the database, the app reports it and changes nothing).
+  **Finding:** the emulator rejects `firebase-rules.json` *as committed* — the
+  top-level `"//"` documentation keys ("Expected 'rules' property"); the committed file
+  at v79 is rejected the same way. Its own header already says to strip them if the
+  console refuses it. The stopgap file loads as it is. Under the stricter full ruleset the
+  app's reads of `/pinHashes`, `/pins` and `/reviews` are refused (they were before
+  this change; it is why that file is not the one to publish now); the pipeline's
+  reads and its move are accepted.
+- **How to see it:** sign in as admin (5 taps on the wordmark, or `#admin`); "Condos" is the fifth
+  item of the bottom bar on each of the four admin pages. "Try it with sample condos" fills the list with 12
+  labelled samples that can be moved freely and are never saved.
+
+**v80 control and checks (2026-10-25).** Against the live v79 file, a resident session (5 runs each): the
+same room, element ids, header markup, `localStorage` keys, store ids, `<select>` options, DOM node count
+(1931 / 1931) and request log (30 / 30, no path differs); no errors. Startup, 15 interleaved runs each:
+DOMContentLoaded median 221 ms live, 233 ms new (the ranges overlap), app ready at 1451 ms for both; the
+inline script grows 34 KB (548 → 582 KB, +6%). An admin session with the switch **off**: all four admin
+pages are identical, markup and element ids, and so are the requests (77 / 77, no path differs); with it
+**on** they are identical once the new tab is taken out, and each has 5 bottom-bar items instead of 4.
+`tests/test-pipeline.js` has 174 checks, on phones (390, 360 and 320 px wide) and a 1400×900 desktop.
+**Mutation check:** 74 deliberate breakages of the new code (P01–P75; P06, a redundant branch, was deleted from
+the code instead) are each caught: the gate missing from the sheet, the page, the confirm or the tab; the
+stale-screen check, the look-back after a lost answer, the retry's log id; a move split into two writes, or shown
+before the write lands; the typed-name lock, the reason rule and the confirm's own re-checks; `liveAt` rewritten
+or taken from the UTC date; samples written or unlabelled; hostile ids, stages, dates and notes let through; the
+log read unbounded; no paging; Tab, Esc, backdrop, focus and reduced-motion handling; the 44px and 16px limits and
+chip contrast; the fifth tab missing on a page; a fault that does not switch the section off; the sheet or the
+pipeline outliving its page or the admin session. The first pass missed one (P03): the test's forged move was
+stopped by the missing sheet markup before it reached the gate it was meant to test — repaired. Twenty of the
+catches were a crashed run rather than a failed check; those, the repaired P03 and the four whose code changed
+afterwards (25 in all) were re-run on the strengthened tests and are still caught, now by a named check or a named
+step that never happened. The other 49 last ran on the first draft of the tests; later edits only added checks and
+wording.
+**Stress:** the new suite ran 12 times, three at once, on a busy machine: 12 of 12 passed. An earlier run of 6
+had one failure: the Move button stayed disabled and read "Move", so the sheet had not registered the choice. The
+likely cause, inferred from the log and **not reproduced** (56 attempts in isolation under load did not), is the
+test tapping the sheet while it was still sliding in, the tap landing on the backdrop (which closes it) and the
+typed name going nowhere. The helper now waits for the sheet to settle and checks that each tap and each typed
+value landed, and says what state the sheet was in if the button never becomes usable.
+All 16 suites (905 checks) pass on a frozen copy of the final build.
+**Not verified:** a real phone (the sheet with the on-screen keyboard; the 5-item bar in the real webfont;
+`inert` on older iOS), GitHub's CI (a newer Chromium with other fonts runs the new suite on push — its pixel
+limits keep margin, but that is untested), the live site and the live database (this environment cannot reach
+them), the rules on the production service (the emulator is the same engine, but the live ruleset is not
+published), and push delivery (no push, service-worker or ordering line is touched).
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -863,6 +973,13 @@ card and the frame guard); rolling back v79 alone means restoring the v78 files
 with both version numbers raised to 80. The frame guard cannot be switched off from
 `version.json` — it is plain navigation code — so a problem with it is a rollback,
 not a switch.
+
+**Rolling back v80 (the condo pipeline).** Fastest: `"condos":"off"` in `version.json` hides the
+tab, page and any open sheet on an admin's next navigation (up to 5 minutes later: the mode is cached);
+residents never had any of it. The two root nodes `condoPipeline` and `condoLog` stay in the database
+and are harmless — nothing else reads them; delete them in the Firebase console if wanted. Full: restore
+v79's `index.html` and `version.json` with both numbers raised to 81. A fault inside the pipeline already
+switches only the pipeline off for that session (`lfPipeFail`).
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
