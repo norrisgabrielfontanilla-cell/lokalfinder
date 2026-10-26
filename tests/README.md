@@ -6,9 +6,9 @@ npm install
 ./run.sh
 ```
 
-1119 checks across eighteen suites, all driving the real `index.html` in headless
+1260 checks across nineteen suites, all driving the real `index.html` in headless
 Chromium. `run.sh` runs them all; run it before and after any change to `index.html`.
-Set `LF_BAIL=1` to make `test-drafts.js`, `test-condos.js` and `test-condoart.js` stop at their first failing check (the
+Set `LF_BAIL=1` to make `test-drafts.js`, `test-condos.js`, `test-condoart.js` and `test-condopublic.js` stop at their first failing check (the
 mutation runner uses it: it only needs to know that the suite notices).
 
 | Suite | Covers |
@@ -31,6 +31,7 @@ mutation runner uses it: it only needs to know that the suite notices).
 | `test-pipeline.js` | v80: the admin Condo Pipeline, P1 — a resident's phone untouched, the switch, the fifth tab, a move (one atomic write, stale / failed / lost-answer / in-flight cases), sample condos never written, hostile data, 500 condos, keyboard and reduced motion, phone and desktop, a fault that switches off only this section, and source guards. |
 | `test-drafts.js` | v81: the admin "Add condo" drafts — a resident's phone untouched, the editor with real taps, every refusal in plain words, ids, edit / delete / undo, a draft moved through the pipeline (the pipeline's own single write, nothing about the draft's facts sent), the picker, copy and import (check first, then import, then undo; hostile text), a phone that will not store or holds junk, the switch / sign-out / hard off, keyboard, 44px and 16px, phone and desktop layouts, a fault that switches off only the drafts, and source guards. |
 | `test-condoart.js` | v82: the admin pictures and pages — a resident's phone untouched, the layout as plain numbers (rows, spacing, heights, "+N more", an empty plot), a picture on every card, the page (tap a tower or a row, keyboard, Back / Esc / ✕, focus, scroll position), the twelve made-up sample condos (marked, in memory only, never in the directory), drafts and hostile records, 44px and reduced motion, phone and desktop layouts, a fault that switches off only the pictures, 500 condos on a slowed CPU, and source guards. |
+| `test-condopublic.js` | v83: the customers' Condos icon and view — the switch read through the real update check (20 phones: what was remembered × what the file said), the icon (markup, 390/360/320px, corner hit-test, focus ring, the Back route), real taps, the customer's view against a poisoned directory (unverified / hidden / draft / sample records never appear), an admin's two views kept apart, the kill switch with a page open, the phone's memory, the hard off, five kinds of fault, source guards. |
 
 ## The one rule
 

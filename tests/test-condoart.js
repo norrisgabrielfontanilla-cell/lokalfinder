@@ -491,7 +491,7 @@ const SPACED = cells => cells.every((c, i) => i === 0 || cells[i - 1].base !== c
   await shut(P);
 
   // ═════ 11. THE SOURCE ITSELF ═════
-  const start = SRC.indexOf('/* ═══ v82 — CONDO PICTURES AND PAGES (admin only) ═══\n   Phase B of the approved plan'), end = SRC.indexOf('function openAddVendorModal(){');
+  const start = SRC.indexOf('/* ═══ v82 — CONDO PICTURES AND PAGES (admin only) ═══\n   Phase B of the approved plan'), end = SRC.indexOf('/* ═══ v83 — CONDOS FOR CUSTOMERS ═══\n   The founder asked');   // v83 put its own block right after this one
   const block = SRC.slice(start, end), code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/ .*$/gm, '');
   check('Found the v82 block in the source', start > 0 && end > start && block.length > 8000, start + '..' + end + ' len=' + block.length);
   check('The block never touches the database, a server, a room or a storage key: no fetch, no fb* call, no FB_URL, no ROOM_KEY, no pushState, no XMLHttpRequest, no sendBeacon, no WebSocket, no localStorage',
@@ -499,7 +499,8 @@ const SPACED = cells => cells.every((c, i) => i === 0 || cells[i - 1].base !== c
   check('The block never puts text into markup: no innerHTML, outerHTML, insertAdjacentHTML, document.write, eval or new Function', !/innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\s*\(|new Function/.test(code));
   check('The block has no timers, no animation-frame loop, no observer, and no scroll / touch / resize listener', !/\bsetTimeout\s*\(|\bsetInterval\s*\(|requestAnimationFrame|IntersectionObserver|ResizeObserver|MutationObserver|addEventListener\(\s*'(scroll|touchmove|touchstart|resize|wheel|orientationchange)'/.test(code));
   check('The hooks are small and guarded: the picker lists the samples beside the drafts, a card opens its page through the guard, Esc steps back before it closes, closing resets the page, and every page change lets the pictures know',
-        /lfCondoVisible\(_lfAdminMode === true\)\.concat\(lfDraftList\(\), lfArtSampleList\(\)\)/.test(SRC) && /lfArtGuard\(\(\)\s*=>\s*lfArtPageOpen\(c\.id, card\)\)/.test(SRC) && /if\(lfArtPageEsc\(\)\) return;/.test(SRC) && /try\{ lfArtPageReset\(\); \}catch\(e\)\{\}/.test(SRC) && /try\{ lfArtLeave\(\); \}catch\(e\)\{\}/.test(SRC) && /function lfArtGuard\(fn\)\{ try\{ return fn\(\); \}catch\(e\)\{ lfArtFail\(e\); \} \}/.test(SRC));
+        /lfCondoAdminView\(\) \? lfCondoVisible\(true\)\.concat\(lfDraftList\(\), lfArtSampleList\(\)\) : lfCondoVisible\(false\)/.test(SRC) &&      // (v83: through lfCondoViewList, which keeps the customers' view apart)
+        /lfArtGuard\(\(\)\s*=>\s*lfArtPageOpen\(c\.id, card\)\)/.test(SRC) && /if\(lfArtPageEsc\(\)\) return;/.test(SRC) && /try\{ lfArtPageReset\(\); \}catch\(e\)\{\}/.test(SRC) && /try\{ lfArtLeave\(\); \}catch\(e\)\{\}/.test(SRC) && /function lfArtGuard\(fn\)\{ try\{ return fn\(\); \}catch\(e\)\{ lfArtFail\(e\); \} \}/.test(SRC));
   check('Release hygiene: APP_VERSION matches version.json and the switch is a word the code knows', new RegExp('const APP_VERSION = ' + VERSION.version + ';').test(SRC) && VERSION.version === VERSION.v && ['off', 'admin', 'on'].indexOf(VERSION.condos) >= 0, JSON.stringify(VERSION));
 
   const hardErrors = log.errors.filter(e => !/favicon|OneSignal|firebase|net::ERR/i.test(e));
