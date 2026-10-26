@@ -6,7 +6,7 @@ npm install
 ./run.sh
 ```
 
-905 checks across sixteen suites, all driving the real `index.html` in headless
+1027 checks across seventeen suites, all driving the real `index.html` in headless
 Chromium. `run.sh` runs them all; run it before and after any change to `index.html`.
 
 | Suite | Covers |
@@ -27,6 +27,7 @@ Chromium. `run.sh` runs them all; run it before and after any change to `index.h
 | `test-condos.js` | v78/v79: the condo directory, the room resolver and the admin-only picker. |
 | `test-frame.js` | v79: the app frame is put back on every page change. |
 | `test-pipeline.js` | v80: the admin Condo Pipeline, P1 — a resident's phone untouched, the switch, the fifth tab, a move (one atomic write, stale / failed / lost-answer / in-flight cases), sample condos never written, hostile data, 500 condos, keyboard and reduced motion, phone and desktop, a fault that switches off only this section, and source guards. |
+| `test-drafts.js` | v81: the admin "Add condo" drafts — a resident's phone untouched, the editor with real taps, every refusal in plain words, ids, edit / delete / undo, a draft moved through the pipeline (the pipeline's own single write, nothing about the draft's facts sent), the picker, copy and import (check first, then import, then undo; hostile text), a phone that will not store or holds junk, the switch / sign-out / hard off, keyboard, 44px and 16px, phone and desktop layouts, a fault that switches off only the drafts, and source guards. |
 
 ## The one rule
 
