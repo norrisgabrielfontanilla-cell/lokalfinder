@@ -1844,6 +1844,50 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-pipe-acts .oact{min-height:48px}
 .lf-pipe-acts .oact:disabled{opacity:.5;cursor:default}
 @media(prefers-reduced-motion:reduce){.lf-pipe-modal,.lf-pipe-modal .modal-sheet,.lf-pipe-mv{transition:none}.lf-pipe-skel{animation:none}}
+/* ═══ v81 — CONDO DRAFTS (admin only) ═══
+   The "Add condo" button, the draft editor and the copy / import sheet. Built on the
+   pipeline's own classes (.lf-pipe-sheet, .lf-pipe-btn, .lf-pipe-err ...) so the two
+   look like one screen; everything is 44px or taller, and text boxes are 16px so a
+   phone never zooms. */
+.lf-dr-bar{margin:14px 16px 0}
+.lf-dr-btns{display:flex;gap:10px;flex-wrap:wrap}
+.lf-dr-btns .lf-pipe-btn{flex:1 1 140px}
+.lf-pipe-btn.ghost{background:var(--w);color:var(--gd);border:1px solid var(--bdm)}
+.lf-pipe-btn:disabled{opacity:.5;cursor:default}
+.lf-dr-sub{margin-top:8px;font-size:12px;line-height:1.4;color:var(--t3)}
+.lf-dr-warn{margin-top:8px;padding:8px 12px;border-radius:12px;background:var(--acl);color:#92400E;font-size:12px;font-weight:700;line-height:1.4}
+.lf-dr-undo{margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;font-weight:700;color:var(--t2)}
+.lf-pipe-tag.draft{background:#E0E7FF;color:#3730A3}
+.lf-pipe-acts2{display:flex;align-items:center;gap:8px;flex:none}
+.lf-pipe-ed{flex:none;min-width:56px;min-height:44px;padding:0 12px;border:1px solid var(--bd);border-radius:12px;background:transparent;color:var(--t2);font:800 13px var(--ff);cursor:pointer;transition:transform .14s cubic-bezier(.34,1.5,.64,1)}
+.lf-pipe-ed:active{transform:scale(.96)}
+.lf-pipe-ed:focus-visible,.lf-dr-rm:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.lf-dr-intro{margin:0 0 12px;font-size:12px;line-height:1.45;color:var(--t3)}
+.lf-dr-hint{margin:-6px 0 8px;font-size:11.5px;line-height:1.4;color:var(--t3)}
+.lf-dr-sheet .flbl{margin-top:2px}
+.lf-dr-bl{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.lf-dr-brow{padding:10px;border:1px solid var(--bd);border-radius:14px;background:var(--w)}
+.lf-dr-b1{display:flex;gap:6px;align-items:center}
+.lf-dr-b1 .finp{flex:1;min-width:0;margin-bottom:0}
+.lf-dr-b2{display:flex;gap:8px;margin-top:8px}
+.lf-dr-b2 .finp{margin-bottom:0;min-height:44px}
+.lf-dr-b2 select{flex:1;min-width:0}
+.lf-dr-b2 input{flex:0 0 96px;width:96px}
+.lf-dr-rm{flex:none;width:44px;height:44px;border:none;border-radius:50%;background:transparent;color:var(--t3);font-size:18px;line-height:1;cursor:pointer}
+.lf-dr-badd{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:14px}
+.lf-dr-quick{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lf-dr-quick .finp{width:68px;margin-bottom:0;min-height:44px;text-align:center}
+.lf-dr-quick label{font-size:12px;font-weight:700;color:var(--t2)}
+.lf-dr-del{margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)}
+.lf-dr-delbtn{width:100%;min-height:48px;border:1px solid #FCA5A5;border-radius:14px;background:var(--rl);color:#991B1B;font:800 14px var(--ff);cursor:pointer}
+.lf-dr-delbtn:disabled{opacity:.5;cursor:default}
+.lf-dr-ta{font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.35;resize:vertical}
+.lf-dr-res{min-height:20px;margin:0 0 12px;font-size:12.5px;line-height:1.5;color:var(--t2)}
+.lf-dr-res ul{margin:6px 0 0;padding-left:18px}
+.lf-dr-res li{overflow-wrap:anywhere}
+.lf-dr-sheet .lf-pipe-btn{width:100%;margin-bottom:12px}
+.lf-dr-sheet .lf-dr-badd .lf-pipe-btn,.lf-dr-sheet .lf-dr-quick .lf-pipe-btn{width:auto;margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.lf-pipe-ed{transition:none}}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -10491,6 +10535,14 @@ function lfPipeRows(){
     seen[c.id] = true;
     out.push({ id:c.id, name:c.name, city:c.city, blabel:lfCondoBuildingLabel(c), verified:!!(c.visible && c.confidence === 'confirmed'), sample:false });
   });
+  // the admin's own drafts (v81): on this phone only, never verified
+  let drafts = [];
+  try{ drafts = lfDraftList(); }catch(e){ drafts = []; }
+  drafts.forEach(c => {
+    if(seen[c.id]) return;
+    seen[c.id] = true;
+    out.push({ id:c.id, name:c.name, city:c.city, blabel:lfCondoBuildingLabel(c), verified:false, sample:false, draft:true });
+  });
   if(_lfPipe.sample) LF_PIPE_SAMPLES.forEach(s => {
     seen[s.id] = true;
     out.push({ id:s.id, name:s.name, city:s.city, blabel:s.buildings + (s.buildings === 1 ? ' building' : ' buildings'), verified:true, sample:true });
@@ -10503,6 +10555,7 @@ function lfPipeRows(){
 }
 // What residents would see in that stage. P1 shows it as a preview only: residents' status changes with a release.
 function lfPipeResidentsSee(r, to){
+  if(!r.verified) return 'nothing (hidden until it is verified)';   // a draft, or any condo not yet verified, never reaches a resident whatever its stage
   if(to === 'live') return 'Live';
   if(to === 'launching' || to === 'talks') return 'Coming soon';
   if(to === 'next') return r.verified ? 'Not yet open' : 'nothing (hidden until it is verified)';
@@ -10557,13 +10610,21 @@ function lfPipeRowEl(r){
   li.dataset.id = r.id;
   const top = lfPipeEl('div', 'lf-pipe-r1'), nm = lfPipeEl('span', 'lf-pipe-nm', r.name);
   if(r.sample) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag', 'Sample'));
+  if(r.draft) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag draft', 'Draft'));
   top.append(nm, lfPipeChip(r.stage));
   const bot = lfPipeEl('div', 'lf-pipe-r2');
   const meta = [r.city, r.blabel, (r.rec && r.rec.stageAt) ? 'moved ' + lfAppWhen(r.rec.stageAt) : ''].filter(Boolean).join(' · ');
   const b = lfPipeEl('button', 'lf-pipe-mv', 'Move'); b.type = 'button';
   b.setAttribute('aria-label', 'Move ' + r.name + ', now ' + LF_PIPE_STAGES[r.stage].label);
   b.addEventListener('click', () => lfPipeGuard(() => lfPipeOpenMove(r.id, b)));
-  bot.append(lfPipeEl('span', 'lf-pipe-mt', meta), b);
+  let acts = b;
+  if(r.draft){                                          // a draft can be edited; a real condo cannot (its facts are the app's own)
+    const ed = lfPipeEl('button', 'lf-pipe-ed', 'Edit'); ed.type = 'button';
+    ed.setAttribute('aria-label', 'Edit draft ' + r.name);
+    ed.addEventListener('click', () => lfDraftGuard(() => lfDraftOpen(r.id, ed)));
+    acts = lfPipeEl('div', 'lf-pipe-acts2'); acts.append(ed, b);
+  }
+  bot.append(lfPipeEl('span', 'lf-pipe-mt', meta), acts);
   li.append(top, bot);
   return li;
 }
@@ -10571,7 +10632,10 @@ function lfPipeRender(){
   const host = document.getElementById('lf-pipe-body');
   if(!host) return;
   const s = _lfPipe.state, frag = document.createDocumentFragment();
+  let tb = null;                                        // the draft buttons are local, so they work even when the list could not load
+  try{ if(!_lfDraftOff) tb = lfDraftToolbar(); }catch(e){ lfDraftFail(e); }
   if(s === 'error' || ((s === 'idle' || s === 'loading') && !_lfPipe.at)){
+    if(tb) frag.appendChild(tb);
     const box = lfPipeEl('div', 'lf-pipe-note');
     if(s === 'error'){
       box.append(lfPipeEl('div', 'lf-pipe-note-t', 'Could not load the pipeline'), lfPipeEl('div', 'lf-pipe-note-s', 'Check your connection. Nothing was changed.'));
@@ -10593,6 +10657,7 @@ function lfPipeRender(){
     off.appendChild(again);
     frag.appendChild(off);
   }
+  if(tb) frag.appendChild(tb);
   const rows = lfPipeRows();
   // counts per stage (P2 turns these into the pie)
   const counts = lfPipeEl('div', 'lf-pipe-counts');
@@ -10916,6 +10981,7 @@ function lfPipeRemove(){
   const m = document.getElementById('modal-pipe');
   if(m) m.remove();
   _lfPipeSheet = null;
+  try{ lfDraftRemove(); }catch(e){}
   const p = document.getElementById('p-apipe');
   if(p){
     const wasOn = p.classList.contains('on');
@@ -10927,6 +10993,7 @@ function lfPipeRemove(){
 // a notification tap can change the page under it), and when the admin session has ended nothing of the pipeline is
 // left in the page: no tab, no page, no sheet. A resident's phone has none of these, so this is two failed lookups.
 function lfPipeLeave(){
+  try{ lfDraftLeave(); }catch(e){}
   if(_lfPipeSheet && _lfPipeSheet.classList.contains('on')) lfPipeCloseMove(true);
   if(_lfAdminMode !== true && (document.getElementById('p-apipe') || document.querySelector('.lf-pipe-tab') || _lfPipeSheet)) lfPipeRemove();
 }
@@ -10939,6 +11006,612 @@ function lfPipeFail(e){
 }
 function lfPipeGuard(fn){ try{ return fn(); }catch(e){ lfPipeFail(e); } }
 function lfPipeGuardAsync(fn){ try{ Promise.resolve(fn()).catch(lfPipeFail); }catch(e){ lfPipeFail(e); } }
+
+/* ═══ v81 — CONDO DRAFTS (admin only) ═══
+   How an admin adds a condo today. The approved plan ships the real directory as a
+   file with the app, so a condo reaches residents only through a release. Until then
+   the admin can keep their own list of condos they are considering, see them in the
+   Condos list and in the picker, and hand them over as text.
+
+   Rules that must hold (tests/test-drafts.js proves each):
+   • Admin only, behind the SAME gate as the pipeline and the picker: lfCondoAllowed().
+   • A draft lives on THIS phone (localStorage) and nowhere else. It is never written to
+     the database, which takes writes from anyone: the plan's rule is that an unverified
+     condo never goes into it. Moving a draft through the stages writes only what any
+     condo's move writes (its id and its stage), through the pipeline's own path.
+   • A draft can never reach a resident: it is forced hidden and unverified, kept out of
+     the directory (lfCondoDir) and never seen by the room resolver.
+   • Becoming a real condo takes a release: Copy turns the drafts into text, and once
+     they are checked they are added to the app's own directory.
+   • Everything typed or pasted goes through lfCondoClean(): lengths and counts capped,
+     unknown fields dropped, text shown with textContent. A hostile import cannot add
+     markup, reach a prototype, fill the phone or touch GRASS.
+   • A fault switches off the drafts and nothing else (lfDraftFail). */
+const LF_DRAFT_KEY = 'lf-condo-drafts';
+const LF_DRAFT_MAX = 60;                                   // drafts one phone keeps
+const LF_DRAFT_TEXT_MAX = 200000;                          // the longest pasted text an import will look at
+const LF_DRAFT_RESERVED = /^(sample|preview)-/;            // the app's own sample condos use these ids
+const LF_DRAFT_BID_RE = /^[a-z0-9][a-z0-9_-]{0,30}$/;      // a building id the directory accepts (same rule as lfCondoBuildings)
+const LF_DRAFT_KIND_LABEL = { tower:'Tower', building:'Building', wing:'Wing', phase:'Phase', block:'Block', villa:'Villa', podium:'Podium', other:'Other' };
+let _lfDraftOff = false;                                   // set when drafts failed: off for the session, nothing else affected
+let _lfDraft = { list: null, memOnly: false, deleted: null, undo: null, edit: null, openedWith: '', warned: false, opener: null, sheet: null, io: null, ioOpener: null, check: null };
+
+const lfDraftNum = v => (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0;
+
+// ── what is on the phone ──
+function lfDraftRawLoad(key){
+  try{
+    const s = localStorage.getItem(key || LF_DRAFT_KEY);
+    if(typeof s !== 'string' || !s || s.length > 1500000) return [];
+    const j = JSON.parse(s);
+    const arr = Array.isArray(j) ? j : (j && typeof j === 'object' && Array.isArray(j.drafts)) ? j.drafts : [];
+    return arr.slice(0, LF_DRAFT_MAX * 2);
+  }catch(e){ return []; }
+}
+// Only the fields the editor knows, in a shape that can be stored and pasted back.
+function lfDraftStored(c){
+  return { id:c.id, name:c.name, city:c.city, developer:c.developer, barangay:c.barangay, address:c.address, aliases:c.aliases.slice(), siteNote:c.siteNote,
+           buildings:c.buildings.map(b => { const o = { id:b.id, name:b.name, kind:b.kind, order:b.order }; if(b.floors) o.floors = b.floors; return o; }),
+           createdAt:c.createdAt || 0, updatedAt:c.updatedAt || 0 };
+}
+// A building whose id cannot be used (capitals, spaces, "__proto__", a repeat) keeps its place under a new one: a hand-typed
+// list should not lose a building over its id. Floors typed as text ("25") are read as numbers. Fields are copied one by one,
+// never with Object.assign, so an own "__proto__" key in pasted text cannot change what a row inherits.
+function lfDraftBuildings(raw){
+  let rows = [];                                          // { b: the building as given, id: the id it came with (an object's key stands in for a missing one) }
+  if(Array.isArray(raw)) rows = raw.slice(0, LF_CONDO_MAX_BLDG * 2).map(b => ({ b, id: (b && typeof b === 'object') ? b.id : undefined }));
+  else if(raw && typeof raw === 'object') rows = Object.keys(raw).slice(0, LF_CONDO_MAX_BLDG * 2).map(k => { const b = raw[k]; return { b, id: (b && typeof b === 'object' && b.id != null) ? b.id : k }; });
+  const claimed = Object.create(null);
+  const keep = rows.map(r => {
+    if(!r.b || typeof r.b !== 'object') return false;
+    if(typeof r.id === 'string' && LF_DRAFT_BID_RE.test(r.id) && !claimed[r.id]){ claimed[r.id] = true; return true; }
+    return false;
+  });
+  let k = 1;
+  return rows.map((r, i) => {
+    const b = r.b;
+    if(!b || typeof b !== 'object') return null;
+    let id = r.id;
+    if(!keep[i]){ while(claimed['b' + k]) k++; id = 'b' + k; claimed[id] = true; }
+    let fl = b.floors;
+    if(typeof fl === 'string' && /^\d{1,3}$/.test(fl.trim())) fl = +fl;
+    return { id, name: b.name, kind: b.kind, order: b.order, floors: fl, note: b.note, sitePos: b.sitePos };
+  });
+}
+// One draft, however it arrived: through lfCondoClean, then forced hidden and unverified. Null when it cannot be one.
+function lfDraftClean(raw, idOverride){
+  if(!raw || typeof raw !== 'object') return null;
+  const c = lfCondoClean({ id: idOverride || raw.id, name: raw.name, aliases: raw.aliases, developer: raw.developer, city: raw.city, barangay: raw.barangay,
+                           address: raw.address, siteNote: raw.siteNote, buildings: lfDraftBuildings(raw.buildings), status: 'coming', visible: false, confidence: 'unverified' });
+  if(!c || c.id === LF_GRASS_CONDO || LF_DRAFT_RESERVED.test(c.id)) return null;
+  c.draft = true;
+  c.createdAt = lfDraftNum(raw.createdAt); c.updatedAt = lfDraftNum(raw.updatedAt);
+  return c;
+}
+function lfDraftLoad(){
+  const out = [], seen = Object.create(null);
+  lfDraftRawLoad().forEach(raw => {
+    const c = lfDraftClean(raw);
+    if(!c || seen[c.id] || out.length >= LF_DRAFT_MAX) return;
+    seen[c.id] = true; out.push(c);
+  });
+  out.sort((a,b) => a.name.localeCompare(b.name));
+  _lfDraft.list = out;
+  return out;
+}
+// true when it reached the phone's storage; false (private browsing, a full phone) keeps the drafts for this visit only
+function lfDraftWrite(){
+  _lfDraft.memOnly = false;
+  try{ localStorage.setItem(LF_DRAFT_KEY, JSON.stringify({ v:1, drafts:(_lfDraft.list || []).map(lfDraftStored) })); return true; }
+  catch(e){ _lfDraft.memOnly = true; return false; }
+}
+// The drafts the admin's screens may show. Never for anyone who is not signed in as admin.
+function lfDraftList(){
+  if(_lfDraftOff || !LF_CONDOS_BUILD || _lfAdminMode !== true) return [];
+  try{
+    if(!_lfDraft.list) lfDraftLoad();
+    return _lfDraft.list.filter(c => !lfCondoById(c.id));      // a draft that has become a real condo is hidden: the app's own copy wins
+  }catch(e){ return []; }
+}
+function lfDraftById(id){ return (_lfDraft.list || []).find(c => c.id === id) || null; }
+
+// ── ids and duplicates ──
+function lfDraftSlug(name, city){
+  let s = lfCondoNorm([name, city].filter(Boolean).join(' ')).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if(s.length > 56) s = s.slice(0, 56).replace(/-+$/, '');
+  if(s.length < 2) s = 'condo';
+  if(LF_DRAFT_RESERVED.test(s)) s = 'my-' + s;
+  return s;
+}
+function lfDraftIdTaken(id){ return id === LF_GRASS_CONDO || !!lfCondoById(id) || (_lfDraft.list || []).some(d => d.id === id); }
+function lfDraftNewId(name, city){
+  const base = lfDraftSlug(name, city);
+  if(LF_CONDO_ID_RE.test(base) && !lfDraftIdTaken(base)) return base;
+  for(let i = 2; i < 100; i++){ const id = base + '-' + i; if(LF_CONDO_ID_RE.test(id) && !lfDraftIdTaken(id)) return id; }
+  return 'condo-' + Date.now().toString(36);
+}
+// The same name in the same city, in the app or among the drafts (the one being edited does not count).
+function lfDraftDupe(name, city, exceptId){
+  const key = lfCondoNorm(name + ' ' + (city || ''));
+  return lfCondoVisible(true).concat(lfDraftList()).find(c => c.id !== exceptId && lfCondoNorm(c.name + ' ' + (c.city || '')) === key) || null;
+}
+
+// ── the editor sheet (the app's own .modal, like the pipeline's) ──
+function lfDraftMsg(t){ const e = el('lf-dr-err'); if(e){ e.textContent = t || ''; e.hidden = !t; } }
+function lfDraftSheet(){
+  if(_lfDraft.sheet && document.body.contains(_lfDraft.sheet)) return _lfDraft.sheet;
+  const host = (el('modal-switch') || {}).parentNode || el('app') || document.body;
+  const m = document.createElement('div');
+  m.className = 'modal lf-pipe-modal lf-dr-modal'; m.id = 'modal-draft';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'lf-dr-ttl');
+  m.setAttribute('aria-hidden', 'true'); m.inert = true;
+  m.innerHTML =
+    '<div class="modal-sheet lf-pipe-sheet lf-dr-sheet">'+
+      '<div class="modal-handle"></div>'+
+      '<div class="lf-pipe-top"><div class="modal-ttl" id="lf-dr-ttl" tabindex="-1">Add a condo</div>'+
+        '<button type="button" class="lf-pipe-x" id="lf-dr-x" aria-label="Close">✕</button></div>'+
+      '<div class="lf-dr-intro">A draft is saved on this phone only. Residents never see it. To make it official, copy your drafts and send them to whoever updates the app.</div>'+
+      '<label class="flbl" for="lf-dr-name">Condo name (required)</label>'+
+      '<input class="finp" id="lf-dr-name" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Light Residences">'+
+      '<label class="flbl" for="lf-dr-city">City</label>'+
+      '<input class="finp" id="lf-dr-city" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Mandaluyong">'+
+      '<label class="flbl" for="lf-dr-dev">Developer</label>'+
+      '<input class="finp" id="lf-dr-dev" type="text" maxlength="80" autocomplete="off">'+
+      '<label class="flbl" for="lf-dr-brgy">Barangay</label>'+
+      '<input class="finp" id="lf-dr-brgy" type="text" maxlength="80" autocomplete="off">'+
+      '<label class="flbl" for="lf-dr-addr">Address</label>'+
+      '<input class="finp" id="lf-dr-addr" type="text" maxlength="160" autocomplete="off">'+
+      '<label class="flbl" for="lf-dr-alias">Other names (separate with commas)</label>'+
+      '<input class="finp" id="lf-dr-alias" type="text" maxlength="400" autocomplete="off">'+
+      '<div class="flbl" id="lf-dr-bhead">Buildings</div>'+
+      '<div class="lf-dr-hint">Use the names the condo itself uses. Leave this empty if you do not know them yet.</div>'+
+      '<div class="lf-dr-bl" id="lf-dr-bl" role="list"></div>'+
+      '<div class="lf-dr-badd"><button type="button" class="lf-pipe-btn ghost" id="lf-dr-addb">+ Add a building</button>'+
+        '<span class="lf-dr-quick"><label for="lf-dr-qn">or add numbered towers:</label>'+
+          '<input class="finp" id="lf-dr-qn" type="number" min="1" max="12" value="3" inputmode="numeric">'+
+          '<button type="button" class="lf-pipe-btn ghost" id="lf-dr-qgo">Add</button></span></div>'+
+      '<label class="flbl" for="lf-dr-note">Notes about the site</label>'+
+      '<textarea class="finp" id="lf-dr-note" maxlength="300" rows="2" autocomplete="off"></textarea>'+
+      '<div class="lf-pipe-err" id="lf-dr-err" role="alert" hidden></div>'+
+      '<div class="lf-pipe-acts"><button type="button" class="oact g" id="lf-dr-cancel">Cancel</button>'+
+        '<button type="button" class="oact p" id="lf-dr-save">Save draft</button></div>'+
+      '<div class="lf-dr-del" id="lf-dr-delwrap" hidden>'+
+        '<label class="flbl" for="lf-dr-delname" id="lf-dr-dellbl">Delete this draft</label>'+
+        '<div class="lf-dr-hint">Type its name to confirm. You can undo until you close the app.</div>'+
+        '<input class="finp" id="lf-dr-delname" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">'+
+        '<button type="button" class="lf-dr-delbtn" id="lf-dr-del" disabled>Delete draft</button></div>'+
+    '</div>';
+  host.appendChild(m);
+  m.addEventListener('click', e => { if(e.target === m) lfDraftGuard(() => lfDraftClose()); });          // the backdrop
+  m.querySelector('#lf-dr-x').addEventListener('click', () => lfDraftGuard(() => lfDraftClose()));
+  m.querySelector('#lf-dr-cancel').addEventListener('click', () => lfDraftGuard(() => lfDraftClose()));
+  m.querySelector('#lf-dr-save').addEventListener('click', () => lfDraftGuard(lfDraftSaveClick));
+  m.querySelector('#lf-dr-addb').addEventListener('click', () => lfDraftGuard(() => { const f = lfDraftAddRow(null); lfDraftMsg(''); f.focus(); }));
+  m.querySelector('#lf-dr-qgo').addEventListener('click', () => lfDraftGuard(lfDraftQuick));
+  m.querySelector('#lf-dr-delname').addEventListener('input', () => {
+    const d = lfDraftById(_lfDraft.edit);
+    el('lf-dr-del').disabled = !(d && lfCondoNorm(el('lf-dr-delname').value) === lfCondoNorm(d.name));
+  });
+  m.querySelector('#lf-dr-del').addEventListener('click', () => lfDraftGuard(lfDraftDeleteClick));
+  m.addEventListener('input', () => { _lfDraft.warned = false; });
+  _lfDraft.sheet = m;
+  return m;
+}
+// Esc closes; Tab stays inside the sheet.
+function lfDraftKeys(e){
+  const m = _lfDraft.sheet;
+  if(!m || !m.classList.contains('on')) return;
+  if(e.key === 'Escape'){ e.stopPropagation(); lfDraftGuard(() => lfDraftClose()); return; }
+  if(e.key !== 'Tab') return;
+  const f = Array.from(m.querySelectorAll('button, input, select, textarea')).filter(n => !n.disabled && n.offsetParent !== null);
+  if(!f.length) return;
+  const first = f[0], last = f[f.length-1], at = document.activeElement;
+  if(!m.contains(at)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if(e.shiftKey && (at === first || at === el('lf-dr-ttl'))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && at === last){ e.preventDefault(); first.focus(); }
+}
+// One building's row: name and remove on the first line, type and floors on the second (a phone is 320px wide).
+function lfDraftAddRow(b){
+  const host = el('lf-dr-bl');
+  const row = lfPipeEl('div', 'lf-dr-brow'); row.setAttribute('role', 'listitem'); row.dataset.bid = (b && b.id) || '';
+  const l1 = lfPipeEl('div', 'lf-dr-b1'), name = document.createElement('input');
+  name.className = 'finp'; name.type = 'text'; name.maxLength = 40; name.autocomplete = 'off'; name.placeholder = 'Building name'; name.value = (b && b.name) || '';
+  const rm = lfPipeEl('button', 'lf-dr-rm', '✕'); rm.type = 'button';
+  rm.addEventListener('click', () => lfDraftGuard(() => {
+    row.remove(); lfDraftRenumber(); lfDraftMsg(''); _lfDraft.warned = false;
+    const nx = el('lf-dr-addb'); if(nx) nx.focus({ preventScroll: true });
+  }));
+  l1.append(name, rm);
+  const l2 = lfPipeEl('div', 'lf-dr-b2'), kind = document.createElement('select'), fl = document.createElement('input');
+  kind.className = 'finp';
+  LF_CONDO_KINDS.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = LF_DRAFT_KIND_LABEL[k]; kind.appendChild(o); });
+  kind.value = (b && LF_CONDO_KINDS.indexOf(b.kind) >= 0) ? b.kind : 'tower';
+  fl.className = 'finp'; fl.type = 'number'; fl.min = '1'; fl.max = '150'; fl.inputMode = 'numeric'; fl.placeholder = 'Floors'; fl.value = (b && b.floors) ? String(b.floors) : '';
+  l2.append(kind, fl);
+  row.append(l1, l2);
+  host.appendChild(row);
+  lfDraftRenumber();
+  return name;
+}
+// Labels follow the order, so a screen reader hears "Building 2 name", not twelve identical boxes.
+function lfDraftRenumber(){
+  Array.from(el('lf-dr-bl').children).forEach((row, i) => {
+    const n = i + 1;
+    row.querySelector('.lf-dr-b1 input').setAttribute('aria-label', 'Building ' + n + ' name');
+    row.querySelector('.lf-dr-rm').setAttribute('aria-label', 'Remove building ' + n);
+    row.querySelector('.lf-dr-b2 select').setAttribute('aria-label', 'Building ' + n + ' type');
+    row.querySelector('.lf-dr-b2 input').setAttribute('aria-label', 'Building ' + n + ' floors');
+  });
+}
+// "Add numbered towers": the admin's own request, so the rows are theirs to rename. Numbering continues after the highest "Tower N" already there.
+function lfDraftQuick(){
+  const n = parseInt(el('lf-dr-qn').value, 10);
+  if(!(n >= 1 && n <= 12)){ lfDraftMsg('Type how many towers to add (1 to 12).'); el('lf-dr-qn').focus(); return; }
+  const host = el('lf-dr-bl');
+  if(host.children.length + n > LF_CONDO_MAX_BLDG){ lfDraftMsg('A condo can have up to ' + LF_CONDO_MAX_BLDG + ' buildings.'); return; }
+  let next = 1;
+  host.querySelectorAll('.lf-dr-b1 input').forEach(i => { const m = /^tower (\d{1,3})$/i.exec(i.value.trim()); if(m) next = Math.max(next, +m[1] + 1); });
+  let first = null;
+  for(let i = 0; i < n; i++){ const inp = lfDraftAddRow({ name: 'Tower ' + (next + i), kind: 'tower' }); if(!first) first = inp; }
+  lfDraftMsg('');
+  if(first) first.focus();
+}
+// What the form holds right now, as typed.
+function lfDraftRead(){
+  return {
+    name: el('lf-dr-name').value, city: el('lf-dr-city').value, developer: el('lf-dr-dev').value, barangay: el('lf-dr-brgy').value,
+    address: el('lf-dr-addr').value, aliases: el('lf-dr-alias').value, siteNote: el('lf-dr-note').value,
+    rows: Array.from(el('lf-dr-bl').children).map(row => ({ bid: row.dataset.bid || '', name: row.querySelector('.lf-dr-b1 input').value,
+                                                            kind: row.querySelector('.lf-dr-b2 select').value, floors: row.querySelector('.lf-dr-b2 input').value }))
+  };
+}
+// Typed form -> a record, or the first thing wrong with it, in plain words.
+function lfDraftBuild(f, existing){
+  const name = lfCondoStr(f.name, 80);
+  if(name.length < 2) return { err: 'Type the condo name (at least 2 letters).', focus: 'lf-dr-name' };
+  const city = lfCondoStr(f.city, 80);
+  const dupe = lfDraftDupe(name, city, existing ? existing.id : '');
+  if(dupe) return { err: '“' + dupe.name + '”' + (dupe.city ? ' in ' + dupe.city : '') + ' is already ' + (dupe.draft ? 'one of your drafts.' : 'in the app.'), focus: 'lf-dr-name' };
+  const blds = [], names = Object.create(null), used = Object.create(null);
+  f.rows.forEach(r => { if(r.bid) used[r.bid] = (used[r.bid] || 0) + 1; });
+  for(let i = 0; i < f.rows.length; i++){
+    const r = f.rows[i], bn = lfCondoStr(r.name, 40), fl = String(r.floors == null ? '' : r.floors).trim();
+    if(!bn && !fl) continue;                                                   // a row with nothing in it is simply dropped
+    if(!bn) return { err: 'Give building ' + (i + 1) + ' a name, or remove it.', row: i };
+    if(fl && !(/^\d{1,3}$/.test(fl) && +fl >= 1 && +fl <= 150)) return { err: 'Floors for “' + bn + '” must be a whole number from 1 to 150, or empty.', row: i };
+    const key = lfCondoNorm(bn);
+    if(names[key]) return { err: 'Two buildings are called “' + bn + '”.', row: i };
+    names[key] = true;
+    blds.push({ rid: r.bid, name: bn, kind: LF_CONDO_KINDS.indexOf(r.kind) >= 0 ? r.kind : 'other', floors: fl ? +fl : 0 });
+  }
+  if(blds.length > LF_CONDO_MAX_BLDG) return { err: 'A condo can have up to ' + LF_CONDO_MAX_BLDG + ' buildings.' };
+  // a building keeps the id it had; a new one takes the next free b<number>
+  const taken = Object.create(null);
+  blds.forEach(b => { if(b.rid && used[b.rid] === 1 && /^[a-z0-9][a-z0-9_-]{0,30}$/.test(b.rid)){ b.id = b.rid; taken[b.id] = true; } });
+  let k = 1;
+  blds.forEach((b, i) => { if(!b.id){ while(taken['b' + k]) k++; b.id = 'b' + k; taken[b.id] = true; } b.order = i + 1; if(!b.floors) delete b.floors; delete b.rid; });
+  const now = Date.now();
+  return { raw: { id: existing ? existing.id : lfDraftNewId(name, city), name, city, developer: lfCondoStr(f.developer, 80), barangay: lfCondoStr(f.barangay, 80),
+                  address: lfCondoStr(f.address, 160), aliases: lfCondoStrs(String(f.aliases || '').split(','), 10, 80), siteNote: lfCondoStr(f.siteNote, 300),
+                  buildings: blds, createdAt: existing ? existing.createdAt || now : now, updatedAt: now } };
+}
+function lfDraftOpen(id, opener){
+  if(!lfCondoAllowed() || _lfDraftOff) return;
+  if(!_lfDraft.list) lfDraftLoad();
+  const ex = id ? lfDraftById(id) : null;
+  if(id && !ex) return;
+  const m = lfDraftSheet();
+  _lfDraft.edit = ex ? ex.id : null; _lfDraft.opener = opener || null; _lfDraft.warned = false;
+  el('lf-dr-ttl').textContent = ex ? 'Edit draft' : 'Add a condo';
+  el('lf-dr-name').value = ex ? ex.name : ''; el('lf-dr-city').value = ex ? ex.city : ''; el('lf-dr-dev').value = ex ? ex.developer : '';
+  el('lf-dr-brgy').value = ex ? ex.barangay : ''; el('lf-dr-addr').value = ex ? ex.address : '';
+  el('lf-dr-alias').value = ex ? ex.aliases.join(', ') : ''; el('lf-dr-note').value = ex ? ex.siteNote : '';
+  el('lf-dr-bl').replaceChildren();
+  if(ex) ex.buildings.forEach(b => lfDraftAddRow(b));
+  el('lf-dr-delwrap').hidden = !ex; el('lf-dr-delname').value = ''; el('lf-dr-del').disabled = true;
+  if(ex) el('lf-dr-dellbl').textContent = 'Delete “' + ex.name + '”';
+  lfDraftMsg('');
+  _lfDraft.openedWith = JSON.stringify(lfDraftRead());
+  m.inert = false; m.removeAttribute('aria-hidden');
+  void m.offsetWidth;                                   // so the slide-up starts from its closed position
+  m.classList.add('on');
+  document.addEventListener('keydown', lfDraftKeys, true);
+  el('lf-dr-ttl').focus({ preventScroll: true });
+}
+// Closing with typing that was not saved asks once (a stray tap on the backdrop must not throw it away).
+function lfDraftClose(force, quiet){
+  const m = _lfDraft.sheet;
+  if(!m || !m.classList.contains('on')) return;
+  if(!force && !_lfDraft.warned && JSON.stringify(lfDraftRead()) !== _lfDraft.openedWith){
+    _lfDraft.warned = true;
+    lfDraftMsg('You have changes that are not saved. Tap Cancel again to throw them away, or tap Save draft.');
+    return;
+  }
+  m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', lfDraftKeys, true);
+  const op = _lfDraft.opener; _lfDraft.opener = null; _lfDraft.edit = null; _lfDraft.warned = false;
+  const back = (op && document.body.contains(op)) ? op : el('lf-dr-add');          // the page may have been redrawn while the sheet was open
+  if(!quiet && back){ try{ back.focus({ preventScroll: true }); }catch(e){} }
+}
+function lfDraftSaveClick(){
+  if(!lfCondoAllowed() || _lfDraftOff){ lfDraftRemove(); return; }
+  const ex = _lfDraft.edit ? lfDraftById(_lfDraft.edit) : null;
+  if(_lfDraft.edit && !ex){ lfDraftMsg('This draft is no longer there.'); return; }
+  const r = lfDraftBuild(lfDraftRead(), ex);
+  if(r.err){
+    lfDraftMsg(r.err);
+    const t = r.focus ? el(r.focus) : (typeof r.row === 'number' ? (el('lf-dr-bl').children[r.row] || {}).firstChild : null);
+    const inp = t && (t.tagName === 'INPUT' ? t : (t.querySelector ? t.querySelector('input') : null));
+    if(inp){ try{ inp.focus(); }catch(e){} }
+    return;
+  }
+  const c = lfDraftClean(r.raw);
+  if(!c){ lfDraftMsg('That could not be saved. Check the name.'); return; }
+  if(!_lfDraft.list) lfDraftLoad();
+  const i = _lfDraft.list.findIndex(d => d.id === c.id);
+  if(i >= 0) _lfDraft.list[i] = c;
+  else{
+    if(_lfDraft.list.length >= LF_DRAFT_MAX){ lfDraftMsg('You have ' + LF_DRAFT_MAX + ' drafts, the most this phone keeps. Delete one first.'); return; }
+    _lfDraft.list.push(c);
+  }
+  _lfDraft.list.sort((a,b) => a.name.localeCompare(b.name));
+  _lfDraft.undo = null;
+  const stored = lfDraftWrite();
+  lfDraftClose(true, true);
+  lfDraftRefreshViews(c.id);
+  showToast(stored ? '✅ “' + c.name + '” saved as a draft' : '⚠️ “' + c.name + '” is kept for now, but this phone would not store it. Copy your drafts before you close the app.');
+}
+function lfDraftDeleteClick(){
+  const d = lfDraftById(_lfDraft.edit);
+  if(!d || lfCondoNorm(el('lf-dr-delname').value) !== lfCondoNorm(d.name)) return;
+  _lfDraft.list = _lfDraft.list.filter(x => x.id !== d.id);
+  _lfDraft.deleted = d; _lfDraft.undo = null;
+  lfDraftWrite();
+  lfDraftClose(true, true);
+  lfDraftRefreshViews('#add');
+  showToast('Deleted “' + d.name + '”. You can undo it on the Condos page.');
+}
+function lfDraftUndoDelete(){
+  const d = _lfDraft.deleted;
+  if(!d) return;
+  _lfDraft.deleted = null; _lfDraft.undo = null;
+  if(!_lfDraft.list) lfDraftLoad();
+  if(!lfDraftIdTaken(d.id) && _lfDraft.list.length < LF_DRAFT_MAX){
+    _lfDraft.list.push(d); _lfDraft.list.sort((a,b) => a.name.localeCompare(b.name)); lfDraftWrite();
+    showToast('✅ “' + d.name + '” is back');
+  }else showToast('⚠️ “' + d.name + '” could not be brought back');
+  lfDraftRefreshViews(d.id);
+}
+
+// ── copy and import ──
+function lfDraftExportText(){
+  return JSON.stringify({ lokalfinder: 'condo-drafts', version: 1, exportedAt: new Date().toISOString(), condos: (_lfDraft.list || []).map(lfDraftStored) }, null, 2);
+}
+function lfDraftIoSheet(){
+  if(_lfDraft.io && document.body.contains(_lfDraft.io)) return _lfDraft.io;
+  const host = (el('modal-switch') || {}).parentNode || el('app') || document.body;
+  const m = document.createElement('div');
+  m.className = 'modal lf-pipe-modal lf-dr-modal'; m.id = 'modal-drafts-io';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'lf-io-ttl');
+  m.setAttribute('aria-hidden', 'true'); m.inert = true;
+  m.innerHTML =
+    '<div class="modal-sheet lf-pipe-sheet lf-dr-sheet">'+
+      '<div class="modal-handle"></div>'+
+      '<div class="lf-pipe-top"><div class="modal-ttl" id="lf-io-ttl" tabindex="-1">Your drafts</div>'+
+        '<button type="button" class="lf-pipe-x" id="lf-io-x" aria-label="Close">✕</button></div>'+
+      '<div class="lf-dr-intro" id="lf-io-sum"></div>'+
+      '<label class="flbl" for="lf-io-out">Copy your drafts</label>'+
+      '<div class="lf-dr-hint">Send this text to whoever updates the app. Every condo is checked before it goes in.</div>'+
+      '<textarea class="finp lf-dr-ta" id="lf-io-out" readonly rows="6" spellcheck="false"></textarea>'+
+      '<button type="button" class="lf-pipe-btn" id="lf-io-copy">Copy to clipboard</button>'+
+      '<label class="flbl" for="lf-io-in">Import drafts</label>'+
+      '<div class="lf-dr-hint">Paste text you copied from another phone, or text someone gave you. Nothing is added until you tap Import.</div>'+
+      '<textarea class="finp lf-dr-ta" id="lf-io-in" rows="5" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200000"></textarea>'+
+      '<button type="button" class="lf-pipe-btn ghost" id="lf-io-check">Check what it holds</button>'+
+      '<div class="lf-dr-res" id="lf-io-res" role="status" aria-live="polite"></div>'+
+      '<div class="lf-pipe-acts"><button type="button" class="oact g" id="lf-io-close">Close</button>'+
+        '<button type="button" class="oact p" id="lf-io-go" disabled>Import</button></div>'+
+      '<button type="button" class="lf-pipe-link" id="lf-io-undo" hidden>Undo the last import</button>'+
+    '</div>';
+  host.appendChild(m);
+  m.addEventListener('click', e => { if(e.target === m) lfDraftGuard(lfDraftCloseIo); });
+  m.querySelector('#lf-io-x').addEventListener('click', () => lfDraftGuard(lfDraftCloseIo));
+  m.querySelector('#lf-io-close').addEventListener('click', () => lfDraftGuard(lfDraftCloseIo));
+  m.querySelector('#lf-io-copy').addEventListener('click', () => lfDraftGuard(lfDraftCopy));
+  m.querySelector('#lf-io-check').addEventListener('click', () => lfDraftGuard(lfDraftCheckClick));
+  m.querySelector('#lf-io-go').addEventListener('click', () => lfDraftGuard(lfDraftImportApply));
+  m.querySelector('#lf-io-undo').addEventListener('click', () => lfDraftGuard(lfDraftImportUndo));
+  m.querySelector('#lf-io-in').addEventListener('input', () => { _lfDraft.check = null; el('lf-io-go').disabled = true; el('lf-io-go').textContent = 'Import'; el('lf-io-res').textContent = ''; });
+  _lfDraft.io = m;
+  return m;
+}
+function lfDraftIoKeys(e){
+  const m = _lfDraft.io;
+  if(!m || !m.classList.contains('on')) return;
+  if(e.key === 'Escape'){ e.stopPropagation(); lfDraftGuard(lfDraftCloseIo); return; }
+  if(e.key !== 'Tab') return;
+  const f = Array.from(m.querySelectorAll('button, textarea')).filter(n => !n.disabled && n.offsetParent !== null);
+  if(!f.length) return;
+  const first = f[0], last = f[f.length-1], at = document.activeElement;
+  if(!m.contains(at)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+  else if(e.shiftKey && (at === first || at === el('lf-io-ttl'))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && at === last){ e.preventDefault(); first.focus(); }
+}
+function lfDraftIoFill(){
+  const n = (_lfDraft.list || []).length;
+  el('lf-io-sum').textContent = n ? n + (n === 1 ? ' draft is' : ' drafts are') + ' saved on this phone. Residents never see them.' : 'You have no drafts yet. You can still import some below.';
+  el('lf-io-out').value = n ? lfDraftExportText() : '';
+  el('lf-io-copy').disabled = !n;
+  el('lf-io-undo').hidden = !_lfDraft.undo;
+}
+function lfDraftOpenIo(opener){
+  if(!lfCondoAllowed() || _lfDraftOff) return;
+  if(!_lfDraft.list) lfDraftLoad();
+  const m = lfDraftIoSheet();
+  _lfDraft.ioOpener = opener || null; _lfDraft.check = null;
+  lfDraftIoFill();
+  el('lf-io-in').value = ''; el('lf-io-res').textContent = ''; el('lf-io-go').disabled = true; el('lf-io-go').textContent = 'Import';
+  m.inert = false; m.removeAttribute('aria-hidden');
+  void m.offsetWidth;
+  m.classList.add('on');
+  document.addEventListener('keydown', lfDraftIoKeys, true);
+  el('lf-io-ttl').focus({ preventScroll: true });
+}
+function lfDraftCloseIo(quiet){
+  const m = _lfDraft.io;
+  if(!m || !m.classList.contains('on')) return;
+  m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', lfDraftIoKeys, true);
+  const op = _lfDraft.ioOpener; _lfDraft.ioOpener = null; _lfDraft.check = null;
+  const back = (op && document.body.contains(op)) ? op : el('lf-dr-io');
+  if(quiet !== true && back){ try{ back.focus({ preventScroll: true }); }catch(e){} }
+}
+function lfDraftCopy(){
+  const ta = el('lf-io-out'), text = ta.value;
+  if(!text) return;
+  const fallback = () => { try{ ta.focus(); ta.select(); }catch(e){} showToast('Select all, then copy'); };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => showToast('✅ Copied. Paste it into your message.'), fallback);
+    else fallback();
+  }catch(e){ fallback(); }
+}
+// Read-only look at pasted text: what would be added, updated or left out, and why.
+function lfDraftImportCheck(text){
+  const res = { error: '', add: [], update: [], skip: [], same: 0, total: 0 };
+  if(typeof text !== 'string' || !text.trim()){ res.error = 'Paste the text first.'; return res; }
+  if(text.length >= LF_DRAFT_TEXT_MAX){ res.error = 'That is too long to be a list of condos.'; return res; }
+  let j;
+  try{ j = JSON.parse(text); }catch(e){ res.error = 'I cannot read that. Paste the text exactly as it was copied.'; return res; }
+  const arr = Array.isArray(j) ? j : (j && typeof j === 'object' && Array.isArray(j.condos)) ? j.condos : null;
+  if(!arr){ res.error = 'I do not see a list of condos in that text.'; return res; }
+  if(!_lfDraft.list) lfDraftLoad();
+  const have = Object.create(null), seen = Object.create(null);
+  _lfDraft.list.forEach(d => { have[d.id] = d; });
+  let count = _lfDraft.list.length;
+  res.total = arr.length;
+  arr.slice(0, 200).forEach(raw => {
+    if(!raw || typeof raw !== 'object' || Array.isArray(raw)){ res.skip.push({ name: '(not a condo)', why: 'not a condo' }); return; }
+    const nm = lfCondoStr(raw.name, 80);
+    const hasId = typeof raw.id === 'string' && LF_CONDO_ID_RE.test(raw.id);
+    const c = lfDraftClean(raw, hasId ? '' : lfDraftSlug(raw.name, raw.city));         // a condo typed by hand with no id gets one from its name
+    if(!c){ res.skip.push({ name: nm || '(no name)', why: !nm ? 'no name' : lfCondoById(raw.id) ? 'already in the app' : 'that id is not allowed' }); return; }
+    if(lfCondoById(c.id)){ res.skip.push({ name: c.name, why: 'already in the app' }); return; }
+    if(seen[c.id]){ res.skip.push({ name: c.name, why: 'listed twice' }); return; }
+    seen[c.id] = true;
+    if(have[c.id]){
+      const a = lfDraftStored(have[c.id]), b = lfDraftStored(c);
+      a.createdAt = a.updatedAt = b.createdAt = b.updatedAt = 0;
+      if(JSON.stringify(a) === JSON.stringify(b)) res.same++; else res.update.push(c);
+      return;
+    }
+    if(count >= LF_DRAFT_MAX){ res.skip.push({ name: c.name, why: 'over the limit of ' + LF_DRAFT_MAX + ' drafts' }); return; }
+    count++; res.add.push(c);
+  });
+  if(arr.length > 200) res.skip.push({ name: '…', why: (arr.length - 200) + ' more were not read (200 at most)' });
+  return res;
+}
+function lfDraftCheckClick(){
+  const r = lfDraftImportCheck(el('lf-io-in').value);
+  _lfDraft.check = r.error ? null : r;
+  const box = el('lf-io-res'), go = el('lf-io-go');
+  box.replaceChildren();
+  if(r.error){ box.textContent = r.error; go.disabled = true; go.textContent = 'Import'; return; }
+  const n = r.add.length + r.update.length;
+  const head = lfPipeEl('div', '', r.add.length + ' new, ' + r.update.length + ' to update, ' + r.same + ' already the same, ' + r.skip.length + ' left out.');
+  box.appendChild(head);
+  const ul = lfPipeEl('ul');
+  const line = (mark, c, why) => ul.appendChild(lfPipeEl('li', '', mark + ' ' + c + (why ? ': ' + why : '')));
+  r.add.slice(0, 20).forEach(c => line('+', c.name, 'new'));
+  r.update.slice(0, 20).forEach(c => line('~', c.name, 'replaces your draft'));
+  r.skip.slice(0, 20).forEach(s => line('–', s.name, s.why));
+  if(r.add.length + r.update.length + r.skip.length > 60) ul.appendChild(lfPipeEl('li', '', '…and more'));
+  box.appendChild(ul);
+  go.disabled = n === 0;
+  go.textContent = n ? 'Import ' + n : 'Import';
+}
+function lfDraftImportApply(){
+  const r = _lfDraft.check;
+  if(!r || !(r.add.length + r.update.length)) return;
+  const now = Date.now(), before = (_lfDraft.list || []).map(lfDraftStored);
+  _lfDraft.undo = before;                                    // kept for this visit only
+  r.update.forEach(c => { const i = _lfDraft.list.findIndex(d => d.id === c.id); c.updatedAt = now; c.createdAt = (i >= 0 && _lfDraft.list[i].createdAt) || c.createdAt || now; if(i >= 0) _lfDraft.list[i] = c; });
+  r.add.forEach(c => { c.createdAt = c.createdAt || now; c.updatedAt = now; _lfDraft.list.push(c); });
+  _lfDraft.list.sort((a,b) => a.name.localeCompare(b.name));
+  const stored = lfDraftWrite(), n = r.add.length + r.update.length;
+  _lfDraft.check = null;
+  lfDraftIoFill();
+  el('lf-io-in').value = ''; el('lf-io-go').disabled = true; el('lf-io-go').textContent = 'Import';
+  el('lf-io-res').textContent = 'Imported ' + n + (n === 1 ? ' condo.' : ' condos.') + (stored ? '' : ' This phone would not store them: copy them before you close the app.');
+  lfDraftRefreshViews();
+}
+function lfDraftImportUndo(){
+  const before = _lfDraft.undo;
+  if(!before) return;
+  const out = [], seen = Object.create(null);
+  before.forEach(raw => { const c = lfDraftClean(raw); if(c && !seen[c.id] && out.length < LF_DRAFT_MAX){ seen[c.id] = true; out.push(c); } });
+  out.sort((a,b) => a.name.localeCompare(b.name));
+  _lfDraft.list = out; _lfDraft.undo = null; _lfDraft.check = null;
+  lfDraftWrite();
+  lfDraftIoFill();
+  el('lf-io-res').textContent = 'The last import is undone.';
+  lfDraftRefreshViews();
+}
+
+// ── the buttons on the Condos page, and keeping every screen that lists condos in step ──
+function lfDraftToolbar(){
+  if(_lfDraftOff || !lfCondoAllowed()) return null;
+  const box = lfPipeEl('div', 'lf-dr-bar'), row = lfPipeEl('div', 'lf-dr-btns');
+  const add = lfPipeEl('button', 'lf-pipe-btn', '+ Add condo'); add.type = 'button'; add.id = 'lf-dr-add';
+  add.addEventListener('click', () => lfDraftGuard(() => lfDraftOpen('', add)));
+  const io = lfPipeEl('button', 'lf-pipe-btn ghost', 'Copy or import drafts'); io.type = 'button'; io.id = 'lf-dr-io';
+  io.addEventListener('click', () => lfDraftGuard(() => lfDraftOpenIo(io)));
+  row.append(add, io);
+  box.appendChild(row);
+  const n = lfDraftList().length;
+  box.appendChild(lfPipeEl('div', 'lf-dr-sub', n ? n + (n === 1 ? ' draft is' : ' drafts are') + ' saved on this phone only. Residents never see them.'
+                                                  : 'Add a condo you are thinking about. It is saved on this phone only, and residents never see it.'));
+  if(_lfDraft.memOnly) box.appendChild(lfPipeEl('div', 'lf-dr-warn', 'This phone would not store your drafts (private browsing, or it is full). Copy them before you close the app.'));
+  if(_lfDraft.deleted){
+    const u = lfPipeEl('div', 'lf-dr-undo'), b = lfPipeEl('button', 'lf-pipe-link', 'Undo'); b.type = 'button';
+    b.addEventListener('click', () => lfDraftGuard(lfDraftUndoDelete));
+    u.append('Deleted “' + _lfDraft.deleted.name + '”. ', b);
+    box.appendChild(u);
+  }
+  return box;
+}
+function lfDraftRefreshViews(focusId){
+  try{ if(document.getElementById('lf-pipe-body')) lfPipeRender(); }catch(e){}
+  try{ const m = _lfCondoSheet; if(m && m.classList.contains('on')) lfCondoRender(); }catch(e){}
+  if(focusId === '#add'){ const a = el('lf-dr-add'); if(a){ try{ a.focus({ preventScroll: true }); }catch(e){} } }
+  else if(focusId){
+    const b = document.querySelector('#lf-pipe-list li[data-id="' + focusId + '"] .lf-pipe-ed') || document.querySelector('#lf-pipe-list li[data-id="' + focusId + '"] .lf-pipe-mv');
+    if(b){ try{ b.focus({ preventScroll: true }); }catch(e){} }
+  }
+}
+
+// ── leaving, and a fault that switches only this off ──
+function lfDraftLeave(){
+  if(_lfDraft.sheet && _lfDraft.sheet.classList.contains('on')) lfDraftClose(true, true);
+  if(_lfDraft.io && _lfDraft.io.classList.contains('on')) lfDraftCloseIo(true);
+  if(_lfAdminMode !== true){                           // the admin session ended: nothing stays in the page or in memory
+    lfDraftRemove();
+    _lfDraft.list = null; _lfDraft.deleted = null; _lfDraft.undo = null; _lfDraft.check = null;
+  }
+}
+function lfDraftRemove(){
+  try{ lfDraftClose(true, true); }catch(e){}
+  try{ lfDraftCloseIo(true); }catch(e){}
+  ['modal-draft', 'modal-drafts-io'].forEach(id => { const m = document.getElementById(id); if(m) m.remove(); });
+  _lfDraft.sheet = null; _lfDraft.io = null;
+}
+function lfDraftFail(e){
+  _lfDraftOff = true;
+  try{ console.warn('condo drafts: switched off for this session:', e); }catch(_){}
+  try{ lfDraftRemove(); }catch(_){}
+  try{ if(document.getElementById('lf-pipe-body')) lfPipeRender(); }catch(_){}
+  try{ showToast('⚠️ Condo drafts unavailable'); }catch(_){}
+}
+function lfDraftGuard(fn){ try{ return fn(); }catch(e){ lfDraftFail(e); } }
 
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
@@ -12018,10 +12691,13 @@ function lfCondoCard(c, cur){
   tx.append(nm, mt);
   const tags = document.createElement('span'); tags.className = 'lf-condo-tags';
   const tag = (cls, txt)=>{ const t = document.createElement('span'); t.className = 'lf-condo-tag ' + cls; t.textContent = txt; tags.appendChild(t); };
-  tag(c.status, LF_CONDO_STATUS[c.status]);
-  if(isCur) tag('cur', 'Current');
-  if(c.confidence !== 'confirmed') tag('warn', 'Unverified');     // only an admin sees these two
-  if(!c.visible) tag('warn', 'Hidden');
+  if(c.draft){ tag('warn', 'Draft'); }                            // a draft is hidden and unverified by definition: one word says it
+  else{
+    tag(c.status, LF_CONDO_STATUS[c.status]);
+    if(isCur) tag('cur', 'Current');
+    if(c.confidence !== 'confirmed') tag('warn', 'Unverified');     // only an admin sees these two
+    if(!c.visible) tag('warn', 'Hidden');
+  }
   card.append(ph, tx, tags);
   li.appendChild(card);
   return li;
@@ -12061,7 +12737,7 @@ function lfCondoRenderChips(all){
 }
 function lfCondoRender(focusFrom){
   const list = el('lf-condo-list');
-  const all = lfCondoVisible(_lfAdminMode === true);
+  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList());   // v81: an admin also sees their own drafts (none for anyone else)
   const cur = lfCondoCurrent();
   lfCondoRenderChips(all);
   const q = lfCondoNorm(_lfCondoQuery), tokens = q ? q.split(' ') : [];
@@ -14772,7 +15448,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 80; // ← bump this each release (and version.json)
+  const APP_VERSION = 81; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

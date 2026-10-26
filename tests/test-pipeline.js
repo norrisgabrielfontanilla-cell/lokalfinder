@@ -590,9 +590,9 @@ const onlyPipeWrites = w => w.length > 0 && w.every(x => x.m === 'PATCH' && /\/\
   check('...the skeleton shimmers normally and stops for people who asked for reduced motion', aniOn !== 'none' && aniOff === 'none', aniOn + ' / ' + aniOff);
   await step('a read that never answers gave up (within 14 s) and said so', Q.page.waitForFunction(() => !!document.querySelector('#lf-pipe-body .lf-pipe-note-t'), null, { timeout: 14000 }));
   const hung = await Q.page.evaluate(() => ({ t: document.querySelector('#lf-pipe-body .lf-pipe-note-t').textContent, s: document.querySelector('#lf-pipe-body .lf-pipe-note-s').textContent, st: _lfPipe.state }));
-  check('A read that never answers gives up after 8 seconds with "Could not load the pipeline … Nothing was changed." and a Try again button', hung.t === 'Could not load the pipeline' && /Nothing was changed/.test(hung.s) && hung.st === 'error' && await Q.page.evaluate(() => !!document.querySelector('#lf-pipe-body .lf-pipe-btn')), JSON.stringify(hung));
+  check('A read that never answers gives up after 8 seconds with "Could not load the pipeline … Nothing was changed." and a Try again button', hung.t === 'Could not load the pipeline' && /Nothing was changed/.test(hung.s) && hung.st === 'error' && await Q.page.evaluate(() => !!document.querySelector('#lf-pipe-body .lf-pipe-note .lf-pipe-btn')), JSON.stringify(hung));
   readPhase = 'ok';
-  await Q.page.click('#lf-pipe-body .lf-pipe-btn');
+  await Q.page.click('#lf-pipe-body .lf-pipe-note .lf-pipe-btn');
   await step('Try again loaded the list', Q.page.waitForSelector('#lf-pipe-list li[data-id]', { timeout: 8000 }));
   check('Try again loads the list', (await Q.page.evaluate(ROWS)).length === 1);
   readPhase = 'fail';
@@ -787,7 +787,7 @@ const onlyPipeWrites = w => w.length > 0 && w.every(x => x.m === 'PATCH' && /\/\
   }
 
   // ═════ 13. THE SOURCE ITSELF ═════
-  const start = SRC.indexOf('/* ═══ v80 — CONDO PIPELINE, P1 (admin only) ═══\n   Where each condo'), end = SRC.indexOf('function openAddVendorModal(){');
+  const start = SRC.indexOf('/* ═══ v80 — CONDO PIPELINE, P1 (admin only) ═══\n   Where each condo'), v81 = SRC.indexOf('/* ═══ v81 — CONDO DRAFTS', start + 1), end = (v81 > 0) ? v81 : SRC.indexOf('function openAddVendorModal(){');   // the P1 block ends where the v81 block begins
   const block = SRC.slice(start, end), code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/ .*$/gm, '');
   check('Found the P1 block in the source', start > 0 && end > start && block.length > 12000, start + '..' + end + ' len=' + block.length);
   check('The block never saves a store, menu, PIN or order: no pushState / fbSet / fbPatch / fbDelete / fbGet, no ROOM_KEY, no room path',

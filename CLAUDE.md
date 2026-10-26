@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 905 checks across sixteen files,
+**Testing:** `tests/` holds a Playwright suite — 1027 checks across seventeen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -789,9 +789,10 @@ list opens in ~15–19 ms (median; worst ~30), a keystroke takes ≤16 ms, and 2
 cards are 223 DOM nodes — the planned "<150 nodes" budget was a guess and is
 dropped; the rule is 20 cards at a time. **Not verified:** real iOS Safari /
 Android (the sheet with the software keyboard; the pill at 360px in the real
-webfont — the tests have no web fonts, and the name may be cut there), GitHub's
-CI (a newer Chromium with other fonts runs it on push), and push delivery (no
-push, service-worker, ordering or database line is touched by the diff).
+webfont — the tests have no web fonts, and the name may be cut there), and push
+delivery (no push, service-worker, ordering or database line is touched by the diff).
+GitHub's CI, listed here as unverified when this was written, has since run it: the
+deploy run for v80 (2026-10-26) passed every suite on GitHub's runner, this one included.
 
 **v79 control and checks (2026-10-25).** Against the live v78 file, a resident
 session (5 runs each): the same room, element ids, header markup, `localStorage`
@@ -952,10 +953,102 @@ typed name going nowhere. The helper now waits for the sheet to settle and check
 value landed, and says what state the sheet was in if the button never becomes usable.
 All 16 suites (905 checks) pass on a frozen copy of the final build.
 **Not verified:** a real phone (the sheet with the on-screen keyboard; the 5-item bar in the real webfont;
-`inert` on older iOS), GitHub's CI (a newer Chromium with other fonts runs the new suite on push — its pixel
-limits keep margin, but that is untested), the live site and the live database (this environment cannot reach
+`inert` on older iOS), the live site and the live database (this environment cannot reach
 them), the rules on the production service (the emulator is the same engine, but the live ruleset is not
 published), and push delivery (no push, service-worker or ordering line is touched).
+GitHub's CI, which this list used to include, has since run the suite: the deploy run for v80 (run #43,
+2026-10-26) passed all 16 suites on GitHub's runner, the new one with its pixel limits included.
+
+**Condo drafts — "Add condo" (v81): admin only. A resident sees nothing different, and no database is touched.**
+The founder asked (2026-10-26) "as an admin how can i add condo". The approved plan ships the verified directory as a
+static file with the app, so a condo reaches residents only through a release. What the admin could not do was keep their
+own list of condos they are considering, see it beside GRASS, and hand it over. v81 is that, and only that.
+
+- **Where.** The Condos page (v80) has two buttons above the list: **+ Add condo** and **Copy or import drafts**. A draft is
+  a row tagged **Draft** (stage Researching until moved) with an **Edit** button, and the admin picker lists drafts beside
+  GRASS with a "Draft" tag. Same gate as the pipeline and the picker: `lfCondoAllowed()` (an admin session AND
+  `"condos":"admin"|"on"`), so `"condos":"off"` takes the buttons and sheets away on the next navigation and the drafts stay
+  on the phone untouched. One JS block between `/* ═══ v81 — CONDO DRAFTS` and `function openAddVendorModal` (everything is
+  `lfDraft…`), CSS `.lf-dr-*` / `.lf-pipe-ed` before `</style>`, and small hooks: `lfPipeRows` (the rows), `lfPipeRowEl` (tag
+  and Edit), `lfPipeRender` (the toolbar, skipped once drafts are off), `lfPipeResidentsSee` (first line), `lfPipeLeave` /
+  `lfPipeRemove` (cleanup), `lfCondoRender` / `lfCondoCard` (picker).
+- **A draft lives on THIS phone and nowhere else**: `localStorage['lf-condo-drafts']` = `{v:1,drafts:[…]}`, 60 at most, stored
+  text over 1.5 MB ignored. The block has no `fetch`, no `fb*` call, no `FB_URL`, no `ROOM_KEY`, no timer, observer or
+  scroll/touch listener, and exactly two `innerHTML`s, both constants (record text goes through `textContent` / `.value`).
+  Why not the database: it takes writes from anyone, and the plan's rule is that an unverified condo never goes in it.
+- **A draft can never reach a resident.** Every draft, however it arrived (typed, stored, pasted), goes through
+  `lfDraftClean()` = `lfCondoClean()` + forced `draft:true, visible:false, confidence:'unverified', status:'coming'`, with no
+  `source`, `verifiedAt` or coordinates of its own (a pasted draft that says it is verified, live or sourced is forced back).
+  It is never added to `lfCondoDir()`, so `lfRoomKey()`, `lfCondoVisible(false)` and the room resolver cannot see one.
+  `lfDraftList()` returns `[]` unless `LF_CONDOS_BUILD && _lfAdminMode === true`, and hides a draft whose id has since become a
+  real condo (the app's own copy wins). GRASS's id and `sample-` / `preview-` ids can never be drafts.
+- **The editor** (`#modal-draft`, the app's `.modal` / `.modal-sheet`; same behaviour as the picker: `role=dialog`,
+  `aria-modal`, focus to the title, Tab trapped, Esc closes, focus returns, `inert` when closed; every box 16px, every control
+  44px or more): name (required, 2+ letters), city, developer, barangay, address, other names, buildings (name, type, floors
+  1–150) and site notes. **"Add numbered towers"** adds 1–12 rows named Tower N, continuing after the highest Tower N, **as
+  editable rows**: the plan's rule is that names are never *generated* for a record, and here it is the admin's own request
+  with every row theirs to rename. Refusals are plain words with the cursor put in the right box: a one-letter name; the same
+  name and city as GRASS or another draft (capitals and spaces ignored); floors outside 1–150 or not whole; two buildings
+  with one name; a nameless building with floors; more than 60 buildings; a 61st draft. Closing with typing that was not
+  saved asks **once** (Cancel, ✕, backdrop or Esc), then lets go; typing again re-arms it.
+- **Ids.** `lfDraftSlug(name, city)`: accents folded, 56 characters at most, `sample-` / `preview-` become `my-…`, `-2` / `-3` on
+  a collision, never GRASS's. **Editing keeps the id** (so the stage record stays attached) **and each building's id** (taking
+  building 1 out does not renumber the rest). A building id that cannot be used (capitals, spaces, a number, a repeat,
+  `__proto__`) keeps its place under a new `b<n>` (`lfDraftBuildings`): losing a building over its id is worse.
+- **Delete** needs the name typed, is re-checked by the tap handler itself (the disabled button is not the gate) and offers
+  **Undo** until the app is closed. A draft that already has a stage record keeps it: the row stays, named by its id, without
+  Edit, so nothing the planning list holds vanishes.
+- **Copy / import** (`#modal-drafts-io`). Copy gives the drafts as text, `{lokalfinder:"condo-drafts",version:1,exportedAt,
+  condos:[…]}`, only what was typed. Import is **Check first** (`lfDraftImportCheck`: "2 new, 1 to update, 1 already the same,
+  7 left out", each left-out one with its reason: not a condo / no name / already in the app / that id is not allowed / listed
+  twice / over the limit of 60 / more than 200 not read), **then Import**, then one level of **Undo the last import**. A
+  hand-typed condo (no id, no types) gets an id from its name and city, its buildings get ids and the default type, and
+  floors typed as text are read as numbers. Text of 200,000 characters or more is refused without being parsed.
+- **A draft's move writes nothing about the draft.** Moving it through the stages is the pipeline's own single multi-path PATCH
+  (`condoPipeline/{id}/…` and `condoLog/…`: the id and the stage). The sentence under the stages now says **"nothing (hidden
+  until it is verified)"** for any unverified condo at any stage (it used to say "Coming soon" for Launching, which is wrong for
+  anything unverified); a draft needs no typed name (only GRASS does).
+- **A phone that will not store** (private browsing, full) still works for this visit: the toast says the draft is "kept for
+  now, but this phone would not store it", and a warning sits on the Condos page until the app is closed.
+- **A fault switches off the drafts and nothing else** (`lfDraftFail` → `_lfDraftOff`: the buttons and Draft rows go, one toast;
+  the Condos page, its tab and GRASS stay). `lfPipeLeave` closes an open sheet on any page change and, when the admin session
+  ends, empties the drafts from memory (not from the phone); `lfPipeRemove` (the kill switch) takes the sheets out of the page.
+- **How a draft becomes a real condo.** Copy, send the text, each condo is checked against sources, then it is added to the
+  app's own directory in a release. There is no loader for a static directory file yet (only GRASS is built in; `lfCondoAdd()`
+  is where Phase D feeds the directory).
+- **Tests.** `tests/test-drafts.js` (122 checks) drives the real UI with real taps: a resident's phone untouched (a forged
+  draft in storage, each devtools call judged on its own), the add flow, every refusal, ids, edit / delete / undo, a draft
+  moved through the pipeline (the single write, nothing about the draft sent), the picker, copy and import (check, import,
+  undo; hostile text; 200 / 130-entry lists), a phone that will not store or holds junk, the switch / sign-out / hard off,
+  keyboard and focus, 44px and 16px, phone and desktop layouts, a fault that switches off only the drafts, and source
+  guards. `LF_BAIL=1` makes it stop at its first failing check (the mutation runner uses it). `test-pipeline.js` (174) now
+  ends its P1 source slice at the v81 marker.
+
+**v81 control and checks (2026-10-26).** Against the live v80 file (main ce64e16), a resident session (5 runs each): the same
+room, element ids, header markup, `localStorage` keys, store ids, `<select>` options, DOM node count (2063 / 2063) and
+request log (30 / 30, no path differs); no errors; startup within noise (DOMContentLoaded median 318 ms live, 307 ms new);
+the inline script grows 548 → 589 KB (+7%). An admin session with the switch **off**: the four admin pages identical,
+markup and element ids, and the requests (77 / 77). With it **on**: identical once the Condos tab is taken out, the Condos
+page identical once the two new buttons and their line are taken out, the picker sheet identical (no drafts exist yet); the
+only request difference was one extra 60-second `reviews.json` poll in one run (timer noise).
+**Mutation check:** 109 deliberate breakages of the new code (D01–D111: every gate, the forced-unverified fields, the
+write to the database, the import limits and dry run, undo, each refusal, ids, delete, storage failure, the fault guard,
+sign-out and the switch, Tab / Esc / focus, 44px / 16px / contrast / motion, text going in as markup, a timer or a
+second storage key slipping in). The first pass caught 108. **D33** (an import reading more than 200 entries) was missed
+because the test only looked at the message; **D02 and D03** (a gate gone from the editor and the copy sheet) were caught
+only by a much later, unrelated check, because the resident test called four functions in a row and the last one cleaned
+up after the first; ten more were caught only by a crashed run (D04, D44–D46, D70, D78, D79, D81, D88, D98). The tests now
+judge each call alone and name each failure; those 13 were re-run and are each caught by a named check. The other 96 were
+last run on the first pass's version of the tests, which has only gained stricter checks and de-crashed failures since.
+A first attempt at the pass was thrown away: one check counted raw requests in a 300 ms window, the routine 3-second
+poll made it fail under load, and with a stop-at-first-failure runner that "caught" everything. It now looks only for
+writes and for requests that name a draft (`aboutDrafts()`); a check that can fail for a reason that is not the code is
+worse than none.
+**Stress:** the new suite ran 12 times, three at once, on a busy machine: 12 of 12 passed.
+**Not verified:** a real phone (the editor with the on-screen keyboard; `inert` on older iOS), `navigator.clipboard` on iOS
+Safari (headless Chromium with the permission granted only; the fallback selects the text), the browser's real storage
+limits and private browsing (simulated by making `setItem` throw), the live site and database (this environment cannot
+reach them), and push delivery (no push, service-worker or ordering line is touched).
 
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
@@ -980,6 +1073,12 @@ residents never had any of it. The two root nodes `condoPipeline` and `condoLog`
 and are harmless — nothing else reads them; delete them in the Firebase console if wanted. Full: restore
 v79's `index.html` and `version.json` with both numbers raised to 81. A fault inside the pipeline already
 switches only the pipeline off for that session (`lfPipeFail`).
+
+**Rolling back v81 (the condo drafts).** Fastest: `"condos":"off"` in `version.json` removes the buttons and sheets on an
+admin's next navigation (up to 5 minutes later); the drafts stay on the phone under `lf-condo-drafts` and nothing in the
+database ever held them. A fault inside the drafts already switches only the drafts off for that session (`lfDraftFail`).
+Full: restore v80's `index.html` and `version.json` with both numbers raised above the broken one (82 if 81 is live). An
+admin who rolled back keeps their drafts in the browser's storage but cannot see them until the feature is back.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.
