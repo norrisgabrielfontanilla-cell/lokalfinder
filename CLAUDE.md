@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 1119 checks across eighteen files,
+**Testing:** `tests/` holds a Playwright suite — 1260 checks across nineteen files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -697,7 +697,9 @@ before `</style>` and three hooks — Home, Back, and (v79) the admin panel):
   failed, missing or garbage read means **off**. **Kill switch: set
   `"condos":"off"` in `version.json` and push** — it takes effect on the next
   navigation of any admin session, with no update banner and no reload. `"on"`
-  (everyone) is reserved: it needs a boot-time read that Phase A does not have.
+  also means "everyone" since v83, but only for the customers' Condos icon (see
+  v83 below): the picker's pill, the admin card, the pipeline, drafts and
+  pictures-with-samples still need an admin session.
   `LF_CONDOS_BUILD = false` is the hard off (a release). **This is a visibility
   switch, not security** — `_lfAdminMode` is a client variable like every other
   admin gate here.
@@ -1141,6 +1143,85 @@ at 4×, against budgets of 300 / 100 / 150) and the 12 runs were repeated: 12 of
 and scroll restoration, which the tests can only simulate), the live site (this environment cannot reach it), and push
 delivery (no push, service-worker or ordering line is touched).
 
+**Condos for customers (v83): a "Condos" icon on the customer Home bar, and the view it opens. Ships dark: `version.json` keeps `"condos":"admin"`, so customers see nothing until it says `"on"`.**
+The founder asked (2026-10-26) "i want a customers to see other condos on a seperate icon". This is that icon and the view a
+customer gets from it, and nothing else. **With only GRASS confirmed, a customer would see exactly one condo (their own) until
+real, verified condos are added to the directory** — so the switch stays at `"admin"` until the founder says "turn it on" and
+there is something to show.
+
+- **`"on"` now means two things; do not mix them up.** (1) The *admin* gate is unchanged: `lfCondoAllowed()` = an admin session AND
+  `"admin"` or `"on"` in the file. The header pill, the admin card, the Condos pipeline tab, drafts, pictures-with-samples all
+  still use it, and `"on"` does not widen any of them. (2) The *customer* gate is new: `lfCondoNavAllowed()` = hard-on AND no fault
+  AND (`lfCondoPubOn()` — the file says exactly `"on"` — OR `lfCondoAllowed()`). The second half is the admin **preview**: a
+  signed-in admin sees the same icon when the file says `"admin"` or `"on"`, so the founder can look at exactly what customers
+  will get before turning it on. `"off"`, a missing field, a wrong case (`"ON"`), a boolean, a list, an object, any other word:
+  nobody (customers) / the old behaviour (admins).
+- **How a customer's phone learns the switch — with no request of its own.** The update check (separate `<script>`, fetches
+  `version.json` ~4 s after the app opens and every 5 minutes, for everyone) hands the parsed file to `window.lfCondoModeFromFile(data)`
+  inside its own try/catch, **before** it compares versions, so neither can stop the other. Only the exact word `"on"` counts.
+  A *readable* answer settles the question either way; a failed, 404, garbage or empty answer never reaches the app, so it **changes
+  nothing** (a phone that remembered "on" keeps the icon; one that did not stays without it). That is the opposite of the admin
+  mode read (where a failed read means off) on purpose: for a customer "unknown" must not flip a visible feature.
+- **The phone's memory.** `localStorage['lf-condo-pub']` = `{on:1, at:<ms>}`, written only by a valid read of `"on"`, removed by any
+  other valid read, trusted for 14 days (`LF_CONDO_PUB_TTL`), parsed only if shorter than 200 characters, accepted only as
+  `on === 1` with a numeric `at`. It exists so the icon is on the bar the moment Home is first shown on a later visit instead of
+  ~4 s later. `goCust()` runs after the first catalog read and the splash, so with the memory there is no pop-in; a brand-new
+  phone gets the icon when the first update check lands. A phone whose storage refuses the key just cannot remember.
+- **The icon** (`lfCondoNavSync`, hooks: `goPage('p-chome')`, `goBack()` to Home, and `lfCondoModeFromFile`, each in try/catch;
+  never static markup, so with the switch off the bar is the old markup byte for byte): a real `<button id="lf-condo-nav"
+  class="bni lf-condo-nav">` appended **after** the four old items (their positions do not move), label "Condos", the building
+  picture the admin's Condos tab uses, `aria-haspopup="dialog"`, `aria-expanded`, focus ring, ≥ 44px tall and ≥ 56px wide even on a
+  320px phone, no taller bar. **Square on purpose**: a rounded button lets a tap at its corner fall through to the bar (found by
+  a corner hit-test); the focus ring is rounded only while focused. Only the Home bar has it — the Feed page's own bar is
+  untouched. An admin session that has not learned the admin switch yet asks for it (`lfCondoModeRead`, the one shared request the
+  header and the card also use: three quick arrivals make one read) and redraws; a customer never gets there.
+- **The customer's view of the sheet.** `lfCondoOpen(from, true)` (the icon) opens the picker's own sheet and pages with
+  `_lfCondoResView = true`; the pill and the card still call `lfCondoOpen()` / `lfCondoOpen(b)` and get the admin's view.
+  **`lfCondoViewList()` is the one place the two views part** (`lfCondoRender` and `lfArtFind` both use it): the admin's view is
+  `lfCondoVisible(true)` + drafts + samples; the customer's is `lfCondoVisible(false)` = `visible && confidence === 'confirmed'`
+  and nothing else, **whoever is holding the phone** (an admin opening the icon sees what a customer sees, with drafts stored and
+  the sample switch on). Title "Condos" (the admin's stays "Choose your condo"); the note under it is "Lokal Finder is open in the
+  condos marked Live." in a plain look (the admin's amber `Admin preview — this is what residents will see once it is turned on.`
+  while only an admin can be there); no sample switch; a page's foot says what a customer can actually do there:
+  *current* → "This is the condo you order in."; *live, not current* → "Lokal Finder is live here. You cannot switch condos in the
+  app yet."; *coming* → "…coming soon to this condo. You cannot order here yet."; otherwise "…not open in this condo yet."
+  `lfCondoOpen` is gated per view (`res ? lfCondoNavAllowed() : lfCondoAllowed()`): a customer cannot reach the admin's view by
+  any call from devtools. `lfCondoClose` clears the flag. **Do not mark a second condo `live` in the directory until switching
+  condos exists (Phase C)** — its page would say "live here" with nothing to tap; use `coming`.
+- **What it does not do, on purpose.** No switching, no "Notify me", no "Request my condo" (they write to the database: they need
+  the paid Firebase plan and published rules, which are the founder's to do), no analytics (there is none in this app, so how often
+  customers tap the icon cannot be counted — `lfTrack` has no sink). It reads and writes **nothing** in any database; the block has
+  no `fetch`, `fb*`, `FB_URL`, `ROOM_KEY`, timer, observer or scroll/touch listener, one `innerHTML` (a constant) and one storage key.
+- **A fault switches off this icon and nothing else** (`lfCondoPubFail`: the off flag, the icon removed, a customer's open list
+  closed, one console warning, no toast — a background fault must not alarm a customer; a fault *while opening* uses the picker's
+  own "Condo picker unavailable" toast). The admin's picker, drafts, pipeline and pictures are untouched (tested).
+- **Turning it on / off.** On: set `"condos":"on"` in `version.json` and merge (keep `version` and `v` equal to `APP_VERSION`; raising
+  them is *not* needed and would show everybody the "new version" banner). Off: `"condos":"off"`. **How fast:** the file must be
+  deployed first (the deploy workflow runs the whole test suite, ~13 minutes), then an open app picks it up within 5 minutes and a
+  newly opened app within ~4 s; the icon and an open list go away together, with no reload. This is a visibility switch, not security.
+- **Tests.** `tests/test-condopublic.js` (141 checks): the switch matrix through the **real update check** (20 phones: what was
+  remembered × what the file said, including the readable-versus-unreadable rule, hand-over counts and "one version.json read"), the
+  icon (markup, size at 390/360/320, corner hit-test, focus ring, going Home five times, the Back route, the Feed bar untouched),
+  real taps (modal semantics, focus, Tab trap, Esc/✕/backdrop, GRASS's page, nothing in it uses an admin word, contrast), the
+  customer's view against a poisoned directory (likely / unverified / hidden / both-bad records, a stored draft, the sample switch
+  on — none appears, none is found by search or by a page lookup), an admin's two views kept apart in every order, the kill switch
+  with a page open, the phone's memory (13 vs 15 days, ten malformed forms, a storage that throws), the hard off, five kinds of
+  fault, small phones, and source guards. Older suites changed **on purpose**: `test-condoart.js` / `test-drafts.js` end their source
+  slice at the next block's marker (as `test-pipeline.js` has since v81) and accept the list now living in `lfCondoViewList`.
+  **Test-harness finding:** `page.waitForFunction` treats a *Promise* returned by the predicate as "done" the moment it exists, so
+  the `settle()` helper the older condo suites use (a predicate returning a Promise) only ever waited ~150 ms; it was harmless there
+  (they never measured the sheet's final position), but the new suite polls in Node (`settle` = three readings in a row with the
+  sheet's bottom on its container's bottom and no animation running). Without that, a sheet measured mid-slide read up to 50px low
+  on a busy machine.
+
+**v83 control and checks (2026-10-26).** Against the live v82 file (main d574baf), a customer's phone (3–4 runs each, interleaved): with the file as shipped (`"admin"`) and with `"off"`: the same room, element ids, header markup, Home page DOM (the shuffled "today's picks" left out: two runs of even the live file differ there), `localStorage` keys, store ids, `<select>` options, DOM node count (2063 / 2063) and request log (30 / 30, no path differs); no errors; startup within noise (DOMContentLoaded median 359 ms live / 325 new, and 397 / 320). With the file saying `"on"`: identical once the icon is taken out; the bar goes from 4 to 5 items, there is exactly one new storage key (`lf-condo-pub`), 2063 → 2069 nodes, and the same 30 requests (the hand-over asks for nothing). An admin session with the switch `"off"`: the four admin pages and the customer Home identical, requests 77 / 77. With `"admin"` or `"on"`: identical once the Condos tab (admin pages) and the Condos icon (Home) are taken out, requests 77 / 77.
+**Mutation check:** 83 deliberate breakages of the new code (V01–V85; ids V24 and V72 were never written): who gets the icon, how the file is read, the phone's memory, the bar, the hooks, the two views and their notes, the open / close gates, faults, the look. The first pass caught 78. Five survived: **V03** (the fault flag ignored — the test never repaired the cause, so the icon stayed away for the wrong reason), **V23** (unreadable memory throwing — the bar's own try/catch swallowed it; the test now re-reads the stored text and asserts it never throws), **V25** (the hard off's early return also keeps a signed-in admin from asking for `version.json`), **V30 / V32** (the icon's own ask for the admin switch: sign-in had already taught the app the switch and the update check's hand-over redrew the bar, so nothing depended on it — the test now swallows the hand-over, forgets the switch, clears the bar and arrives on Home again). Two were caught for the wrong reason: **V15** and **V82** both "failed" on a flaky check (a one-shot read of `document.activeElement` straight after a sheet became inert — the browser takes focus out on its next frame, so the test now waits for it). V15 is now caught by its own check; V82 (no padding) turned out to be invisible to the 44px test because the bar stretches the item to its neighbours' height, so the test now checks the icon's picture and label sit level with the Orders item's. Five more were caught only by a crashed run (**V17, V37, V48, V60, V69**) and now by named checks. All 12 were re-run on the final tests and are each caught by a named check; the other 66 were last run on the first pass's version of the tests, which has only gained checks since (plus that one focus-wait fix).
+**Stress:** the new suite ran 12 times, three at once, on a busy machine: 12 of 12 passed (141 / 141 each). Getting there took four rounds of fixes to the *tests*, none to the app: the sheet was measured mid-slide (see the harness finding above), the first matrix waited on the clock instead of on the update check, the corner hit-test found a real bug (rounded corners; fixed in the CSS), and the kill-switch focus read described above.
+All 19 suites (1260 checks) pass on a frozen copy of the final build.
+**Not verified:** a real phone (the 5-item bar in the real webfont; Safari's tap focus on a `<button>` styled as a bar item), the live
+site and the live `version.json` (this environment cannot reach them), how the deploy's ~13-minute test job delays a kill switch, and
+push delivery (no push, service-worker or ordering line is touched).
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -1175,6 +1256,13 @@ admin who rolled back keeps their drafts in the browser's storage but cannot see
 admin's next navigation). A fault inside the pictures or pages already switches only them off for that session (`lfArtFail`:
 the picker falls back to the v78 cards). Full: restore v81's `index.html` and `version.json` with both numbers raised above
 the broken one (83 if 82 is live). v82 stores and sends nothing, so there is nothing to undo.
+
+**Rolling back v83 (condos for customers).** It ships dark (`"condos":"admin"`), so customers never have the icon unless `"on"` was set.
+Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the icon and an open list go away on a customer's next read of the file
+(~4 s after the app opens, or within 5 minutes if it is open), with no reload and no banner — **but only once the deploy has finished**
+(the workflow runs the whole test suite first, ~13 minutes). A fault inside the icon already switches only the icon off for that session
+(`lfCondoPubFail`). Full: restore v82's `index.html` and `version.json` with both numbers raised above the broken one (84 if 83 is live);
+the memory key `lf-condo-pub` is harmless without the code and expires by itself. v83 stores nothing in any database, so there is nothing to undo.
 
 Re-verify these facts if the codebase has changed since this file was last
 updated — don't treat this section as permanently authoritative.

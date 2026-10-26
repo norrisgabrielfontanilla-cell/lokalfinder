@@ -1930,6 +1930,16 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-condo-sample{width:100%;min-height:44px;border:1px dashed var(--bdm);border-radius:14px;background:transparent;color:var(--gd);font:800 13px var(--ff);cursor:pointer}
 .lf-condo-foot-s{margin-top:6px;font-size:11.5px;line-height:1.4;color:var(--t3)}
 @media(prefers-reduced-motion:reduce){.lf-art-t.sel{animation:none}}
+/* ═══ v83 — CONDOS FOR CUSTOMERS ═══
+   The fifth item of the customer Home bar, built by lfCondoNavSync() only while the switch allows it, so with the
+   switch off the bar is the old markup exactly. A real <button> dressed like the other items (.bni): about 50px tall
+   and at least 56px wide even on a 320px phone. The customer's two notes are plain; the amber stays with the admin
+   preview, the only place that wording appears. */
+button.bni.lf-condo-nav{background:none;border:0;margin:0;padding:6px 0;font:inherit;color:inherit;border-radius:0;-webkit-appearance:none;appearance:none;min-width:0;min-height:44px;-webkit-tap-highlight-color:transparent}   /* square, like the other items: a rounded button would let a tap at its corner fall through to the bar */
+button.bni.lf-condo-nav:focus-visible{outline:2px solid var(--g);outline-offset:-2px;border-radius:14px}
+button.bni.lf-condo-nav[aria-expanded="true"] svg{stroke:var(--g)}
+button.bni.lf-condo-nav[aria-expanded="true"] span{color:var(--g)}
+.lf-condo-note.res,.lf-pg-note.res{background:var(--s2);color:var(--t2);font-weight:600}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -4443,6 +4453,7 @@ function goPage(id){
   if(id==='p-vlogin')   { try{ lfResetVendorLoginFilter(); }catch(e){}
                           try{ lfRefreshAppStatus(); }catch(e){} }
   if(id==='p-chome')    { try{ lfCondoHeaderSync(); }catch(e){} }   // v78: the condo button (admin preview only; a no-op for everyone else)
+  if(id==='p-chome')    { try{ lfCondoNavSync(); }catch(e){ lfCondoPubFail(e); } }   // v83: the Condos icon (customers when the switch says "on", an admin as a preview; nothing otherwise)
   if(id==='p-vorders')  renderVendorOrders();
   if(id==='p-vearn')    renderVendorEarnings();
   if(id==='p-adash')    { updateAdminStats(); renderAdminVendors(); renderAdminOrders(); renderAdminApps(); }
@@ -4466,6 +4477,7 @@ function goBack(){
   // re-layout of its Store Info pages (a no-op if the width is unchanged).
   if(prev==='p-cvendor'){ try{ lfPaginateStoreInfo(); }catch(e){} }
   if(prev==='p-chome'){ try{ lfCondoHeaderSync(); }catch(e){} }   // v78: same hook as goPage('p-chome')
+  if(prev==='p-chome'){ try{ lfCondoNavSync(); }catch(e){ lfCondoPubFail(e); } }   // v83: same hook as goPage('p-chome')
 }
 
 // ═══ PORTALS ═══
@@ -11834,7 +11846,7 @@ function lfArtSampleList(){
   return _lfArtSamples;
 }
 function lfArtFind(id){
-  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList(), lfArtSampleList());
+  const all = lfCondoViewList();
   return all.find(c => c.id === id) || null;
 }
 
@@ -11895,12 +11907,10 @@ function lfArtPageFill(body, c){
     facts.forEach(f => { const row = mk('div', 'lf-pg-f'); row.append(mk('dt', '', f[0]), mk('dd', '', f[1])); dl.appendChild(row); });
     body.appendChild(dl);
   }
-  body.appendChild(mk('div', 'lf-pg-note', c.sample ? 'Sample — made up to show how a page looks. It is not saved anywhere.'
-                                         : c.draft ? 'Draft — saved on this phone only. Edit it on the Condos page.'
-                                         : 'Admin preview — residents cannot see or choose this condo yet.'));
+  body.appendChild(mk('div', 'lf-pg-note' + (_lfCondoResView && lfCondoPubOn() ? ' res' : ''), lfCondoPageNote(c)));   // v83: the words (and the look) depend on who is looking
 }
 function lfArtPageOpen(id, from){
-  if(_lfArtOff || !lfCondoAllowed()) return;
+  if(_lfArtOff || !lfCondoViewAllowed()) return;
   const c = lfArtFind(id); if(!c) return;
   const pg = lfArtPageShell(); if(!pg) return;
   const list = el('lf-condo-list');
@@ -11947,7 +11957,7 @@ function lfArtFoot(){
 }
 function lfArtFootSync(){
   const f = lfArtFoot(); if(!f) return;
-  const on = LF_CONDOS_BUILD && _lfAdminMode === true && !_lfArtOff;
+  const on = LF_CONDOS_BUILD && lfCondoAdminView() && !_lfArtOff;   // v83: the customer's view has no sample switch
   f.hidden = !on;
   if(!on) return;
   const b = el('lf-condo-sample');
@@ -11968,6 +11978,136 @@ function lfArtFail(e){
   try{ showToast('⚠️ Condo pictures unavailable'); }catch(_){}
 }
 function lfArtGuard(fn){ try{ return fn(); }catch(e){ lfArtFail(e); } }
+
+/* ═══ v83 — CONDOS FOR CUSTOMERS ═══
+   The founder asked (2026-10-26): "i want a customers to see other condos on a seperate icon".
+   This is that icon, and the view a customer gets from it. Nothing else.
+
+   Rules that must hold (tests/test-condopublic.js proves each):
+   • The icon is a fifth item, "Condos", on the customer Home bar, built by script only while the switch allows it,
+     so with the switch off the bar is the old markup exactly.
+   • Who sees it: everyone when version.json says "condos":"on"; an admin who is signed in when it says "admin" or "on"
+     (a preview of exactly what customers get). "off", a missing field, any other word or type: nobody.
+   • A customer's phone learns the switch from the update check's own read of version.json (it already runs for
+     everyone ~4s after the app opens and every 5 minutes), so it makes NO request of its own. "on" is remembered on
+     the phone (lf-condo-pub, 14 days) so the icon is there at once on a later visit; any other valid read forgets it.
+   • What the icon opens is the picker's sheet and pages (v78, v82) in the CUSTOMER'S VIEW: only condos the directory marks
+     visible AND confirmed. Never a draft, a sample, an unverified or hidden record, the sample switch or any admin
+     wording, whoever holds the phone (an admin opening it from this icon sees what a customer sees).
+   • There is nothing to switch to yet: switching condos is Phase C (it needs the cart guard, a paid Firebase plan and
+     published rules). The pages say so in plain words. This view reads and writes nothing in any database.
+   • A fault switches off this icon and nothing else (lfCondoPubFail): the admin picker, drafts, pipeline and pictures
+     are untouched. Every entry point is called from a try/catch or lfCondoPubGuard. */
+const LF_CONDO_PUB_KEY = 'lf-condo-pub';                   // this phone's memory of "condos":"on", so the icon is there at once on a later visit
+const LF_CONDO_PUB_TTL = 14*24*60*60*1000;                 // ...trusted for 14 days; the next read of version.json always settles it
+const LF_CONDO_NAV_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/></svg>';
+let _lfCondoPub = null;                                    // null: this phone's storage not read yet. true: version.json said "on" (or did, within 14 days). false: it did not.
+let _lfCondoPubOff = false;                                // a fault: the customer icon is off for this session, nothing else is affected
+let _lfCondoResView = false;                               // the open sheet is the customer's view (set by lfCondoOpen, cleared by lfCondoClose)
+
+// Is "on" remembered? Read from the phone's storage once; anything unusable means no.
+function lfCondoPubOn(){
+  if(_lfCondoPub === null){
+    _lfCondoPub = false;
+    try{
+      const raw = localStorage.getItem(LF_CONDO_PUB_KEY);
+      const j = (typeof raw === 'string' && raw.length < 200) ? JSON.parse(raw) : null;
+      if(j && j.on === 1 && typeof j.at === 'number' && Date.now() - j.at < LF_CONDO_PUB_TTL) _lfCondoPub = true;
+    }catch(e){}
+  }
+  return _lfCondoPub === true;
+}
+// version.json's answer, handed over by the update check (a separate script) once it has parsed the file. Only the exact word "on" counts.
+function lfCondoModeFromFile(data){
+  if(!LF_CONDOS_BUILD) return;
+  const on = !!data && typeof data === 'object' && data.condos === 'on';
+  _lfCondoPub = on;
+  try{
+    if(on) localStorage.setItem(LF_CONDO_PUB_KEY, JSON.stringify({ on: 1, at: Date.now() }));
+    else localStorage.removeItem(LF_CONDO_PUB_KEY);
+  }catch(e){}
+  try{ lfCondoNavSync(); }catch(e){ lfCondoPubFail(e); }
+}
+// Customers: when the file says "on". An admin who is signed in: the same as the admin picker (lfCondoAllowed), as a preview.
+function lfCondoNavAllowed(){
+  return LF_CONDOS_BUILD && !_lfCondoPubOff && (lfCondoPubOn() || lfCondoAllowed());
+}
+
+// ── the icon ──
+// Called from goPage('p-chome'), goBack() and lfCondoModeFromFile(), each inside try/catch.
+function lfCondoNavSync(){
+  if(!LF_CONDOS_BUILD) return;
+  const nav = document.querySelector('#p-chome .bnav');
+  if(!nav) return;
+  let on = false;
+  try{ on = lfCondoNavAllowed(); }catch(e){ on = false; }
+  const have = document.getElementById('lf-condo-nav');
+  if(on){
+    if(!have) nav.appendChild(lfCondoBuildNav());
+  } else if(have){
+    have.remove();
+    if(_lfCondoResView) lfCondoClose(true);                  // the switch went off while a customer had the list open
+  }
+  // An admin session that has not learned the admin switch yet (or whose answer has gone stale) asks, then syncs again.
+  // The request is the header's and the card's own: one read, however many of them ask. A customer never gets here.
+  if(_lfAdminMode === true && (!_lfCondoModeAt || Date.now() - _lfCondoModeAt > LF_CONDO_MODE_TTL)){
+    lfCondoModeRead().then(()=>{ try{ lfCondoNavSync(); }catch(e){ lfCondoPubFail(e); } });
+  }
+}
+function lfCondoBuildNav(){
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = 'lf-condo-nav'; b.className = 'bni lf-condo-nav';
+  b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
+  b.innerHTML = LF_CONDO_NAV_SVG + '<span>Condos</span>';     // constants only
+  b.addEventListener('click', ()=>lfCondoPubGuard(()=>lfCondoOpen(b, true)));
+  return b;
+}
+
+// ── the customer's view of the sheet ──
+// The admin's view is the one the pill and the card open (everything an admin has: the directory, their drafts, the samples).
+function lfCondoAdminView(){ return !_lfCondoResView && _lfAdminMode === true; }
+// The condos the open sheet may show. This is the one place the two views part: a customer gets the confirmed, visible
+// condos and nothing else — not a draft, a sample, an unverified or a hidden record, whoever is holding the phone.
+function lfCondoViewList(){
+  return lfCondoAdminView() ? lfCondoVisible(true).concat(lfDraftList(), lfArtSampleList()) : lfCondoVisible(false);
+}
+function lfCondoViewAllowed(){ return _lfCondoResView ? lfCondoNavAllowed() : lfCondoAllowed(); }
+// The sheet's title and the note under it, for whichever view is opening.
+function lfCondoNoteSync(res){
+  const note = el('lf-condo-note'), ttl = el('lf-condo-ttl');
+  if(res){
+    const live = lfCondoPubOn();                                 // false: only an admin can be here, previewing
+    ttl.textContent = 'Condos';
+    note.textContent = live ? 'Lokal Finder is open in the condos marked Live.' : 'Admin preview — this is what residents will see once it is turned on.';
+    note.classList.toggle('res', live); note.hidden = false;
+  } else {
+    ttl.textContent = 'Choose your condo';
+    note.textContent = 'Admin preview — residents do not see this yet.'; note.classList.remove('res');
+    note.hidden = (_lfCondoMode === 'on');                       // (unchanged since v78)
+  }
+}
+// What the foot of a condo's page says. The customer's words never mention a draft, a sample or an admin.
+function lfCondoPageNote(c){
+  if(!_lfCondoResView){
+    return c.sample ? 'Sample — made up to show how a page looks. It is not saved anywhere.'
+         : c.draft  ? 'Draft — saved on this phone only. Edit it on the Condos page.'
+         : 'Admin preview — residents cannot see or choose this condo yet.';
+  }
+  const cur = lfCondoCurrent();
+  if(cur && cur.id === c.id) return 'This is the condo you order in.';
+  if(c.status === 'live')   return 'Lokal Finder is live here. You cannot switch condos in the app yet.';
+  if(c.status === 'coming') return 'Lokal Finder is coming soon to this condo. You cannot order here yet.';
+  return 'Lokal Finder is not open in this condo yet.';
+}
+
+// ── a fault switches off this icon and nothing else ──
+function lfCondoPubFail(e){
+  _lfCondoPubOff = true;
+  try{ console.warn('condos for customers: switched off for this session:', e); }catch(_){}
+  try{ const n = document.getElementById('lf-condo-nav'); if(n) n.remove(); }catch(_){}
+  try{ if(_lfCondoResView) lfCondoClose(true); }catch(_){}
+}
+function lfCondoPubGuard(fn){ try{ return fn(); }catch(e){ lfCondoPubFail(e); } }
 
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
@@ -12687,9 +12827,11 @@ function updateTrackerFromStatus(){
      room unless a known condo says otherwise — and in this phase the only known
      condo IS GRASS. Any error returns GRASS too: this feature failing must
      never blank the app.
-   • Residents never see it. The picker needs an admin session AND
-     "condos":"admin" (or "on") in version.json. A resident's phone renders
-     nothing, makes no extra request, and keeps the old header markup.
+   • Residents never see the picker's own doors (the header button and the admin card).
+     They need an admin session AND "condos":"admin" (or "on") in version.json. A resident's
+     phone renders nothing, makes no extra request, and keeps the old header markup.
+     (v83 gives residents one door of their own, the Condos icon on the Home bar, when the
+     file says "on": see the v83 block.)
    • A failed or missing mode read means OFF. Putting "condos":"off" in
      version.json and pushing is the kill switch: no update banner, no reload.
    • No database access. The directory is code (and, in a later phase, a static
@@ -12882,8 +13024,9 @@ function lfCondoModeRead(){
   })();
   return _lfCondoModeP;
 }
-// Phase A: an admin session is required whatever the file says. "on" (everyone)
-// belongs to the phase that adds a read at boot; until then it only means "admin".
+// The ADMIN gate: an admin session is required whatever the file says, and "on" means the same as "admin" here.
+// Since v83 "on" has a second, narrower meaning for everyone: customers get the Condos icon and the confirmed,
+// visible condos (lfCondoNavAllowed), and nothing else in this file, the pipeline, the drafts or the pictures.
 function lfCondoAllowed(){
   return LF_CONDOS_BUILD && _lfAdminMode === true && (_lfCondoMode === 'admin' || _lfCondoMode === 'on');
 }
@@ -13104,7 +13247,7 @@ function lfCondoRenderChips(all){
 }
 function lfCondoRender(focusFrom){
   const list = el('lf-condo-list');
-  const all = lfCondoVisible(_lfAdminMode === true).concat(lfDraftList(), lfArtSampleList());   // v81: an admin also sees their own drafts; v82: and the samples, if they switched them on (none of it for anyone else)
+  const all = lfCondoViewList();                                  // v81: an admin also sees their own drafts; v82: and the samples, if they switched them on; v83: a customer sees the confirmed, visible condos only
   const cur = lfCondoCurrent();
   lfCondoRenderChips(all);
   const q = lfCondoNorm(_lfCondoQuery), tokens = q ? q.split(' ') : [];
@@ -13140,14 +13283,16 @@ function lfCondoRender(focusFrom){
   el('lf-condo-sr').textContent = rows.length ? rows.length + (rows.length === 1 ? ' condo' : ' condos') : 'No condos match';
   try{ lfArtFootSync(); }catch(e){ lfArtFail(e); }                // v82: the sample switch under the list
 }
-let _lfCondoFrom = null;   // the button that opened the sheet (the header's or the admin panel's): it says "expanded", and focus goes back to it
-function lfCondoOpen(from){
+let _lfCondoFrom = null;   // the button that opened the sheet (the header's, the admin panel's or, since v83, the customer icon): it says "expanded", and focus goes back to it
+function lfCondoOpen(from, asCustomer){
   try{
-    if(!lfCondoAllowed()) return;
+    const res = asCustomer === true;                              // v83: the customer icon opens the customer's view; the pill and the card open the admin's
+    if(res ? !lfCondoNavAllowed() : !lfCondoAllowed()) return;
     const m = lfCondoSheet();
+    _lfCondoResView = res;
     _lfCondoQuery = ''; _lfCondoCity = ''; _lfCondoDev = ''; _lfCondoShown = LF_CONDO_PAGE; _lfCondoChipSig = null;
     el('lf-condo-q').value = '';
-    el('lf-condo-note').hidden = (_lfCondoMode === 'on');
+    lfCondoNoteSync(res);                                         // the title and the note (before v83 only the note's hidden flag changed)
     lfCondoRender();
     m.inert = false; m.removeAttribute('aria-hidden');
     void m.offsetWidth;                                           // so the slide-up starts from its closed position
@@ -13165,6 +13310,7 @@ function lfCondoOpen(from){
 }
 function lfCondoClose(quiet){
   const m = _lfCondoSheet;
+  _lfCondoResView = false;                                          // v83: the next opening says which view it is
   if(!m) return;
   try{ lfArtPageReset(); }catch(e){}                                // v82: the sheet always opens on the list
   m.classList.remove('on'); m.inert = true; m.setAttribute('aria-hidden', 'true');
@@ -15817,7 +15963,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 82; // ← bump this each release (and version.json)
+  const APP_VERSION = 83; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -15865,6 +16011,9 @@ setInterval(updateClock,15000);
       const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
       if(!r.ok) return;
       const data = await r.json();
+      // v83: the same file carries the condo switch ("condos":"on" shows customers the Condos icon). It is handed to the app
+      // here so a customer's phone makes no request of its own for it.
+      try{ if(typeof window.lfCondoModeFromFile === 'function') window.lfCondoModeFromFile(data); }catch(e){}
       // Accept either key: the file has long shipped {"version": N} while this
       // only ever read `v`, so the banner could never fire and devices stayed
       // pinned to whatever build they first loaded.
