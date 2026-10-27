@@ -7091,7 +7091,7 @@ async function vendorLogin(){
   if(!(await verifyVendorPin(sel, pin))){showToast('⚠️ Incorrect PIN — contact admin');return;}
   activeVendorId=sel;
   // Ensure vendor data exists — Firebase may not have synced yet
-  if(!VENDORS[sel]){
+  if(!VENDORS[sel] && LF_ROOM_IS_GRASS){      // (v86: the defaults below are GRASS's demo stores: a condo never gets one)
     // Rebuild from hardcoded defaults
     const defaults={
       pares:{id:'pares',name:'Finest Pares & Goto',emoji:'🍲',sub:'Tower 2 · Filipino',bg:'#FFF4E0',rating:'⭐ 4.9',min:45,cats:['rice'],active:true},
@@ -12705,7 +12705,7 @@ let _lfSwitching = false;                // a switch is on its way (the page is 
 // May this phone move into condo `c` right now?
 function lfSwitchAllowed(c){
   try{
-    if(!LF_CONDOS_BUILD || !c || typeof c.id !== 'string' || c.draft || c.sample || _lfSwitching) return false;
+    if(!LF_CONDOS_BUILD || !c || typeof c.id !== 'string' || c.draft || c.sample) return false;
     const cur = lfCondoCurrent();
     if(cur && cur.id === c.id) return false;                                    // already here
     if(c.id === LF_GRASS_CONDO) return true;                                   // the way back to GRASS is never closed (and this phone is not in GRASS, or it would have been "already here")
@@ -12748,6 +12748,7 @@ function lfRoomCardRefresh(){
 }
 // Moves this phone into condo `id` (GRASS: back), then reloads. Nothing is written to any database. false = it did not move, and said why.
 function lfSwitchCondo(id){
+  if(_lfSwitching) return false;                       // already on its way (the page is about to reload): a second tap does nothing and says nothing
   const c = lfCondoById(id);
   if(!c || !lfSwitchAllowed(c)){ showToast('⚠️ You cannot switch to that condo right now'); return false; }
   try{

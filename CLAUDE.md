@@ -645,7 +645,8 @@ resident of ANY Metro Manila condo can find theirs. It is built in phases, each
 approved by the founder before the next; **only Phase A exists** (data model,
 room resolver, GRASS-only picker). B (illustrated cards and detail page), C
 (separate rooms, requests, interest), D (admin tools, CSV import), E (research
-and the Tier 1 import) and F (map) are not built. The plan, risks and the
+and the Tier 1 import) and F (map) were not built when this was written. **Status at v86:** a cut-down B exists (v82, pictures and
+pages), so does the shared directory (v85) and the separate rooms of C (v86, shipped dark); requests, interest, D, E and F do not. The plan, risks and the
 founder's answers are in the "Condo Directory — Phase 0" doc. Decisions taken
 (2026-10-25, "all as recommended"):
 
@@ -680,7 +681,8 @@ before `</style>` and three hooks — Home, Back, and (v79) the admin panel):
   it is always GRASS. Any error, bad storage or hostile value returns GRASS. A
   condo's room is **derived** (`'lf_c_' + id`), never read off a record.
   `lokalfinder_grass` must not change: every GRASS order, store and PIN is
-  under it.
+  under it. **(v86 superseded the rule in this bullet: the id must now come with the condo's CARD on the device, not a directory record, and
+  the function lives at the top of the main script. See "Condo rooms (v86)".)**
 - **Data model** — `lfCondoClean()` is the only way a record gets in. Fields:
   `id` (`^[a-z0-9][a-z0-9-]{1,62}$`), `name`, `aliases[]`, `developer`, `city`,
   `barangay`, `address`, `lat`/`lng` (only as a pair), `status`
@@ -1192,6 +1194,7 @@ can add condos from the app, turned the switch on, and made the icon appear only
   `lfCondoOpen` is gated per view (`res ? lfCondoNavAllowed() : lfCondoAllowed()`): a customer cannot reach the admin's view by
   any call from devtools. `lfCondoClose` clears the flag. **Do not mark a second condo `live` in the directory until switching
   condos exists (Phase C)** — its page would say "live here" with nothing to tap; use `coming`. (v85: the editor's Status box defaults to Coming soon and says so.)
+  **(v86: switching now exists, dark. For a customer `live` means ENTERABLE once `"condoSwitch":"on"`: leave a condo on Coming soon until its stores are ready.)**
 - **What it does not do, on purpose.** No switching, no "Notify me", no "Request my condo" (they write to the database: they need
   the paid Firebase plan and published rules, which are the founder's to do), no analytics (there is none in this app, so how often
   customers tap the icon cannot be counted — `lfTrack` has no sink). It reads and writes **nothing** in any database; the block has
@@ -1326,6 +1329,8 @@ ordering in another condo** (those are Phase C, and need the cart guard, a paid 
   list (`LF_SH_FIELDS`, **never `Object.assign`**: a stored `__proto__` key made a hidden record visible in a test of exactly that mutation); everything goes through `lfCondoClean`; 300 keys are looked at and
   150 kept; markup is text; an unknown status is "Not yet open"; a record is shown to customers only if `visible === true` AND `confidence === 'confirmed'`. **A shared condo can never be the *current* condo and
   gives no room** (`lfCondoCurrent`, `lfRoomKey` ignore `.shared`): switching is Phase C.
+  **(v86 changed this: the phone's own condo comes from the CARD the switch wrote on the device (`lfRoomCondo()`, marked `.shared`), so it can be current and gives a room; a directory record on its
+  own still cannot make any phone's room.)**
 - **Older code touched, all deliberately:** `lfCondoNavSync` (icon rule, cache, look), `lfCondoOpen` (look), `lfPipeLoad` (forced look), `lfPipeRows` / `lfPipeRowEl` / `lfPipeResidentsSee` / `lfPipeMoveSync`
   (shared rows; the Move sheet says customers see the status set when editing, not the stage), the Condos page header ("Add condos here. Moving a stage is planning only."), `lfCondoPageNote` (admin notes for
   a shared condo), `lfCondoCurrent` / `lfRoomKey`, `lfArtThumb`'s cache key (now includes building kinds: an admin can change a kind without touching floors), the v81 editor and toolbar text. The v81 source guard (no

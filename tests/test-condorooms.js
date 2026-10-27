@@ -90,10 +90,10 @@ async function session(browser, port, log, o = {}){
 }
 // The app's own update check reads version.json ~4 s after it opens and hands the file to the app: wait for that (a customer takes longer than 4 s to open a condo's page).
 const versionSeen = async S => { const t0 = Date.now(); while (S.vc.n < 1 && Date.now() - t0 < 15000) await sleep(100); await sleep(400); };
-const ready = async page => {
+const ready = page => step('the app started (its code is there and the splash is gone)', (async () => {
   await page.waitForFunction(() => typeof goCust === 'function' && typeof lfSwitchCondo === 'function' && typeof _catHandedOut !== 'undefined', null, { timeout: 20000 });
   await page.waitForFunction(() => !document.getElementById('lf-splash'), null, { timeout: 20000 });
-};
+})());
 // A phone, with the database stub emptied first unless o.keepDb.
 async function phone(browser, port, log, o = {}){
   if (!o.keepDb) H.resetDB();
@@ -150,6 +150,11 @@ const DIR = () => ({
   'unverified-heights': REC('Unverified Heights', { status: 'live', confidence: 'likely' })
 });
 const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
+// Records made by hand, one of each shape a gate must judge (shared, as everything from the directory is): an admin may enter all of them, a customer only the Live, shown, confirmed one.
+const SHAPES_INIT = () => {
+  const mk = (id, x) => Object.assign({ id, name: id, shared: true, visible: true, confidence: 'confirmed', status: 'live', buildings: [] }, x || {});
+  window.SHAPES = () => ({ live: mk('live-x'), coming: mk('soon-x', { status: 'coming' }), closed: mk('shut-x', { status: 'closed' }), hidden: mk('hidden-x', { visible: false }), unverified: mk('unv-x', { confidence: 'likely' }) });
+};
 
 (async () => {
   const srv = await H.startServer(); const port = srv.address().port;
@@ -232,7 +237,9 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
       sess: LF_SESS_KEY, cache: LF_CAT_CACHE, rev: LF_REV_QUEUE, app: LF_APP_KEY, orders: lfRk('lf-myOrders'), push: _lfPushRoom(), seen: window.__demoSeen.slice(),
       sel: [...document.querySelectorAll('#v-sel option')].map(o => o.textContent), cards: document.querySelectorAll('#vendor-list .vcard, #vendor-list [onclick^="openVendor"]').length,
       cur: lfCondoCurrent().id, curName: lfCondoCurrent().name, curBuildings: lfCondoCurrent().buildings.map(b => b.name),
-      hint: document.body.innerText.includes('Nobody has opened a store in Light Test Residences yet.')
+      hint: document.body.innerText.includes('Nobody has opened a store in Light Test Residences yet.'), unitPh: document.getElementById('cust-unit').placeholder,
+      foodPh: MARKETPLACES.food.searchPlaceholder, tagline: MARKETPLACES.cleaning.tagline, regGrass: JSON.stringify(MARKETPLACES).indexOf('GRASS') >= 0,
+      labels: ['ap-loc', 'nv-loc', 'ev-loc'].map(i => document.getElementById(i).previousElementSibling.textContent)
     }));
     check('A condo phone: the room is lf_c_<id>, derived from the id', c.room === ROOM(ID) && c.grass === false, JSON.stringify([c.room, c.grass]));
     check('A condo phone: no seed store, no seed menu, no seed PIN hash', c.stores === 0 && c.menus === 0 && c.hashes === 0, JSON.stringify([c.stores, c.menus, c.hashes]));
@@ -240,6 +247,9 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('A condo phone: not one demo store\'s name was ever on screen, not even for a moment (home, picker options and all)', c.seen.length === 0, JSON.stringify(c.seen));
     check('A condo phone: the vendor sign-in picker has no store in it (only its placeholder)', c.sel.length === 1, JSON.stringify(c.sel));
     check('A condo phone: the Home says plainly that nobody has opened a store here yet, and what to do', c.hint === true && c.cards === 0, JSON.stringify([c.hint, c.cards]));
+    check('A condo phone: the unit example is the condo\'s own hint ("Tower, floor, unit"), not GRASS\'s 8B-0812', c.unitPh === 'Tower, floor, unit', c.unitPh);
+    check('A condo phone: the store types\' search box and taglines say "in your condo" and no marketplace string says GRASS any more', c.foodPh === 'Search food in your condo…' && c.tagline === 'Book a cleaner in your condo' && c.regGrass === false, JSON.stringify([c.foodPh, c.tagline, c.regGrass]));
+    check('A condo phone: the three location boxes are labelled "Building / Location", not "Tower / Location"', c.labels.length === 3 && c.labels.every(l => l === 'Building / Location'), JSON.stringify(c.labels));
     check('A condo phone: every device key follows the room (vendor session, catalog cache, stamp queue, application id, order history)', c.sess === 'lf-vsess@' + ROOM(ID) && c.cache === 'catalog-v1@' + ROOM(ID) && c.rev === 'lf-rev-queue@' + ROOM(ID) && c.app === 'lf-vendorApp@' + ROOM(ID) && c.orders === 'lf-myOrders@' + ROOM(ID), JSON.stringify(c));
     check('A condo phone: push is off for this room', c.push === false);
     check('A condo phone: the current condo is built from the card (name and buildings), with no network', c.cur === ID && c.curName === 'Light Test Residences' && JSON.stringify(c.curBuildings) === JSON.stringify(['Tower A', 'Tower B']), JSON.stringify([c.cur, c.curName, c.curBuildings]));
@@ -249,6 +259,26 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('A condo phone reads only its own room (every room path starts lf_c_<id>/)', fbReqs(C.reqs).filter(x => /^(lf_c_|lokalfinder_)/.test(x.p)).every(x => x.p.indexOf(ROOM(ID) + '/') === 0 || x.p === ROOM(ID)), JSON.stringify(fbReqs(C.reqs).filter(x => /^(lf_c_|lokalfinder_)/.test(x.p)).map(x => x.p).slice(0, 8)));
     check('Nothing is seeded into the database for a condo (the stub holds no room at all)', Object.keys(H.DB()).every(k => !/^(lf_c_|lokalfinder_)/.test(k)), JSON.stringify(Object.keys(H.DB())));
     await shut(C);
+  }
+
+  // The empty catalog is handed out by the START of the app, not by the first poll three seconds later: until then pushState() refuses ("Still loading the stores"),
+  // and an admin who opens a condo and adds a store at once would be told to try again. The 3 s poll is dropped here, so only the start can have done it.
+  {
+    const NOPOLL = () => { const si = window.setInterval; window.setInterval = function (fn, ms) { if (ms === 3000 && fn && fn.name === 'syncFromCloud') return 0; return si.apply(this, arguments); }; };
+    const C = await phone(browser, port, log, { ls: LS_IN(ID), version: V('on'), init: NOPOLL });
+    await sleep(600);
+    const r = await C.page.evaluate(async () => ({ handed: _catHandedOut, saved: await pushState('no-such-store') }));
+    check('A condo phone: the empty catalog is handed out by the start itself (the poll is dropped here), so the first store is not refused with "Still loading the stores"', r.handed === true && r.saved === true, JSON.stringify(r));
+    await shut(C);
+  }
+
+  // GRASS with no store at all adds nothing: the empty-condo hint is for condos only
+  {
+    const G = await phone(browser, port, log, { version: V('on') });
+    await handed(G.page);
+    const gh = await G.page.evaluate(() => { Object.keys(VENDORS).forEach(k => delete VENDORS[k]); return lfRoomEmptyHint(); });
+    check('GRASS with no store at all adds nothing to its empty state (the "Nobody has opened a store" hint is for condos only)', gh === '', JSON.stringify(gh));
+    await shut(G);
   }
 
   // the Home's rotating line speaks of this condo, not of GRASS (a fixed lunch-time clock makes the greeting certain)
@@ -320,6 +350,8 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await step('the condo order landed in the condo room', (async () => { const t0 = Date.now(); while (Date.now() - t0 < 12000) { const o = (H.DB()[ROOM(ID)] || {}).orders; if (o && Object.keys(o).length) return; await sleep(150); } throw new Error('no order in ' + ROOM(ID)); })());
     const orders = H.DB()[ROOM(ID)].orders; const o = orders[Object.keys(orders)[0]]; ORDER_ID = o.id;
     check('The order is in the condo\'s room and carries the building the customer chose, the unit, and the store id', o.vendorId === 'pares' && o.building === 'Tower B' && o.unit === '12B' && o.name === 'Test Customer', JSON.stringify(o).slice(0, 200));
+    await until(C.page, () => /Unit/.test(document.getElementById('s-unit').textContent), null, 'the success screen showed where the order goes');
+    check('The success screen says WHERE, building and unit ("Tower B / Unit 12B")', await C.page.evaluate(() => document.getElementById('s-unit').textContent) === 'Tower B / Unit 12B');
     check('The GRASS room has no order, and GRASS\'s own "pares" is exactly what it was', Object.keys(H.DB()[GRASS_ROOM].orders || {}).length === 0 && JSON.stringify(H.DB()[GRASS_ROOM].vendors.pares) === before, Object.keys(H.DB()[GRASS_ROOM]).join(','));
     const wC = writes(C.reqs);
     check('Every write the condo customer made went to the condo\'s room (not one touched lokalfinder_grass)', wC.length > 0 && wC.every(x => x.p.indexOf(GRASS_ROOM) < 0), JSON.stringify(wC.map(x => x.m + ' ' + x.p).slice(0, 8)));
@@ -389,6 +421,101 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
   }
 
 
+  // ═════ 3b. THE PRE-v56 VENDOR KEYS BELONG TO GRASS ═════
+  // Before v56 a vendor's id and PIN were kept in the clear under 'lf-vendorId' / 'lf-vendorPin'. They are GRASS's: a vendor id is a slug of the store's name, so in a condo the same pair
+  // would sign the phone in as a DIFFERENT store, with the condo's own PIN hash as the judge.
+  {
+    H.resetDB(); seedRoomStore(ROOM(ID), 'pares', 'Light Pares');
+    const L = await session(browser, port, log, { ls: Object.assign(LS_IN(ID), { 'lf-vendorId': 'pares', 'lf-vendorPin': PIN_X }), version: V('on'), keepDb: true });
+    await handed(L.page);
+    const r = await L.page.evaluate(async () => {
+      const sid = lfSessionVendorId();
+      const mig = await lfMigrateLegacyVendorSession();
+      const afterMig = { sess: localStorage.getItem('lf-vsess@lf_c_light-test'), id: localStorage.getItem('lf-vendorId'), pin: localStorage.getItem('lf-vendorPin') };
+      lfClearVendorSession();
+      return { sid, mig, afterMig, afterClear: { id: localStorage.getItem('lf-vendorId'), pin: localStorage.getItem('lf-vendorPin') }, active: activeVendorId, page: document.querySelector('.page.on').id };
+    });
+    check('In a condo the pre-v56 pair is not read as a session, is not migrated into one even when it matches the condo\'s own store, and a sign-out does not delete it (it is GRASS\'s)',
+      r.sid === '' && r.mig === false && r.afterMig.sess === null && r.afterMig.id === 'pares' && r.afterMig.pin === PIN_X && r.afterClear.id === 'pares' && r.afterClear.pin === PIN_X && r.active === null && r.page === 'p-chome', JSON.stringify(r));
+    await shut(L);
+    // control: in GRASS the same kind of pair is still read and migrated into a session
+    H.resetDB();
+    const G = await session(browser, port, log, { ls: { 'lf-vendorId': 'pares', 'lf-vendorPin': '1234' }, version: V('on') });
+    await handed(G.page);
+    await until(G.page, () => !!localStorage.getItem('lf-vsess'), null, 'the pre-v56 pair was migrated into a session in GRASS', 15000);
+    check('Control: in GRASS the pre-v56 pair is still migrated into a signed-in session, and the plain keys are removed', await G.page.evaluate(() => localStorage.getItem('lf-vendorId') === null && localStorage.getItem('lf-vendorPin') === null && lfSessionVendorId() === 'pares'));
+    await shut(G);
+  }
+
+  // vendorLogin() has an offline fallback (GRASS's demo stores) for a vendor who signs in before the first sync. In a condo that fallback would hand GRASS's "Finest Pares & Goto"
+  // to a store id that happens to match, and sign the vendor in as it.
+  {
+    H.resetDB(); seedRoomStore(ROOM(ID), 'pares', 'Light Pares');
+    delete H.DB()[ROOM(ID)].vendors.pares; delete H.DB()[ROOM(ID)].menu.pares;        // the PIN hash stays, the store record is gone
+    const X = await session(browser, port, log, { ls: LS_IN(ID), version: V('on'), keepDb: true });
+    await handed(X.page);
+    const r = await X.page.evaluate(async pin => {
+      syncPausedUntil = Date.now() + 60000;
+      const o = document.createElement('option'); o.value = 'pares'; o.textContent = 'pares'; el('v-sel').appendChild(o);
+      el('v-sel').value = 'pares'; el('v-pin').value = pin;
+      await vendorLogin(); await new Promise(r => setTimeout(r, 300));
+      return { vid: activeVendorId, has: VENDORS.pares ? VENDORS.pares.name : null, toast: (document.getElementById('toast') || {}).textContent };
+    }, PIN_X);
+    check('In a condo a vendor whose store record is missing is told "Vendor not found": GRASS\'s demo "Finest Pares & Goto" is not put in its place', r.vid === null && r.has === null && /Vendor not found/.test(r.toast), JSON.stringify(r));
+    await shut(X);
+    const G = await session(browser, port, log, { version: V('on'), keepDb: true });
+    await handed(G.page);
+    const g = await G.page.evaluate(async () => {
+      syncPausedUntil = Date.now() + 60000;
+      delete VENDORS.pares; el('v-sel').value = 'pares'; el('v-pin').value = '1234';
+      await vendorLogin(); await new Promise(r => setTimeout(r, 300));
+      return { vid: activeVendorId, name: VENDORS.pares && VENDORS.pares.name };
+    });
+    check('Control: in GRASS the offline fallback is as it was (the demo store is rebuilt for a vendor who signs in before the first sync)', g.vid === 'pares' && g.name === 'Finest Pares & Goto', JSON.stringify(g));
+    await shut(G);
+  }
+
+  // ═════ 3d. A CONDO WITH NO BUILDING LISTED, AND A CONDO WITH ONE ═════
+  // An admin may add a condo before knowing its buildings, and many condos are a single building: neither is a special case for a customer.
+  // (Every other check here uses a two-building condo, where a building must be chosen.)
+  {
+    const SHAPES = [
+      ['no building listed', 'zero-heights', Object.assign(CARD('zero-heights'), { name: 'Zero Heights', buildings: [], unitHint: '' })],
+      ['one building', 'one-heights', Object.assign(CARD('one-heights'), { name: 'One Heights', buildings: [{ id: 'main', name: 'Main Tower', kind: 'tower', order: 1 }], unitHint: 'Floor and unit' })],
+    ];
+    for (const [label, id, card] of SHAPES) {
+      const zero = card.buildings.length === 0;
+      H.resetDB(); seedRoomStore(ROOM(id), 'pares', card.name + ' Pares');
+      const P = await session(browser, port, log, { ls: LS_IN(id, card), version: V('on'), keepDb: true });
+      await handed(P.page);
+      const s = await P.page.evaluate(() => {
+        const opts = id => [...document.getElementById(id).options].map(o => o.textContent);
+        const cb = document.getElementById('cust-building'), bk = document.getElementById('bk-building');
+        return { ap: opts('ap-loc'), apSel: document.getElementById('ap-loc').selectedIndex, nv: opts('nv-loc'), ev: opts('ev-loc'), cb: cb ? { tag: cb.tagName, opts: [...cb.options].map(o => o.textContent), val: cb.value } : null,
+                 bk: { tag: bk.tagName, opts: bk.options ? [...bk.options].map(o => o.textContent) : null, val: bk.value }, ph: document.getElementById('cust-unit').placeholder, ok: lfRoomBuildingOk('cust-building'), okBk: lfRoomBuildingOk('bk-building') };
+      });
+      const outside = '📍 Outside ' + card.name;
+      if (zero) {
+        check('A condo with ' + label + ': the application lists the condo itself and "Outside" (first one selected), the admin\'s two boxes list the condo itself', JSON.stringify(s.ap) === JSON.stringify([card.name, outside]) && s.apSel === 0 && JSON.stringify(s.nv) === JSON.stringify([card.name]) && JSON.stringify(s.ev) === JSON.stringify([card.name]), JSON.stringify(s));
+        check('A condo with ' + label + ': the checkout asks for no building, the booking sheet\'s building stays a text box, the unit example is the neutral one, and nothing is required', s.cb === null && s.bk.tag === 'INPUT' && s.ph === 'e.g. 1204' && s.ok === true && s.okBk === true, JSON.stringify(s));
+      } else {
+        check('A condo with ' + label + ': the application lists its building and "Outside" (first one selected), the admin\'s two boxes list the building', JSON.stringify(s.ap) === JSON.stringify(['Main Tower', outside]) && s.apSel === 0 && JSON.stringify(s.nv) === JSON.stringify(['Main Tower']) && JSON.stringify(s.ev) === JSON.stringify(['Main Tower']), JSON.stringify(s));
+        check('A condo with ' + label + ': the checkout and the booking sheet offer the building and have it chosen already; the unit example is the condo\'s own', s.cb && s.cb.tag === 'SELECT' && JSON.stringify(s.cb.opts) === JSON.stringify(['Choose your building', 'Main Tower']) && s.cb.val === 'Main Tower' && s.bk.tag === 'SELECT' && s.bk.val === 'Main Tower' && s.ph === 'Floor and unit', JSON.stringify(s));
+        const again = await P.page.evaluate(() => { el('cust-building').value = ''; el('bk-building').value = ''; return [lfRoomBuildingOk('cust-building'), lfRoomBuildingOk('bk-building')]; });
+        check('A condo with ' + label + ': nothing is required even if the customer picks "Choose your building" again (there is nothing to choose between)', again[0] === true && again[1] === true, JSON.stringify(again));
+        await P.page.evaluate(() => { el('cust-building').value = 'Main Tower'; });
+      }
+      // an order from a condo of this shape goes through: it carries the building only if there is one
+      await P.page.evaluate(() => { openVendor('pares'); const it = lfMenuArr(MENU.pares)[0]; addToCart('pares', it.name, it.emoji || '🍲', it.price); goPage('p-ccart'); });
+      await fillCheckout(P.page, { name: 'Test Customer', unit: '7C', phone: '09171234567' });
+      await P.page.evaluate(() => { setPay('cash'); placeOrder(); });
+      await step('the order of the ' + label + ' condo landed', (async () => { const t0 = Date.now(); while (Date.now() - t0 < 12000) { const o = (H.DB()[ROOM(id)] || {}).orders; if (o && Object.keys(o).length) return; await sleep(150); } throw new Error('no order in ' + ROOM(id)); })());
+      const orders = H.DB()[ROOM(id)].orders, o = orders[Object.keys(orders)[0]];
+      check('A condo with ' + label + ': an order goes through at once, ' + (zero ? 'with no building on it' : 'carrying the one building'), o.vendorId === 'pares' && o.unit === '7C' && (zero ? !('building' in o) : o.building === 'Main Tower'), JSON.stringify(o).slice(0, 220));
+      await shut(P);
+    }
+  }
+
   // ═════ 4. WHO MAY ENTER A CONDO (the remote switch, and the condo's own status) ═════
   // A customer in GRASS, with a shared directory holding a Live, a Coming soon, a Not yet open, a hidden and an unverified condo.
   const custMatrix = async (label, sw, expect) => {
@@ -429,6 +556,8 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
       return out;
     });
     check('The hand-over of "condoSwitch": only the exact word "on" opens it (true, 1, a list, an object, "off", null, "", "admin", "ON" and " on" do not), and a readable file with no switch closes it again', res.on === true && Object.keys(res).filter(k => k !== 'on').every(k => res[k] === false), JSON.stringify(res));
+    const hid = await P.page.evaluate(() => { lfCondoModeFromFile({ version: 1, condos: 'on', condoSwitch: 'on' }); return { there: !!lfCondoById('hidden-heights') && !!lfCondoById('unverified-heights'), live: lfSwitchAllowed(lfCondoById('live-heights')), hidden: lfSwitchAllowed(lfCondoById('hidden-heights')), unverified: lfSwitchAllowed(lfCondoById('unverified-heights')), moved: lfSwitchCondo('hidden-heights'), room: lfRoomKey(), id: localStorage.getItem('lf-condo') }; });
+    check('...and with the switch ON a customer still cannot enter a hidden or an unverified condo even when it is marked Live (the records are there; the Live, shown one is open to them)', hid.there === true && hid.live === true && hid.hidden === false && hid.unverified === false && hid.moved === false && hid.id === null && hid.room === GRASS_ROOM, JSON.stringify(hid));
     // a customer calling the functions from devtools with the switch off
     await P.page.evaluate(() => lfCondoModeFromFile({ version: 1, condos: 'on', condoSwitch: 'admin' }));
     const dev = await P.page.evaluate(() => ({ r1: lfSwitchCondo('live-heights'), r2: lfSwitchCondo('hidden-heights'), r3: lfSwitchCondo('grass-residences-quezon-city'), r4: lfSwitchCondo('nope-nope'), room: lfRoomKey(), id: localStorage.getItem('lf-condo'), card: localStorage.getItem('lf-condo-card') }));
@@ -436,16 +565,38 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await shut(P);
   }
   {
+    // the admin's read of the switch, over time: a failed read closes it; after a sign-out the word that stays in memory lets nobody in; a draft or a sample is never entered
+    H.resetDB(); seedDir(DIR());
+    const P = await session(browser, port, log, { version: V('on', 'on'), init: SHAPES_INIT });
+    await adminSignIn(P.page);
+    await until(P.page, () => _lfCondoModeAt > 0 || _lfCondoMode !== 'off', null, 'the admin switch was read');
+    await P.page.evaluate(async () => { _lfCondoModeAt = 0; await lfCondoModeRead(); });
+    const a0 = await P.page.evaluate(() => { const S = SHAPES(); return { mode: _lfSwitchMode, hidden: lfSwitchAllowed(S.hidden), draft: lfSwitchAllowed(Object.assign(S.live, { id: 'draft-x', draft: true })), sample: lfSwitchAllowed(Object.assign(SHAPES().live, { id: 'sample-x', sample: true })), plain: lfSwitchAllowed(SHAPES().live) }; });
+    check('Admin with the switch on: may enter a hidden condo, and a condo flagged as a draft or a sample is never entered even then', a0.mode === 'on' && a0.hidden === true && a0.plain === true && a0.draft === false && a0.sample === false, JSON.stringify(a0));
+    await P.page.unroute(VJSON); await P.page.route(VJSON, answer('fail'));
+    const a1 = await P.page.evaluate(async () => { _lfCondoModeAt = 0; await lfCondoModeRead(); return { mode: _lfSwitchMode, cmode: _lfCondoMode, hidden: lfSwitchAllowed(SHAPES().hidden) }; });
+    check('...a read of the file that FAILS closes the switch (nothing is kept from the last good read)', a1.mode === 'off' && a1.cmode === 'off' && a1.hidden === false, JSON.stringify(a1));
+    await P.page.unroute(VJSON); await P.page.route(VJSON, answer(V('on', 'on')));
+    await P.page.evaluate(async () => { _lfCondoModeAt = 0; await lfCondoModeRead(); });
+    const a2 = await P.page.evaluate(() => { const before = _lfSwitchMode; adminSignOut(); const S = SHAPES(); return { before, mode: _lfSwitchMode, admin: _lfAdminMode, hidden: lfSwitchAllowed(S.hidden), coming: lfSwitchAllowed(S.coming), closed: lfSwitchAllowed(S.closed), unverified: lfSwitchAllowed(S.unverified) }; });
+    check('...and after the admin signs out the word they read is still in memory, but it lets a customer on the same phone into nothing an admin alone may enter (hidden, Coming soon, Not yet open, unverified)', a2.before === 'on' && a2.mode === 'on' && a2.admin === false && !a2.hidden && !a2.coming && !a2.closed && !a2.unverified, JSON.stringify(a2));
+    await shut(P);
+  }
+  {
     // an admin: any shared condo (Coming soon, Not yet open, hidden, unverified), when BOTH "condos" and "condoSwitch" allow it
     const adminCase = async (label, condos, sw, expect) => {
+      const wantMode = (sw === 'admin' || sw === 'on') ? sw : 'off';
       H.resetDB(); seedDir(DIR());
-      const P = await session(browser, port, log, { version: V(condos, sw) });
+      const P = await session(browser, port, log, { version: V(condos, sw), init: SHAPES_INIT });
       await adminSignIn(P.page);
       await until(P.page, () => _lfCondoModeAt > 0 || _lfCondoMode !== 'off', null, 'the admin switch was read');
       await P.page.evaluate(async () => { await lfCondoModeRead(); await lfShSync(true); });
       const r = await P.page.evaluate(() => { const o = {}; for (const id of ['live-heights', 'soon-heights', 'shut-heights', 'hidden-heights', 'unverified-heights']) o[id] = lfSwitchAllowed(lfCondoById(id)); return o; });
       const all = Object.values(r).every(v => v === expect);
       check('Admin, ' + label + ': ' + (expect ? 'may enter ANY shared condo (Live, Coming soon, Not yet open, hidden, unverified)' : 'may enter none'), all, JSON.stringify(r));
+      // ...and the same judged on records made by hand (the directory is not loaded at all when "condos" is off, which would make the loop above say "no" for the wrong reason)
+      const r2 = await P.page.evaluate(() => { const o = {}; for (const k in SHAPES()) o[k] = lfSwitchAllowed(SHAPES()[k]); return { o, mode: _lfSwitchMode }; });
+      check('Admin, ' + label + ': the gate itself, on records made by hand, says ' + (expect ? 'yes to every shape' : 'no to every shape') + ', and keeps only the words it knows ("' + wantMode + '")', Object.values(r2.o).every(v => v === expect) && r2.mode === wantMode, JSON.stringify(r2));
       await shut(P);
     };
     await adminCase('"condos":"on" + "condoSwitch":"admin"', 'on', 'admin', true);
@@ -484,7 +635,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     // the move: both keys, written together, then a reload into the condo
     const w0 = writes(P.reqs).length;      // (the GRASS phone seeded the empty database when it first opened: that is not the move's doing)
     await P.page.click('#lf-pg-swgo');
-    await Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]);
+    await step('the app reloaded after the tap on #lf-pg-swyes', Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]));
     await ready(P.page); await handed(P.page);
     const m = await P.page.evaluate(() => ({ room: ROOM_KEY, id: localStorage.getItem('lf-condo'), card: JSON.parse(localStorage.getItem('lf-condo-card')), sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, title: document.title, stores: Object.keys(VENDORS).length, cur: lfCondoCurrent().name, foot: !!document.getElementById('lf-room-foot') }));
     check('"Yes, switch" moves the phone: the id and the card are stored together, the app reloads INTO the condo (its room, its name, its city), empty, with the way back at the foot of the Home page', m.room === 'lf_c_live-heights' && m.id === 'live-heights' && m.card && m.card.id === 'live-heights' && m.card.name === 'Live Heights' && m.card.buildings.length === 2 && m.sub === 'Live Heights • Mandaluyong' && m.title === 'LokalFinder — Live Heights' && m.stores === 0 && m.cur === 'Live Heights' && m.foot, JSON.stringify(m));
@@ -510,7 +661,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await P.page.click('#lf-pg-swgo');
     g = await P.page.evaluate(PAGE);
     check('...and asks first: "Go back to GRASS Residences?"', /Go back to GRASS Residences\?/.test(g.qText), g.qText);
-    await Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]);
+    await step('the app reloaded after the tap on #lf-pg-swyes', Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]));
     await ready(P.page); await handed(P.page);
     const gb = await P.page.evaluate(() => ({ room: ROOM_KEY, id: localStorage.getItem('lf-condo'), card: localStorage.getItem('lf-condo-card'), stores: Object.keys(VENDORS).length, sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, foot: !!document.getElementById('lf-room-foot') }));
     check('Going back removes both keys and reloads into GRASS: its room, its ten stores, its words, no footer', gb.room === GRASS_ROOM && gb.id === null && gb.card === null && gb.stores === 10 && gb.sub === 'GRASS Residences • Quezon City' && gb.foot === false, JSON.stringify(gb));
@@ -561,7 +712,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     const hint = await A.page.evaluate(() => (document.querySelector('#lf-pg-sw .lf-pg-swh') || {}).textContent || '');
     check('An admin is told, on the condo\'s page, that only admins can open it for now', /Only admins can open this condo for now/.test(hint), hint);
     await A.page.click('#lf-pg-swgo');
-    await Promise.all([A.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), A.page.click('#lf-pg-swyes')]);
+    await step('the app reloaded after the tap on #lf-pg-swyes', Promise.all([A.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), A.page.click('#lf-pg-swyes')]));
     await ready(A.page);
     const a = await A.page.evaluate(() => ({ room: ROOM_KEY, page: document.querySelector('.page.on').id, flag: sessionStorage.getItem('lf-admin-next'), admin: _lfAdminMode === true }));
     check('After an admin\'s move the app is in the condo, signed out (the session was in memory), on the admin sign-in page, and the one-use flag is spent', a.room === 'lf_c_live-heights' && a.page === 'p-alogin' && a.flag === null && a.admin === false, JSON.stringify(a));
@@ -576,7 +727,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await handed(P.page); await versionSeen(P);
     await openCondoPage(P.page, 'live-heights');
     await P.page.click('#lf-pg-swgo');
-    await Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]);
+    await step('the app reloaded after the tap on #lf-pg-swyes', Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]));
     await ready(P.page);
     check('A customer\'s move lands on the condo\'s Home (no admin page, and no flag was set)', await P.page.evaluate(() => document.querySelector('.page.on').id === 'p-chome' && sessionStorage.getItem('lf-admin-next') === null));
     await shut(P);
@@ -595,7 +746,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await sleep(300);
     check('Tapping it asks first (a plain confirm); dismissing it moves nothing', /Go back to GRASS Residences\?/.test(said) && await P.page.evaluate(() => localStorage.getItem('lf-condo') === 'live-heights' && ROOM_KEY === 'lf_c_live-heights'), said);
     P.page.once('dialog', d => d.accept());
-    await Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-room-back')]);
+    await step('the app reloaded after the tap on #lf-room-back', Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-room-back')]));
     await ready(P.page);
     const r = await P.page.evaluate(() => ({ room: ROOM_KEY, id: localStorage.getItem('lf-condo'), card: localStorage.getItem('lf-condo-card') }));
     check('...and accepting it goes back to GRASS (both keys removed)', r.room === GRASS_ROOM && r.id === null && r.card === null, JSON.stringify(r));
@@ -673,7 +824,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
       await sleep(30);
     }
     check('The Add vendor form offers THIS condo\'s buildings ("Tower A", "Tower B"), not GRASS\'s towers', added.every(l => JSON.stringify(l) === JSON.stringify(['Tower A', 'Tower B'])), JSON.stringify(added[0]));
-    await step('the three stores reached the condo\'s room', (async () => { const t0 = Date.now(); while (Date.now() - t0 < 15000) { const r = H.DB()[ROOM(ID)] || {}; if (r.vendors && Object.keys(r.vendors).length === 3 && r.pinHashes && Object.keys(r.pinHashes).length === 3) return; await sleep(200); } throw new Error('stores: ' + JSON.stringify(Object.keys((H.DB()[ROOM(ID)] || {}).vendors || {}))); })());
+    await step('the three stores, their PIN hashes and their change stamps reached the condo\'s room (the stamps are written after the data lands)', (async () => { const t0 = Date.now(); while (Date.now() - t0 < 15000) { const r = H.DB()[ROOM(ID)] || {}; if (r.vendors && Object.keys(r.vendors).length === 3 && r.pinHashes && Object.keys(r.pinHashes).length === 3 && r.revs && Object.keys(r.vendors).every(id => r.revs[id])) return; await sleep(200); } throw new Error('stores: ' + JSON.stringify(Object.keys((H.DB()[ROOM(ID)] || {}).vendors || {}))); })());
     const room = H.DB()[ROOM(ID)];
     const vs = Object.values(room.vendors);
     check('Food, Cleaning and Aircon stores are saved in the condo\'s room, each in its own vertical, with the condo\'s building in its line ("Tower A · ...")', ['food', 'cleaning', 'aircon'].every(k => vs.some(v => (v.category || 'food') === k)) && vs.every(v => /^Tower A · /.test(v.sub)), JSON.stringify(vs.map(v => [v.name, v.category, v.sub])));
@@ -870,6 +1021,16 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('A condo whose name contains "GRASS Residences" is named once and exactly (header, sign-in line, "Outside ...", title): the replacement never runs twice', n.sub === 'GRASS Residences Annex • Mandaluyong' && n.login.length === 1 && n.login[0] === 'LokalFinder · GRASS Residences Annex' && /Outside GRASS Residences Annex$/.test(n.outside) && n.title === 'LokalFinder — GRASS Residences Annex', JSON.stringify(n));
     await shut(N);
 
+    // a name of nothing but control characters has no letters to show, but the room is still this condo's: it is called "This condo", never GRASS
+    {
+      const ctl = { v: 1, id: 'ctl-heights', name: '\u0001\u0002\u0003', city: 'X', buildings: [] };
+      const Ct = await phone(browser, port, log, { ls: LS_IN('ctl-heights', ctl), version: V('on', 'admin') });
+      await handed(Ct.page);
+      const ct = await Ct.page.evaluate(() => ({ room: ROOM_KEY, name: lfRoomName(), sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, title: document.title }));
+      check('A card whose name is only control characters still puts the phone in its own room, and the screens call the condo "This condo" (never GRASS)', ct.room === 'lf_c_ctl-heights' && ct.name === 'This condo' && ct.sub === 'This condo' && ct.title === 'LokalFinder — This condo', JSON.stringify(ct));
+      await shut(Ct);
+    }
+
     // 300 buildings in a card: capped at 60, fast
     const many = { v: 1, id: 'big-heights', name: 'Big Heights', city: 'X', buildings: Array.from({ length: 300 }, (_, i) => ({ id: 'b' + i, name: 'B' + i, kind: 'tower', order: i + 1 })) };
     const t0 = Date.now();
@@ -904,6 +1065,8 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await F.page.evaluate(() => { _lfSh.last = 0; lfShKick(true); }); await sleep(1500);
     await F.page.evaluate(() => { _lfSh.last = 0; lfShKick(true); }); await sleep(1500);
     check('...and later looks that find nothing new do not write the card again', await F.page.evaluate(() => window.__cardWrites) === 1);
+    await F.page.evaluate(() => { lfRoomCardRefresh(); lfRoomCardRefresh(); });
+    check('...and asking for a refresh by hand when nothing changed writes nothing either', await F.page.evaluate(() => window.__cardWrites) === 1);
     await F.page.reload({ waitUntil: 'domcontentloaded' }); await ready(F.page); await handed(F.page);
     const f2 = await F.page.evaluate(() => ({ sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, loc: [...document.getElementById('ap-loc').options].map(o => o.textContent), bld: [...document.getElementById('cust-building').options].map(o => o.textContent) }));
     check('On the next open the screens use the new card: the new name in the header, three buildings in the application and in the checkout', f2.sub === 'Live Heights Renamed • Mandaluyong' && f2.loc.length === 4 && f2.loc[2] === 'Tower C' && f2.bld.length === 4 && f2.bld[3] === 'Tower C', JSON.stringify(f2));
@@ -917,6 +1080,45 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     const k = await K.page.evaluate(() => ({ name: JSON.parse(localStorage.getItem('lf-condo-card')).name, writes: window.__cardWrites, room: ROOM_KEY }));
     check('A condo that is not in the directory keeps the card the phone has: the card is untouched (no write, same name) and the phone is still in its room', k.name === 'Light Test Residences' && k.writes === 0 && k.room === 'lf_c_live-heights', JSON.stringify(k));
     await shut(K);
+  }
+
+  // a phone in a condo that the shared directory does not list (not loaded yet, or the admin took it out) still has the Condos icon (GRASS is the other condo)
+  // and still finds its own condo in the list, beside GRASS
+  {
+    H.resetDB();                                                       // no directory at all
+    const K = await session(browser, port, log, { ls: LS_IN(ID), version: V('on', 'admin') });
+    await handed(K.page); await versionSeen(K);
+    await K.page.evaluate(() => UNSHIFT());
+    await step('the Condos icon is on a condo phone\'s Home bar even though the directory holds nothing', K.page.waitForSelector('#lf-condo-nav', { timeout: 15000 }));
+    await K.page.click('#lf-condo-nav');
+    await settle(K.page, '#modal-condo');
+    const ids = await K.page.evaluate(() => [...document.querySelectorAll('#lf-condo-list .lf-condo-card')].map(c => c.dataset.id).sort());
+    check('A phone in a condo the directory does not list still has the Condos icon (GRASS is the other condo), and finds its own condo in the list beside GRASS', JSON.stringify(ids) === JSON.stringify([GRASS_ID, ID].sort()), JSON.stringify(ids));
+    await shut(K);
+  }
+
+  // the size cap on the card is kept where the card is WRITTEN (the switch, the refresh) as well as where it is read. A clean record cannot make a card as big as the real cap
+  // (60 buildings come to about 9,000 characters), so this test serves the page with the cap lowered to 150.
+  {
+    const SMALL = SRC.replace('const LF_CARD_MAX       = 20000;', 'const LF_CARD_MAX       = 150;');
+    check('(setup) the page the test serves has the lowered cap', SMALL !== SRC && /const LF_CARD_MAX       = 150;/.test(SMALL));
+    H.resetDB(); seedDir(DIR());
+    const W = await session(browser, port, log, { version: V('on', 'on'), ls: { 'lf-condo-pub': PUB() }, src: SMALL });
+    await handed(W.page); await versionSeen(W);
+    await until(W.page, () => !!lfCondoById('live-heights') && _lfSwitchPub === true, null, 'the directory and the switch were read');
+    const w = await W.page.evaluate(() => { const size = JSON.stringify(lfRoomCardFor(lfCondoById('live-heights'))).length; const r = lfSwitchCondo('live-heights'); return { size, r, id: localStorage.getItem('lf-condo'), card: localStorage.getItem('lf-condo-card'), off: _lfRoomOff, toast: (document.getElementById('toast') || {}).textContent }; });
+    check('A card over the size cap is not stored by the switch: nothing is left behind, the phone stays in GRASS, the moving switches itself off and says it would not remember the switch', w.size > 150 && w.r === false && w.id === null && w.card === null && w.off === true && /would not remember the switch/.test(w.toast), JSON.stringify(w));
+    await shut(W);
+    // the refresh: a phone in a small condo whose directory record has grown past the cap keeps the card it has
+    H.resetDB(); seedDir({ 'live-heights': REC('Live Heights') });
+    const small = { v: 1, id: 'live-heights', name: 'Live Heights', city: '', unitHint: '', buildings: [] };
+    const R = await session(browser, port, log, { version: V('off', 'off'), ls: LS_IN('live-heights', small), src: SMALL });
+    await handed(R.page);
+    await until(R.page, () => _lfSh.last > 0 && !!lfCondoById('live-heights'), null, 'the directory was read');
+    await sleep(600);
+    const rr = await R.page.evaluate(() => { const had = localStorage.getItem('lf-condo-card'); lfRoomCardRefresh(); return { same: localStorage.getItem('lf-condo-card') === had, n: JSON.parse(localStorage.getItem('lf-condo-card')).buildings.length, room: ROOM_KEY, size: JSON.stringify(lfRoomCardFor(lfCondoById('live-heights'))).length }; });
+    check('A directory record whose card would pass the size cap is not written over the phone\'s card: it keeps the card it has, and its room', rr.same === true && rr.n === 0 && rr.room === 'lf_c_live-heights' && rr.size > 150, JSON.stringify(rr));
+    await shut(R);
   }
 
   // ═════ 11. SIZE AND TOUCH ═════
@@ -982,9 +1184,10 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await sleep(200);
     const q = await Q.page.evaluate(() => ({ off: _lfRoomOff, box: !!document.getElementById('lf-pg-sw'), room: ROOM_KEY, id: localStorage.getItem('lf-condo'), titleOk: !!document.getElementById('lf-pg-ttl') }));
     check('A throw inside the question switches the moving off and takes the button away; nothing moved, the page stays, and nothing uncaught reached the console', q.off === true && q.box === false && q.room === GRASS_ROOM && q.id === null && q.titleOk && log.errors.length === e1, JSON.stringify(q));
+    check('...and after that fault no other condo can be entered (the Live, shown one is refused too)', await Q.page.evaluate(() => lfSwitchAllowed(lfCondoById('live-heights'))) === false);
     // a double tap on "Yes" is one move
-    const dbl = await Q.page.evaluate(() => { _lfRoomOff = false; return [lfSwitchCondo('live-heights'), lfSwitchCondo('live-heights')]; });
-    check('A second call while a switch is on its way does nothing (one move, never two)', dbl[0] === true && dbl[1] === false, JSON.stringify(dbl));
+    const dbl = await Q.page.evaluate(() => { _lfRoomOff = false; const a = lfSwitchCondo('live-heights'); const b = lfSwitchCondo('live-heights'); return [a, b, (document.getElementById('toast') || {}).textContent]; });
+    check('A second call while a switch is on its way does nothing (one move, never two) and says nothing: the toast is still "Switching to ...", not "you cannot switch"', dbl[0] === true && dbl[1] === false && /^Switching to /.test(dbl[2]), JSON.stringify(dbl));
     await shut(Q);
   }
 
