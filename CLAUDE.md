@@ -44,12 +44,12 @@ Bookings reuse the food status *strings* (`new`→`accepted`→`preparing`→
   page.
 - `firebase-messaging-sw.js`, `OneSignalSDKWorker.js` — push notification
   service workers (Firebase Cloud Messaging + OneSignal both present).
-- `version.json` — `{"version": N, "v": N, "condos": "off|admin|on"}`. The app
+- `version.json` — `{"version": N, "v": N, "condos": "off|admin|on", "condoSwitch": "off|admin|on"}`. The app
   polls it (`fetch('version.json?_=...')`) to detect new deployments and prompt
   reload; `N` must equal `APP_VERSION` in `index.html` or the banner never
   fires, and it only fires for a HIGHER number, so a rollback has to raise both.
-  `condos` (v78) is the remote switch for the condo picker — see below. Old
-  builds ignore it.
+  `condos` (v78) is the remote switch for the condo picker — see below. `condoSwitch` (v86) decides who may ENTER a condo. Old
+  builds ignore both.
 - `.github/workflows/deploy-pages.yml` — CI/CD: on push to `main`, builds
   `landing/`, assembles `index.html` + service workers + built landing site
   into `_site/`, and deploys to **GitHub Pages**. No other hosting/backend
@@ -371,7 +371,7 @@ it registers a laundry vertical at runtime and asserts it gets a login tab, its
 registry label and motion, its own optgroup and correct filtering, with no code
 change.
 
-**Testing:** `tests/` holds a Playwright suite — 1453 checks across twenty-one files,
+**Testing:** `tests/` holds a Playwright suite — 1651 checks across twenty-two files,
 driving the real `index.html` in headless Chromium with the RTDB stubbed in
 memory. Run it with `cd tests && npm install && ./run.sh`, and run it before
 and after any change to `index.html`.
@@ -1379,6 +1379,107 @@ All 21 suites (1453 checks) pass on a frozen copy of the final build (EXIT 0).
 (this environment cannot reach them), what the live database does with these writes once the free plan is over its limit (a write it refuses is reported as "could not save", and a lost answer as "could not confirm"),
 the rules on the production service (the emulator is the same engine, but nothing is published), and push delivery (no push, service-worker or ordering line is touched).
 
+**Condo rooms (v86): a phone can be IN a condo, and a condo's room is the whole app. Ships dark (`"condoSwitch":"admin"`).**
+The founder said (2026-10-27), after asking how to test a new condo with stores of every kind in it ("i will open a new condo put stores on it such cleaning, food etc etc"):
+"i want the other condo to look like the grass one". Until v86 a condo from the shared directory (v85) was a listing: customers could look at it and not enter it, and every
+store, order and PIN lived in GRASS. v86 is Phase C of the approved plan (separate rooms, the cart guard, each room's admin), built dark. **It is the riskiest change since v65:
+it moves the one line every database path hangs off.**
+
+- **A room is the app under another prefix.** Every database path already hung off `ROOM_KEY` (vendors, menu, pinHashes, orders, chats, notifs, posts, reviews, vendorApplications,
+  adminLog, revs, deletedVendors, heroStats, fcmTokens), so a condo's room, `lf_c_<id>`, is the same code on the same screens, and it starts EMPTY. A store of any vertical is added in it
+  exactly as in GRASS: the admin's Add vendor form, or the store's own application and the admin's approval, both inside that room.
+- **Which room: decided first.** `lfRoomKey()`, `ROOM_KEY`, `LF_ROOM_IS_GRASS`, `lfRk()` and five constants moved from the v78 block to the TOP of the main script (block "v86 — WHICH ROOM"),
+  because the seed stores (~L4000) and the device keys need the room before the v78 block (~L13000) exists. A phone is in a condo only if `localStorage['lf-condo']` (an id that matches
+  the id pattern, is not GRASS's and is not `sample-`/`preview-`) AND `localStorage['lf-condo-card']` (JSON under 20,000 characters whose `id` equals it and whose `name` is not blank)
+  are both there. Anything else, any error, `LF_CONDOS_BUILD = false`: GRASS. A hand-edited id without its card is GRASS (17 kinds of junk are tested). The room is derived (`'lf_c_' + id`), never read off a record.
+- **The card** (`lfRoomCardFor`, written WITH the id by the switch): `{v:1,id,name,city,unitHint,buildings:[{id,name,kind,order,floors?}],at}`, copied from the clean directory record at the moment
+  of the switch, so the screens know the condo's name and buildings at boot with no network and whether or not the directory has loaded. It goes through `lfCondoClean` again when read
+  (`lfRoomCondo()`); a name of nothing but control characters becomes "This condo". **The card follows the directory** (`lfRoomCardRefresh`, from `lfShViews`): when an admin renames the
+  condo or adds a building, the phones in it get a new card on their next directory read and use it on their next open; screens already drawn are left alone; a condo that is not
+  in the directory keeps its card; a card is not rewritten when nothing changed, and one over the size cap is never written (a clean record cannot reach 20,000 characters — 60 buildings
+  come to about 9,000 — so the cap is a guard, tested with the page served at a lowered cap).
+- **No seeds outside GRASS.** `VENDORS`, `MENU` and `VENDOR_PIN_HASHES` are emptied right after the last of them is declared. `tryBoot()` does not seed an empty non-GRASS room, and it counts
+  the empty catalog as handed out (`applyData(d); d._commit()`) at the start: without that `pushState()` refuses ("Still loading the stores") until the first 3-second poll, so an admin who opens a
+  new condo and adds a store at once would be told to try again. (An earlier note said "could never be saved": wrong, the first poll hands it out; the test drops the poll to see the start's own commit.)
+  Proven by a watcher that no demo store's name is ever on screen, not even for a moment, and by "no write at all by an empty condo that nobody touched". **`vendorLogin()` has an offline fallback that
+  rebuilds six GRASS demo stores for a vendor who signs in before the first sync: it is now `&& LF_ROOM_IS_GRASS`**, or a condo store whose record was missing would have been replaced by GRASS's "Finest Pares & Goto".
+- **Device keys follow the room (`lfRk`)**: `lf-vsess`, `lf-vendorApp`, `lf-rev-queue`, `catalog-v1` (IndexedDB), `lf-myOrders`, `lf-lastOrder`, `lf-savedVendors`, `lf-heroStats` get `@<room>`
+  outside GRASS and are exactly what they were in GRASS. Device-level on purpose: `lf-splash-seen`, `lf-utm`, `lf-cust-id`, `lf-fcm-diag`, `lf-condo`, `lf-condo-card`, `lf-condo-pub`,
+  `lf-condo-shared`, `lf-condo-drafts`, `lf-adminEmail`. **The pre-v56 `lf-vendorId` / `lf-vendorPin` are GRASS's** (read, migrated and removed in GRASS only: a vendor id is a slug, so in a
+  condo the same pair would sign the phone in as a different store with the condo's own PIN hash as the judge). `test-condorooms.js` §9 scans the source: **a new plain-string storage key fails
+  the suite until it is classified**.
+- **Admin: ONE login for every condo.** `adminAuthNode()` returns `LF_GRASS_ROOM + '/adminAuth'` whatever the room. So a new condo has no unclaimed admin account for a stranger to take
+  (the approved plan's "set each room's admin at creation" became unnecessary), nothing to set up and nothing to keep in step when the password changes. The claim path
+  (`adminLogin`'s unclaimed branch, `adminForgotPassword`, `adminCompleteSetup`) refuses outside GRASS. `lf_c_<id>/adminAuth` is never read or written: a stranger who plants one changes
+  nothing (tested). What an admin sees and does still follows the room. An admin's move sets a one-use `sessionStorage['lf-admin-next']` so they land on the admin sign-in of the new condo (the session was in memory).
+- **Push is GRASS-only** (`_lfPushRoom()`): the FCM vendor token, the customer's notification prompt and token, and the three `OneSignal.login()` sites. The sender is outside this repo, and a vendor id
+  is a slug of the store's name, so the same id in two condos would share one push identity: a vendor in a condo could receive GRASS Kape's order alerts (customer names, units). The seller
+  sign-in and application screens say that alerts show inside the app only.
+- **The screens say which condo** (`lfRoomBrand`, `lfRoomLocSelects`, `lfRoomCheckoutFields`, each in its own try so the way back survives a fault in another): the title, the header, the search box and the
+  store types' taglines ("inside GRASS" → "in your condo"), every static "GRASS Residences" (one regex pass: the name is put in and never looked at again), the three location boxes become the
+  condo's buildings ("Building / Location", first building selected, "Outside <condo>" kept last), the checkout gets a Building choice and the unit example comes from `unitHint` (else the neutral
+  "e.g. 1204"), the booking sheet's building becomes the same choice, a food order carries `building` only outside GRASS and only when there is one, the Home says "Nobody has opened a
+  store in <condo> yet", the rotating line and vendor `sub` defaults name the condo. **The shapes of a condo:** two or more buildings → the building must be chosen; **one building → it is
+  chosen already and nothing is required**; **no building listed → no building box at all, the location boxes list the condo itself, nothing is asked** (an admin can add a condo before knowing its buildings;
+  these two shapes were untested until the mutation check found it). GRASS's own markup is never touched (the control below).
+- **Moving** (`lfSwitchAllowed`, `lfSwitchCondo`). A condo's page (v82) gets "Make this my condo" ("Back to GRASS Residences" for GRASS) when `lfSwitchAllowed(c)`. It ASKS first (the cart, orders
+  placed here), "Yes, switch" writes card then id and reads both back (a phone that keeps nothing is caught), then `location.reload()`. **Nothing is written to any database.** A failure removes both keys (never half a
+  switch), says "This phone would not remember the switch" and switches the moving off. The gate is re-checked at the move. A second tap while the page reloads **does nothing and says nothing**
+  (`lfSwitchCondo` returns first thing; it used to answer through the gate with "You cannot switch to that condo right now" over "Switching to…"). A switch that arrives while a page is open redraws its foot, unless the question is on screen.
+- **Who may enter** — `"condoSwitch"` in `version.json`: `"off"` (or missing, or any other word) | `"admin"` | `"on"`; read the way `"condos"` is (an admin's own read, the update check's hand-over for everyone: a
+  readable answer settles it, an unreadable one changes nothing). An admin session AND `condos` ∈ {admin, on} AND `condoSwitch` ∈ {admin, on}: ANY shared condo (any status, hidden or not). Everyone else:
+  `condoSwitch` exactly `"on"` AND the customers' gate AND the condo `status:"live"` AND visible AND confirmed. **Live = enterable**: leave a new condo on Coming soon until its stores are ready.
+  **Going back to GRASS is never gated**: a phone in a condo always has the Condos icon (GRASS counts as "another condo", and the phone's own condo is in its list even if the directory lacks it),
+  GRASS's page always offers the way back, and the Home ends with "Not your condo? Go back to GRASS Residences", which depends on nothing else. A fault (`lfRoomFail`) switches off only the moving to other condos.
+- **Rules** (`firebase-rules-stopgap.json`, `firebase-rules.json`): a `$room` block with the same per-node rules as GRASS for any room named `lf_c_[a-z0-9][a-z0-9-]{1,62}` (every `.write` is false or checks the name;
+  no write at `$room`, `vendors`, `menu` or `pinHashes`, so no whole-node write; the strict file leaves out `adminAuth`, `pins` and `fcmTokens`). **Proven on the Firebase RTDB emulator (v4.11.2)**: raw REST
+  46 / 46 on the stopgap file and 60 / 60 on the strict one (its `"//"` documentation keys stripped, as before); the real app replayed in a condo room (the admin switches in with real taps, signs in with the one login, opens a store,
+  a customer orders, the store accepts): 14 / 14 against the stopgap file with no refused write, 12 / 12 against the strict file with only the known refused reads (`/pinHashes`, `/pins`, `/reviews`, the root shallow read). **Not published.**
+  Anyone can still create rooms by writing a well-formed `lf_c_…` name into the open database: junk rooms cost storage, nothing else reads them.
+- **Not built, on purpose**: a link or QR per condo (so a store or customer can arrive IN a condo without the Condos list: the natural next step), "Notify me", condo requests. The installed app's
+  name (the manifest) is still "GRASS Residences": renaming it changes the label for current GRASS users, so it needs a decision. A store belongs to one condo (approved plan Q2).
+- **SECURITY: unchanged and worse in volume.** The database has no login and its rules are not published: a condo's room is as open as GRASS's, and anyone technical can write into any room. **Publish the rules
+  and move Firebase off the free plan (already over its download limit) before a condo is Live to customers** (plan Q8). v86 ships with `"condoSwitch":"admin"` so only an admin can enter one.
+- **How to try it (admin):** sign in as admin, tap the Condos card on the admin panel, open a condo, **Make this my condo**, Yes. The phone reloads inside the condo, on the admin sign-in. Sign in (the same login),
+  add stores (Vendors → Add vendor, any kind), then open the app on another phone and switch it in (it needs `"condoSwitch":"on"` and the condo set to Live, or that phone signed in as admin first). The way back is the
+  footer of the Home page.
+- **Tests.** `tests/test-condorooms.js` (198 checks): GRASS unchanged (words, keys, markup, ten seeds; 17 kinds of junk in storage; the hard off; storage that throws); an empty condo (no seed, no demo name on screen, no write,
+  every device key, push off, the catalog handed out by the start itself, the unit example); the Home's rotating line; two rooms never see each other (the SAME store id with its own PIN in both, orders, vendor sessions, one browser holding both catalogs);
+  the pre-v56 pair and the sign-in fallback (condo vs GRASS); a condo with no building listed and a condo with one; the `condoSwitch` matrix through the real update check and the hand-over, an admin's cases, a hostile caller, hidden and
+  unverified condos with the switch ON; the button, the question (cart, orders), the move (a second tap says nothing), the way back with every switch off, a switch that arrives late, an admin's move landing on the sign-in; the footer; one admin login
+  (a stranger's planted record, takeover attempts 1–3, the GRASS claim path unchanged); stores of every kind opened by the admin and applied for, approved, ordered from and booked with a building; push; source guards (every storage key
+  classified, no network or timer or innerHTML in the block); the card following the directory (and not rewritten when nothing changed, and the size cap on the page served with a lowered cap); a condo the directory does not list; hostile cards
+  and records (including a name of control characters); layout at 390/360/320; faults (storage that refuses, that silently keeps nothing, a throwing setup, a throwing question, a double tap). **Older suites changed on purpose**:
+  `test-condos.js` (the resolver now needs the id AND the card; ROOM_KEY lives in the early block), `test-condoshared.js` (the editor hint, the slice end, the hooks: a condo can now be current), `test-condopublic.js` (the
+  customer's list may add the condo the phone is in). Test-design findings: a hostile NAME check found a real bug (a name containing "GRASS Residences" was replaced twice: fixed with a one-pass replace);
+  a visual check found that the application's building list opened on "Outside <condo>" (an option re-appended last keeps the selection it was given when it was the only one left: fixed with
+  `selectedIndex = 0` and a test); the mutation check found a **racy check** (below) and the two untested shapes of a condo.
+
+**v86 control and checks (2026-10-27).** Against the live v85 file (main bba2ae2), a customer's phone **in GRASS** (4 runs each, interleaved, empty database): with the file as shipped (`"condos":"on"`, `"condoSwitch":"admin"`), with `"off"`, and with `"on"` + `"condoSwitch":"on"`: the same room,
+element ids, header markup, Home page DOM (the shuffled picks left out), `localStorage` keys, store ids, `<select>` options, DOM node count (2063 / 2063) and request log (31 / 31, 30 / 30 and 31 / 31, no path differs); no errors; startup within noise (DOMContentLoaded medians 362 / 349 / 331 ms live,
+320 / 310 / 317 ms new). One run of the first case reported a different Home page DOM: a live-against-live comparison (5 runs each) differs in the same place, the phone-notch clock ("03:06 PM" against "03:07 PM"), and the five live-against-new pairs of that comparison are identical. An admin signed in: switch `"off"`,
+`"admin"` and `"on"`: the four admin pages and the Home page identical once the Condos tab and icon are taken out, element ids identical, requests 77 / 77 (off) and 78 / 78 (admin, on), no path differs, no errors. The control is for GRASS, which must not change; a condo room has no live counterpart to compare with.
+
+**Mutation check:** 126 deliberate breakages of the new code (ids Y01–Y51, Z01–Z17, I01–I29, W01–W62 with gaps: the resolver and the card, the seeds, the device keys, the admin and push guards, the words and boxes, the gates, the move, the question, the faults, the card
+following the directory). The first pass (122) caught 108 and missed 14 (Y25, Y26, Y27, I14, I18, I19, I23, I29, W03, W11, W61, W62, Y41, Y42). **Twenty-six of the 108 "catches" were one racy check**: "…each with its own PIN hash and change stamp in the condo's room"
+read a store's change stamp straight after its data landed, although the stamp is written after the data; it failed in roughly one run in four under the runner's load and so "caught" whatever was being broken (Y16, Y35, Z11–Z14, Z16, Z17, I03–I07, I09, I17, I24, I26, W04, W06, W09,
+W14–W16, W22, W25, W47). Four more were caught only by a crashed run (Y08, I12, W20, W24). **Fixed, nearly all in the tests:** the racy check waits for the stamps; a start that fails and a reload that never comes are named steps; new tests for a condo with **no building
+listed** and one with **one building** (the shapes an admin will create first, and they had no test at all), the pre-v56 vendor keys, the sign-in fallback, the empty catalog handed out by the start itself (the 3-second poll is dropped to see it), the unit example, the registry strings
+and the three location labels, hidden and unverified condos with the switch ON, a condo the directory does not list, the size cap (the page is served with the cap lowered), a card not rewritten when nothing changed, a name of control characters, the admin's read of the switch over time (a failed read
+closes it; the word left in memory after a sign-out lets a customer into nothing an admin alone may enter; a draft or a sample is never entered) and the admin gate judged on records made by hand (with "condos" off the directory is never loaded, which had made the "off" cases answer no for the wrong reason).
+**Two small code changes came out of reading the results**, not out of a miss: a second tap on "Yes, switch" said "You cannot switch to that condo right now" over "Switching to…" (it now does and says nothing), and `vendorLogin()`'s offline fallback of GRASS demo stores
+ran in a condo too (see "No seeds outside GRASS"). Second pass, 48 breakages (13 of the 14 misses — I23 was judged equivalent by reading — the 26 and the 4 above, W10 redefined for the new guard, and W10b, Y27b, Y50, Y51, which are new), run in two parts because a worker restart killed the first: 38 caught, 10 missed
+(I05, I09, I24, I29, W06, W09, W14, W15, W16, W47). Third pass over the seven that were real gaps (I05, I09, W06, W09, W14, W15, W16): all caught, each by a named check. **Four are equivalent and are left as they are:** I23 and I24 (the fallback of a select that always has an option), I29 (the first
+write of the success screen's "where" is overwritten by `paintSuccessChrome` from the order itself) and W47 (`_lfAdminMode === true` in the hint's condition is implied by the button being there). Of the 126: 122 caught, 4 equivalent. About 80 of the first-pass catches
+(by named checks) were last run on the first pass's version of the tests, which has only gained checks and named steps since.
+
+**Stress:** the new suite ran 12 times, three at once, on a busy machine: 12 of 12 passed (198 / 198 each). (Before the racy check described above was fixed it had failed in 26 of the 108 mutation runs that were credited to it, under the runner's load.)
+All 22 suites (1651 checks) pass on a frozen copy of the final build (EXIT 0).
+**Not verified:** a real phone (the question and the footer in the real webfont, the on-screen keyboard over the checkout's building choice, Safari's private-mode storage, `location.reload()` on an installed
+home-screen app), the live site and the live database (this environment cannot reach them), the rules on the production service (the emulator is the same engine, but nothing is published), **what real
+residents and sellers do with a second condo** (there is no evidence of demand or supply outside GRASS; the seeded cleaning, aircon and laundry stores are demo fixtures and no real store exists in any condo),
+and push delivery (v86 turns push off outside GRASS rather than checking it).
+
 **Editing hazard.** The Edit tool can turn `\uXXXX` in new text into the raw
 character. Phase A hit it twice — bidirectional-override characters ended up in
 the source. After editing, scan for control, zero-width and bidi characters
@@ -1420,6 +1521,16 @@ Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the icon and an open
 (the workflow runs the whole test suite first, ~13 minutes). A fault inside the icon already switches only the icon off for that session
 (`lfCondoPubFail`). Full: restore v82's `index.html` and `version.json` with both numbers raised above the broken one (84 if 83 is live);
 the memory key `lf-condo-pub` is harmless without the code and expires by itself. v83 stores nothing in any database, so there is nothing to undo.
+
+**Rolling back v86 (condo rooms).** It ships dark (`"condoSwitch":"admin"`): a customer cannot enter a condo, and GRASS runs exactly as v85 did (the control above). Fastest:
+`"condoSwitch":"off"` in `version.json` (once the deploy has finished: ~4 s after an app opens, within 5 minutes if it is open): nobody can ENTER a condo any more, an admin included.
+It does **not** move a phone that is already in a condo out of it, on purpose: going back to GRASS is never gated, so that phone keeps working in its room and has the way back (the
+Home's footer, the Condos icon, GRASS's page). `"condos":"off"` closes the Condos list and the admin's doors but also leaves a phone in its room, and the footer's way back still works. To
+send a phone home by hand, remove `lf-condo` and `lf-condo-card` from its storage. A fault inside the moving already switches only the moving off for that session (`lfRoomFail`).
+Full: restore v85's `index.html` and `version.json` with both numbers raised above the broken one (87 if 86 is live). v85's resolver does not know the card, so every phone goes
+back to GRASS by itself on that build. What a condo's room holds (`lf_c_<id>/…`: stores, menus, PIN hashes, orders, applications) stays in the database and is harmless (nothing else
+reads it); delete the `lf_c_*` nodes in the Firebase console if wanted. A phone keeps `lf-condo`, `lf-condo-card` and the `…@lf_c_<id>` keys, which are harmless without the code. A
+store that was set up in a condo is lost to the app, not to the database, until the code comes back.
 
 **Rolling back v85 (the shared condo directory).** Fastest: `"condos":"off"` (or `"admin"`) in `version.json`: the customers' icon goes on their next read of the file
 (once the deploy has finished), and an admin's editor still saves for everyone only while the switch is `"admin"` or `"on"`. The records stay in `condoDirectory` / `condoDirRev` and are
