@@ -258,7 +258,7 @@ const WORDS = /admin|draft|sample|unverified|hidden|preview/i;     // words that
   await openAdd(A.page);
   let s = await A.page.evaluate(SHEET);
   check('A new condo\'s sheet: titled "Add a condo", Status set to Coming soon, no "Show to customers" box (a new condo is shown), a primary "Add condo", and the private draft kept as a quiet link', s.title === 'Add a condo' && s.status === 'coming' && !s.showVis && s.pubText === 'Add condo' && s.privVis && !s.delShown, JSON.stringify(s));
-  check('...its first lines say what Add condo does and what a private draft is', /Tap Add condo and it is saved for everyone/.test(s.intro) && /Customers see it under the Condos icon/.test(s.intro) && /private draft/.test(s.intro) && /usually right/.test(s.statusHint), s.intro + ' | ' + s.statusHint);
+  check('...its first lines say what Add condo does and what a private draft is', /Tap Add condo and it is saved for everyone/.test(s.intro) && /Customers see it under the Condos icon/.test(s.intro) && /private draft/.test(s.intro) && /Coming soon/.test(s.statusHint) && /switch to this condo/.test(s.statusHint), s.intro + ' | ' + s.statusHint);   // (v86: the hint now says what "Live" lets customers do)
   const optionTexts = await A.page.evaluate(() => [...document.querySelectorAll('#lf-dr-status option')].map(o => o.value + '=' + o.textContent));
   check('Status offers Coming soon, Not yet open and Live, in that order (the words customers read on the card)', optionTexts.join() === 'coming=Coming soon,closed=Not yet open,live=Live', optionTexts.join());
   await publish(A.page);
@@ -819,13 +819,13 @@ const WORDS = /admin|draft|sample|unverified|hidden|preview/i;     // words that
   const bg = await Bg.page.evaluate(k => ({ stored: localStorage.getItem(k), n: Object.keys(_lfSh.ids).length, off: _lfShOff, icon: !!document.getElementById('lf-condo-nav') }), SKEY);
   check('A directory too big for the phone\'s copy (over 250,000 characters) is still used for this visit, and the copy is not stored (and an older one is removed): the phone is never filled', bg.stored === null && bg.n === 150 && !bg.off && bg.icon, JSON.stringify([bg.stored && bg.stored.length, bg.n]));
   await shut(Bg);
-  // a stored "current condo" that names a shared condo changes nothing: it has no room yet
+  // a stored "current condo" that names a shared condo changes nothing without its card (v86: the id AND the card a switch writes make a room)
   seed({ 'room-test-condo': stored2('Room Test Condo') }, 5e15 + 50);
   const Rm = await customer(browser, port, log, { version: V_ON, keepDb: true, ls: { [PUBKEY]: pubOn(), 'lf-condo': 'room-test-condo', [SKEY]: copy(Date.now(), { condos: { 'room-test-condo': stored2('Room Test Condo') } }) } });
   await until(Rm.page, () => _lfSh.last > 0, null, 'the stamp was read');
   await sleep(500);
   const rm = await Rm.page.evaluate(() => ({ room: ROOM_KEY, key: lfRoomKey(), cur: lfCondoCurrent().id, shared: lfCondoById('room-test-condo') && lfCondoById('room-test-condo').shared }));
-  check('A phone whose stored "current condo" names a shared condo still lives in the GRASS room and still has GRASS as its current condo (a shared condo has no room of its own until switching exists), and every database path it used is under the GRASS room or the shared nodes', rm.room === 'lokalfinder_grass' && rm.key === 'lokalfinder_grass' && rm.cur === GRASS_ID && rm.shared === true && !Rm.reqs.some(r => isFB(r.u) && /lf_c_/.test(r.u)), JSON.stringify(rm));
+  check('A phone whose stored "current condo" names a shared condo still lives in the GRASS room and still has GRASS as its current condo (v86: a condo gives a room only through the card a switch writes next to the id; an id alone is GRASS), and every database path it used is under the GRASS room or the shared nodes', rm.room === 'lokalfinder_grass' && rm.key === 'lokalfinder_grass' && rm.cur === GRASS_ID && rm.shared === true && !Rm.reqs.some(r => isFB(r.u) && /lf_c_/.test(r.u)), JSON.stringify(rm));
   await shut(Rm);
 
   // ═════ 11. THE ICON IS THERE ONLY WHEN THERE IS SOMETHING ELSE TO SHOW ═════
@@ -972,7 +972,7 @@ const WORDS = /admin|draft|sample|unverified|hidden|preview/i;     // words that
   await shut(Lc);
 
   // ═════ 16. THE SOURCE ITSELF ═════
-  const start = SRC.indexOf('/* ═══ v85 — SHARED CONDO DIRECTORY ═══\n   The founder asked'), end = SRC.indexOf('function openAddVendorModal(){', start);
+  const start = SRC.indexOf('/* ═══ v85 — SHARED CONDO DIRECTORY ═══\n   The founder asked'), v86 = SRC.indexOf('/* ═══ v86 — CONDO ROOMS ═══', start), end = v86 > 0 ? v86 : SRC.indexOf('function openAddVendorModal(){', start);   // (v86 sits right after this block)
   const block = SRC.slice(start, end), code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/ .*$/gm, '');
   check('Found the v85 block in the source', start > 0 && end > start && block.length > 9000, start + '..' + end + ' len=' + block.length);
   check('The block never reaches a server directly: no fetch, no fb* call, no FB_URL, no ROOM_KEY, no pushState, no XMLHttpRequest, no sendBeacon, no WebSocket, and never the GRASS room by name',
@@ -988,9 +988,9 @@ const WORDS = /admin|draft|sample|unverified|hidden|preview/i;     // words that
   const dStart = SRC.indexOf('/* ═══ v81 — CONDO DRAFTS (admin only) ═══\n   How an admin adds a condo'), drafts = SRC.slice(dStart, SRC.indexOf('/* ═══ v82 — CONDO PICTURES AND PAGES', dStart + 1));   // (the CSS has headings with the same words, earlier in the file)
   const callsInDrafts = Array.from(new Set((drafts.replace(/\/\*[\s\S]*?\*\//g, '').match(/\blfSh[A-Za-z]*/g) || [])));
   check('The editor reaches the sharing only through four small calls (lfShSave, lfShDelete, lfShBusy, lfShCustomersLine), never the network', drafts.length > 15000 && callsInDrafts.sort().join() === 'lfShBusy,lfShCustomersLine,lfShDelete,lfShSave', callsInDrafts.join());
-  check('The hooks are small: the Home bar loads the copy and looks (lfShLoadCache, lfShKick(false)), opening the list looks, the Condos page looks (forced), and a shared condo can never be the current one or give a room',
+  check('The hooks are small: the Home bar loads the copy and looks (lfShLoadCache, lfShKick(false)), opening the list looks, the Condos page looks (forced), and (v86) a condo is the current one, and gives a room, only through the card a switch writes',
         /try\{ lfShLoadCache\(\); if\(noKick !== true\) lfShKick\(false\); on = _lfAdminMode === true \|\| lfShOthers\(\); \}catch\(e\)\{ on = false; \}/.test(SRC) && /lfShKick\(false\);\s+\/\/ v85: the list is drawn/.test(SRC) && /lfShKick\(true\);\s+\/\/ v85: the condos saved for everyone are read/.test(SRC) &&
-        /return \(c && !c\.shared\) \? c : lfCondoById\(LF_GRASS_CONDO\)/.test(SRC) && /\(c && c\.room && !c\.shared\) \? c\.room : LF_GRASS_ROOM/.test(SRC));
+        /return \(c && !c\.shared\) \? c : lfCondoById\(LF_GRASS_CONDO\)/.test(SRC) && /return c \? 'lf_c_' \+ c\.id : LF_GRASS_ROOM;/.test(SRC));
   // the rules drafts (proven on the Firebase emulator by scripts outside this suite: 55 raw REST checks per file, and the real app replayed against them); here only their shape is guarded
   for (const f of ['firebase-rules-stopgap.json', 'firebase-rules.json']) {
     let rules = null; try { rules = JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8')).rules; } catch (e) {}

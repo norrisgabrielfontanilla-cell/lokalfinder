@@ -1950,6 +1950,18 @@ button.bni.lf-condo-nav:focus-visible{outline:2px solid var(--g);outline-offset:
 button.bni.lf-condo-nav[aria-expanded="true"] svg{stroke:var(--g)}
 button.bni.lf-condo-nav[aria-expanded="true"] span{color:var(--g)}
 .lf-condo-note.res,.lf-pg-note.res{background:var(--s2);color:var(--t2);font-weight:600}
+/* ═══ v86 — CONDO ROOMS ═══
+   The button on a condo's page that moves this phone into that condo, the question it asks first, and the way back at the
+   foot of the Home page outside GRASS. Same buttons as the rest of the Condos sheet (.lf-pipe-btn: 44px or more). */
+.lf-pg-sw{margin:12px 0 4px;display:flex;flex-direction:column;gap:8px}
+.lf-pg-sw .lf-pipe-btn{width:100%}
+.lf-pg-swq{padding:10px 12px;border-radius:12px;background:var(--s2);color:var(--t1);font-size:13px;line-height:1.5}
+.lf-pg-swq b{font-weight:800}
+.lf-pg-swh{font-size:11.5px;line-height:1.4;color:var(--t3)}
+.lf-room-foot{padding:6px 16px 96px;text-align:center;font-size:12px;line-height:1.5;color:var(--t3)}
+.lf-room-back{min-height:44px;margin:0;padding:0 12px;border:0;background:none;color:var(--gd);font:700 12px var(--ff);text-decoration:underline;cursor:pointer}
+.lf-room-back:focus-visible,.lf-pg-sw .lf-pipe-btn:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.lf-room-note{margin:8px 16px 12px;padding:8px 12px;border-radius:10px;background:var(--s2);color:var(--t2);font-size:11.5px;line-height:1.45;text-align:left}
 </style>
 <!-- ═══ FCM PUSH NOTIFICATIONS (additive — does not alter existing logic) ═══ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2159,7 +2171,7 @@ button.bni.lf-condo-nav[aria-expanded="true"] span{color:var(--g)}
     if(navigator.share){
       navigator.share({
         title: 'LokalFinder',
-        text: 'Order food from your neighbors at GRASS Residences 💚',
+        text: 'Order food from your neighbors at ' + ((typeof window.lfRoomName === 'function') ? window.lfRoomName() : 'GRASS Residences') + ' 💚',
         url: SHARE_URL
       }).catch(function(){});
     } else {
@@ -3983,6 +3995,54 @@ window.LF_IS_IOS = function(){
 //  DATA
 // ═══════════════════════════════════════════════════════
 const SERVICE_FEE = 0;
+
+/* ═══ v86 — WHICH ROOM, decided before anything else is built ═══
+   Every database path in the app hangs off ROOM_KEY, so which room this phone is in has to be known before the
+   seed stores (VENDORS, below) and the device's own storage keys (lfRk) are set up. It used to be decided far
+   below, in the v78 block; the three constants and the resolver moved up here unchanged in meaning.
+   • GRASS is the default and the fallback. No stored condo, a condo without its card, a bad id, storage that
+     throws, or LF_CONDOS_BUILD = false all mean the legacy room 'lokalfinder_grass'. Its storage keys never change.
+   • A phone is in another condo only if it deliberately switched (lfSwitchCondo), which writes TWO keys together:
+     'lf-condo' (the id) and 'lf-condo-card' (the name, city and buildings, so the screens can say where this phone
+     is before any network answer). A hand-edited id without its card is GRASS.
+   • The room is DERIVED from the id ('lf_c_' + id), never read off a record, so a tampered record cannot point a
+     phone at somebody else's room.
+   • Outside GRASS a room starts EMPTY: no seed stores, no seed menus, no seed PIN hashes, no seeding write. Every
+     key that belongs to a room goes through lfRk(), which leaves a GRASS key exactly as it was and adds '@<room>'
+     to any other, so two rooms never share a cart history, a vendor session or a cached catalog. */
+const LF_CONDOS_BUILD   = true;                  // false = none of this ever runs (a release, not a switch: use version.json for that)
+const LF_GRASS_ROOM     = 'lokalfinder_grass';   // the legacy key — every GRASS order, store and PIN lives under it. Never change it.
+const LF_GRASS_CONDO    = 'grass-residences-quezon-city';
+const LF_CONDO_KEY      = 'lf-condo';            // this device's chosen condo id; missing, deleted or invalid means GRASS
+const LF_CONDO_CARD_KEY = 'lf-condo-card';       // v86: that condo's name, city and buildings, written together with the id
+const LF_CONDO_ID_RE    = /^[a-z0-9][a-z0-9-]{1,62}$/;
+const LF_ROOM_RESERVED  = /^(sample|preview)-/;  // the ids the app's own samples use (same rule as LF_DRAFT_RESERVED): never a room
+const LF_CARD_MAX       = 20000;                 // characters read back from the card: a longer one is not a card
+// The card of the condo this phone switched into, or null (= GRASS). Raw: the screens run it through lfCondoClean.
+function lfRoomCard(){
+  try{
+    if(!LF_CONDOS_BUILD) return null;
+    const id = localStorage.getItem(LF_CONDO_KEY);
+    if(typeof id !== 'string' || !LF_CONDO_ID_RE.test(id) || id === LF_GRASS_CONDO || LF_ROOM_RESERVED.test(id)) return null;
+    const raw = localStorage.getItem(LF_CONDO_CARD_KEY);
+    if(typeof raw !== 'string' || raw.length > LF_CARD_MAX) return null;
+    const c = JSON.parse(raw);
+    return (c && typeof c === 'object' && c.id === id && typeof c.name === 'string' && c.name.replace(/\s+/g, '')) ? c : null;
+  }catch(e){ return null; }
+}
+// The one line every database path hangs off (const ROOM_KEY, just below).
+function lfRoomKey(){
+  const c = lfRoomCard();
+  return c ? 'lf_c_' + c.id : LF_GRASS_ROOM;
+}
+const ROOM_KEY = lfRoomKey();
+const LF_ROOM_IS_GRASS = ROOM_KEY === LF_GRASS_ROOM;
+const LF_ROOM_CARD = LF_ROOM_IS_GRASS ? null : lfRoomCard();   // the raw card, for the screens (lfRoomCondo)
+// A storage key that belongs to a room: unchanged in GRASS, '<key>@<room>' anywhere else.
+const lfRk = k => LF_ROOM_IS_GRASS ? k : k + '@' + ROOM_KEY;
+// Push alerts (FCM tokens, OneSignal identities, the permission prompt) are GRASS-only: the sender is outside this repo and cannot be checked, and a
+// vendor id is a slug of the store's name, so the same id in two condos would share one push identity. Elsewhere alerts arrive inside the app.
+function _lfPushRoom(){ return LF_ROOM_IS_GRASS; }
 // ── SECURITY: credentials stored as SHA-256 hashes only ──
 // Plain-text passwords are never stored in this file.
 // To change: run sha256('yourpassword') and update the hash below.
@@ -4729,7 +4789,7 @@ function buildVendorCards(force=false){
       return;
     }
     const _m = activeMktFilter==='all' ? null : MARKETPLACES[activeMktFilter];
-    el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">'+((_m&&_m.emptyIcon)||'🍽️')+'</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No '+(_m?esc(_m.short.toLowerCase())+' providers':'vendors')+' in this category yet</div></div>';
+    el.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:8px">'+((_m&&_m.emptyIcon)||'🍽️')+'</div><div style="font-size:14px;font-weight:600;color:var(--t2)">No '+(_m?esc(_m.short.toLowerCase())+' providers':'vendors')+' in this category yet</div>'+lfRoomEmptyHint()+'</div>';
     updateVendorLiveBadge(); updateCategoryCounts(); updateMktCounts();
     return;
   }
@@ -5136,7 +5196,7 @@ function filterMkt(btn, id){
   if(ps) ps.textContent = _M ? _M.picksSub   : MARKETPLACES.food.picksSub;
 
   const si = el('ff-search-input');
-  if(si) si.placeholder = _M ? _M.searchPlaceholder : 'Search inside GRASS…';
+  if(si) si.placeholder = _M ? _M.searchPlaceholder : 'Search inside '+lfRoomShort()+'…';
 
   buildVendorCards(true);
   buildTodaysPicks(true);
@@ -5884,6 +5944,7 @@ function placeOrder(){
   const unit=document.getElementById('cust-unit').value.trim();
   const rawPhone=document.getElementById('cust-phone').value.trim();
   if(!name){showToast('⚠️ Enter your name');return;}
+  if(!lfRoomBuildingOk('cust-building')){showToast('⚠️ Choose your building');el('cust-building').focus();return;}   // v86: outside GRASS, a condo with several buildings
   if(!unit){showToast('⚠️ Enter your unit number');return;}
   const _ph = lfPhone(rawPhone);
   if(!_ph){showToast('⚠️ Enter a valid mobile number (e.g. 0917 123 4567)');document.getElementById('cust-phone').focus();return;}
@@ -5891,7 +5952,7 @@ function placeOrder(){
   const sub=cartTotal();
   const df=getCartDeliveryFee();
   const total=sub+df;
-  document.getElementById('s-unit').textContent='Unit '+unit;
+  document.getElementById('s-unit').textContent=lfLocationOf({unit, building:(el('cust-building')||{}).value||''});
   document.getElementById('s-total').textContent='₱'+total;
   // v58: reuse an id already minted for this checkout attempt, so a retry
   // after a write that actually landed overwrites the same record.
@@ -5958,6 +6019,7 @@ function confirmGcash(){
 // stands between a customer and their vendor — it just patches the token
 // onto the order that already exists, best-effort.
 async function lfAttachCustomerNotifToken(oid){
+  if(!_lfPushRoom()) return;     // v86: no permission prompt and no token outside GRASS: nothing would ever be sent (see _lfPushRoom)
   try{
     let token = null;
     try{ await requestNotifPermission(); }catch(e){}
@@ -5997,6 +6059,8 @@ async function finalizeOrder(name,unit,phone,total,oid,method,ref='',subAmt,deli
     customerFcmToken: '',
     onesignalSubId: (typeof window._osSubId === 'string' ? window._osSubId : '') || ''
   };
+  // v86: outside GRASS the checkout asks which building. A GRASS order has no such key, exactly as before.
+  { const b = el('cust-building'); if(b && b.value) order.building = b.value; }
 
   // What a retry would need to repeat — captured before anything can throw.
   _lfErrCtx = {
@@ -6141,6 +6205,7 @@ function custPrefillIdentity(){
   if(!info) return;
   const set=(id,val)=>{ const e=el(id); if(e && !e.value && val) e.value=val; };
   set('cust-name', info.name);
+  set('cust-building', info.building);      // v86: only exists outside GRASS
   set('cust-unit', info.unit);
   set('cust-phone', info.phone);
 }
@@ -6296,6 +6361,7 @@ async function submitBooking(){
   const rawPhone = (el('bk-phone').value||'').trim();
   const notes = (el('bk-notes').value||'').trim();
   if(!name){ showToast('⚠️ Enter your name'); el('bk-name').focus(); return; }
+  if(!lfRoomBuildingOk('bk-building')){ showToast('⚠️ Choose your building'); el('bk-building').focus(); return; }   // v86: outside GRASS, a condo with several buildings
   if(!unit){ showToast('⚠️ Enter your unit number'); el('bk-unit').focus(); return; }
   const _bkPh = lfPhone(rawPhone);
   if(!_bkPh){ showToast('⚠️ Enter a valid mobile number (e.g. 0917 123 4567)'); el('bk-phone').focus(); return; }
@@ -6554,6 +6620,13 @@ let VENDOR_PIN_HASHES = {
 };
 const LF_LEGACY_PINS = {};       // migration only; filled from any legacy cloud data
 
+/* v86: the three seed tables above (VENDORS, MENU, VENDOR_PIN_HASHES) are GRASS's demo stores. Outside GRASS a room starts
+   EMPTY: with them left in, a new condo would open full of fake stores, shown before the first sync, and an empty room
+   would be seeded with them (see tryBoot). Emptied here, the first place all three exist, and before anything reads them. */
+if(!LF_ROOM_IS_GRASS){
+  [VENDORS, MENU, VENDOR_PIN_HASHES].forEach(t=>{ Object.keys(t).forEach(k=>{ delete t[k]; }); });
+}
+
 async function setVendorPin(vid, pin){
   const salt = lfNewSalt();
   VENDOR_PIN_HASHES[vid] = { salt, hash: await lfHashPass(pin, salt) };
@@ -6609,7 +6682,7 @@ async function verifyVendorPin(vid, pin){
    ever acts on a DEFINITIVE answer. "I couldn't reach the database" is not
    evidence that a session is invalid, and must never end one.
 ═══════════════════════════════════════════════════════════════════════ */
-const LF_SESS_KEY  = 'lf-vsess';
+const LF_SESS_KEY  = lfRk('lf-vsess');   // v86: per room (a GRASS vendor's session is not a session in another condo)
 const LF_SESS_DAYS = 30;          // sliding: refreshed on every restore
 const LF_SESS_LOGO_MAX = 40000;   // don't put a big base64 logo in localStorage
 
@@ -6665,15 +6738,17 @@ function lfSessionVendorId(){
   try{
     const s = lfReadVendorSession();
     if(s && s.vid) return s.vid;
-    return localStorage.getItem('lf-vendorId') || '';
+    return LF_ROOM_IS_GRASS ? (localStorage.getItem('lf-vendorId') || '') : '';   // v86: the pre-v56 keys are GRASS's
   }catch(e){ return ''; }
 }
 
 function lfClearVendorSession(){
   try{
     localStorage.removeItem(LF_SESS_KEY);
-    localStorage.removeItem('lf-vendorId');   // pre-v56 keys
-    localStorage.removeItem('lf-vendorPin');
+    if(LF_ROOM_IS_GRASS){
+      localStorage.removeItem('lf-vendorId');   // pre-v56 keys
+      localStorage.removeItem('lf-vendorPin');
+    }
   }catch(e){}
 }
 
@@ -6684,6 +6759,7 @@ function lfClearVendorSession(){
    again next sync. Never delete a session we merely failed to verify. */
 async function lfMigrateLegacyVendorSession(){
   try{
+    if(!LF_ROOM_IS_GRASS) return false;      // v86: the pre-v56 keys belong to GRASS
     if(lfReadVendorSession()) return false;
     const vid = localStorage.getItem('lf-vendorId');
     const pin = localStorage.getItem('lf-vendorPin');
@@ -6823,7 +6899,7 @@ function lfEnterVendorPortal(vid, opts){
    salted hash is ever stored, and the admin's only power is to RESET it.
 ═══════════════════════════════════════════════════════════════════════ */
 const LF_APPS_NODE  = 'vendorApplications';
-const LF_APP_KEY    = 'lf-vendorApp';     // this device's own application id
+const LF_APP_KEY    = lfRk('lf-vendorApp');     // this device's own application id (v86: per room — it names a row in THIS room's applications)
 const LF_APP_MIN_PIN = 6;                 // stricter than the admin form's 4:
                                           // this hash sits in a readable node
 function lfAppNode(id){ return ROOM_KEY+'/'+LF_APPS_NODE+'/'+String(id||'').replace(/[^a-zA-Z0-9_-]/g,'_'); }
@@ -6877,7 +6953,7 @@ async function submitVendorApplication(){
   const btn = el('ap-submit');
   const name  = (el('ap-name').value||'').trim();
   const category = (el('ap-mkt')||{}).value || 'food';
-  const loc   = (el('ap-loc')||{}).value || 'GRASS Residences';
+  const loc   = (el('ap-loc')||{}).value || lfRoomName();
   const outside = loc === LF_LOC_OUTSIDE;
   const addr  = ((el('ap-addr')||{}).value || '').trim();
   const cat   = (el('ap-cat').value||'').trim();
@@ -6919,7 +6995,7 @@ async function submitVendorApplication(){
          building or travelling in, and a full address would overflow the card
          and publish more than the provider agreed to. The address itself goes
          to the admin, who is the one who actually needs it. */
-      sub: (outside ? 'Outside GRASS' : loc)+' · '+(cat || mkt(category).label),
+      sub: (outside ? 'Outside '+lfRoomShort() : loc)+' · '+(cat || mkt(category).label),
       outside,
       address: outside ? addr.slice(0,160) : '',
       cats: cat ? cat.toLowerCase().split(',').map(c=>c.trim()).filter(Boolean) : [category],
@@ -9328,7 +9404,10 @@ function renderVendorEarnings(){
    devtools" — nothing more. The ONLY thing that actually protects admin
    data is Firebase security rules. See firebase-rules.json in this repo.
 ═══════════════════════════════════════════════════════════════════════ */
-function adminAuthNode(){ return ROOM_KEY + '/adminAuth'; }
+// v86: ONE admin login for every condo. It is GRASS's record whatever room this phone is in, so a new condo has no unclaimed admin account for a
+// stranger to take over, nothing to set up when the condo is created, and nothing to keep in step when the password changes. (In GRASS this is the
+// same node as before.) What the admin can SEE and DO still follows the room: every other node is under ROOM_KEY.
+function adminAuthNode(){ return LF_GRASS_ROOM + '/adminAuth'; }
 async function lfHashPass(pass, salt){ return await sha256(String(salt) + ':' + String(pass)); }
 function lfNewSalt(){
   const a = new Uint8Array(16);
@@ -9384,6 +9463,9 @@ async function adminLogin(){
      do, so could anyone else who finds this screen. The thing that actually
      protects this data is firebase-rules.json, not this form. */
   if(!rec || !rec.hash || !rec.salt){
+    // v86: only GRASS can hold an unclaimed admin account. In a condo there is nothing to claim (the account is GRASS's), so a stranger who
+    // types #admin there gets no way to set a password.
+    if(!LF_ROOM_IS_GRASS){ showToast('⚠️ The admin account is set up from GRASS Residences — go back there first'); return; }
     _adminBootstrapEmail = email;
     goPage('p-asetup');
     showToast('🔐 No admin password set yet — choose one now');
@@ -9514,6 +9596,7 @@ let _adminBootstrapEmail = '';
    The real protection is firebase-rules.json, once published — not this
    screen, before or after this change. */
 function adminForgotPassword(){
+  if(!LF_ROOM_IS_GRASS){ showToast('⚠️ The admin password is shared by every condo — reset it from GRASS Residences'); return; }   // v86
   if(!confirm('Reset admin access?\n\nThis clears the current admin password. '+
               'Anyone who knew the old one will need the new one you set next.')) return;
   _adminBootstrapEmail = (el('a-email').value||'').trim().toLowerCase() || ADMIN_EMAIL;
@@ -9523,6 +9606,7 @@ function adminForgotPassword(){
 }
 
 async function adminCompleteSetup(){
+  if(!LF_ROOM_IS_GRASS){ showToast('⚠️ The admin account is set up from GRASS Residences'); return; }   // v86: nothing to claim in a condo (adminAuthNode is GRASS's)
   const p1 = el('asetup-pass').value;
   const p2 = el('asetup-confirm').value;
   if(!p1 || p1.length < 8){ showToast('⚠️ Use at least 8 characters'); return; }
@@ -9606,13 +9690,13 @@ function goAdminTab(tab){
 let heroStats = { vendorCount: '', userCount: '0' };
 
 function loadHeroStats(){
-  try{ const s=localStorage.getItem('lf-heroStats'); if(s) heroStats=JSON.parse(s); }catch(e){}
+  try{ const s=localStorage.getItem(lfRk('lf-heroStats')); if(s) heroStats=JSON.parse(s); }catch(e){}
 }
 async function saveHeroStats(){
   const vc=el('admin-vendor-display').value.trim()||String(Object.values(VENDORS).length);
   const uc=el('admin-user-display').value.trim()||'0';
   heroStats={vendorCount:vc, userCount:uc};
-  try{ localStorage.setItem('lf-heroStats', JSON.stringify(heroStats)); }catch(e){}
+  try{ localStorage.setItem(lfRk('lf-heroStats'), JSON.stringify(heroStats)); }catch(e){}
   // Sync to Firebase so ALL devices show the same count
   try{ await fbSet(ROOM_KEY+'/heroStats', heroStats); lfBumpRevs(['_meta']); }catch(e){}
   applyHeroStats(true);
@@ -9791,7 +9875,7 @@ async function renderAdminApps(){
         </div>
         <div style="font-size:11.5px;color:var(--t3);margin-top:3px">${esc(a.sub||'')}</div>
         <div style="font-size:12px;color:var(--t2);margin-top:6px">📞 ${esc(a.phone||'—')}</div>
-        ${a.outside ? `<div style="font-size:11.5px;color:var(--t2);margin-top:4px;line-height:1.45">📍 <b>Outside GRASS</b> · ${esc(a.address||'—')}</div>` : ''}
+        ${a.outside ? `<div style="font-size:11.5px;color:var(--t2);margin-top:4px;line-height:1.45">📍 <b>Outside ${esc(lfRoomShort())}</b> · ${esc(a.address||'—')}</div>` : ''}
         <div style="font-size:10.5px;color:var(--t3);margin-top:4px">Applied ${esc(lfAppWhen(a.createdAt))} · sets their own PIN</div>
         <div class="av-acts" style="margin-top:10px">
           <button class="oact p" onclick="approveApplication('${escJs(a.id)}', this)">✓ Approve</button>
@@ -9853,7 +9937,7 @@ async function _approveApplication(id){
   const vid = 'v'+String(a.id||id).replace(/[^a-zA-Z0-9]/g,'');
   const rec = {
     id: vid, name: a.name, emoji: M.defaultVendorEmoji,
-    sub: a.sub || ('GRASS Residences · '+M.label),
+    sub: a.sub || (lfRoomName()+' · '+M.label),
     bg:'#F5F5F5', rating:'⭐ New', min:50,
     cats: (a.cats && a.cats.length) ? a.cats : [a.category],
     category: a.category,
@@ -11425,7 +11509,7 @@ function lfDraftOpen(id, opener){
   el('lf-dr-pubgo').textContent = sh ? 'Save changes' : 'Add condo'; el('lf-dr-pubgo').disabled = false;
   el('lf-dr-intro').textContent = sh ? 'Customers see this condo under the Condos icon while “Show to customers” is on. Your changes are saved for everyone.'
                                      : 'Tap Add condo and it is saved for everyone. ' + lfShCustomersLine() + ' Or save it as a private draft, which stays on this phone.';
-  el('lf-dr-statushint').textContent = 'Shown on the condo’s card. Customers cannot switch to another condo in the app yet, so “Coming soon” is usually right.' + (sh ? '' : ' A private draft does not use it.');
+  el('lf-dr-statushint').textContent = 'Shown on the condo’s card. “Live” lets customers switch to this condo and order in it once switching is turned on, so leave it on “Coming soon” until its stores are ready.' + (sh ? '' : ' A private draft does not use it.');
   el('lf-dr-delwrap').hidden = !ex; el('lf-dr-delname').value = ''; el('lf-dr-del').disabled = true;
   if(ex) el('lf-dr-dellbl').textContent = 'Delete “' + ex.name + '”';
   el('lf-dr-delhint').textContent = sh ? 'Type its name to confirm. Customers will no longer see it. To keep it but hide it, turn off “Show to customers” and save instead.' : 'Type its name to confirm. You can undo until you close the app.';
@@ -12024,6 +12108,7 @@ function lfArtPageFill(body, c){
     body.appendChild(dl);
   }
   body.appendChild(mk('div', 'lf-pg-note' + (_lfCondoResView && lfCondoPubOn() ? ' res' : ''), lfCondoPageNote(c)));   // v83: the words (and the look) depend on who is looking
+  try{ lfRoomSwitchUI(body, c); }catch(e){ lfRoomFail(e); }                                                              // v86: and, where this phone may move there, the way in
 }
 function lfArtPageOpen(id, from){
   if(_lfArtOff || !lfCondoViewAllowed()) return;
@@ -12137,16 +12222,18 @@ function lfCondoPubOn(){
 function lfCondoModeFromFile(data){
   if(!LF_CONDOS_BUILD) return;
   const on = !!data && typeof data === 'object' && data.condos === 'on';
+  _lfSwitchPub = !!data && typeof data === 'object' && data.condoSwitch === 'on';    // v86: a readable answer settles it either way, like "condos" (an unreadable one never gets here)
   _lfCondoPub = on;
   try{
     if(on) localStorage.setItem(LF_CONDO_PUB_KEY, JSON.stringify({ on: 1, at: Date.now() }));
     else localStorage.removeItem(LF_CONDO_PUB_KEY);
   }catch(e){}
   try{ lfCondoNavSync(); }catch(e){ lfCondoPubFail(e); }
+  try{ lfRoomSwitchRefresh(); }catch(e){}                       // v86: a condo's page that is already open gets (or loses) its button
 }
 // Customers: when the file says "on". An admin who is signed in: the same as the admin picker (lfCondoAllowed), as a preview.
 function lfCondoNavAllowed(){
-  return LF_CONDOS_BUILD && !_lfCondoPubOff && (lfCondoPubOn() || lfCondoAllowed());
+  return LF_CONDOS_BUILD && !_lfCondoPubOff && (lfCondoPubOn() || lfCondoAllowed() || !LF_ROOM_IS_GRASS);   // v86: a phone in a condo always has the icon: it is the way to another condo and the way back
 }
 
 // ── the icon ──
@@ -12190,7 +12277,11 @@ function lfCondoAdminView(){ return !_lfCondoResView && _lfAdminMode === true; }
 // The condos the open sheet may show. This is the one place the two views part: a customer gets the confirmed, visible
 // condos and nothing else — not a draft, a sample, an unverified or a hidden record, whoever is holding the phone.
 function lfCondoViewList(){
-  return lfCondoAdminView() ? lfCondoVisible(true).concat(lfDraftList(), lfArtSampleList()) : lfCondoVisible(false);
+  const list = lfCondoAdminView() ? lfCondoVisible(true).concat(lfDraftList(), lfArtSampleList()) : lfCondoVisible(false);
+  // v86: the condo this phone is in is always in its own list, even before the shared directory has loaded (or after an admin hid it)
+  const r = lfRoomCondo();
+  if(r && !list.some(c => c.id === r.id)) list.push(r);
+  return list;
 }
 function lfCondoViewAllowed(){ return _lfCondoResView ? lfCondoNavAllowed() : lfCondoAllowed(); }
 // The sheet's title and the note under it, for whichever view is opening.
@@ -12218,7 +12309,7 @@ function lfCondoPageNote(c){
   }
   const cur = lfCondoCurrent();
   if(cur && cur.id === c.id) return 'This is the condo you order in.';
-  if(c.status === 'live')   return 'Lokal Finder is live here. You cannot switch condos in the app yet.';
+  if(c.status === 'live')   return lfSwitchAllowed(c) ? 'Lokal Finder is live here.' : 'Lokal Finder is live here. You cannot switch condos in the app yet.';
   if(c.status === 'coming') return 'Lokal Finder is coming soon to this condo. You cannot order here yet.';
   return 'Lokal Finder is not open in this condo yet.';
 }
@@ -12271,7 +12362,7 @@ function lfShStampNew(){ return Date.now() * 1000 + Math.floor(Math.random() * 1
 function lfShBusy(){ return _lfSh.busy === true; }
 // Customers when version.json says "on", an admin when it says "admin" or "on". Nothing else reads or writes any of this.
 function lfShWanted(){ return LF_CONDOS_BUILD && !_lfShOff && (lfCondoAllowed() || lfCondoNavAllowed()); }
-function lfShOthers(){ return lfCondoVisible(false).some(c => c.id !== LF_GRASS_CONDO); }
+function lfShOthers(){ const cur = lfCondoCurrent(), id = cur ? cur.id : LF_GRASS_CONDO; return lfCondoVisible(false).some(c => c.id !== id); }   // v86: another condo than the one this phone is in (in a condo, GRASS is one)
 function lfShCustomersLine(){ return _lfCondoMode === 'on' ? 'Customers see it under the Condos icon.' : 'Customers will see it once the Condos icon is turned on (it is off for now).'; }
 
 // ── a record, from the database and back ──
@@ -12497,6 +12588,246 @@ function lfShFail(e){
   try{ lfShViews(); }catch(_){}
 }
 
+/* ═══ v86 — CONDO ROOMS ═══
+   The founder (2026-10-27): "i want the other condo to look like the grass one". Until now a condo an admin added (v85)
+   was a listing: customers could look at it but not enter it. A phone can now BE in a condo, and a condo's room is the
+   whole app, the way GRASS is: its own stores (food, cleaning, aircon...), menus, orders, chats, Feed, alerts and
+   applications, all under 'lf_c_<id>', empty to begin with. It is the same code on the same screens. This block makes the
+   screens say which condo they are in, and lets a phone move between condos.
+
+   Rules that must hold (tests/test-condorooms.js proves each):
+   • GRASS is what it was: its room, its storage keys, its markup, its requests. Every v86 line that changes anything
+     starts with "outside GRASS".
+   • Two rooms never see each other: orders, stores, PIN hashes, vendor sessions, cached catalogs, order history,
+     favourites and hero stats all differ by room (lfRk), and no demo store exists outside GRASS.
+   • Admin: ONE login for every condo. adminAuthNode() reads GRASS's record whatever room this is, so a new condo has no
+     unclaimed admin account to take over, nothing to set up, and nothing to keep in step when the password changes.
+   • Push alerts are GRASS-only until the sender (outside this repo) can be checked: a vendor id is a slug of the store's
+     name, so the same id in two condos would share one push identity. Elsewhere alerts arrive inside the app.
+   • Going back is always possible: a phone in a condo can ALWAYS return to GRASS, whatever the remote switch says, so it
+     can never be stranded. Entering a condo needs the switch ("condoSwitch" in version.json).
+   • A fault in any of it switches off only the moving (lfRoomFail); the room a phone is already in keeps working. */
+
+// ── which condo this phone is in, in words ──
+function lfRoomName(){ const c = lfRoomCondo(); return c ? c.name : 'GRASS Residences'; }
+function lfRoomShort(){ return LF_ROOM_IS_GRASS ? 'GRASS' : lfRoomName(); }     // "Lunch time sa GRASS!", "Outside GRASS"
+function lfRoomBuildings(){ const c = lfRoomCondo(); return c ? c.buildings : []; }
+function lfRoomSub(){ const c = lfRoomCondo(); return c ? (c.city ? c.name + ' • ' + c.city : c.name) : 'GRASS Residences • Quezon City'; }
+
+// ── the screens ──
+// Outside GRASS the static words that say "GRASS" say this condo instead. GRASS's own markup is never touched.
+const LF_ROOM_SKIP = { SCRIPT:1, STYLE:1, NOSCRIPT:1, TEXTAREA:1 };
+function lfRoomBrand(){
+  if(LF_ROOM_IS_GRASS) return;
+  const name = lfRoomName();
+  try{ document.title = 'LokalFinder — ' + name; }catch(e){}
+  const sub = document.querySelector('#lf-brand-tap .lf2-sub');
+  if(sub) sub.textContent = lfRoomSub();
+  // the store types' search boxes and taglines say "inside GRASS"
+  Object.keys(MARKETPLACES).forEach(k=>{
+    const M = MARKETPLACES[k];
+    Object.keys(M).forEach(f=>{ if(typeof M[f] === 'string' && M[f].indexOf('inside GRASS') >= 0) M[f] = M[f].split('inside GRASS').join('in your condo'); });
+  });
+  const fix = s => s.split('GRASS Residences').join(name).split('inside GRASS').join('in your condo');
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const hit = [];
+  for(let n = w.nextNode(); n; n = w.nextNode()){
+    if(n.nodeValue.indexOf('GRASS') >= 0 && !LF_ROOM_SKIP[n.parentNode.nodeName]) hit.push(n);
+  }
+  hit.forEach(n=>{ n.nodeValue = fix(n.nodeValue); });
+  document.querySelectorAll('[placeholder]').forEach(n=>{
+    const p = n.getAttribute('placeholder');
+    if(p && p.indexOf('GRASS') >= 0) n.setAttribute('placeholder', fix(p));
+  });
+  // Alerts outside GRASS arrive inside the app only (see _lfPushRoom): tell a seller where they will see their orders, on the two screens a seller starts from.
+  const note = () => { const d = document.createElement('div'); d.className = 'lf-room-note'; d.textContent = 'Order alerts in this condo show inside the app while it is open. Phone notifications are not available here yet.'; return d; };
+  const ls = document.querySelector('#p-vlogin .login-sub'); if(ls) ls.after(note());
+  const ap = el('ap-submit'); if(ap) ap.before(note());
+}
+
+// The three "Tower / Location" boxes (the store application, Add vendor, Edit vendor) list this condo's own buildings.
+function lfRoomLocSelects(){
+  if(LF_ROOM_IS_GRASS) return;
+  const names = lfRoomBuildings().map(b=>b.name);
+  const rows = names.length ? names : [lfRoomName()];       // a condo with no buildings listed still gets one choice: the condo itself
+  ['ap-loc','nv-loc','ev-loc'].forEach(id=>{
+    const sel = el(id); if(!sel) return;
+    const outside = sel.querySelector('option[value="__outside"]');   // the application's "Outside <condo>" stays
+    while(sel.firstChild) sel.removeChild(sel.firstChild);
+    rows.forEach(n=>{ const o = document.createElement('option'); o.textContent = n; sel.appendChild(o); });
+    if(outside) sel.appendChild(outside);
+    const lbl = sel.previousElementSibling;
+    if(lbl && lbl.tagName === 'LABEL' && /Tower \/ Location/.test(lbl.textContent)) lbl.textContent = 'Building / Location';
+  });
+}
+
+// A choice of this condo's buildings (the checkout and the booking sheet).
+function lfRoomBuildSelect(id, first){
+  const sel = document.createElement('select');
+  sel.className = 'finp'; sel.id = id; sel.style.webkitAppearance = 'none';
+  const o0 = document.createElement('option'); o0.value = ''; o0.textContent = first; sel.appendChild(o0);
+  const bl = lfRoomBuildings();
+  bl.forEach(b=>{ const o = document.createElement('option'); o.value = b.name; o.textContent = b.name; sel.appendChild(o); });
+  if(bl.length === 1) sel.value = bl[0].name;               // one building: nothing to choose
+  return sel;
+}
+// A building is asked for only where there is a choice to make, and an order carries it only then. GRASS's checkout is untouched.
+function lfRoomCheckoutFields(){
+  if(LF_ROOM_IS_GRASS) return;
+  const bl = lfRoomBuildings();
+  const c = lfRoomCondo();
+  const unit = el('cust-unit');
+  if(unit){
+    unit.placeholder = (c && c.unitHint) ? c.unitHint : 'e.g. 1204';        // GRASS's own example (8B-0812) is GRASS's format
+    if(bl.length && !el('cust-building')){
+      const lbl = document.createElement('label'); lbl.className = 'flbl'; lbl.textContent = 'Building';
+      const ul = unit.previousElementSibling;                              // the "Unit Number" label
+      if(ul) ul.before(lbl, lfRoomBuildSelect('cust-building', 'Choose your building'));
+    }
+  }
+  const bk = el('bk-building');
+  if(bk && bk.tagName === 'INPUT' && bl.length) bk.replaceWith(lfRoomBuildSelect('bk-building', 'Choose your building'));
+}
+// ── moving between condos ──
+// "condoSwitch" in version.json: "off" (or missing, or any other word) | "admin" | "on". It decides who may ENTER a condo. It never decides who
+// may go back to GRASS: that is always allowed (lfSwitchAllowed), so a phone can never be stranded in a condo. Two reads, like "condos":
+// an admin's own (lfCondoModeRead fills _lfSwitchMode) and the update check's hand-over for everyone (lfCondoModeFromFile fills _lfSwitchPub:
+// the file says exactly "on"). A failed read means off.
+let _lfSwitchMode = 'off';
+let _lfSwitchPub = false;
+let _lfRoomOff = false;                  // a fault in the moving: off for this session. The room the phone is in keeps working.
+let _lfSwitching = false;                // a switch is on its way (the page is about to reload): a second tap does nothing
+
+// May this phone move into condo `c` right now?
+function lfSwitchAllowed(c){
+  try{
+    if(!LF_CONDOS_BUILD || !c || typeof c.id !== 'string' || c.draft || c.sample || _lfSwitching) return false;
+    const cur = lfCondoCurrent();
+    if(cur && cur.id === c.id) return false;                                    // already here
+    if(c.id === LF_GRASS_CONDO) return true;                                   // the way back to GRASS is never closed (and this phone is not in GRASS, or it would have been "already here")
+    if(_lfRoomOff || !c.shared) return false;
+    if(_lfAdminMode === true && lfCondoAllowed() && (_lfSwitchMode === 'admin' || _lfSwitchMode === 'on')) return true;   // an admin, to set a condo up or look at it: any status, shown or hidden
+    return _lfSwitchPub === true && lfCondoNavAllowed() && c.visible === true && c.confidence === 'confirmed' && c.status === 'live';   // everyone else: switching is on and the condo is Live
+  }catch(e){ return false; }
+}
+function lfRoomGuard(fn){ try{ return fn(); }catch(e){ lfRoomFail(e); } }
+// A fault switches off the moving and nothing else.
+function lfRoomFail(e){
+  _lfRoomOff = true;
+  try{ console.warn('condo rooms: switched off for this session:', e); }catch(_){}
+  try{ const b = document.getElementById('lf-pg-sw'); if(b) b.remove(); }catch(_){}
+}
+
+// What is kept on the phone so the next open can be in the condo before any network answer: the id and the card, together.
+function lfRoomCardFor(c){
+  const o = { v: 1, id: c.id, name: c.name, city: c.city || '', unitHint: c.unitHint || '', at: Date.now() };
+  o.buildings = c.buildings.slice(0, LF_CONDO_MAX_BLDG).map(b=>{ const r = { id: b.id, name: b.name, kind: b.kind, order: b.order }; if(b.floors) r.floors = b.floors; return r; });
+  return o;
+}
+// Moves this phone into condo `id` (GRASS: back), then reloads. Nothing is written to any database. false = it did not move, and said why.
+function lfSwitchCondo(id){
+  const c = lfCondoById(id);
+  if(!c || !lfSwitchAllowed(c)){ showToast('⚠️ You cannot switch to that condo right now'); return false; }
+  try{
+    if(c.id === LF_GRASS_CONDO){
+      localStorage.removeItem(LF_CONDO_KEY); localStorage.removeItem(LF_CONDO_CARD_KEY);
+      if(localStorage.getItem(LF_CONDO_KEY) !== null) throw new Error('not stored');
+    } else {
+      const s = JSON.stringify(lfRoomCardFor(c));
+      if(s.length > LF_CARD_MAX) throw new Error('card too large');
+      localStorage.setItem(LF_CONDO_CARD_KEY, s);
+      localStorage.setItem(LF_CONDO_KEY, c.id);
+      if(localStorage.getItem(LF_CONDO_KEY) !== c.id || localStorage.getItem(LF_CONDO_CARD_KEY) !== s) throw new Error('not stored');
+    }
+  }catch(e){
+    try{ localStorage.removeItem(LF_CONDO_KEY); localStorage.removeItem(LF_CONDO_CARD_KEY); }catch(_){}      // never half a switch: the id without its card is GRASS anyway
+    lfRoomFail(e);
+    showToast('⚠️ This phone would not remember the switch');
+    return false;
+  }
+  _lfSwitching = true;
+  showToast('Switching to ' + c.name + '…');
+  try{ location.reload(); }catch(e){}
+  return true;
+}
+
+// The button at the foot of a condo's page, and the question it asks first.
+function lfRoomSwitchUI(body, c){
+  if(!lfSwitchAllowed(c)) return;
+  const box = document.createElement('div'); box.className = 'lf-pg-sw'; box.id = 'lf-pg-sw';
+  body.appendChild(box);
+  lfRoomSwitchButton(box, c);
+}
+function lfRoomSwitchButton(box, c){
+  box.replaceChildren();
+  const back = c.id === LF_GRASS_CONDO;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-pipe-btn'; b.id = 'lf-pg-swgo';
+  b.textContent = back ? 'Back to ' + c.name : 'Make this my condo';
+  b.addEventListener('click', () => lfRoomGuard(() => lfRoomSwitchAsk(box, c)));
+  box.appendChild(b);
+  // an admin may enter a condo that customers cannot (yet): say so, so nobody thinks customers can
+  if(!back && _lfAdminMode === true && !(_lfSwitchPub === true && c.visible === true && c.confidence === 'confirmed' && c.status === 'live')){
+    const h = document.createElement('div'); h.className = 'lf-pg-swh';
+    h.textContent = 'Only admins can open this condo for now. Customers can once it is Live and switching is turned on.';
+    box.appendChild(h);
+  }
+}
+function lfRoomSwitchAsk(box, c){
+  box.replaceChildren();
+  const cur = lfCondoCurrent(), n = cartCount();
+  const mk = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; };
+  const q = mk('div', 'lf-pg-swq'); q.id = 'lf-pg-swq'; q.setAttribute('role', 'alert');
+  const t = mk('div'); t.append(c.id === LF_GRASS_CONDO ? 'Go back to ' : 'Switch to ', mk('b', '', c.name), '?'); q.appendChild(t);
+  q.appendChild(mk('div', '', 'The app reloads and shows the stores of ' + c.name + '.'));
+  if(n > 0) q.appendChild(mk('div', '', 'Your cart (' + n + (n === 1 ? ' item' : ' items') + ') will be emptied.'));
+  if(myOrderIds.length) q.appendChild(mk('div', '', 'Orders you placed in ' + cur.name + ' stay there. Switch back to see them.'));
+  const go = mk('button', 'lf-pipe-btn', 'Yes, switch'); go.type = 'button'; go.id = 'lf-pg-swyes';
+  const no = mk('button', 'lf-pipe-btn ghost', 'Not now'); no.type = 'button'; no.id = 'lf-pg-swno';
+  go.addEventListener('click', () => lfRoomGuard(() => lfSwitchCondo(c.id)));
+  no.addEventListener('click', () => lfRoomGuard(() => { lfRoomSwitchButton(box, c); try{ el('lf-pg-swgo').focus(); }catch(e){} }));
+  box.append(q, go, no);
+  try{ go.focus({ preventScroll: true }); }catch(e){}
+}
+// The remote switch can arrive while a condo's page is open (the update check lands a few seconds after the app opens): redraw the foot of that page,
+// unless the question is on screen (somebody is deciding: leave it alone).
+function lfRoomSwitchRefresh(){
+  try{
+    const pg = _lfArtPage && _lfArtPage.el, id = _lfArtPage && _lfArtPage.id;
+    if(!id || !pg || pg.hidden || el('lf-pg-swq')) return;
+    const c = lfArtFind(id); if(!c) return;
+    const old = el('lf-pg-sw'); if(old) old.remove();
+    const note = document.querySelector('#lf-pg-body .lf-pg-note'); if(note) note.textContent = lfCondoPageNote(c);
+    lfRoomSwitchUI(el('lf-pg-body'), c);
+  }catch(e){ lfRoomFail(e); }
+}
+// Outside GRASS the Home page ends with a way back that does not depend on the Condos list, its pictures, its pages or any switch.
+function lfRoomFooter(){
+  if(LF_ROOM_IS_GRASS) return;
+  const host = document.querySelector('#p-chome .scrl');
+  if(!host || el('lf-room-foot')) return;
+  const f = document.createElement('div'); f.className = 'lf-room-foot'; f.id = 'lf-room-foot';
+  const t = document.createElement('div'); t.textContent = 'You are in ' + lfRoomName() + '.';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'lf-room-back'; b.id = 'lf-room-back';
+  b.textContent = 'Not your condo? Go back to GRASS Residences';
+  b.addEventListener('click', () => lfRoomGuard(() => {
+    const n = cartCount();
+    if(confirm('Go back to GRASS Residences? The app reloads.' + (n > 0 ? ' Your cart is emptied.' : '') + ' Orders you placed in ' + lfRoomName() + ' stay there.')) lfSwitchCondo(LF_GRASS_CONDO);
+  }));
+  f.append(t, b); host.appendChild(f);
+}
+
+// A condo with no store at all says so, and says what to do about it. GRASS, and any room that has a store, add nothing.
+function lfRoomEmptyHint(){
+  if(LF_ROOM_IS_GRASS || Object.keys(VENDORS).length) return '';
+  return '<div style="font-size:12px;color:var(--t3);margin-top:6px;line-height:1.5">Nobody has opened a store in '+esc(lfRoomName())+' yet.<br>Selling here? Tap Vendor, then “List your store”.</div>';
+}
+// Where there is a choice, it must be made. true = fine to go on (and it is false only outside GRASS, with two or more buildings, and nothing chosen).
+function lfRoomBuildingOk(id){
+  if(LF_ROOM_IS_GRASS) return true;
+  const sel = el(id);
+  return !(sel && sel.tagName === 'SELECT' && sel.options.length > 2 && !sel.value);
+}
+
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
   const sel=el('nv-mkt');
@@ -12531,7 +12862,7 @@ function addVendorConfirm(){
   const id='v'+Date.now();
   VENDORS[id]={
     id,name,emoji,
-    sub:(loc||'GRASS Residences')+' · '+cat,
+    sub:(loc||lfRoomName())+' · '+cat,
     bg:'#F5F5F5',rating:'⭐ New',min:50,
     cats:[category],
     category,                       // v54: puts them in the right marketplace tab
@@ -12771,6 +13102,7 @@ async function fcmGetToken(){
 
 // Save a vendor's token (persists across logout — keyed by token so dupes overwrite)
 async function fcmSaveVendorToken(vendorId){
+  if(!_lfPushRoom()) return;     // v86: push is GRASS-only (see _lfPushRoom)
   try{
     console.log('[FCM] Starting token save for vendor:', vendorId);
     showToast('📡 FCM: perm='+('Notification' in window ? Notification.permission : 'N/A'));
@@ -13237,11 +13569,7 @@ function updateTrackerFromStatus(){
      card on the admin panel (lfCondoAdminSync). Both ask lfCondoAllowed() and
      open the same sheet; the card exists because the only way to the header
      button was admin > Live Posts > Home, and it could not be found. */
-const LF_CONDOS_BUILD   = true;                  // false = none of this ever runs (a release, not a switch: use version.json for that)
-const LF_GRASS_ROOM     = 'lokalfinder_grass';   // the legacy key — every GRASS order, store and PIN lives under it. Never change it.
-const LF_GRASS_CONDO    = 'grass-residences-quezon-city';
-const LF_CONDO_KEY      = 'lf-condo';            // this device's chosen condo id; missing, deleted or invalid means GRASS
-const LF_CONDO_ID_RE    = /^[a-z0-9][a-z0-9-]{1,62}$/;
+// (v86: LF_CONDOS_BUILD, LF_GRASS_ROOM, LF_GRASS_CONDO, LF_CONDO_KEY and LF_CONDO_ID_RE moved to the top of the script, beside ROOM_KEY.)
 const LF_CONDO_MODE_TTL = 5*60*1000;             // how long a read of the remote mode is trusted (the update check's own cadence)
 const LF_CONDO_PAGE     = 20;                    // cards drawn before "Show more": the list has to stay fast with hundreds
 const LF_CONDO_MAX_BLDG = 60;
@@ -13381,20 +13709,29 @@ function lfCondoStored(){
     return (typeof v === 'string' && LF_CONDO_ID_RE.test(v)) ? v : '';
   }catch(e){ return ''; }
 }
-// v85: a condo that came from the shared directory has no room of its own yet (switching condos is Phase C), so it can never be "current".
-function lfCondoCurrent(){ const c = lfCondoById(lfCondoStored()); return (c && !c.shared) ? c : lfCondoById(LF_GRASS_CONDO); }
-
-// The one line every database path hangs off (const ROOM_KEY, just below).
-// Phase A: always GRASS. A device with nothing stored never builds the directory.
-function lfRoomKey(){
-  try{
-    if(!LF_CONDOS_BUILD) return LF_GRASS_ROOM;
-    const id = lfCondoStored();
-    if(!id) return LF_GRASS_ROOM;
-    const c = lfCondoById(id);
-    return (c && c.room && !c.shared) ? c.room : LF_GRASS_ROOM;
-  }catch(e){ return LF_GRASS_ROOM; }
+// v86: the condo this phone is in. GRASS unless the phone switched (lfSwitchCondo): then the condo its card names, built from the
+// card (which was copied from the shared directory at the moment of the switch) so it is there at once, with no network and
+// whether or not the directory has loaded. Before v86 a condo from the shared directory could never be current.
+let _lfRoomCondo;
+function lfRoomCondo(){
+  if(_lfRoomCondo === undefined){
+    _lfRoomCondo = null;
+    const k = LF_ROOM_CARD;
+    if(k){
+      const base = { id: k.id, status: 'live', confidence: 'confirmed', visible: true };
+      const c = lfCondoClean(Object.assign({ name: k.name, city: k.city, buildings: k.buildings, unitHint: k.unitHint }, base))
+             || lfCondoClean(Object.assign({ name: 'This condo' }, base));      // a name of nothing but control characters still has a room: it is called "This condo"
+      if(c){ c.shared = true; _lfRoomCondo = c; }
+    }
+  }
+  return _lfRoomCondo;
 }
+function lfCondoCurrent(){
+  const r = lfRoomCondo();
+  if(r) return r;
+  const c = lfCondoById(lfCondoStored()); return (c && !c.shared) ? c : lfCondoById(LF_GRASS_CONDO);
+}
+// (v86: lfRoomKey() and ROOM_KEY are now defined at the top of the script, where the seeds and the storage keys can use them.)
 
 // ── Remote mode: "off" | "admin" | "on", from version.json ──
 // Read only after an admin signs in (a resident's phone never asks), once per
@@ -13403,12 +13740,13 @@ let _lfCondoMode = 'off', _lfCondoModeAt = 0, _lfCondoModeP = null;
 function lfCondoModeRead(){
   if(_lfCondoModeP) return _lfCondoModeP;
   _lfCondoModeP = (async ()=>{
-    let m = 'off';
+    let m = 'off', sw = 'off';
     try{
       const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
-      if(r.ok){ const j = await r.json(); const v = j && j.condos; m = (v === 'admin' || v === 'on') ? v : 'off'; }
-    }catch(e){ m = 'off'; }
-    _lfCondoMode = m; _lfCondoModeAt = Date.now(); _lfCondoModeP = null;
+      if(r.ok){ const j = await r.json(); const v = j && j.condos; m = (v === 'admin' || v === 'on') ? v : 'off'; const s = j && j.condoSwitch; sw = (s === 'admin' || s === 'on') ? s : 'off'; }
+    }catch(e){ m = 'off'; sw = 'off'; }
+    _lfCondoMode = m; _lfSwitchMode = sw; _lfCondoModeAt = Date.now(); _lfCondoModeP = null;       // (v86: the same file also says who may switch condos)
+    try{ lfRoomSwitchRefresh(); }catch(e){}
     return m;
   })();
   return _lfCondoModeP;
@@ -13717,7 +14055,7 @@ function lfCondoClose(quiet){
 // ═══════════════════════════════════════════════════════
 
 const FB_URL = 'https://lokalfinder-ec57f-default-rtdb.asia-southeast1.firebasedatabase.app';
-const ROOM_KEY = lfRoomKey();   // v78: 'lokalfinder_grass' in every case until Phase C — see lfRoomKey()
+// (v86: ROOM_KEY is defined at the top of the script — see "WHICH ROOM" — because the seed stores and the storage keys need it.)
 
 let lastPlacedOrderId = null;
 let knownOrderIds = new Set();
@@ -13786,17 +14124,17 @@ function _lfCaptureUtm(){
 
 function saveLocal(){
   try{
-    localStorage.setItem('lf-myOrders', JSON.stringify(myOrderIds.slice(-100)));
-    if(lastPlacedOrderId) localStorage.setItem('lf-lastOrder', lastPlacedOrderId);
+    localStorage.setItem(lfRk('lf-myOrders'), JSON.stringify(myOrderIds.slice(-100)));
+    if(lastPlacedOrderId) localStorage.setItem(lfRk('lf-lastOrder'), lastPlacedOrderId);
   }catch(e){}
 }
 function loadLocal(){
   try{
-    myOrderIds=JSON.parse(localStorage.getItem('lf-myOrders')||'[]');
-    lastPlacedOrderId=localStorage.getItem('lf-lastOrder')||null;
+    myOrderIds=JSON.parse(localStorage.getItem(lfRk('lf-myOrders'))||'[]');
+    lastPlacedOrderId=localStorage.getItem(lfRk('lf-lastOrder'))||null;
   }catch(e){}
   try{
-    savedVendors=JSON.parse(localStorage.getItem('lf-savedVendors')||'{}');
+    savedVendors=JSON.parse(localStorage.getItem(lfRk('lf-savedVendors'))||'{}');
   }catch(e){}
 }
 // Favorites: no customer account exists in this app, so "my favorites" is a
@@ -13805,7 +14143,7 @@ function loadLocal(){
 // on saveLocal()'s other call sites, so a favorite survives even if the
 // customer never places an order this session.
 function saveFavorites(){
-  try{ localStorage.setItem('lf-savedVendors', JSON.stringify(savedVendors)); }catch(e){}
+  try{ localStorage.setItem(lfRk('lf-savedVendors'), JSON.stringify(savedVendors)); }catch(e){}
 }
 
 async function fbGet(path){
@@ -13968,7 +14306,7 @@ function applyData(d){
   // Sync hero stats from Firebase
   if(d.heroStats){
     heroStats=d.heroStats;
-    try{ localStorage.setItem('lf-heroStats',JSON.stringify(heroStats)); }catch(e){}
+    try{ localStorage.setItem(lfRk('lf-heroStats'),JSON.stringify(heroStats)); }catch(e){}
     applyHeroStats();
   }
   refreshVisible();
@@ -14254,7 +14592,7 @@ const lfIdb = (()=>{
   return { get: k=>run('readonly', s=>s.get(k)), set: (k,v)=>run('readwrite', s=>s.put(v, k)) };
 })();
 
-const LF_CAT_CACHE      = 'catalog-v1';
+const LF_CAT_CACHE      = lfRk('catalog-v1');   // v86: per room — another condo's catalog is never shown from this cache
 const LF_CAT_SAFETY_MS  = 24*60*60*1000;
 const LF_CAT_CONFIRM_MS = 12000;
 const LF_CAT_NOREVS_MS  = 60000;
@@ -14479,7 +14817,7 @@ const lfMenuArr = raw => Array.isArray(raw) ? raw
 // Stamps go out only AFTER the data they describe has landed, and are queued
 // in localStorage first: data that landed with a stamp that didn't would
 // otherwise leave every other phone on the old copy until the daily backstop.
-const LF_REV_QUEUE = 'lf-rev-queue';
+const LF_REV_QUEUE = lfRk('lf-rev-queue');   // v86: per room — these stamps are for THIS room's stores
 const _lfBumpQ = new Map();   // key → sequence number, so a re-stamp during a send isn't lost
 let _lfBumpSeq = 0, _lfBumpBusy = false, _lfBumpRetryAt = 0;
 try{ JSON.parse(localStorage.getItem(LF_REV_QUEUE) || '[]').forEach(k=>_lfBumpQ.set(String(k), ++_lfBumpSeq)); }catch(e){}
@@ -14679,6 +15017,7 @@ function refreshVisible(){
   // have to re-read — by this point that key always already says "seen".
   try{ lfTrack('app_open', { firstOpen: !!window._lfFirstOpen }); }catch(e){}
   loadLocal();
+  try{ lfRoomBrand(); lfRoomLocSelects(); lfRoomCheckoutFields(); lfRoomFooter(); }catch(e){ lfRoomFail(e); }   // v86: outside GRASS the screens name this condo, list its buildings and end with a way back
   lfBuildMktTabs();          // v57: vertical tabs come from MKT_ORDER
   /* v63: populate the store picker from the seeded VENDORS now, not on the
      first sync. It used to hold four hardcoded food stores until applyData()
@@ -14715,7 +15054,12 @@ function refreshVisible(){
       // fbGet(ROOM_KEY) — the entire database, every order, chat and Feed
       // video ever stored — on every single app open.
       const d = await lfFetchScoped();
-      if(d._empty){
+      if(d._empty && !LF_ROOM_IS_GRASS){
+        // v86: a condo's room starts empty and is never seeded. An empty catalog still counts as handed out: until the
+        // first catalog has been applied nothing can be saved (pushState refuses), so the first store could never be added.
+        applyData(d);
+        if(d._commit) d._commit();
+      } else if(d._empty){
         // First time setup: only on a database a shallow read has confirmed
         // is empty (see lfFetchCatalogFull), never after a failed read.
         await fbSet(ROOM_KEY, buildPayload());
@@ -16030,7 +16374,7 @@ setInterval(updateClock,15000);
   function greeting(){
     var h = new Date().getHours();
     if(h >= 5 && h < 11)  return '☀️ Good morning, neighbor! Almusal time?';
-    if(h >= 11 && h < 14) return '🍛 Lunch time sa GRASS! Gutom ka na ba?';
+    if(h >= 11 && h < 14) return '🍛 Lunch time sa '+lfRoomShort()+'! Gutom ka na ba?';
     if(h >= 14 && h < 18) return '🍢 Merienda break? Your neighbors got you.';
     if(h >= 18 && h < 22) return '🌙 Dinner plans? Skip the commute — order in-building.';
     return '🌃 Late night cravings? Check who\'s still open.';
@@ -16042,7 +16386,7 @@ setInterval(updateClock,15000);
     if(c.dishes > 0) msgs.push('🔥 ' + c.dishes + ' dish' + (c.dishes>1?'es':'') + ' available today — sarap!');
     if(c.names.length > 0) msgs.push('👨‍🍳 Open now: ' + c.names.slice(0,3).join(' · '));
     msgs.push('🤝 100% neighbor-made · Same building · No commute');
-    msgs.push('💚 Every order supports a GRASS family');
+    msgs.push('💚 Every order supports a '+lfRoomShort()+' family');
     return msgs;
   }
   function tick(){
@@ -16353,7 +16697,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 85; // ← bump this each release (and version.json)
+  const APP_VERSION = 86; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){
@@ -16661,7 +17005,7 @@ setInterval(updateClock,15000);
         // 3. Re-bind vendor identity so the Cloud Function can target this device
         try{
           var vid = lfSessionVendorId();
-          if(vid){ await OneSignal.login(vid); }
+          if(vid && _lfPushRoom()){ await OneSignal.login(vid); }       // v86: GRASS only (a vendor id is a slug of the store's name: the same id in two condos must not share one push identity)
         }catch(e){ console.warn('[OneSignal] re-login:', e); }
         setTimeout(function(){ OneSignalDeferred.push(_osUpdateHealth); }, 800);
         try{ showToast('🔔 Push repair done — check status line'); }catch(e){}
@@ -16802,7 +17146,7 @@ setInterval(updateClock,15000);
       // If a vendor session is already active (restored from localStorage), bind it
       try{
         var savedVid = lfSessionVendorId();
-        if(savedVid){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
+        if(savedVid && _lfPushRoom()){ await OneSignal.login(savedVid); console.log('[OneSignal] Bound vendor (restored):', savedVid); }
       }catch(e){ console.warn('[OneSignal] restore-bind failed:', e); }
     }catch(e){
       var _isTimeout = e && e.message && e.message.indexOf('timed out') !== -1;
@@ -16837,7 +17181,7 @@ setInterval(updateClock,15000);
         await _orig.apply(this, arguments);
         try{
           var vid = (typeof activeVendorId !== 'undefined') ? activeVendorId : null;
-          if(vid && vid !== before){
+          if(vid && vid !== before && _lfPushRoom()){
             OneSignalDeferred.push(async function(OneSignal){
               try{
                 await OneSignal.Notifications.requestPermission();

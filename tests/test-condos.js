@@ -348,10 +348,14 @@ const SAMPLES = () => {
     r.unknown = set('no-such-condo');
     r.bad = ['../../etc', '<script>', 'a'.repeat(5000), 'constructor', '__proto__', 'toString', 'GRASS-RESIDENCES', 'grass residences', '', ' ', 'null', 'undefined', '{}', '[]', 'lokalfinder_grass', 'lf_c_x']
       .map(v => set(v));
-    // a record may claim any room it likes; the app derives the room from the id
-    lfCondoAdd({ id: 'sample-garden-residences', name: 'x', room: 'lokalfinder_grass', roomKey: 'lokalfinder_grass' });
-    r.derived = set('sample-garden-residences');
-    r.derivedField = lfCondoById('sample-garden-residences').room;
+    // a record may claim any room it likes; the app derives the room from the id.
+    // (v86: a room needs the id AND its card, written together by a switch. A known record alone is not enough, and a card's own "room" fields are not read.)
+    lfCondoAdd({ id: 'garden-residences', name: 'x', room: 'lokalfinder_grass', roomKey: 'lokalfinder_grass' });
+    r.recordOnly = set('garden-residences');
+    localStorage.setItem('lf-condo-card', JSON.stringify({ id: 'garden-residences', name: 'Garden Residences', room: 'lokalfinder_grass', roomKey: 'lokalfinder_grass' }));
+    r.derived = set('garden-residences');
+    localStorage.removeItem('lf-condo-card');
+    r.derivedField = lfCondoById('garden-residences').room;
     localStorage.removeItem('lf-condo');
     // storage that throws
     const orig = Storage.prototype.getItem; Storage.prototype.getItem = () => { throw new Error('blocked'); };
@@ -360,7 +364,7 @@ const SAMPLES = () => {
   });
   check('Resolver: nothing stored, GRASS stored, or an unknown id all give the GRASS room', rk.none === 'lokalfinder_grass' && rk.grass === 'lokalfinder_grass' && rk.unknown === 'lokalfinder_grass', JSON.stringify(rk));
   check('Resolver: 16 hostile or malformed stored values (path tricks, markup, 5000 chars, prototype names, other rooms\' names) all give GRASS', rk.bad.every(v => v === 'lokalfinder_grass'), JSON.stringify(rk.bad));
-  check('Resolver: a known condo\'s room is DERIVED from its id (lf_c_<id>); a record claiming the GRASS room is ignored', rk.derived === 'lf_c_sample-garden-residences' && rk.derivedField === 'lf_c_sample-garden-residences', rk.derived + ' / ' + rk.derivedField);
+  check('Resolver: a condo\'s room is DERIVED from its id (lf_c_<id>) once the phone holds its card; a record or a card claiming the GRASS room is ignored, and a known record with no card is still GRASS (v86)', rk.derived === 'lf_c_garden-residences' && rk.derivedField === 'lf_c_garden-residences' && rk.recordOnly === 'lokalfinder_grass', rk.recordOnly + ' / ' + rk.derived + ' / ' + rk.derivedField);
   check('Resolver: storage that throws gives GRASS, no exception', rk.throws === 'lokalfinder_grass', rk.throws);
   await A.ctx.close();
 
@@ -720,8 +724,10 @@ const SAMPLES = () => {
   const inner = block.replace(/\/\*[\s\S]*?\*\//g, '').match(/\.innerHTML\s*=[^\n]*/g) || [];
   check('Every innerHTML in the block is a constant (the SVG icons, or the sheet\'s fixed markup): no record data goes through it',
         inner.length === 5 && inner.every(l => /LF_CONDO_SVG\.|= svg;|=\s*$/.test(l)), JSON.stringify(inner));
-  check('ROOM_KEY is set by the resolver, and the literal GRASS key appears only as LF_GRASS_ROOM in the block',
-        /const ROOM_KEY = lfRoomKey\(\);/.test(SRC) && !/const ROOM_KEY = 'lokalfinder_grass'/.test(SRC) && (block.match(/'lokalfinder_grass'/g) || []).length === 1);
+  // v86: the resolver and ROOM_KEY moved to the top of the script ("WHICH ROOM"), before the seed stores that depend on them
+  const early = SRC.slice(SRC.indexOf('/* ═══ v86 — WHICH ROOM'), SRC.indexOf('const lfRk ='));
+  check('ROOM_KEY is set by the resolver (v86: at the top of the script, before the seed stores), and the literal GRASS key appears only as LF_GRASS_ROOM there',
+        (SRC.match(/const ROOM_KEY = lfRoomKey\(\);/g) || []).length === 1 && !/const ROOM_KEY = 'lokalfinder_grass'/.test(SRC) && (early.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').match(/'lokalfinder_grass'/g) || []).length === 1 && SRC.indexOf('const ROOM_KEY = lfRoomKey();') < SRC.indexOf('const VENDORS = {') && (block.match(/'lokalfinder_grass'/g) || []).length === 0);
   const code = block.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   check('No per-frame or background work in the block: no timer, no animation-frame loop, no observer, no scroll / touch / resize / wheel listener',
         !/\bsetInterval\s*\(|\bsetTimeout\s*\(|requestAnimationFrame|IntersectionObserver|ResizeObserver|MutationObserver|addEventListener\(\s*'(scroll|touchmove|touchstart|resize|wheel|orientationchange)'/.test(code), '');
