@@ -302,6 +302,7 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('The GRASS room has no order, and GRASS\'s own "pares" is exactly what it was', Object.keys(H.DB()[GRASS_ROOM].orders || {}).length === 0 && JSON.stringify(H.DB()[GRASS_ROOM].vendors.pares) === before, Object.keys(H.DB()[GRASS_ROOM]).join(','));
     const wC = writes(C.reqs);
     check('Every write the condo customer made went to the condo\'s room (not one touched lokalfinder_grass)', wC.length > 0 && wC.every(x => x.p.indexOf(GRASS_ROOM) < 0), JSON.stringify(wC.map(x => x.m + ' ' + x.p).slice(0, 8)));
+    await step('the order history was saved on the phone', C.page.waitForFunction(() => !!localStorage.getItem('lf-myOrders@lf_c_light-test'), null, { timeout: 8000 }));   // (saved just after the order's write lands)
     check('The condo customer\'s order history is under the CONDO\'s key, and GRASS\'s key was never written', await C.page.evaluate(() => lfRk('lf-myOrders') === 'lf-myOrders@lf_c_light-test' && !!localStorage.getItem('lf-myOrders@lf_c_light-test') && localStorage.getItem('lf-myOrders') === null && localStorage.getItem('lf-lastOrder') === null));
 
     // the condo's vendor: the CONDO's PIN works in the condo, GRASS's does not
@@ -756,6 +757,24 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     const stor = bcode.match(/localStorage\.\w+\(\s*([^,)]+)/g) || [];
     check('The block keeps on the phone only the id and the card (LF_CONDO_KEY and LF_CONDO_CARD_KEY), and nothing else', stor.length >= 4 && stor.every(m => /LF_CONDO_KEY|LF_CONDO_CARD_KEY/.test(m)), JSON.stringify(stor));
     check('Moving is one place: lfSwitchCondo reloads the page after writing the keys; nothing else in the block calls location.reload', (bcode.match(/location\.reload\(\)/g) || []).length === 1);
+  }
+
+  // the rules drafts (proven on the Firebase emulator by scripts outside this suite: raw REST checks per file, and the real app replayed in a condo room against them); here only their shape is guarded
+  {
+    const ROOM_OK = '$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)';
+    for (const f of ['firebase-rules-stopgap.json', 'firebase-rules.json']) {
+      let rules = null; try { rules = JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8')).rules; } catch (e) {}
+      const rm = rules && rules.$room, gr = rules && rules.lokalfinder_grass;
+      const ws = []; (function walk(n) { if (n && typeof n === 'object') for (const k of Object.keys(n)) { if (k === '.write') ws.push(n[k]); else walk(n[k]); } })(rm);
+      const strict = /firebase-rules\.json$/.test(f);
+      check(f + ': a $room block for condo rooms where every .write is false or checks the room name (lf_c_ then 2 to 63 of a-z 0-9 and -: no bare true, no other root name), with no write at $room, vendors, menu or pinHashes themselves (so no whole-node write, as in GRASS), and the same indexes',
+            !!rm && ws.length >= 6 && ws.every(w => w === false || (typeof w === 'string' && w.indexOf(ROOM_OK) === 0)) && ws.some(w => w !== false) && !('.write' in rm) && !('.write' in rm.vendors) && !('.write' in rm.menu) && !('.write' in rm.pinHashes) &&
+            JSON.stringify(rm.orders['.indexOn']) === '["vendorId"]' && JSON.stringify(rm.posts['.indexOn']) === '["createdAt"]', ws.length + ' writes');
+      check(f + ': GRASS\'s own block is untouched (its writes are still plain true or its own expression, never the room test), and the siblings of the wildcard are still there',
+            !!gr && !JSON.stringify(gr).includes('$room') && ['condoPipeline', 'condoLog', 'condoDirectory', 'condoDirRev'].every(k => rules && rules[k]));
+      if (strict) check(f + ': a condo has no admin record, no legacy pins table and no push tokens in its rules (one admin login for every condo; push is GRASS-only)', !!rm && !('adminAuth' in rm) && !('pins' in rm) && !('fcmTokens' in rm));
+      else check(f + ': the stopgap\'s catch-all for a room is the same room test (as GRASS\'s catch-all is open today)', !!rm && rm.$other && rm.$other['.write'] === ROOM_OK);
+    }
   }
 
   // ═════ 10. NOTHING FROM STORAGE OR THE DATABASE IS TRUSTED ═════
