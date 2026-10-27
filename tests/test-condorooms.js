@@ -522,6 +522,45 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await shut(P);
   }
 
+  // an admin who moves lands on the sign-in of the other condo (their session ended with the reload); a customer lands on Home
+  {
+    H.resetDB(); seedDir(DIR());
+    const salt = 'a1b2c3d4';
+    H.DB()[GRASS_ROOM] = { adminAuth: { email: 'admin@lokalfinder.ph', salt, hash: sha(salt + ':' + 'correct horse battery'), updatedAt: 1 } };
+    const A = await session(browser, port, log, { version: V('on', 'admin') });
+    await handed(A.page);
+    await adminSignIn(A.page);
+    await A.page.evaluate(async () => { await lfCondoModeRead(); await lfShSync(true); });
+    await until(A.page, () => _lfSwitchMode === 'admin' && !!lfCondoById('live-heights'), null, 'the admin switch and the directory were read');
+    await A.page.evaluate(() => { lfCondoOpen(); });
+    await step('the admin\'s list shows the condo', A.page.waitForSelector('#lf-condo-list .lf-condo-card[data-id="live-heights"]', { timeout: 12000 }));
+    await settle(A.page, '#modal-condo');
+    await A.page.click('#lf-condo-list .lf-condo-card[data-id="live-heights"]');
+    await step('the page opened', A.page.waitForSelector('#lf-pg-swgo', { timeout: 8000 }));
+    const hint = await A.page.evaluate(() => (document.querySelector('#lf-pg-sw .lf-pg-swh') || {}).textContent || '');
+    check('An admin is told, on the condo\'s page, that only admins can open it for now', /Only admins can open this condo for now/.test(hint), hint);
+    await A.page.click('#lf-pg-swgo');
+    await Promise.all([A.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), A.page.click('#lf-pg-swyes')]);
+    await ready(A.page);
+    const a = await A.page.evaluate(() => ({ room: ROOM_KEY, page: document.querySelector('.page.on').id, flag: sessionStorage.getItem('lf-admin-next'), admin: _lfAdminMode === true }));
+    check('After an admin\'s move the app is in the condo, signed out (the session was in memory), on the admin sign-in page, and the one-use flag is spent', a.room === 'lf_c_live-heights' && a.page === 'p-alogin' && a.flag === null && a.admin === false, JSON.stringify(a));
+    await A.page.evaluate(() => goPage('p-chome'));
+    await A.page.evaluate(() => location.reload());
+    await A.page.waitForLoadState('domcontentloaded'); await ready(A.page);
+    check('...and an ordinary reload afterwards lands on Home, not on the sign-in again (one use)', await A.page.evaluate(() => document.querySelector('.page.on').id) === 'p-chome');
+    await shut(A);
+    // a customer's move lands on Home
+    H.resetDB(); seedDir(DIR());
+    const P = await session(browser, port, log, { version: V('on', 'on'), ls: { 'lf-condo-pub': PUB() } });
+    await handed(P.page); await versionSeen(P);
+    await openCondoPage(P.page, 'live-heights');
+    await P.page.click('#lf-pg-swgo');
+    await Promise.all([P.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), P.page.click('#lf-pg-swyes')]);
+    await ready(P.page);
+    check('A customer\'s move lands on the condo\'s Home (no admin page, and no flag was set)', await P.page.evaluate(() => document.querySelector('.page.on').id === 'p-chome' && sessionStorage.getItem('lf-admin-next') === null));
+    await shut(P);
+  }
+
   // the footer: a way back that does not depend on the Condos list at all
   {
     H.resetDB(); seedDir(DIR());
@@ -679,6 +718,8 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     const S = await session(browser, port, log, { ls: LS_IN(ID), version: V('on', 'admin') });
     await handed(S.page);
     const form = await S.page.evaluate(() => { openVendorApply(); return { locs: [...el('ap-loc').options].map(o => o.textContent), mkts: [...el('ap-mkt').options].map(o => o.value) }; });
+    const sel0 = await S.page.evaluate(() => ({ v: el('ap-loc').value, i: el('ap-loc').selectedIndex, addr: el('ap-addr-row').style.display, nv: el('nv-loc').value, ev: el('ev-loc').value }));
+    check('The form opens on the first building (not on "Outside"), with the address box hidden; the two admin boxes open on the first building too', sel0.v === 'Tower A' && sel0.i === 0 && sel0.addr === 'none' && sel0.nv === 'Tower A' && sel0.ev === 'Tower A', JSON.stringify(sel0));
     check('The application form lists the condo\'s buildings and an "Outside <condo>" choice, and offers every kind of store', JSON.stringify(form.locs) === JSON.stringify(['Tower A', 'Tower B', '📍 Outside Light Test Residences']) && ['food', 'cleaning', 'aircon'].every(k => form.mkts.indexOf(k) >= 0), JSON.stringify(form));
     await S.page.evaluate(() => { el('ap-name').value = 'Breeze Aircon Co'; el('ap-mkt').value = 'aircon'; apMktChanged(); el('ap-loc').value = 'Tower B'; apLocChanged(); el('ap-cat').value = 'Split type'; el('ap-phone').value = '09171234567'; el('ap-pin').value = '482913'; el('ap-pin2').value = '482913'; });
     await S.page.evaluate(() => submitVendorApplication());

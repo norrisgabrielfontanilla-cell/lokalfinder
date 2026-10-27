@@ -12658,6 +12658,7 @@ function lfRoomLocSelects(){
     while(sel.firstChild) sel.removeChild(sel.firstChild);
     rows.forEach(n=>{ const o = document.createElement('option'); o.textContent = n; sel.appendChild(o); });
     if(outside) sel.appendChild(outside);
+    sel.selectedIndex = 0;      // the "Outside" option, put back last, would otherwise keep the selection it was given when it was the only option left
     const lbl = sel.previousElementSibling;
     if(lbl && lbl.tagName === 'LABEL' && /Tower \/ Location/.test(lbl.textContent)) lbl.textContent = 'Building / Location';
   });
@@ -12748,6 +12749,7 @@ function lfSwitchCondo(id){
     return false;
   }
   _lfSwitching = true;
+  try{ if(_lfAdminMode === true) sessionStorage.setItem('lf-admin-next', '1'); }catch(e){}     // an admin's session ends with the reload: they land on the sign-in of the other condo, not on its Home
   showToast('Switching to ' + c.name + '…');
   try{ location.reload(); }catch(e){}
   return true;
@@ -15113,6 +15115,8 @@ function refreshVisible(){
       lfRevalidateVendorSession();
     }catch(e){ console.warn('vendor session refresh failed:', e); }
   }
+  // v86: an admin who has just moved between condos lands on the admin sign-in (their session ended with the reload); one use.
+  try{ if(sessionStorage.getItem('lf-admin-next') === '1'){ sessionStorage.removeItem('lf-admin-next'); if(!_sess) goPage('p-alogin'); } }catch(e){}
   // Upgrade a pre-v56 {vendorId, PIN} pair to a hash-only session, now that
   // the credential records have synced and we can actually verify it.
   try{
