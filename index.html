@@ -12474,6 +12474,7 @@ function lfShKick(force){
 }
 // The screens that list condos, in step with what was just learned.
 function lfShViews(){
+  try{ lfRoomCardRefresh(); }catch(e){}                                 // v86: the card of the condo this phone is in follows the directory
   try{ lfCondoNavSync(true); }catch(e){ lfCondoPubFail(e); }
   try{ const m = _lfCondoSheet; if(m && m.classList.contains('on')) lfCondoRender(); }catch(e){}
   try{ if(document.getElementById('lf-pipe-body')) lfPipeRender(); }catch(e){}
@@ -12726,6 +12727,24 @@ function lfRoomCardFor(c){
   const o = { v: 1, id: c.id, name: c.name, city: c.city || '', unitHint: c.unitHint || '', at: Date.now() };
   o.buildings = c.buildings.slice(0, LF_CONDO_MAX_BLDG).map(b=>{ const r = { id: b.id, name: b.name, kind: b.kind, order: b.order }; if(b.floors) r.floors = b.floors; return r; });
   return o;
+}
+// The card of the condo this phone is in follows the directory: an admin who adds a building or renames the condo reaches the phones in it on their next open
+// (the screens already drawn are left as they are). Only the card of THIS room's condo, only from a clean record that is in the directory now, and only when
+// something changed.
+function lfRoomCardRefresh(){
+  try{
+    if(LF_ROOM_IS_GRASS || _lfSwitching || !LF_ROOM_CARD) return;
+    const c = lfCondoDir()[LF_ROOM_CARD.id];
+    if(!c || !c.shared) return;
+    const next = lfRoomCardFor(c);
+    let have = null; try{ have = JSON.parse(localStorage.getItem(LF_CONDO_CARD_KEY)); }catch(e){}
+    if(have && typeof have === 'object'){
+      const a = Object.assign({}, have), b = Object.assign({}, next); delete a.at; delete b.at;
+      if(JSON.stringify(a) === JSON.stringify(b)) return;
+    }
+    const s = JSON.stringify(next);
+    if(s.length <= LF_CARD_MAX) localStorage.setItem(LF_CONDO_CARD_KEY, s);
+  }catch(e){}
 }
 // Moves this phone into condo `id` (GRASS: back), then reloads. Nothing is written to any database. false = it did not move, and said why.
 function lfSwitchCondo(id){

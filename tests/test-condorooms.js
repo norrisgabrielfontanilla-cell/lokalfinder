@@ -891,6 +891,34 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     await shut(Tr);
   }
 
+  // the card follows the directory: an admin renames the condo and adds a building; the phones in it get both on their next open
+  {
+    H.resetDB();
+    seedDir({ 'live-heights': REC('Live Heights Renamed', { buildings: { 'tower-a': { name: 'Tower A', kind: 'tower', order: 1 }, 'tower-b': { name: 'Tower B', kind: 'tower', order: 2 }, 'tower-c': { name: 'Tower C', kind: 'tower', order: 3 } } }) });
+    const counter = () => { window.__cardWrites = 0; const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === 'lf-condo-card') window.__cardWrites++; return orig.apply(this, arguments); }; };
+    const F = await session(browser, port, log, { ls: LS_IN('live-heights', CARD('live-heights')), version: V('off', 'off'), init: counter });
+    await handed(F.page);
+    await until(F.page, () => { try { return JSON.parse(localStorage.getItem('lf-condo-card')).name === 'Live Heights Renamed'; } catch (e) { return false; } }, null, 'the card followed the directory');
+    const f1 = await F.page.evaluate(() => ({ card: JSON.parse(localStorage.getItem('lf-condo-card')), sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, writes: window.__cardWrites, id: localStorage.getItem('lf-condo') }));
+    check('The card of the condo a phone is in follows the directory: the admin\'s new name and third building are in the card (same id, still ONE write), and the screens already drawn are left as they were', f1.card.name === 'Live Heights Renamed' && f1.card.buildings.length === 3 && f1.card.id === 'live-heights' && f1.id === 'live-heights' && f1.writes === 1 && /^Light Test Residences • /.test(f1.sub), JSON.stringify([f1.card.name, f1.card.buildings.length, f1.writes, f1.sub]));
+    await F.page.evaluate(() => { _lfSh.last = 0; lfShKick(true); }); await sleep(1500);
+    await F.page.evaluate(() => { _lfSh.last = 0; lfShKick(true); }); await sleep(1500);
+    check('...and later looks that find nothing new do not write the card again', await F.page.evaluate(() => window.__cardWrites) === 1);
+    await F.page.reload({ waitUntil: 'domcontentloaded' }); await ready(F.page); await handed(F.page);
+    const f2 = await F.page.evaluate(() => ({ sub: document.querySelector('#lf-brand-tap .lf2-sub').textContent, loc: [...document.getElementById('ap-loc').options].map(o => o.textContent), bld: [...document.getElementById('cust-building').options].map(o => o.textContent) }));
+    check('On the next open the screens use the new card: the new name in the header, three buildings in the application and in the checkout', f2.sub === 'Live Heights Renamed • Mandaluyong' && f2.loc.length === 4 && f2.loc[2] === 'Tower C' && f2.bld.length === 4 && f2.bld[3] === 'Tower C', JSON.stringify(f2));
+    await shut(F);
+    // the directory does not hold the condo (deleted, or not read): the card is left alone
+    H.resetDB(); seedDir({ 'someone-else': REC('Someone Else') });
+    const K = await session(browser, port, log, { ls: LS_IN('live-heights', CARD('live-heights')), version: V('off', 'off'), init: counter });
+    await handed(K.page);
+    await until(K.page, () => _lfSh.last > 0 && !!lfCondoById('someone-else'), null, 'the directory was read');
+    await sleep(500);
+    const k = await K.page.evaluate(() => ({ name: JSON.parse(localStorage.getItem('lf-condo-card')).name, writes: window.__cardWrites, room: ROOM_KEY }));
+    check('A condo that is not in the directory keeps the card the phone has: the card is untouched (no write, same name) and the phone is still in its room', k.name === 'Light Test Residences' && k.writes === 0 && k.room === 'lf_c_live-heights', JSON.stringify(k));
+    await shut(K);
+  }
+
   // ═════ 11. SIZE AND TOUCH ═════
   for (const [w, h] of [[390, 780], [360, 640], [320, 568]]) {
     H.resetDB(); seedDir(DIR());
