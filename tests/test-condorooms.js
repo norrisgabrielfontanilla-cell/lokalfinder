@@ -80,6 +80,7 @@ async function session(browser, port, log, o = {}){
   }, Object.assign({ 'lf-splash-seen': '1' }, o.ls || {}));
   await page.addInitScript(DEMO_INIT);
   if (o.init) await page.addInitScript(o.init);
+  if (o.clock) await page.clock.setFixedTime(o.clock);      // Date is fixed (the Home's greeting depends on the hour); timers still run
   const vc = { n: 0 };
   if (o.version !== undefined) await page.route(VJSON, route => { vc.n++; return answer(o.version)(route); });
   if (o.src) await page.route('**/index.html*', route => route.fulfill({ status: 200, contentType: 'text/html', body: o.src }));
@@ -247,6 +248,26 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('A condo phone never touches the GRASS room (not one request names lokalfinder_grass)', fbReqs(C.reqs).every(x => x.p.indexOf(GRASS_ROOM) < 0), JSON.stringify(fbReqs(C.reqs).filter(x => x.p.indexOf(GRASS_ROOM) >= 0).map(x => x.m + ' ' + x.p)));
     check('A condo phone reads only its own room (every room path starts lf_c_<id>/)', fbReqs(C.reqs).filter(x => /^(lf_c_|lokalfinder_)/.test(x.p)).every(x => x.p.indexOf(ROOM(ID) + '/') === 0 || x.p === ROOM(ID)), JSON.stringify(fbReqs(C.reqs).filter(x => /^(lf_c_|lokalfinder_)/.test(x.p)).map(x => x.p).slice(0, 8)));
     check('Nothing is seeded into the database for a condo (the stub holds no room at all)', Object.keys(H.DB()).every(k => !/^(lf_c_|lokalfinder_)/.test(k)), JSON.stringify(Object.keys(H.DB())));
+    await shut(C);
+  }
+
+  // the Home's rotating line speaks of this condo, not of GRASS (a fixed lunch-time clock makes the greeting certain)
+  {
+    const lunch = new Date('2026-10-27T12:30:00');
+    const G = await phone(browser, port, log, { version: V('on', 'admin'), clock: lunch });
+    await handed(G.page);
+    await step('GRASS\'s greeting appeared', G.page.waitForFunction(() => /Lunch time sa/.test((document.getElementById('lf-pulse-txt') || {}).textContent || ''), null, { timeout: 8000 }));
+    const gt = await G.page.evaluate(() => document.getElementById('lf-pulse-txt').textContent);
+    check('Control: GRASS\'s lunch-time greeting is the old words ("Lunch time sa GRASS!")', /Lunch time sa GRASS! Gutom ka na ba\?/.test(gt), gt);
+    await shut(G);
+    const C = await phone(browser, port, log, { ls: LS_IN(ID), version: V('on', 'admin'), clock: lunch });
+    await handed(C.page);
+    await step('the condo\'s greeting appeared', C.page.waitForFunction(() => /Lunch time sa/.test((document.getElementById('lf-pulse-txt') || {}).textContent || ''), null, { timeout: 8000 }));
+    const ct = await C.page.evaluate(() => document.getElementById('lf-pulse-txt').textContent);
+    check('A condo\'s lunch-time greeting names the condo ("Lunch time sa Light Test Residences!")', /Lunch time sa Light Test Residences! Gutom ka na ba\?/.test(ct), ct);
+    await step('the closing line appeared', C.page.waitForFunction(() => /Every order supports a/.test((document.getElementById('lf-pulse-txt') || {}).textContent || ''), null, { timeout: 16000 }));
+    const cf = await C.page.evaluate(() => document.getElementById('lf-pulse-txt').textContent);
+    check('...and its closing line does too ("Every order supports a Light Test Residences family")', /Every order supports a Light Test Residences family/.test(cf) && !/GRASS/.test(cf), cf);
     await shut(C);
   }
 
@@ -903,6 +924,17 @@ const PUB = () => JSON.stringify({ on: 1, at: Date.now() });
     check('A phone that will not store the card: nothing is left behind (no id, no card), the phone stays in GRASS, the moving switches itself off for the session, and it says "would not remember the switch"', f.id === null && f.card === null && f.room === GRASS_ROOM && f.off === true && f.box === false && /would not remember the switch/.test(f.toast), JSON.stringify(f));
     check('...and the app carries on (no uncaught page error, the Home still works)', log.errors.length === errs0 && await P.page.evaluate(() => document.querySelector('.page.on') !== null && Object.keys(VENDORS).length === 10));
     await shut(P);
+
+    // a phone whose storage ACCEPTS the write and keeps nothing (some private modes): the read-back catches it, and nothing is left half done
+    H.resetDB(); seedDir(DIR());
+    const Z = await session(browser, port, log, { version: V('on', 'on'), ls: { 'lf-condo-pub': PUB() }, init: () => { const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === 'lf-condo-card') return; return orig.apply(this, arguments); }; } });
+    await handed(Z.page); await versionSeen(Z);
+    await openCondoPage(Z.page, 'live-heights');
+    await Z.page.click('#lf-pg-swgo'); await Z.page.click('#lf-pg-swyes');
+    await sleep(500);
+    const z = await Z.page.evaluate(() => ({ id: localStorage.getItem('lf-condo'), card: localStorage.getItem('lf-condo-card'), room: ROOM_KEY, toast: (document.querySelector('.toast, #toast, [id*="toast"]') || {}).textContent }));
+    check('A phone whose storage silently keeps nothing: the move is caught by the read-back, no id is left behind, the phone stays in GRASS and says "would not remember the switch"', z.id === null && z.card === null && z.room === GRASS_ROOM && /would not remember the switch/.test(z.toast), JSON.stringify(z));
+    await shut(Z);
 
     // the screens' setup breaks: the room is still the condo, and the way back is still there
     const D = await phone(browser, port, log, { ls: LS_IN(ID), version: V('on', 'admin'), init: () => { document.createTreeWalker = () => { throw new Error('no walker'); }; } });
