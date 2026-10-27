@@ -66,7 +66,9 @@ async function session(browser, port, log, o = {}){
   return { page, ctx, reqs };
 }
 const versionFetches = reqs => reqs.filter(r => /\/version\.json/.test(r.u)).length;
-const condoDbTraffic = reqs => reqs.filter(r => /firebasedatabase\.app/.test(r.u) && /condo|lf_c_/i.test(r.u)).length;
+// v85: a session that is allowed to see condos (an admin, or a customer when the file says "on") reads the shared directory's stamp (condoDirRev) and, when the stamp has
+// changed, the directory (condoDirectory). Those two reads are the only condo traffic these sessions may have: any other condo path, and any write, is a leak.
+const condoDbTraffic = reqs => reqs.filter(r => /firebasedatabase\.app/.test(r.u) && /condo|lf_c_/i.test(r.u) && !(r.m === 'GET' && /\/(condoDirRev|condoDirectory)\.json/.test(r.u.split('?')[0]))).length;
 
 // Sign in through the real screen, as the founder does.
 async function adminSignIn(page){

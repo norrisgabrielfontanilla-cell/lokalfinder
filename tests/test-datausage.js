@@ -90,8 +90,10 @@ const since = (reqs, t, pred) => reqs.filter(r => r.t >= t && pred(r));
   const idle = since(B.reqs, t0, () => true);
   check('Idle customer: no store or menu downloads across three syncs',
     !idle.some(r => r.m === 'GET' && /^\/(vendors|menu)(\/|$)/.test(r.p)), idle.map(r => r.p).join(' '));
-  check('Idle customer: only the small change checks run (rev, revs, tombstones)',
-    idle.every(r => ['/rev', '/revs', '/deletedVendors', '/reviews'].includes(r.p)), [...new Set(idle.map(r => r.p))].join(','));
+  // v85: version.json says "on", so a customer's phone also looks at the shared condo directory's stamp (a number: a few bytes), at most twice here (the Home bar, then the update check),
+  // and never at the directory itself while the stamp says nothing changed.
+  check('Idle customer: only the small change checks run (rev, revs, tombstones, and the condo directory\'s stamp: a few bytes, at most twice, never the directory itself)',
+    idle.every(r => ['/rev', '/revs', '/deletedVendors', '/reviews', '/condoDirRev'].includes(r.p)) && idle.filter(r => r.p === '/condoDirRev').length <= 2, [...new Set(idle.map(r => r.p))].join(',') + ' stamp reads=' + idle.filter(r => r.p === '/condoDirRev').length);
 
   // ── 3. A vendor's own change reaches the customer, as ONE store ─────────
   const V = await open(browser, port, log);                        // vendor device

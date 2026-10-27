@@ -189,7 +189,9 @@ const onlyPipeWrites = w => w.length > 0 && w.every(x => x.m === 'PATCH' && /\/\
   const before2 = R.reqs.length;
   await R.page.evaluate(() => { lfPipeSheet(); _lfPipe.move = { id: 'forged-condo', row: { id: 'forged-condo', name: 'forged-condo', stage: 'researching', rec: null, verified: false, sample: false }, to: 'next', opener: null, lid: '' }; lfPipeConfirmMove(); });
   await sleep(600);
-  check('Resident: a forged move with the sheet built by hand and lfPipeConfirmMove() sends nothing — no write, and not even a read', R.reqs.slice(before2).filter(r => isFB(r.u)).length === 0, JSON.stringify(R.reqs.slice(before2).filter(r => isFB(r.u)).map(w => w.m + ' ' + w.u)));
+  // (v85: judged on writes and on pipeline paths, not on every request in a 600 ms window: the app's own 3-second catalog poll can land in it on a busy machine, and that is not the forged move's doing)
+  const forgedTraffic = R.reqs.slice(before2).filter(r => isFB(r.u) && (r.m !== 'GET' || /condoPipeline|condoLog|condoTargets|condoDirectory|condoDirRev/.test(decodeURIComponent(r.u))));
+  check('Resident: a forged move with the sheet built by hand and lfPipeConfirmMove() sends nothing — no write, and not even a read of a condo path', forgedTraffic.length === 0, JSON.stringify(forgedTraffic.map(w => w.m + ' ' + w.u)));
   check('...and the gate takes the hand-built sheet back out of the page', await R.page.evaluate(() => !document.getElementById('modal-pipe')));
   check('Resident: the database has no pipeline nodes', H.DB().condoPipeline === undefined && H.DB().condoLog === undefined);
   await shut(R);
@@ -306,7 +308,7 @@ const onlyPipeWrites = w => w.length > 0 && w.every(x => x.m === 'PATCH' && /\/\
   check('The seven counts: Live 1, the other six 0', STAGES.every(s => c1[s] === (s === 'live' ? 1 : 0)), JSON.stringify(c1));
   check('...and the empty ones are visibly dimmed, in the pie\'s order', await L.page.evaluate(() => [...document.querySelectorAll('.lf-pipe-count')].map(c => c.dataset.stage).join(',')) === STAGES.join(',') &&
         await L.page.evaluate(() => document.querySelectorAll('.lf-pipe-count.zero').length) === 6);
-  check('The page says it is planning only and residents see nothing change', await L.page.evaluate(() => /Planning only\. Residents see nothing change\./.test(document.querySelector('#p-apipe .topbar').textContent)));
+  check('The page says where to add condos and that moving a stage is planning only (v85: adding a condo does change what customers see, moving a stage does not)', await L.page.evaluate(() => /Add condos here\. Moving a stage is planning only\./.test(document.querySelector('#p-apipe .topbar').textContent)));
   check('"Recent moves" starts with a plain "No moves yet" line', (await L.page.evaluate(LOGROWS)).join('|') === 'No moves yet. Every move you make is recorded here.');
   check('Opening the page made exactly two reads (the records, the newest 50 log entries) and no write', pipeTraffic(L.reqs) === 2 && fbWrites(L.reqs, 0).filter(w => /condo/.test(w.u + w.b)).length === 0, 'pipeline requests=' + pipeTraffic(L.reqs));
 

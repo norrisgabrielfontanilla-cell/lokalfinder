@@ -1888,6 +1888,16 @@ button.lf-condo-card:active{transform:scale(.98)}
 .lf-dr-sheet .lf-pipe-btn{width:100%;margin-bottom:12px}
 .lf-dr-sheet .lf-dr-badd .lf-pipe-btn,.lf-dr-sheet .lf-dr-quick .lf-pipe-btn{width:auto;margin-bottom:0}
 @media(prefers-reduced-motion:reduce){.lf-pipe-ed{transition:none}}
+/* ═══ v85 — SHARED CONDO DIRECTORY ═══
+   The editor's "What customers see" group (status, and "Show to customers" for a condo already saved for everyone), the
+   primary Add condo / Save changes button, and the quiet "save as a private draft" link under it. 44px or taller, 16px text. */
+.lf-dr-pub{margin:6px 0 4px;padding-top:12px;border-top:1px solid var(--bd)}
+.lf-dr-pub .finp{min-height:44px}
+.lf-dr-show{display:flex;align-items:center;gap:12px;min-height:44px;margin:2px 0 12px;font-size:14px;font-weight:700;color:var(--t1);cursor:pointer}
+.lf-dr-show input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--g)}
+.lf-dr-show:focus-within{outline:2px solid var(--g);outline-offset:2px;border-radius:8px}
+.lf-dr-priv{display:block;width:100%;margin:4px 0 0;text-align:center}
+.lf-dr-priv:disabled{opacity:.5;cursor:default}
 /* ═══ v82 — CONDO PICTURES AND PAGES (admin only) ═══
    A card's picture replaces the pin; the page is a second view inside the same sheet (the list's
    parts are hidden while it is open). Every target is 44px or taller and the picture's own text
@@ -10610,7 +10620,8 @@ function lfPipeRows(){
   try{ dir = lfCondoVisible(true); }catch(e){ dir = []; }
   dir.forEach(c => {
     seen[c.id] = true;
-    out.push({ id:c.id, name:c.name, city:c.city, blabel:lfCondoBuildingLabel(c), verified:!!(c.visible && c.confidence === 'confirmed'), sample:false });
+    out.push({ id:c.id, name:c.name, city:c.city, blabel:lfCondoBuildingLabel(c), verified:!!(c.visible && c.confidence === 'confirmed'), sample:false,
+               shared:!!c.shared, hidden:!!c.shared && !c.visible, status:c.status });   // v85: a condo saved for everyone can be edited, and says when it is hidden
   });
   // the admin's own drafts (v81): on this phone only, never verified
   let drafts = [];
@@ -10632,6 +10643,7 @@ function lfPipeRows(){
 }
 // What residents would see in that stage. P1 shows it as a preview only: residents' status changes with a release.
 function lfPipeResidentsSee(r, to){
+  if(r.shared) return r.verified ? (LF_CONDO_STATUS[r.status] || 'nothing') : 'nothing (it is hidden from customers)';   // v85: what customers see is the status set when the condo is edited, not the stage
   if(!r.verified) return 'nothing (hidden until it is verified)';   // a draft, or any condo not yet verified, never reaches a resident whatever its stage
   if(to === 'live') return 'Live';
   if(to === 'launching' || to === 'talks') return 'Coming soon';
@@ -10660,6 +10672,7 @@ async function lfPipePatchRoot(updates){
 }
 async function lfPipeLoad(){
   if(_lfPipe.state === 'loading') return;
+  lfShKick(true);                                       // v85: the condos saved for everyone are read (their stamp first) whenever this page is opened or refreshed
   _lfPipe.state = 'loading'; lfPipeRender();
   try{
     const got = await Promise.all([ lfPipeGet(LF_PIPE_NODE), lfPipeGet(LF_PIPE_LOGNODE, '?orderBy=%22%24key%22&limitToLast=50') ]);
@@ -10688,6 +10701,7 @@ function lfPipeRowEl(r){
   const top = lfPipeEl('div', 'lf-pipe-r1'), nm = lfPipeEl('span', 'lf-pipe-nm', r.name);
   if(r.sample) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag', 'Sample'));
   if(r.draft) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag draft', 'Draft'));
+  if(r.hidden) nm.appendChild(lfPipeEl('span', 'lf-pipe-tag draft', 'Hidden'));     // v85: saved for everyone, but "Show to customers" is off
   top.append(nm, lfPipeChip(r.stage));
   const bot = lfPipeEl('div', 'lf-pipe-r2');
   const meta = [r.city, r.blabel, (r.rec && r.rec.stageAt) ? 'moved ' + lfAppWhen(r.rec.stageAt) : ''].filter(Boolean).join(' · ');
@@ -10695,9 +10709,9 @@ function lfPipeRowEl(r){
   b.setAttribute('aria-label', 'Move ' + r.name + ', now ' + LF_PIPE_STAGES[r.stage].label);
   b.addEventListener('click', () => lfPipeGuard(() => lfPipeOpenMove(r.id, b)));
   let acts = b;
-  if(r.draft){                                          // a draft can be edited; a real condo cannot (its facts are the app's own)
+  if(r.draft || r.shared){                              // a draft can be edited, and so can a condo saved for everyone (v85); GRASS cannot (its facts are the app's own)
     const ed = lfPipeEl('button', 'lf-pipe-ed', 'Edit'); ed.type = 'button';
-    ed.setAttribute('aria-label', 'Edit draft ' + r.name);
+    ed.setAttribute('aria-label', (r.draft ? 'Edit draft ' : 'Edit ') + r.name);
     ed.addEventListener('click', () => lfDraftGuard(() => lfDraftOpen(r.id, ed)));
     acts = lfPipeEl('div', 'lf-pipe-acts2'); acts.append(ed, b);
   }
@@ -10919,7 +10933,8 @@ function lfPipeMoveSync(){
   }else{
     box.append('Move ', strong(r.name), ' from ', strong(LF_PIPE_STAGES[r.stage].label), ' to ', strong(LF_PIPE_STAGES[to].label),
                '. Residents will see: ', strong(lfPipeResidentsSee(r, to)),
-               ". That is a preview: residents' status changes only with a release. Stores, menus and orders are not touched.");
+               r.shared ? '. Moving a condo here is planning only: customers see the status you set when you edit the condo. Stores, menus and orders are not touched.'
+                        : ". That is a preview: residents' status changes only with a release. Stores, menus and orders are not touched.");
     if(r.sample) box.appendChild(lfPipeEl('div', 'lf-pipe-sample-note', 'Sample condo: nothing is saved.'));
   }
   const go = el('lf-pipe-go');
@@ -11012,7 +11027,7 @@ function lfPipeBuildPage(){
     '<div class="notch" style="background:#0F4A32"><span class="ph-clock" style="color:#fff">9:41</span><div class="ni"></div></div>'+
     '<div class="topbar" style="background:#0F4A32;border-color:rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;gap:10px">'+
       '<div><div style="font-size:17px;font-weight:700;color:#fff">Condo pipeline</div>'+
-        '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Planning only. Residents see nothing change.</div></div>'+
+        '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:1px">Add condos here. Moving a stage is planning only.</div></div>'+
       '<button type="button" class="lf-pipe-refresh" id="lf-pipe-refresh">Refresh</button>'+
     '</div>'+
     '<div class="scrl"><div id="lf-pipe-body"></div><div style="height:80px"></div></div>'+
@@ -11112,7 +11127,8 @@ const LF_DRAFT_RESERVED = /^(sample|preview)-/;            // the app's own samp
 const LF_DRAFT_BID_RE = /^[a-z0-9][a-z0-9_-]{0,30}$/;      // a building id the directory accepts (same rule as lfCondoBuildings)
 const LF_DRAFT_KIND_LABEL = { tower:'Tower', building:'Building', wing:'Wing', phase:'Phase', block:'Block', villa:'Villa', podium:'Podium', other:'Other' };
 let _lfDraftOff = false;                                   // set when drafts failed: off for the session, nothing else affected
-let _lfDraft = { list: null, memOnly: false, deleted: null, undo: null, edit: null, openedWith: '', warned: false, opener: null, sheet: null, io: null, ioOpener: null, check: null };
+let _lfDraft = { list: null, memOnly: false, deleted: null, undo: null, edit: null, openedWith: '', warned: false, opener: null, sheet: null, io: null, ioOpener: null, check: null,
+                 mode: 'new', tok: 0 };   // v85: mode is 'new', 'draft' (a private draft being edited or published) or 'shared' (a condo saved for everyone); tok tells a save which opening of the sheet it belongs to
 
 const lfDraftNum = v => (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0;
 
@@ -11192,6 +11208,9 @@ function lfDraftList(){
   }catch(e){ return []; }
 }
 function lfDraftById(id){ return (_lfDraft.list || []).find(c => c.id === id) || null; }
+// v85: a condo saved for everyone is edited in the same sheet as a draft.
+function lfDraftSharedById(id){ const c = lfCondoById(id); return (c && c.shared) ? c : null; }
+function lfDraftEditing(){ return _lfDraft.edit ? (_lfDraft.mode === 'shared' ? lfDraftSharedById(_lfDraft.edit) : lfDraftById(_lfDraft.edit)) : null; }
 
 // ── ids and duplicates ──
 function lfDraftSlug(name, city){
@@ -11228,7 +11247,7 @@ function lfDraftSheet(){
       '<div class="modal-handle"></div>'+
       '<div class="lf-pipe-top"><div class="modal-ttl" id="lf-dr-ttl" tabindex="-1">Add a condo</div>'+
         '<button type="button" class="lf-pipe-x" id="lf-dr-x" aria-label="Close">✕</button></div>'+
-      '<div class="lf-dr-intro">A draft is saved on this phone only. Residents never see it. To make it official, copy your drafts and send them to whoever updates the app.</div>'+
+      '<div class="lf-dr-intro" id="lf-dr-intro"></div>'+
       '<label class="flbl" for="lf-dr-name">Condo name (required)</label>'+
       '<input class="finp" id="lf-dr-name" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Light Residences">'+
       '<label class="flbl" for="lf-dr-city">City</label>'+
@@ -11250,12 +11269,20 @@ function lfDraftSheet(){
           '<button type="button" class="lf-pipe-btn ghost" id="lf-dr-qgo">Add</button></span></div>'+
       '<label class="flbl" for="lf-dr-note">Notes about the site</label>'+
       '<textarea class="finp" id="lf-dr-note" maxlength="300" rows="2" autocomplete="off"></textarea>'+
+      '<div class="lf-dr-pub" id="lf-dr-pub">'+
+        '<div class="flbl" id="lf-dr-pubhead">What customers see</div>'+
+        '<label class="flbl" for="lf-dr-status">Status</label>'+
+        '<select class="finp" id="lf-dr-status"><option value="coming">Coming soon</option><option value="closed">Not yet open</option><option value="live">Live</option></select>'+
+        '<div class="lf-dr-hint" id="lf-dr-statushint"></div>'+
+        '<label class="lf-dr-show" id="lf-dr-showwrap" for="lf-dr-show" hidden><input type="checkbox" id="lf-dr-show" checked><span>Show to customers</span></label>'+
+      '</div>'+
       '<div class="lf-pipe-err" id="lf-dr-err" role="alert" hidden></div>'+
       '<div class="lf-pipe-acts"><button type="button" class="oact g" id="lf-dr-cancel">Cancel</button>'+
-        '<button type="button" class="oact p" id="lf-dr-save">Save draft</button></div>'+
+        '<button type="button" class="oact p" id="lf-dr-pubgo">Add condo</button></div>'+
+      '<button type="button" class="lf-pipe-link lf-dr-priv" id="lf-dr-save">Save as a private draft instead</button>'+
       '<div class="lf-dr-del" id="lf-dr-delwrap" hidden>'+
         '<label class="flbl" for="lf-dr-delname" id="lf-dr-dellbl">Delete this draft</label>'+
-        '<div class="lf-dr-hint">Type its name to confirm. You can undo until you close the app.</div>'+
+        '<div class="lf-dr-hint" id="lf-dr-delhint">Type its name to confirm. You can undo until you close the app.</div>'+
         '<input class="finp" id="lf-dr-delname" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">'+
         '<button type="button" class="lf-dr-delbtn" id="lf-dr-del" disabled>Delete draft</button></div>'+
     '</div>';
@@ -11264,10 +11291,11 @@ function lfDraftSheet(){
   m.querySelector('#lf-dr-x').addEventListener('click', () => lfDraftGuard(() => lfDraftClose()));
   m.querySelector('#lf-dr-cancel').addEventListener('click', () => lfDraftGuard(() => lfDraftClose()));
   m.querySelector('#lf-dr-save').addEventListener('click', () => lfDraftGuard(lfDraftSaveClick));
+  m.querySelector('#lf-dr-pubgo').addEventListener('click', () => lfDraftGuard(() => lfDraftPublishClick().catch(e => lfDraftFail(e))));
   m.querySelector('#lf-dr-addb').addEventListener('click', () => lfDraftGuard(() => { const f = lfDraftAddRow(null); lfDraftMsg(''); f.focus(); }));
   m.querySelector('#lf-dr-qgo').addEventListener('click', () => lfDraftGuard(lfDraftQuick));
   m.querySelector('#lf-dr-delname').addEventListener('input', () => {
-    const d = lfDraftById(_lfDraft.edit);
+    const d = lfDraftEditing();
     el('lf-dr-del').disabled = !(d && lfCondoNorm(el('lf-dr-delname').value) === lfCondoNorm(d.name));
   });
   m.querySelector('#lf-dr-del').addEventListener('click', () => lfDraftGuard(lfDraftDeleteClick));
@@ -11339,6 +11367,7 @@ function lfDraftRead(){
   return {
     name: el('lf-dr-name').value, city: el('lf-dr-city').value, developer: el('lf-dr-dev').value, barangay: el('lf-dr-brgy').value,
     address: el('lf-dr-addr').value, aliases: el('lf-dr-alias').value, siteNote: el('lf-dr-note').value,
+    status: el('lf-dr-status').value, show: el('lf-dr-show').checked,
     rows: Array.from(el('lf-dr-bl').children).map(row => ({ bid: row.dataset.bid || '', name: row.querySelector('.lf-dr-b1 input').value,
                                                             kind: row.querySelector('.lf-dr-b2 select').value, floors: row.querySelector('.lf-dr-b2 input').value }))
   };
@@ -11376,18 +11405,31 @@ function lfDraftBuild(f, existing){
 function lfDraftOpen(id, opener){
   if(!lfCondoAllowed() || _lfDraftOff) return;
   if(!_lfDraft.list) lfDraftLoad();
-  const ex = id ? lfDraftById(id) : null;
+  const sh = id ? lfDraftSharedById(id) : null;                  // v85: a condo saved for everyone, or a private draft, or (no id) a new condo
+  const ex = sh || (id ? lfDraftById(id) : null);
   if(id && !ex) return;
   const m = lfDraftSheet();
+  _lfDraft.mode = sh ? 'shared' : (ex ? 'draft' : 'new'); _lfDraft.tok++;
   _lfDraft.edit = ex ? ex.id : null; _lfDraft.opener = opener || null; _lfDraft.warned = false;
-  el('lf-dr-ttl').textContent = ex ? 'Edit draft' : 'Add a condo';
+  el('lf-dr-ttl').textContent = sh ? 'Edit condo' : (ex ? 'Edit draft' : 'Add a condo');
   el('lf-dr-name').value = ex ? ex.name : ''; el('lf-dr-city').value = ex ? ex.city : ''; el('lf-dr-dev').value = ex ? ex.developer : '';
   el('lf-dr-brgy').value = ex ? ex.barangay : ''; el('lf-dr-addr').value = ex ? ex.address : '';
   el('lf-dr-alias').value = ex ? ex.aliases.join(', ') : ''; el('lf-dr-note').value = ex ? ex.siteNote : '';
   el('lf-dr-bl').replaceChildren();
   if(ex) ex.buildings.forEach(b => lfDraftAddRow(b));
+  // v85: what customers see, and the two ways to save
+  el('lf-dr-status').value = sh ? sh.status : 'coming';
+  el('lf-dr-show').checked = sh ? sh.visible === true : true;
+  el('lf-dr-showwrap').hidden = !sh;
+  el('lf-dr-save').hidden = !!sh; el('lf-dr-save').disabled = false;
+  el('lf-dr-pubgo').textContent = sh ? 'Save changes' : 'Add condo'; el('lf-dr-pubgo').disabled = false;
+  el('lf-dr-intro').textContent = sh ? 'Customers see this condo under the Condos icon while “Show to customers” is on. Your changes are saved for everyone.'
+                                     : 'Tap Add condo and it is saved for everyone. ' + lfShCustomersLine() + ' Or save it as a private draft, which stays on this phone.';
+  el('lf-dr-statushint').textContent = 'Shown on the condo’s card. Customers cannot switch to another condo in the app yet, so “Coming soon” is usually right.' + (sh ? '' : ' A private draft does not use it.');
   el('lf-dr-delwrap').hidden = !ex; el('lf-dr-delname').value = ''; el('lf-dr-del').disabled = true;
   if(ex) el('lf-dr-dellbl').textContent = 'Delete “' + ex.name + '”';
+  el('lf-dr-delhint').textContent = sh ? 'Type its name to confirm. Customers will no longer see it. To keep it but hide it, turn off “Show to customers” and save instead.' : 'Type its name to confirm. You can undo until you close the app.';
+  el('lf-dr-del').textContent = sh ? 'Delete condo' : 'Delete draft';
   lfDraftMsg('');
   _lfDraft.openedWith = JSON.stringify(lfDraftRead());
   m.inert = false; m.removeAttribute('aria-hidden');
@@ -11400,6 +11442,7 @@ function lfDraftOpen(id, opener){
 function lfDraftClose(force, quiet){
   const m = _lfDraft.sheet;
   if(!m || !m.classList.contains('on')) return;
+  if(!force && lfShBusy()) return;                      // v85: a save is on its way: stay, so its answer is not lost
   if(!force && !_lfDraft.warned && JSON.stringify(lfDraftRead()) !== _lfDraft.openedWith){
     _lfDraft.warned = true;
     lfDraftMsg('You have changes that are not saved. Tap Cancel again to throw them away, or tap Save draft.');
@@ -11411,18 +11454,20 @@ function lfDraftClose(force, quiet){
   const back = (op && document.body.contains(op)) ? op : el('lf-dr-add');          // the page may have been redrawn while the sheet was open
   if(!quiet && back){ try{ back.focus({ preventScroll: true }); }catch(e){} }
 }
+// What was wrong with the form, in words, with the cursor put in the right box.
+function lfDraftBuildFail(r){
+  lfDraftMsg(r.err);
+  const t = r.focus ? el(r.focus) : (typeof r.row === 'number' ? (el('lf-dr-bl').children[r.row] || {}).firstChild : null);
+  const inp = t && (t.tagName === 'INPUT' ? t : (t.querySelector ? t.querySelector('input') : null));
+  if(inp){ try{ inp.focus(); }catch(e){} }
+}
 function lfDraftSaveClick(){
   if(!lfCondoAllowed() || _lfDraftOff){ lfDraftRemove(); return; }
+  if(_lfDraft.mode === 'shared') return;                // v85: a condo saved for everyone is never turned back into a private draft
   const ex = _lfDraft.edit ? lfDraftById(_lfDraft.edit) : null;
   if(_lfDraft.edit && !ex){ lfDraftMsg('This draft is no longer there.'); return; }
   const r = lfDraftBuild(lfDraftRead(), ex);
-  if(r.err){
-    lfDraftMsg(r.err);
-    const t = r.focus ? el(r.focus) : (typeof r.row === 'number' ? (el('lf-dr-bl').children[r.row] || {}).firstChild : null);
-    const inp = t && (t.tagName === 'INPUT' ? t : (t.querySelector ? t.querySelector('input') : null));
-    if(inp){ try{ inp.focus(); }catch(e){} }
-    return;
-  }
+  if(r.err){ lfDraftBuildFail(r); return; }
   const c = lfDraftClean(r.raw);
   if(!c){ lfDraftMsg('That could not be saved. Check the name.'); return; }
   if(!_lfDraft.list) lfDraftLoad();
@@ -11439,9 +11484,56 @@ function lfDraftSaveClick(){
   lfDraftRefreshViews(c.id);
   showToast(stored ? '✅ “' + c.name + '” saved as a draft' : '⚠️ “' + c.name + '” is kept for now, but this phone would not store it. Copy your drafts before you close the app.');
 }
+// v85: the primary button. "Add condo" (a new condo, or a private draft being published) and "Save changes" (a condo already saved for
+// everyone) both save it for everyone. The saving itself is lfShSave's; this is the sheet around it.
+async function lfDraftPublishClick(){
+  if(!lfCondoAllowed() || _lfDraftOff){ lfDraftRemove(); return; }
+  const mode = _lfDraft.mode, ex = lfDraftEditing();
+  if(mode !== 'new' && !ex){ lfDraftMsg('This condo is no longer there.'); return; }
+  const f = lfDraftRead(), r = lfDraftBuild(f, ex);
+  if(r.err){ lfDraftBuildFail(r); return; }
+  const go = el('lf-dr-pubgo'), priv = el('lf-dr-save'), tok = _lfDraft.tok, label = go.textContent;
+  go.disabled = true; priv.disabled = true; go.textContent = 'Saving…'; lfDraftMsg('');
+  let sv;
+  try{ sv = await lfShSave(r.raw, { mode, existing: ex, status: f.status, visible: mode === 'shared' ? f.show === true : true }); }
+  catch(e){ sv = { ok: false, msg: 'Could not save. Nothing was changed. Check your connection and try again.' }; }
+  const here = _lfDraft.tok === tok && !!_lfDraft.sheet && _lfDraft.sheet.classList.contains('on');   // the sheet may have been closed (or opened for another condo) while it saved
+  if(here){ go.disabled = false; priv.disabled = false; go.textContent = label; }
+  if(sv.busy) return;
+  if(!sv.ok){
+    if(!here) showToast('⚠️ ' + sv.msg);
+    else if(sv.gone) lfDraftRemove();
+    else{ lfDraftMsg(sv.msg); try{ go.focus({ preventScroll: true }); }catch(e){} }
+    return;
+  }
+  if(mode === 'draft' && _lfDraft.list){ _lfDraft.list = _lfDraft.list.filter(d => d.id !== sv.id); lfDraftWrite(); }   // published: the private copy is no longer needed
+  _lfDraft.undo = null;
+  if(here) lfDraftClose(true, true);
+  lfDraftRefreshViews(sv.id);
+  showToast('✅ “' + (sv.c ? sv.c.name : r.raw.name) + '” ' + (mode === 'shared' ? 'saved' : 'added') + '. ' + (sv.visible ? lfShCustomersLine() : 'It is hidden from customers.'));
+}
+async function lfDraftSharedDelete(d){
+  const btn = el('lf-dr-del'), tok = _lfDraft.tok;
+  btn.disabled = true;
+  let sv;
+  try{ sv = await lfShDelete(d.id); }
+  catch(e){ sv = { ok: false, msg: 'Could not delete it. Nothing was changed. Check your connection and try again.' }; }
+  const here = _lfDraft.tok === tok && !!_lfDraft.sheet && _lfDraft.sheet.classList.contains('on');
+  if(sv.busy){ if(here) btn.disabled = false; return; }
+  if(!sv.ok){
+    if(!here) showToast('⚠️ ' + sv.msg);
+    else if(sv.gone) lfDraftRemove();
+    else{ btn.disabled = false; lfDraftMsg(sv.msg); }
+    return;
+  }
+  if(here) lfDraftClose(true, true);
+  lfDraftRefreshViews('#add');
+  showToast('Deleted “' + d.name + '”. Customers no longer see it.');
+}
 function lfDraftDeleteClick(){
-  const d = lfDraftById(_lfDraft.edit);
+  const d = lfDraftEditing();
   if(!d || lfCondoNorm(el('lf-dr-delname').value) !== lfCondoNorm(d.name)) return;
+  if(_lfDraft.mode === 'shared'){ lfDraftSharedDelete(d).catch(e => lfDraftFail(e)); return; }
   _lfDraft.list = _lfDraft.list.filter(x => x.id !== d.id);
   _lfDraft.deleted = d; _lfDraft.undo = null;
   lfDraftWrite();
@@ -11646,8 +11738,9 @@ function lfDraftToolbar(){
   row.append(add, io);
   box.appendChild(row);
   const n = lfDraftList().length;
-  box.appendChild(lfPipeEl('div', 'lf-dr-sub', n ? n + (n === 1 ? ' draft is' : ' drafts are') + ' saved on this phone only. Residents never see them.'
-                                                  : 'Add a condo you are thinking about. It is saved on this phone only, and residents never see it.'));
+  box.appendChild(lfPipeEl('div', 'lf-dr-sub', 'Add a condo and it is saved for everyone. ' + lfShCustomersLine() +
+                           (n ? ' ' + n + (n === 1 ? ' draft is' : ' drafts are') + ' saved on this phone only: open one and tap Add condo to save it for everyone.'
+                              : ' A private draft is saved on this phone only.')));
   if(_lfDraft.memOnly) box.appendChild(lfPipeEl('div', 'lf-dr-warn', 'This phone would not store your drafts (private browsing, or it is full). Copy them before you close the app.'));
   if(_lfDraft.deleted){
     const u = lfPipeEl('div', 'lf-dr-undo'), b = lfPipeEl('button', 'lf-pipe-link', 'Undo'); b.type = 'button';
@@ -11814,7 +11907,7 @@ function lfArtDraw(c, big){
 }
 // A card's picture: drawn once per condo (and per set of floors), then copied.
 function lfArtThumb(c){
-  const key = c.id + '|' + c.buildings.slice(0, LF_ART_THUMB).map(b => b.floors || 0).join(',') + '|' + c.buildings.length;
+  const key = c.id + '|' + c.buildings.slice(0, LF_ART_THUMB).map(b => (b.floors || 0) + b.kind).join(',') + '|' + c.buildings.length;   // (v85: the kind too, since an admin can now change a building's type without touching its floors)
   let svg = _lfArtThumbs.get(key);
   if(!svg){
     if(_lfArtThumbs.size > 200) _lfArtThumbs.clear();
@@ -12058,18 +12151,23 @@ function lfCondoNavAllowed(){
 
 // ── the icon ──
 // Called from goPage('p-chome'), goBack() and lfCondoModeFromFile(), each inside try/catch.
-function lfCondoNavSync(){
+function lfCondoNavSync(noKick){
   if(!LF_CONDOS_BUILD) return;
   const nav = document.querySelector('#p-chome .bnav');
   if(!nav) return;
-  let on = false;
-  try{ on = lfCondoNavAllowed(); }catch(e){ on = false; }
+  let allowed = false, on = false;
+  try{ allowed = lfCondoNavAllowed(); }catch(e){ allowed = false; }
+  if(allowed){
+    // v85: the icon is there only when there is another condo to show (an admin always has it, as a preview). What there is to show
+    // comes from the shared directory: this phone's copy at once, and a look at the stamp (a few bytes) when it is time for one.
+    try{ lfShLoadCache(); if(noKick !== true) lfShKick(false); on = _lfAdminMode === true || lfShOthers(); }catch(e){ on = false; }
+  }
   const have = document.getElementById('lf-condo-nav');
   if(on){
     if(!have) nav.appendChild(lfCondoBuildNav());
   } else if(have){
     have.remove();
-    if(_lfCondoResView) lfCondoClose(true);                  // the switch went off while a customer had the list open
+    if(!allowed && _lfCondoResView) lfCondoClose(true);      // the switch went off while a customer had the list open (an open list is not closed just because the last other condo went)
   }
   // An admin session that has not learned the admin switch yet (or whose answer has gone stale) asks, then syncs again.
   // The request is the header's and the card's own: one read, however many of them ask. A customer never gets here.
@@ -12114,6 +12212,8 @@ function lfCondoPageNote(c){
   if(!_lfCondoResView){
     return c.sample ? 'Sample — made up to show how a page looks. It is not saved anywhere.'
          : c.draft  ? 'Draft — saved on this phone only. Edit it on the Condos page.'
+         : c.shared ? (c.visible ? 'Customers can see this condo under the Condos icon. Edit it on the Condos page.'
+                                 : 'Hidden — only admins see this condo. Edit it on the Condos page to show it to customers.')
          : 'Admin preview — residents cannot see or choose this condo yet.';
   }
   const cur = lfCondoCurrent();
@@ -12131,6 +12231,271 @@ function lfCondoPubFail(e){
   try{ if(_lfCondoResView) lfCondoClose(true); }catch(_){}
 }
 function lfCondoPubGuard(fn){ try{ return fn(); }catch(e){ lfCondoPubFail(e); } }
+
+/* ═══ v85 — SHARED CONDO DIRECTORY ═══
+   The founder asked (2026-10-26): "as a admin i can add condos and if i add condos it will be shown on the customers
+   side with a seperate icon". Until now a condo an admin added was a draft on their own phone, so customers could never
+   see one. Now "Add condo" saves the condo for everyone, and the customers' Condos icon (v83) lists it.
+
+   Rules that must hold (tests/test-condoshared.js proves each):
+   • Two nodes at the database ROOT (condos span rooms): condoDirectory/{condoId}, one record per condo, and condoDirRev,
+     a stamp (a number) that every write changes. Nothing under lokalfinder_grass. Never pushState(). Never a write to a
+     whole node: a save is ONE multi-path PATCH of the root, so the record and the stamp land together or not at all.
+   • Only an admin session writes (lfCondoAllowed()). The database itself has no login, so until rules are published anyone
+     with devtools can write these nodes, exactly as they can write vendors and orders today. firebase-rules-*.json hold
+     per-record rules for them; they are not published.
+   • Customers pay almost nothing: a phone reads the stamp (a number) and downloads the directory only when the stamp is
+     not the one it already holds. The last copy is kept on the phone (lf-condo-shared, 30 days), so the icon is there at
+     once on a later visit. No timer: the Home bar, opening the list and the update check's own cadence drive it.
+   • Everything that comes back is untrusted: an id must match the condo id pattern (and is never GRASS, sample- or
+     preview-), every record goes through lfCondoClean(), 150 records at most, text only.
+   • "Saved" is said only after the write lands. A timeout is looked up before it is called a failure; a retry of the same
+     typing reuses its id, so a write that did land is never made twice; an edit made on a screen that has gone stale
+     ("changed on another phone") is refused instead of overwriting.
+   • A customer sees a condo only when it is visible && confirmed (lfCondoVisible(false), unchanged). "Show to customers"
+     is the admin's switch for visible. A customer's icon is there only when there is another condo to show.
+   • A fault switches off the sharing and nothing else (lfShFail). */
+const LF_SH_NODE = 'condoDirectory', LF_SH_REV = 'condoDirRev';
+const LF_SH_KEY = 'lf-condo-shared';                       // this phone's copy of the shared directory
+const LF_SH_TTL = 30*24*60*60*1000;                        // ...trusted for 30 days; the stamp settles it on the next read anyway
+const LF_SH_STORE_MAX = 250000;                            // characters kept on the phone: a larger copy is not stored
+const LF_SH_SCAN = 300;                                    // record keys looked at (and asked for)
+const LF_SH_MAX = 150;                                     // records kept
+const LF_SH_EVERY = 20*1000;                               // the stamp is read at most this often (unless an admin asks)
+const LF_SH_FIELDS = ['name','aliases','developer','city','barangay','address','status','buildings','siteNote','landmarks','unitHint','source','verifiedAt','confidence','visible','lat','lng'];
+let _lfShOff = false;                                      // set when sharing failed: off for the session, nothing else is affected
+let _lfSh = { loaded: false, rev: null, ids: Object.create(null), last: 0, p: null, again: false, busy: false, pend: null, cacheDone: false };
+
+const lfShNum = v => (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0;
+function lfShStampNew(){ return Date.now() * 1000 + Math.floor(Math.random() * 1000); }   // changes with every write; a safe integer until the year 2255
+function lfShBusy(){ return _lfSh.busy === true; }
+// Customers when version.json says "on", an admin when it says "admin" or "on". Nothing else reads or writes any of this.
+function lfShWanted(){ return LF_CONDOS_BUILD && !_lfShOff && (lfCondoAllowed() || lfCondoNavAllowed()); }
+function lfShOthers(){ return lfCondoVisible(false).some(c => c.id !== LF_GRASS_CONDO); }
+function lfShCustomersLine(){ return _lfCondoMode === 'on' ? 'Customers see it under the Condos icon.' : 'Customers will see it once the Condos icon is turned on (it is off for now).'; }
+
+// ── a record, from the database and back ──
+// Fields are copied one by one, never with Object.assign: a stored "__proto__" key must not change what a record inherits.
+function lfShClean(id, rec){
+  if(typeof id !== 'string' || !LF_CONDO_ID_RE.test(id) || id === LF_GRASS_CONDO || LF_DRAFT_RESERVED.test(id)) return null;
+  if(!rec || typeof rec !== 'object' || Array.isArray(rec)) return null;
+  const raw = { id };
+  LF_SH_FIELDS.forEach(k => { raw[k] = rec[k]; });
+  const c = lfCondoClean(raw);
+  if(!c) return null;
+  c.shared = true; c.createdAt = lfShNum(rec.createdAt); c.updatedAt = lfShNum(rec.updatedAt);
+  return c;
+}
+// What is stored for one condo: the id is the key and never a field, empty fields are left out, buildings are keyed by their own ids.
+function lfShWire(c, createdAt, updatedAt){
+  const w = { name: c.name, status: c.status, visible: c.visible === true, confidence: c.confidence, createdAt, updatedAt };
+  ['developer','city','barangay','address','siteNote','unitHint','verifiedAt'].forEach(k => { if(c[k]) w[k] = c[k]; });
+  ['aliases','landmarks','source'].forEach(k => { if(c[k].length) w[k] = c[k].slice(); });
+  if(c.buildings.length){
+    w.buildings = {};
+    c.buildings.forEach(b => { const o = { name: b.name, kind: b.kind, order: b.order }; if(b.floors) o.floors = b.floors; if(b.note) o.note = b.note; if(b.sitePos) o.sitePos = b.sitePos; w.buildings[b.id] = o; });
+  }
+  if(typeof c.lat === 'number' && typeof c.lng === 'number'){ w.lat = c.lat; w.lng = c.lng; }
+  return w;
+}
+// The whole node, as it came back -> id -> clean condo (150 at most, 300 keys looked at).
+function lfShBuild(obj){
+  const next = Object.create(null);
+  if(!obj || typeof obj !== 'object' || Array.isArray(obj)) return next;
+  const keys = Object.keys(obj).slice(0, LF_SH_SCAN);
+  let n = 0;
+  for(let i = 0; i < keys.length && n < LF_SH_MAX; i++){
+    const c = lfShClean(keys[i], obj[keys[i]]);
+    if(c){ next[c.id] = c; n++; }
+  }
+  return next;
+}
+// What the screens would show: when this changes they are redrawn, and when it does not they are left alone (a keyboard user keeps their place).
+function lfShSig(){
+  const d = lfCondoDir();
+  return Object.keys(_lfSh.ids).sort().map(id => { const c = d[id]; return c ? id + ':' + (c.updatedAt || 0) + ':' + (c.visible ? 1 : 0) + ':' + c.status : id; }).join('|');
+}
+// Makes `next` the shared part of the directory. Records the app itself holds (GRASS) are never replaced. true when anything visible changed.
+function lfShCommit(next, rev, persist){
+  const before = lfShSig(), d = lfCondoDir();
+  Object.keys(_lfSh.ids).forEach(id => { if(!next[id] && d[id] && d[id].shared) delete d[id]; });
+  _lfSh.ids = Object.create(null);
+  Object.keys(next).forEach(id => {
+    if(d[id] && !d[id].shared) return;
+    d[id] = next[id]; _lfSh.ids[id] = true;
+  });
+  _lfSh.rev = rev; _lfSh.loaded = true;
+  if(persist) lfShStore(next, rev);
+  return before !== lfShSig();
+}
+
+// ── this phone's copy ──
+function lfShStore(next, rev){
+  try{
+    const ids = Object.keys(next);
+    if(!ids.length){ localStorage.removeItem(LF_SH_KEY); return; }      // nothing to remember: nothing is kept
+    const condos = {};
+    ids.forEach(id => { const c = next[id]; condos[id] = lfShWire(c, c.createdAt, c.updatedAt); });
+    const s = JSON.stringify({ v: 1, rev: lfShNum(rev), at: Date.now(), condos });
+    if(s.length > LF_SH_STORE_MAX){ localStorage.removeItem(LF_SH_KEY); return; }
+    localStorage.setItem(LF_SH_KEY, s);
+  }catch(e){}
+}
+function lfShLoadCache(){
+  if(_lfSh.cacheDone) return;
+  _lfSh.cacheDone = true;
+  try{
+    const s = localStorage.getItem(LF_SH_KEY);
+    if(typeof s !== 'string' || !s || s.length > LF_SH_STORE_MAX + 2000) return;
+    const j = JSON.parse(s);
+    if(!j || typeof j !== 'object' || j.v !== 1 || typeof j.at !== 'number' || Date.now() - j.at > LF_SH_TTL || !j.condos || typeof j.condos !== 'object') return;
+    lfShCommit(lfShBuild(j.condos), lfShNum(j.rev) || null, false);
+  }catch(e){}
+}
+
+// ── reading: the stamp first, the directory only when the stamp is not the one this phone holds ──
+async function lfShSync(force){
+  if(!lfShWanted()) return false;
+  lfShLoadCache();
+  if(_lfSh.p){ if(force === true) _lfSh.again = true; return _lfSh.p; }      // a read is on its way; an admin's request for a fresh one is answered right after it
+  if(force !== true && Date.now() - _lfSh.last < LF_SH_EVERY) return false;
+  const run = (async () => {
+    let r = 0, obj = null;
+    try{
+      r = lfShNum(await lfPipeGet(LF_SH_REV));
+      _lfSh.last = Date.now();
+      if(_lfSh.loaded && r === (_lfSh.rev || 0)) return false;           // unchanged: the stamp was all it cost
+      if(r) obj = await lfPipeGet(LF_SH_NODE, '?orderBy=%22%24key%22&limitToFirst=' + LF_SH_SCAN);
+    }catch(e){ return false; }                                           // offline, slow or refused: what the phone holds stays
+    try{ if(lfShCommit(lfShBuild(obj), r || null, true)) lfShViews(); }
+    catch(e){ lfShFail(e); }
+    return true;
+  })();
+  _lfSh.p = run;
+  const done = () => { _lfSh.p = null; if(_lfSh.again){ _lfSh.again = false; lfShKick(true); } };
+  run.then(done, done);
+  return run;
+}
+// Called from the Home bar, the list, the Condos page and the update check's hand-over. Never throws, never waits.
+function lfShKick(force){
+  if(_lfShOff || !LF_CONDOS_BUILD) return;
+  try{ lfShSync(force === true).catch(e => lfShFail(e)); }catch(e){ lfShFail(e); }
+}
+// The screens that list condos, in step with what was just learned.
+function lfShViews(){
+  try{ lfCondoNavSync(true); }catch(e){ lfCondoPubFail(e); }
+  try{ const m = _lfCondoSheet; if(m && m.classList.contains('on')) lfCondoRender(); }catch(e){}
+  try{ if(document.getElementById('lf-pipe-body')) lfPipeRender(); }catch(e){}
+}
+
+// ── writing: an admin's save and delete ──
+function lfShNextId(base, n){ return (base.length > 58 ? base.slice(0, 58).replace(/-+$/, '') : base) + '-' + n; }
+// typed = what lfDraftBuild made; ex = the condo being edited or published (a saved one, or a draft); status and visible are the admin's choices.
+function lfShRecordFrom(typed, ex, status, visible){
+  const raw = { id: typed.id, name: typed.name, city: typed.city, developer: typed.developer, barangay: typed.barangay, address: typed.address,
+                aliases: typed.aliases, siteNote: typed.siteNote, buildings: typed.buildings, status, visible, confidence: 'confirmed' };
+  if(ex){                                              // what the editor does not show is carried over, not dropped
+    raw.landmarks = ex.landmarks; raw.unitHint = ex.unitHint; raw.source = ex.source; raw.verifiedAt = ex.verifiedAt;
+    if(typeof ex.lat === 'number' && typeof ex.lng === 'number'){ raw.lat = ex.lat; raw.lng = ex.lng; }
+    raw.buildings = typed.buildings.map(b => {         // ...and so is a building's own note and place on the site map, found by the building's id
+      const old = ex.buildings.find(o => o.id === b.id);
+      return old ? Object.assign({}, b, old.note ? { note: old.note } : {}, old.sitePos ? { sitePos: old.sitePos } : {}) : b;
+    });
+  }
+  return lfCondoClean(raw);
+}
+// Never throws: { ok:true, id, c, visible } or { ok:false, msg } (busy:true = another save is in flight and nothing was done; gone:true = the admin session ended;
+// unsure:true = the write may or may not have landed and could not be looked up: saying "nothing was changed" would be a guess).
+async function lfShSave(typed, o){
+  if(_lfShOff) return { ok: false, msg: 'Sharing condos is not available right now. Nothing was saved.' };
+  if(!lfCondoAllowed()) return { ok: false, gone: true, msg: 'You need to be signed in as admin to save a condo.' };
+  if(_lfSh.busy) return { ok: false, busy: true, msg: 'Still saving. Wait a moment.' };
+  _lfSh.busy = true;
+  try{
+    const mode = o.mode, ex = o.existing || null, isEdit = mode === 'shared';
+    const status = Object.prototype.hasOwnProperty.call(LF_CONDO_STATUS, o.status) ? o.status : 'coming', visible = o.visible === true;
+    const sig = JSON.stringify([mode, ex ? ex.id : '', typed.name, typed.city, typed.developer, typed.barangay, typed.address, typed.aliases, typed.siteNote,
+                                typed.buildings.map(b => [b.id, b.name, b.kind, b.floors || 0]), status, visible]);
+    const pend = (_lfSh.pend && _lfSh.pend.sig === sig) ? _lfSh.pend : null;     // the same typing again after a failure
+    let id = isEdit ? ex.id : typed.id;
+    if(typeof id !== 'string' || !LF_CONDO_ID_RE.test(id) || id === LF_GRASS_CONDO || LF_DRAFT_RESERVED.test(id)) return { ok: false, msg: 'That could not be saved. Check the name.' };
+    // the local directory learns of a save that landed, and a fresh read is asked for
+    const done = rec => {
+      const d = lfCondoDir();
+      if(rec && !(d[id] && !d[id].shared)){ d[id] = rec; _lfSh.ids[id] = true; }
+      _lfSh.rev = null; _lfSh.last = 0; _lfSh.pend = null;   // this phone's copy is no longer known to match: the next read settles it
+      lfShKick(true);
+      return { ok: true, id, c: rec, visible };
+    };
+    if(isEdit){
+      // the screen may be stale: has anyone changed (or removed) this condo since it was opened?
+      const there = lfShNum(await lfPipeGet(LF_SH_NODE + '/' + id + '/updatedAt'));
+      if(there !== (ex.updatedAt || 0)){
+        if(pend && pend.updated === there) return done(null);                      // our own earlier attempt did land: it is saved
+        return { ok: false, msg: 'This condo was changed or removed on another phone. Close this, tap Refresh and open it again.' };
+      }
+    }else if(pend){
+      id = pend.id;                                    // the same id as the failed attempt, so a write that did land is overwritten, never copied
+    }else{
+      let tries = 0;                                   // is the id free in the database? (this phone's copy may be behind)
+      while(await lfPipeGet(LF_SH_NODE + '/' + id, '?shallow=true') != null){
+        if(mode === 'draft') return { ok: false, msg: '“' + typed.name + '” is already saved for everyone. Tap Refresh on the Condos page.' };
+        if(++tries > 8) return { ok: false, msg: 'That name is taken. Change it a little and try again.' };
+        id = lfShNextId(typed.id, tries + 1);
+      }
+    }
+    const now = Date.now(), created = (ex && ex.createdAt) || now, updated = Math.max(now, isEdit ? (ex.updatedAt || 0) + 1 : 0);
+    const c = lfShRecordFrom(Object.assign({}, typed, { id }), ex, status, visible);
+    if(!c) return { ok: false, msg: 'That could not be saved. Check the name.' };
+    _lfSh.pend = { sig, id, updated };
+    const wire = lfShWire(c, created, updated), up = {};
+    up[LF_SH_NODE + '/' + id] = wire; up[LF_SH_REV] = lfShStampNew();
+    try{ await lfPipePatchRoot(up); }
+    catch(err){
+      // a timeout can mean it landed: look before calling it a failure
+      let back = -1;
+      try{ back = lfShNum(await lfPipeGet(LF_SH_NODE + '/' + id + '/updatedAt')); }catch(_){}
+      if(back === -1) return { ok: false, unsure: true, msg: 'Could not confirm that it was saved: it may have gone through. Tap ' + (isEdit ? 'Save changes' : 'Add condo') + ' again; that will not make a copy.' };
+      if(back !== updated) throw err;                  // it did not land
+    }
+    return done(lfShClean(id, wire));
+  }catch(e){
+    return { ok: false, msg: 'Could not save. Nothing was changed. Check your connection and try again.' };
+  }finally{ _lfSh.busy = false; }
+}
+async function lfShDelete(id){
+  if(_lfShOff) return { ok: false, msg: 'Sharing condos is not available right now. Nothing was changed.' };
+  if(!lfCondoAllowed()) return { ok: false, gone: true, msg: 'You need to be signed in as admin to delete a condo.' };
+  if(_lfSh.busy) return { ok: false, busy: true, msg: 'Still saving. Wait a moment.' };
+  const ex = lfCondoById(id);
+  if(!ex || !ex.shared) return { ok: false, msg: 'This condo is no longer there.' };
+  _lfSh.busy = true;
+  try{
+    const forget = () => { const d = lfCondoDir(); if(d[id] && d[id].shared) delete d[id]; delete _lfSh.ids[id]; _lfSh.rev = null; _lfSh.last = 0; lfShKick(true); return { ok: true, id }; };
+    if(await lfPipeGet(LF_SH_NODE + '/' + id, '?shallow=true') == null) return forget();     // already gone
+    if(lfShNum(await lfPipeGet(LF_SH_NODE + '/' + id + '/updatedAt')) !== (ex.updatedAt || 0)) return { ok: false, msg: 'This condo was changed on another phone. Close this, tap Refresh and look again before deleting it.' };
+    const up = {};
+    up[LF_SH_NODE + '/' + id] = null; up[LF_SH_REV] = lfShStampNew();
+    try{ await lfPipePatchRoot(up); }
+    catch(err){
+      let there = 'unknown';                           // a timeout can mean it landed: look before calling it a failure
+      try{ there = await lfPipeGet(LF_SH_NODE + '/' + id, '?shallow=true'); }catch(_){}
+      if(there === 'unknown') return { ok: false, unsure: true, msg: 'Could not confirm that it was deleted: it may have gone through. Tap Refresh on the Condos page to see.' };
+      if(there !== null) throw err;                    // it is still there
+    }
+    return forget();
+  }catch(e){
+    return { ok: false, msg: 'Could not delete it. Nothing was changed. Check your connection and try again.' };
+  }finally{ _lfSh.busy = false; }
+}
+
+// ── a fault switches off the sharing and nothing else ──
+function lfShFail(e){
+  _lfShOff = true;
+  try{ console.warn('shared condos: switched off for this session:', e); }catch(_){}
+  try{ if(_lfAdminMode === true) showToast('⚠️ Sharing condos is unavailable'); }catch(_){}
+  try{ lfShViews(); }catch(_){}
+}
 
 function openAddVendorModal(){
   // v54: build the marketplace picker from the registry the first time it opens.
@@ -13016,7 +13381,8 @@ function lfCondoStored(){
     return (typeof v === 'string' && LF_CONDO_ID_RE.test(v)) ? v : '';
   }catch(e){ return ''; }
 }
-function lfCondoCurrent(){ return lfCondoById(lfCondoStored()) || lfCondoById(LF_GRASS_CONDO); }
+// v85: a condo that came from the shared directory has no room of its own yet (switching condos is Phase C), so it can never be "current".
+function lfCondoCurrent(){ const c = lfCondoById(lfCondoStored()); return (c && !c.shared) ? c : lfCondoById(LF_GRASS_CONDO); }
 
 // The one line every database path hangs off (const ROOM_KEY, just below).
 // Phase A: always GRASS. A device with nothing stored never builds the directory.
@@ -13026,7 +13392,7 @@ function lfRoomKey(){
     const id = lfCondoStored();
     if(!id) return LF_GRASS_ROOM;
     const c = lfCondoById(id);
-    return (c && c.room) ? c.room : LF_GRASS_ROOM;
+    return (c && c.room && !c.shared) ? c.room : LF_GRASS_ROOM;
   }catch(e){ return LF_GRASS_ROOM; }
 }
 
@@ -13325,6 +13691,7 @@ function lfCondoOpen(from, asCustomer){
     _lfCondoFrom = b || null;
     if(b) b.setAttribute('aria-expanded', 'true');
     el('lf-condo-ttl').focus({ preventScroll: true });
+    lfShKick(false);                                              // v85: the list is drawn from this phone's copy at once; a look at the stamp follows, and a change redraws it
   }catch(e){
     console.warn('condos: the picker failed to open:', e);
     try{ lfCondoClose(true); }catch(_){}
@@ -15986,7 +16353,7 @@ setInterval(updateClock,15000);
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
-  const APP_VERSION = 84; // ← bump this each release (and version.json)
+  const APP_VERSION = 85; // ← bump this each release (and version.json)
   window.APP_VERSION = APP_VERSION;
 
   function showUpdateBanner(){

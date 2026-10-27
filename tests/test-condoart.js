@@ -93,7 +93,10 @@ async function openPage(page, id){
   await step('the page opened for ' + id, page.waitForSelector('#lf-pg:not([hidden])'));
 }
 const fbWrites = (reqs, from = 0) => reqs.slice(from).filter(r => isFB(r.u) && r.m !== 'GET');
-const aboutCondos = (reqs, from = 0) => reqs.slice(from).filter(r => (isFB(r.u) && r.m !== 'GET') || /condo|preview|sample|draft/i.test(decodeURIComponent(r.u)) || /condo|preview|sample|draft/i.test(r.b || ''));
+// v85: opening the picker is one of the moments that looks at the shared directory's stamp (condoDirRev) and, if it changed, the directory (condoDirectory): those two GETs are expected.
+// Any other condo path, and any write, is what this check is for.
+const sharedRead = r => r.m === 'GET' && /\/(condoDirRev|condoDirectory)\.json/.test(r.u.split('?')[0]);
+const aboutCondos = (reqs, from = 0) => reqs.slice(from).filter(r => !sharedRead(r) && ((isFB(r.u) && r.m !== 'GET') || /condo|preview|sample|draft/i.test(decodeURIComponent(r.u)) || /condo|preview|sample|draft/i.test(r.b || '')));
 const PAGE = () => {
   const pg = document.getElementById('lf-pg'), sheet = document.querySelector('#modal-condo .lf-condo-sheet'), vis = id => { const n = document.getElementById(id); return !!n && n.offsetParent !== null; };
   if (!pg) return null;
