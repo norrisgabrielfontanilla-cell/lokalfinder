@@ -203,6 +203,201 @@
       }
     },
 
+    "$room": {
+      "//$room": "v86 (condo rooms): a phone can be IN a condo, and a condo's room is the whole app, under lf_c_<id>. These are the same per-node rules as lokalfinder_grass, for every room whose name has that shape (the .write expressions check it, so no other root name can be written through this block). Left out on purpose: adminAuth (there is ONE admin login for every condo: the app reads GRASS's record whatever the room, so a condo has no admin account to claim or overwrite), pins (the legacy plaintext table is GRASS's) and fcmTokens (push alerts are GRASS-only until the sender can be checked). Like GRASS, the room itself cannot be written as a whole (no .write at $room or at vendors / menu / pinHashes), so a phone cannot overwrite a condo's catalog in one request; a brand-new condo is never seeded, so nothing needs that.",
+      "vendors": {
+        ".read": true,
+        ".validate": "newData.hasChildren() || !newData.exists()",
+        "$vid": {
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+          ".validate": "newData.hasChildren(['id','name'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 120"
+          },
+          "sub": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "desc": {
+            ".validate": "newData.isString() && newData.val().length <= 500"
+          },
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "menu": {
+        ".read": true,
+        "$vid": {
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)"
+        }
+      },
+      "pinHashes": {
+        ".read": false,
+        "$vid": {
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)"
+        }
+      },
+      "orders": {
+        ".read": "query.orderByChild == 'vendorId' && query.equalTo != null",
+        ".indexOn": [
+          "vendorId"
+        ],
+        ".write": false,
+        "$oid": {
+          ".read": true,
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/) && (!data.exists() || newData.exists())",
+          ".validate": "newData.hasChildren(['id','status','vendorId'])",
+          "id": {
+            ".validate": "newData.isString() && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "vendorId": {
+            ".validate": "newData.isString() && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 80 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "unit": {
+            ".validate": "newData.isString() && newData.val().length <= 40 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "building": {
+            ".validate": "newData.isString() && newData.val().length <= 60 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "instructions": {
+            ".validate": "newData.isString() && newData.val().length <= 400 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "phone": {
+            ".validate": "newData.isString() && newData.val().length <= 30 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "status": {
+            ".validate": "newData.isString() && newData.val().matches(/^(new|accepted|preparing|ready|delivered|declined|done)$/)"
+          },
+          "total": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (!data.parent().exists() || newData.val() === data.val())"
+          },
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "notifs": {
+        ".read": false,
+        ".write": false,
+        "$uid": {
+          ".read": true,
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+          "$nid": {
+            ".validate": "newData.hasChildren(['title','body'])",
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 200"
+            },
+            "body": {
+              ".validate": "newData.isString() && newData.val().length <= 500"
+            }
+          }
+        }
+      },
+      "chats": {
+        ".read": false,
+        ".write": false,
+        "$oid": {
+          ".read": true,
+          ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+          "$mid": {
+            "text": {
+              ".validate": "newData.isString() && newData.val().length <= 1000"
+            },
+            "$other": {
+              ".validate": true
+            }
+          }
+        }
+      },
+      "vendorApplications": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+        "$aid": {
+          ".validate": "newData.hasChildren(['id','name','status']) || !newData.exists()",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "sub": {
+            ".validate": "newData.isString() && newData.val().length <= 120"
+          },
+          "phone": {
+            ".validate": "newData.isString() && newData.val().length <= 30"
+          },
+          "reason": {
+            ".validate": "newData.isString() && newData.val().length <= 200"
+          },
+          "category": {
+            ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "address": {
+            ".validate": "newData.isString() && newData.val().length <= 160"
+          },
+          "status": {
+            ".validate": "newData.isString() && newData.val().matches(/^(pending|rejected)$/)"
+          },
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "adminLog": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+        "$lid": {
+          ".validate": "newData.hasChildren(['action','at'])",
+          "action": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "detail": {
+            ".validate": "newData.isString() && newData.val().length <= 300"
+          },
+          "at": {
+            ".validate": "newData.isNumber()"
+          }
+        }
+      },
+      "deletedVendors": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)"
+      },
+      "posts": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+        ".indexOn": [
+          "createdAt"
+        ],
+        "$pid": {
+          "video": {
+            ".validate": "newData.isString() && newData.val().length <= 12000000"
+          },
+          "photo": {
+            ".validate": "newData.isString() && newData.val().length <= 1500000"
+          },
+          "$other": {
+            ".validate": true
+          }
+        }
+      },
+      "heroStats": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)"
+      },
+      "rev": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)"
+      },
+      "revs": {
+        ".read": true,
+        ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)",
+        "$k": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+
     "//condoPipeline": "v80 (condo pipeline, P1; the founder's expansion planning). One record per condo id (the same id as the condo directory), written one field at a time, plus an append-only log of stage moves and a yearly target. READABLE BY ANYONE and writable by anyone who can reach one record: the app has no login, so the admin screen cannot be told apart from anybody else and no rule can say 'only the admin'. Do NOT store anything sensitive here (names, phones, prices, what a condo's admin said) until the admin has a real login. What these rules DO: only the seven stage words, short text, real dates; no whole-node write (the node cannot be overwritten or wiped in one request); a record cannot be deleted (move it to Closed); the log can be added to but never edited or deleted; and a stage changes only from the stage the writer says it came from (prevStage), so a stale screen cannot silently undo a newer move. The fields planned for the later phases (notes, next action, due dates, yearly targets) are already allowed, so one publish should cover P1 to P4; a later phase that needs another field will need a new publish.",
     "condoPipeline": {
       ".read": true,

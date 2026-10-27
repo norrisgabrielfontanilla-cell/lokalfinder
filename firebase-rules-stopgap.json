@@ -10,6 +10,15 @@
       "$other":    { ".write": true }
     },
 
+    "$room": {
+      "vendors":   { "$vid": { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)" } },
+      "menu":      { "$vid": { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)" } },
+      "pinHashes": { "$vid": { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)" } },
+      "orders":    { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)", ".indexOn": ["vendorId"] },
+      "posts":     { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)", ".indexOn": ["createdAt"] },
+      "$other":    { ".write": "$room.matches(/^lf_c_[a-z0-9][a-z0-9-]{1,62}$/)" }
+    },
+
     "condoPipeline": {
       "$cid": {
         ".write": "newData.exists()",
