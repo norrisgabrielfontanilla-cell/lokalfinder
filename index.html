@@ -12621,14 +12621,14 @@ function lfRoomBrand(){
   if(LF_ROOM_IS_GRASS) return;
   const name = lfRoomName();
   try{ document.title = 'LokalFinder — ' + name; }catch(e){}
-  const sub = document.querySelector('#lf-brand-tap .lf2-sub');
-  if(sub) sub.textContent = lfRoomSub();
+  // One pass over each string: the condo's name goes in and is never looked at again (a condo called "GRASS Residences Annex", or one with
+  // "inside GRASS" in its name, must not be replaced a second time).
+  const fix = s => s.replace(/GRASS Residences|inside GRASS/g, m => m === 'GRASS Residences' ? name : 'in your condo');
   // the store types' search boxes and taglines say "inside GRASS"
   Object.keys(MARKETPLACES).forEach(k=>{
     const M = MARKETPLACES[k];
-    Object.keys(M).forEach(f=>{ if(typeof M[f] === 'string' && M[f].indexOf('inside GRASS') >= 0) M[f] = M[f].split('inside GRASS').join('in your condo'); });
+    Object.keys(M).forEach(f=>{ if(typeof M[f] === 'string' && M[f].indexOf('inside GRASS') >= 0) M[f] = fix(M[f]); });
   });
-  const fix = s => s.split('GRASS Residences').join(name).split('inside GRASS').join('in your condo');
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
   const hit = [];
   for(let n = w.nextNode(); n; n = w.nextNode()){
@@ -12639,6 +12639,8 @@ function lfRoomBrand(){
     const p = n.getAttribute('placeholder');
     if(p && p.indexOf('GRASS') >= 0) n.setAttribute('placeholder', fix(p));
   });
+  const sub = document.querySelector('#lf-brand-tap .lf2-sub');      // (after the pass above: its words already say this condo)
+  if(sub) sub.textContent = lfRoomSub();
   // Alerts outside GRASS arrive inside the app only (see _lfPushRoom): tell a seller where they will see their orders, on the two screens a seller starts from.
   const note = () => { const d = document.createElement('div'); d.className = 'lf-room-note'; d.textContent = 'Order alerts in this condo show inside the app while it is open. Phone notifications are not available here yet.'; return d; };
   const ls = document.querySelector('#p-vlogin .login-sub'); if(ls) ls.after(note());
@@ -15017,7 +15019,8 @@ function refreshVisible(){
   // have to re-read — by this point that key always already says "seen".
   try{ lfTrack('app_open', { firstOpen: !!window._lfFirstOpen }); }catch(e){}
   loadLocal();
-  try{ lfRoomBrand(); lfRoomLocSelects(); lfRoomCheckoutFields(); lfRoomFooter(); }catch(e){ lfRoomFail(e); }   // v86: outside GRASS the screens name this condo, list its buildings and end with a way back
+  // v86: outside GRASS the screens name this condo, list its buildings and end with a way back. Each on its own: the way back must survive a fault in any of the others.
+  [lfRoomBrand, lfRoomLocSelects, lfRoomCheckoutFields, lfRoomFooter].forEach(f=>{ try{ f(); }catch(e){ lfRoomFail(e); } });
   lfBuildMktTabs();          // v57: vertical tabs come from MKT_ORDER
   /* v63: populate the store picker from the seeded VENDORS now, not on the
      first sync. It used to hold four hardcoded food stores until applyData()
