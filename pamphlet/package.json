@@ -1,0 +1,14 @@
+{
+  "name": "lokal-finder-pamphlet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-page Lokal Finder pamphlet (A4 PDF + shareable PNG), rendered from pamphlet.template.html with headless Chromium.",
+  "scripts": {
+    "build": "node build.js",
+    "verify": "node verify.js"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0",
+    "sharp": "^0.34.0"
+  }
+}

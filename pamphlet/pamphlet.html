@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lokal Finder: everything local, one place</title>
+<meta name="description" content="One-page pamphlet about Lokal Finder, the neighborhood marketplace for your condo.">
+<style>
+/* ── fonts: the product's own (Fraunces for display, Plus Jakarta Sans for text), both SIL Open Font License ── */
+@font-face{font-family:'Fraunces';font-weight:600;font-style:normal;src:url(assets/fonts/fraunces-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Fraunces';font-weight:700;font-style:normal;src:url(assets/fonts/fraunces-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Fraunces';font-weight:600;font-style:italic;src:url(assets/fonts/fraunces-latin-600-italic.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:400;font-style:normal;src:url(assets/fonts/plus-jakarta-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:500;font-style:normal;src:url(assets/fonts/plus-jakarta-sans-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:600;font-style:normal;src:url(assets/fonts/plus-jakarta-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:700;font-style:normal;src:url(assets/fonts/plus-jakarta-sans-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:800;font-style:normal;src:url(assets/fonts/plus-jakarta-sans-latin-800-normal.woff2) format('woff2')}
+
+/* ── brand tokens (from index.html :root and the presentation's theme.js) ── */
+:root{
+  --ink:#0D2B1A; --forest:#0F4A32; --green:#0E8A5A; --mint:#12B76A; --mintL:#3FD39B;
+  --brand:#1A6B4A; --amber:#F59E0B; --gold:#F5C842; --mist:#F0F7F3; --tint:#E6F7EF; --line:#D5E6DC;
+  --sage:#4A6B5A; --night:#06120C;
+}
+
+@page{size:210mm 297mm;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff}
+body{
+  width:210mm;height:297mm;overflow:hidden;position:relative;
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);font-size:9.2pt;line-height:1.5;
+  text-rendering:geometricPrecision;font-kerning:normal;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.sheet{position:absolute;inset:0;padding:8mm;display:flex;flex-direction:column;gap:5mm}
+img{display:block}
+h1,h2,h3,p,ul,ol{margin:0;padding:0}
+h1,h2,h3,.tag p,.fine{text-wrap:balance}
+p,li{text-wrap:pretty}
+ul,ol{list-style:none}
+.caps{font-size:7pt;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+
+/* ── hero ── */
+.hero{position:relative;flex:none;height:109mm;border-radius:7mm;overflow:hidden;background:var(--night);color:#fff}
+.hero .art{position:absolute;inset:0;background:url(assets/art/cover-night.jpg) 80% 100%/cover no-repeat}
+.hero .veil{position:absolute;inset:0;background:
+  linear-gradient(90deg,rgba(6,18,12,.88) 0%,rgba(6,18,12,.66) 40%,rgba(6,18,12,0) 72%),
+  linear-gradient(0deg,rgba(6,18,12,.40) 0%,rgba(6,18,12,0) 38%)}
+.hero .glow{position:absolute;right:-10mm;bottom:-24mm;width:110mm;height:110mm;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(63,211,155,.30),rgba(63,211,155,0))}
+.hero .left{position:absolute;left:14mm;top:11mm;bottom:11mm;width:106mm;display:flex;flex-direction:column;align-items:flex-start}
+.hero .logo{width:44mm;height:auto}
+.hero h1{margin-top:auto;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:40pt;line-height:1.04;letter-spacing:-.012em}
+.hero h1 em{font-style:italic;color:var(--mintL)}
+.hero .sub{margin-top:3.4mm;font-size:10.5pt;font-weight:500;line-height:1.3;color:rgba(255,255,255,.92);white-space:nowrap}
+.hero .chip{margin-top:4.4mm;display:inline-flex;align-items:center;gap:2.4mm;padding:1.8mm 4.2mm 1.8mm 3.4mm;border-radius:99px;
+  background:rgba(255,255,255,.13);border:.25mm solid rgba(255,255,255,.30);font-size:7.8pt;font-weight:700;letter-spacing:.01em}
+.hero .chip i{width:2.4mm;height:2.4mm;border-radius:50%;background:var(--amber);box-shadow:0 0 0 .8mm rgba(245,158,11,.28)}
+.hero .phone{position:absolute;right:6.7mm;bottom:0;width:67mm;height:auto}
+
+/* ── intro ── */
+.intro{flex:none;display:grid;grid-template-columns:1fr 62mm;gap:9mm;align-items:center;padding:0 2mm}
+.intro h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:15.5pt;line-height:1.14;letter-spacing:-.005em}
+.intro h2 em{font-style:italic;color:var(--green)}
+.intro p{margin-top:2.2mm;font-size:9.2pt;line-height:1.52;color:#1c4630}
+.cats-label{color:var(--sage);margin-bottom:1.8mm}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:1.6mm}
+.cats li{display:flex;align-items:center;gap:2mm;padding:1.2mm 2mm 1.2mm 1.3mm;border-radius:3mm;background:var(--mist);border:.25mm solid var(--line)}
+.cats li.on{background:#FFF6E0;border-color:#F4D58A}
+.cats .dot{flex:none;width:6.6mm;height:6.6mm;border-radius:50%;background:var(--forest);display:flex;align-items:center;justify-content:center}
+.cats .on .dot{background:var(--amber)}
+.cats .dot img{width:3.7mm;height:3.7mm}
+.cats b{display:block;font-size:8.6pt;font-weight:800;line-height:1.15}
+.cats small{display:block;font-size:7pt;font-weight:600;color:var(--sage);line-height:1.2}
+.cats .on small{color:#8A5A00}
+
+/* ── how it works ── */
+.steps{flex:none;padding:0 2mm}
+.steps-head{display:flex;align-items:center;gap:3mm;color:var(--brand)}
+.steps-head::after{content:"";flex:1;height:.25mm;background:var(--line)}
+.steps ol{margin-top:2.6mm;display:grid;grid-template-columns:repeat(4,1fr);gap:5mm}
+.step .row{display:flex;align-items:center;gap:2.6mm}
+.step .ico{position:relative;flex:none;width:9.6mm;height:9.6mm;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+.step .ico img{width:5.2mm;height:5.2mm}
+.step .n{position:absolute;right:-1.3mm;top:-1.3mm;width:4.2mm;height:4.2mm;border-radius:50%;background:var(--amber);color:var(--ink);
+  font-size:7pt;font-weight:800;line-height:4.2mm;text-align:center}
+.step h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13pt;line-height:1.1}
+.step p{margin-top:1.6mm;font-size:8.4pt;line-height:1.42;color:#26503a}
+
+/* ── residents / sellers ── */
+.cards{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.card{border-radius:5mm;padding:4.6mm 5.6mm 4.8mm}
+.card.res{background:var(--tint);border:.3mm solid var(--line)}
+.card.sel{background:var(--forest);color:#fff}
+.card .caps{color:var(--brand)}
+.card.sel .caps{color:var(--mintL)}
+.card h3{margin-top:.8mm;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14.5pt;line-height:1.12}
+.card ul{margin-top:2.8mm;display:flex;flex-direction:column;gap:1.7mm}
+.card li{position:relative;padding-left:5.6mm;font-size:8.7pt;line-height:1.42}
+.card li::before{content:"";position:absolute;left:0;top:.35mm;width:3.8mm;height:3.8mm;border-radius:50%;background:var(--mint) url(assets/icons/check-white.png) center/2.5mm no-repeat}
+.card li b{font-weight:800}
+
+/* ── get it ── */
+.cta{flex:none;margin-top:auto;position:relative;overflow:hidden;border-radius:6mm;background:var(--night);color:#fff;
+  display:grid;grid-template-columns:auto 1fr auto;gap:5mm;align-items:center;padding:3.6mm 6mm 3.6mm 3.6mm}
+.cta::before{content:"";position:absolute;right:-20mm;top:-30mm;width:90mm;height:90mm;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(63,211,155,.22),rgba(63,211,155,0))}
+.cta > *{position:relative}
+.qr{width:27mm;height:27mm;padding:2mm;border-radius:3mm;background:#fff}
+.qr svg{display:block;width:100%;height:100%}
+.cta h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:15.5pt;line-height:1.1}
+.cta .url{margin-top:1.3mm;font-size:8.6pt;font-weight:800;color:var(--mintL);letter-spacing:.005em;word-break:break-all}
+.cta .how{margin-top:2mm;font-size:7.9pt;line-height:1.45;color:rgba(255,255,255,.86)}
+.cta .how b{color:#fff;font-weight:700}
+.cta .tag{width:38mm;text-align:center}
+.cta .tag img{width:11mm;margin:0 auto}
+.cta .tag p{margin-top:1.6mm;font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:600;font-size:9.4pt;line-height:1.25;color:var(--mintL)}
+
+.fine{flex:none;padding:0 2mm;font-size:6.9pt;line-height:1.4;color:var(--sage);text-align:center}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="hero">
+    <div class="art" role="presentation"></div>
+    <div class="veil"></div>
+    <div class="glow"></div>
+    <div class="left">
+      <img class="logo" src="assets/brand/logo-full-dark.png" alt="Lokal Finder">
+      <h1>Everything<br>local.<br><em>One place.</em></h1>
+      <p class="sub">Order from, and sell to, the people nearby.</p>
+      <span class="chip"><i></i>Now open at GRASS Residences, Quezon City</span>
+    </div>
+    <img class="phone" src="assets/mockups/home-tall.png" alt="The Lokal Finder home screen: search, store categories and nearby stores (real app screen, demo data)">
+  </header>
+
+  <section class="intro">
+    <div>
+      <h2>A marketplace for your <em>neighborhood.</em></h2>
+      <p>Skip the trip downstairs. Find a seller in your own community, order in a few taps and follow it live. Big platforms cover whole cities; we start at the building next door.</p>
+    </div>
+    <div>
+      <div class="cats-label caps">What you can order</div>
+      <ul class="cats">
+        <li class="on"><span class="dot"><img src="assets/icons/utensils-ink.png" alt=""></span><span><b>Food</b><small>Available now</small></span></li>
+        <li><span class="dot"><img src="assets/icons/sparkles-white.png" alt=""></span><span><b>Cleaning</b><small>Coming soon</small></span></li>
+        <li><span class="dot"><img src="assets/icons/wind-white.png" alt=""></span><span><b>Aircon</b><small>Coming soon</small></span></li>
+        <li><span class="dot"><img src="assets/icons/shirt-white.png" alt=""></span><span><b>Laundry</b><small>Coming soon</small></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="steps-head caps">How it works</div>
+    <ol>
+      <li class="step"><div class="row"><span class="ico"><img src="assets/icons/search-white.png" alt=""><span class="n">1</span></span><h3>Discover</h3></div>
+        <p>Browse nearby stores by category and see who is open.</p></li>
+      <li class="step"><div class="row"><span class="ico"><img src="assets/icons/store-white.png" alt=""><span class="n">2</span></span><h3>Choose</h3></div>
+        <p>Open a store to see its menu, prices and opening hours.</p></li>
+      <li class="step"><div class="row"><span class="ico"><img src="assets/icons/bag-white.png" alt=""><span class="n">3</span></span><h3>Order</h3></div>
+        <p>Add items, enter your unit and pay the seller directly, in cash or GCash.</p></li>
+      <li class="step"><div class="row"><span class="ico"><img src="assets/icons/truck-white.png" alt=""><span class="n">4</span></span><h3>Receive</h3></div>
+        <p>Follow it live and chat with the seller. It comes to your unit.</p></li>
+    </ol>
+  </section>
+
+  <section class="cards">
+    <article class="card res">
+      <div class="caps">For residents</div>
+      <h3>Order from nearby.</h3>
+      <ul>
+        <li>Real menus and prices from sellers in and around your condo.</li>
+        <li>Live order status and chat with your seller.</li>
+        <li>No account needed. Pay the seller directly: cash or GCash.</li>
+      </ul>
+    </article>
+    <article class="card sel">
+      <div class="caps">For sellers</div>
+      <h3>Sell to your neighbors.</h3>
+      <ul>
+        <li>Apply in the app: tap <b>Vendor</b>, then <b>List your store</b>. We review every application.</li>
+        <li>Orders arrive in one list. You manage your own menu, photos and hours.</li>
+        <li>Based outside the building? Apply too.</li>
+      </ul>
+    </article>
+  </section>
+
+  <footer class="cta">
+    <div class="qr"><svg viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code that opens Lokal Finder" shape-rendering="crispEdges"><rect width="37" height="37" fill="#fff"/><path stroke="#0D2B1A" stroke-width="1.04" fill="none" d="M2 2.5h7m3 0h4m2 0h1m1 0h3m1 0h2m2 0h7m-33 1h1m5 0h1m2 0h2m1 0h4m1 0h1m3 0h1m4 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m2 0h1m1 0h1m2 0h3m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m2 0h2m1 0h2m1 0h1m6 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m3 0h1m2 0h1m2 0h1m1 0h4m-24 1h1m1 0h5m3 0h1m2 0h3m1 0h1m1 0h1m2 0h3m1 0h5m-28 1h1m5 0h3m4 0h5m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h4m1 0h3m1 0h1m5 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m-32 1h1m4 0h1m2 0h5m1 0h2m4 0h6m2 0h5m-33 1h1m3 0h3m1 0h2m7 0h1m6 0h2m1 0h3m-30 1h4m5 0h2m1 0h4m1 0h5m1 0h4m2 0h4m-33 1h1m1 0h3m1 0h1m1 0h1m3 0h2m1 0h3m2 0h1m1 0h1m1 0h3m1 0h4m-32 1h1m1 0h4m2 0h2m2 0h1m3 0h1m4 0h6m2 0h2m-30 1h3m1 0h4m3 0h3m2 0h1m4 0h1m2 0h1m1 0h2m3 0h1m-33 1h2m1 0h1m4 0h4m4 0h5m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h1m5 0h3m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h2m1 0h2m-32 1h2m2 0h2m2 0h2m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m2 0h5m-32 1h2m1 0h1m2 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h1m1 0h2m1 0h3m1 0h2m-33 1h1m1 0h1m1 0h2m1 0h2m1 0h1m1 0h3m2 0h5m1 0h1m2 0h1m2 0h1m2 0h1m-33 1h1m4 0h2m3 0h1m1 0h1m2 0h1m1 0h1m2 0h2m3 0h4m1 0h2m-32 1h1m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m4 0h2m1 0h2m3 0h1m1 0h5m-33 1h1m1 0h1m1 0h1m1 0h2m2 0h6m1 0h1m1 0h1m2 0h1m1 0h5m3 0h1m-25 1h4m4 0h1m2 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m2 0h1m1 0h6m4 0h4m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h3m1 0h1m1 0h2m2 0h2m1 0h1m1 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m1 0h1m2 0h1m3 0h3m4 0h1m1 0h6m-30 1h1m1 0h3m1 0h1m1 0h5m1 0h1m1 0h1m1 0h4m1 0h1m1 0h1m2 0h2m1 0h2m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h2m3 0h1m2 0h1m2 0h2m2 0h1m-31 1h1m5 0h1m2 0h1m2 0h2m1 0h2m1 0h4m1 0h1m2 0h1m1 0h1m1 0h1m-31 1h7m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m3 0h1"/></svg></div>
+    <div>
+      <h3>Scan to open Lokal Finder</h3>
+      <div class="url">norrisgabrielfontanilla-cell.github.io/lokalfinder</div>
+      <p class="how">Works in your phone’s browser. No app store needed.<br>
+        <b>iPhone:</b> open in Safari, tap Share, then Add to Home Screen.<br>
+        <b>Android:</b> open in Chrome, tap the three-dot menu, then Add to Home screen.</p>
+    </div>
+    <div class="tag">
+      <img src="assets/brand/logo-mark-light.png" alt="">
+      <p>Built for communities, one neighborhood at a time.</p>
+    </div>
+  </footer>
+
+  <p class="fine">Lokal Finder is currently open at GRASS Residences, Quezon City. Payments go directly to the seller; Lokal Finder does not process payments. App screen shown with demo data.</p>
+
+</div>
+</body>
+</html>
