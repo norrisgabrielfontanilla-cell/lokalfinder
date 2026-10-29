@@ -1,3 +1,5 @@
 node_modules/
 out/
 share-url.txt
+tools/out/
+tools/out-test/
