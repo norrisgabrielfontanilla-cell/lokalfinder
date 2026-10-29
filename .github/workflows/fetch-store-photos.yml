@@ -8,7 +8,8 @@ name: Fetch real store photos (read-only, one-off)
 # orders, chats, notifications, the admin or the vendor portal. The repository is public, so the log prints store-level facts only.
 #
 # The files travel as run ANNOTATIONS (see pamphlet/tools/emit.js): the Claude sandbox cannot download artifacts (they are served
-# from a storage host it cannot reach) but it can read the annotations API. The artifact is still uploaded, for anyone who wants it.
+# from a storage host it cannot reach) but it can read the annotations API. GitHub keeps about 50 annotations per job, so the
+# bundle is cut into slices and spread over three sender jobs. The bundle itself is handed between jobs as a one-day artifact.
 on:
   push:
     branches: [claude/lokal-finder-ai-os-e6593p]
@@ -22,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  fetch:
+  capture:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,21 +39,35 @@ jobs:
         run: npm ci
       - name: Read the live app (read-only) and save photos and screens
         run: NODE_PATH="$GITHUB_WORKSPACE/tests/node_modules" node pamphlet/tools/live-capture.js
-      - name: Prepare what is sent
+      - name: Pack what is sent
         run: node pamphlet/tools/emit.js prepare
-      - name: Send 1
-        run: node pamphlet/tools/emit.js send 0
-      - name: Send 2
-        run: node pamphlet/tools/emit.js send 1
-      - name: Send 3
-        run: node pamphlet/tools/emit.js send 2
-      - name: Send 4
-        run: node pamphlet/tools/emit.js send 3
-      - name: Send 5
-        run: node pamphlet/tools/emit.js send 4
+      - name: Send the checksums
+        run: node pamphlet/tools/emit.js sums
       - uses: actions/upload-artifact@v4
         with:
-          name: live-store-photos
-          path: pamphlet/tools/out
-          retention-days: 3
+          name: bundle
+          path: pamphlet/tools/out/send
+          retention-days: 1
           if-no-files-found: error
+
+  send:
+    needs: capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        part: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: bundle
+          path: pamphlet/tools/out/send
+      - name: Send 1
+        run: node pamphlet/tools/emit.js send ${{ matrix.part }} 0
+      - name: Send 2
+        run: node pamphlet/tools/emit.js send ${{ matrix.part }} 1
+      - name: Send 3
+        run: node pamphlet/tools/emit.js send ${{ matrix.part }} 2
+      - name: Send 4
+        run: node pamphlet/tools/emit.js send ${{ matrix.part }} 3

@@ -1,22 +1,23 @@
 // Rebuilds the files that tools/emit.js sent as annotations, and checks every checksum.
 //
-//   gh api "repos/OWNER/REPO/check-runs/JOB_ID/annotations?per_page=100" --paginate > annotations.json
+//   tools/fetch-run.sh RUN_ID out-dir          (gets every job's annotations with `gh api`, then runs this)
 //   node tools/reassemble.js annotations.json out-dir
 //
-// It also reads the plain log form (lines such as "::notice title=F|name|0|3::BASE64"), which is how the local test checks the round trip.
+// It also reads the plain log form (lines such as "::notice title=B|0|3::BASE64"), which is how the local test checks the round trip.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 
 const [input, outDir] = process.argv.slice(2);
 if (!input || !outDir) { console.error('usage: node tools/reassemble.js <annotations.json | log.txt> <out-dir>'); process.exit(2); }
+const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 const raw = fs.readFileSync(input, 'utf8');
 let items = [];
 if (/^\s*[\[{]/.test(raw)) {
   // `gh api --paginate` prints one JSON array per page, back to back
-  const text = raw.trim().replace(/\]\s*\[/g, ',');
-  items = JSON.parse(text).map((a) => ({ title: a.title, message: a.message }));
+  items = JSON.parse(raw.trim().replace(/\]\s*\[/g, ',')).map((a) => ({ title: a.title, message: a.message }));
 } else {
   for (const line of raw.split(/\r?\n/)) {
     const m = /::notice title=([^:]+)::(.*)$/.exec(line);
@@ -24,29 +25,34 @@ if (/^\s*[\[{]/.test(raw)) {
   }
 }
 
-const parts = {};
-let sums = null;
+let plan = null;
+const slices = {};
 for (const a of items) {
-  if (a.title === 'SUMS') { sums = JSON.parse(Buffer.from(a.message, 'base64').toString('utf8')); continue; }
-  const m = /^F\|(.+)\|(\d+)\|(\d+)$/.exec(a.title || '');
-  if (!m) continue;
-  (parts[m[1]] = parts[m[1]] || { n: Number(m[3]), chunks: {} }).chunks[Number(m[2])] = a.message;
+  if (a.title === 'SUMS') { plan = JSON.parse(Buffer.from(a.message, 'base64').toString('utf8')); continue; }
+  const m = /^B\|(\d+)\|(\d+)$/.exec(a.title || '');
+  if (m) slices[Number(m[1])] = a.message;
 }
-if (!sums) { console.error('no SUMS annotation: the run did not finish sending, or GitHub dropped it'); process.exit(1); }
+if (!plan) { console.error('no SUMS annotation: the first job did not finish, or GitHub dropped it'); process.exit(1); }
+
+const missing = [];
+for (let i = 0; i < plan.n; i++) if (slices[i] === undefined) missing.push(i);
+if (missing.length) { console.error(`MISSING slices (${missing.length} of ${plan.n}): ${missing.slice(0, 20).join(', ')}`); process.exit(1); }
+const bundle = Buffer.concat(Array.from({ length: plan.n }, (_, i) => Buffer.from(slices[i], 'base64')));
+if (bundle.length !== plan.bytes || sha(bundle) !== plan.sha256) { console.error(`CHECKSUM of the bundle differs (got ${bundle.length} bytes)`); process.exit(1); }
+
+fs.mkdirSync(outDir, { recursive: true });
+const tarFile = path.join(outDir, '.bundle.tar');
+fs.writeFileSync(tarFile, bundle);
+execFileSync('tar', ['-xf', tarFile, '-C', outDir]);
+fs.rmSync(tarFile);
 
 let bad = 0, ok = 0;
-fs.mkdirSync(outDir, { recursive: true });
-for (const [name, want] of Object.entries(sums)) {
-  const p = parts[name];
-  const have = p ? Object.keys(p.chunks).length : 0;
-  if (!p || have !== p.n) { console.error(`MISSING ${name}: ${have}/${p ? p.n : '?'} slices`); bad++; continue; }
-  const buf = Buffer.concat(Array.from({ length: p.n }, (_, i) => Buffer.from(p.chunks[i], 'base64')));
-  const got = crypto.createHash('sha256').update(buf).digest('hex');
-  if (got !== want.sha256 || buf.length !== want.bytes) { console.error(`CHECKSUM ${name}`); bad++; continue; }
-  const dest = path.join(outDir, name);
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.writeFileSync(dest, buf);
+for (const [name, want] of Object.entries(plan.files)) {
+  const f = path.join(outDir, name);
+  if (!fs.existsSync(f)) { console.error(`MISSING ${name}`); bad++; continue; }
+  const buf = fs.readFileSync(f);
+  if (buf.length !== want.bytes || sha(buf) !== want.sha256) { console.error(`CHECKSUM ${name}`); bad++; continue; }
   ok++;
 }
-console.log(`${ok} files rebuilt and verified, ${bad} problem(s)`);
+console.log(`${ok} files rebuilt and verified (${plan.n} slices, ${Math.round(plan.bytes / 1024)} KB), ${bad} problem(s)`);
 process.exit(bad ? 1 : 0);
