@@ -41,8 +41,8 @@ LINES = [
     ('real', "Real food, from real sellers in your community.", 9.20, 3.50),
     ('steps-1', "Pick your meal, add your unit,", 13.90, 2.30),
     ('steps-2', "Pay cash or GCash, and follow it live.", 16.20, 2.70),
-    ('tag-1', "Everything local. One place.", 19.40, 1.65),
-    ('tag-2', "Now open at Grass Residences.", 21.00, 2.00),
+    ('tag-1', "Everything local. One place.", 19.38, 2.00),
+    ('tag-2', "Now open at Grass Residences.", 21.48, 2.00),
 ]
 MAX_SPEED = 1.18           # never rush a line more than this: it stops sounding human
 

@@ -26,7 +26,7 @@ const OUT = path.join(__dirname, 'out');
 const FPS = 30;
 const CARDS = [   // the story cards: the moment each scene is fully settled
   { name: '1-hook', t: 1.6 }, { name: '2-app', t: 5.5 }, { name: '3-open-now', t: 8.3 }, { name: '4-real-food', t: 12.4 },
-  { name: '5-order', t: 16.75 }, { name: '6-follow-live', t: 18.6 }, { name: '7-link', t: 22.9 },
+  { name: '5-order', t: 16.75 }, { name: '6-follow-live', t: 18.6 }, { name: '7-link', t: 24.0 },
 ];
 
 async function open() {

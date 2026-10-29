@@ -4,7 +4,7 @@
     python3 mix.py [af_heart]            needs out/soundtrack.wav (audio.py) and out/voice_<VOICE>.npy (voice.py); FFMPEG=/path/to/ffmpeg
     -> out/mix_<VOICE>.wav
 
-The music dips about 8 dB a moment before she speaks and comes back slowly after, so every word is clear and the beat is still there
+The music dips about 12 dB a moment before she speaks and comes back slowly after, so every word is clear and the beat is still there
 between phrases. Final loudness about -14.5 LUFS integrated with the peak under -1.5 dBFS (measured with ffmpeg's ebur128).
 """
 import math
@@ -22,7 +22,8 @@ SR = 48000
 VOICE = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('VOICE', 'af_heart')
 FFMPEG = os.environ.get('FFMPEG', 'ffmpeg')
 TARGET_LUFS = float(os.environ.get('TARGET_LUFS', '-14.5'))
-DEPTH = 0.60               # how far the music dips under her (1 - 0.60 = -8 dB)
+DEPTH = 0.75               # how far the music dips under her (1 - 0.75 = -12 dB)
+MUSIC = 0.85               # and the whole music bed a little lower than in the music-only version
 
 
 def read_wav(p):
@@ -60,7 +61,7 @@ def main():
     n = min(len(music), len(voice))
     music, voice = music[:n], voice[:n]
     g = 1 - DEPTH * duck_curve(voice)
-    mix = music * g[:, None] * 1.0 + voice[:, None] * 1.0
+    mix = music * g[:, None] * MUSIC + voice[:, None] * 1.0
     tmp = os.path.join(OUT, f'mix_{VOICE}_pre.wav')
     write_wav(tmp, mix * 0.5)
     lufs, _ = loudness(tmp)
