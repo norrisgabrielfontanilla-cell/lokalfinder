@@ -4,7 +4,7 @@
 //   node render.js check                  every 0.1 s: is all text inside the safe zone?
 //   node render.js cues                   the sound cues the page registered         -> out/cues.json
 //   node render.js cards                  the story cards (JPG, 1080 x 1920)         -> cards/ (+ the sheet Lokal_Finder_Ad_preview.jpg)
-//   node render.js video [out.mp4]        every frame at 30 fps, piped to ffmpeg (+ out/soundtrack.wav if it exists)
+//   node render.js video [out.mp4]        every frame at 30 fps, piped to ffmpeg (+ out/soundtrack.wav, or $AUDIO, if it exists; NO_AUDIO=1 for none; WORKERS=3 browsers)
 // Needs Playwright with Chromium (see build notes in README.md) and ffmpeg (set FFMPEG=/path/to/ffmpeg if it is not on PATH).
 const fs = require('fs');
 const path = require('path');
@@ -123,11 +123,13 @@ async function cards() {
 
 async function video(outFile) {
   const ffmpeg = process.env.FFMPEG || 'ffmpeg';
-  const wav = path.join(OUT, 'soundtrack.wav');
+  const wav = process.env.AUDIO || path.join(OUT, 'soundtrack.wav');
   const hasAudio = fs.existsSync(wav) && !process.env.NO_AUDIO;
-  const { browser, page } = await open();
-  const dur = await page.evaluate(() => window.DURATION);
+  const WORKERS = Math.max(1, parseInt(process.env.WORKERS || '3', 10));
+  const first = await open();
+  const dur = await first.page.evaluate(() => window.DURATION);
   const frames = Math.round(dur * FPS);
+  const pages = [first.page, ...(await Promise.all(Array.from({ length: WORKERS - 1 }, () => open()))).map((o) => o.page)];
   const args = ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'png', '-i', '-'];
   if (hasAudio) args.push('-i', wav);
   args.push('-vf', 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '17', '-maxrate', '14M', '-bufsize', '28M',
@@ -137,15 +139,29 @@ async function video(outFile) {
   const ff = spawn(ffmpeg, args, { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((res, rej) => { ff.on('exit', (c) => (c === 0 ? res() : rej(new Error('ffmpeg exited ' + c)))); ff.on('error', rej); });
   const t0 = Date.now();
-  for (let i = 0; i < frames; i++) {
-    await seek(page, i / FPS);
-    const buf = await page.screenshot({ type: 'png' });
-    if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
-    if (i % 60 === 0) console.log(`frame ${i}/${frames}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
-  }
-  ff.stdin.end();
-  await done; await browser.close();
-  console.log('wrote', outFile, `${frames} frames, audio: ${hasAudio}`, `${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  const ready = new Map(); let nextWrite = 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // each browser takes every WORKERS-th frame; the writer puts them into ffmpeg in order
+  const workers = pages.map(async (page, w) => {
+    for (let i = w; i < frames; i += WORKERS) {
+      while (i - nextWrite > WORKERS * 3) await sleep(15);            // do not run far ahead of the encoder
+      await seek(page, i / FPS);
+      ready.set(i, await page.screenshot({ type: 'png' }));
+    }
+  });
+  const writer = (async () => {
+    for (let i = 0; i < frames; i++) {
+      while (!ready.has(i)) await sleep(5);
+      const buf = ready.get(i); ready.delete(i);
+      if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
+      nextWrite = i + 1;
+      if (i % 60 === 0) console.log(`frame ${i}/${frames}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+    }
+    ff.stdin.end();
+  })();
+  await Promise.all([...workers, writer]); await done;
+  console.log('wrote', outFile, `${frames} frames, ${WORKERS} browsers, audio: ${hasAudio}`, `${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  process.exit(0);
 }
 
 (async () => {

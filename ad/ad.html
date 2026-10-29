@@ -170,7 +170,7 @@ const sceneRoot = (a, b) => { const s = el('div', 'scene', stage); track((t) => 
 
 // ───────────────────────────────────────────── time map (seconds; one beat = 0.6 s at 100 bpm)
 const T = { hook: [0, 3.6], home: [3.6, 9.0], food: [9.0, 13.2], order: [13.2, 19.2], cta: [19.2, 24.0] };
-const DUR = 24.0;
+const DUR = 24.6;
 
 // stars (static, seeded) behind everything
 (() => {
@@ -322,7 +322,7 @@ const S1 = {};
   const B = phone(s, [AS.scr + 'live-store.png', AS.scr + 'live-checkout.png', AS.scr + 'tracker-ready.png']);
   tapAt(B.ov, S(710), S(998), 14.4, [20, 250]);                         // 1 pick: tap the first "+"
   ring(B.ov, S(18), S(912), S(762), S(1076), 13.95, 14.9, 18);
-  ring(B.ov, S(24), S(618), S(756), S(722), 15.45, 16.2, 40);            // 2 unit
+  ring(B.ov, S(24), S(618), S(756), S(722), 15.1, 16.1, 40);            // 2 unit
   ring(B.ov, S(24), S(938), S(756), S(1152), 16.3, 17.3, 36);          // 3 pay
   tapAt(B.ov, S(390), S(1592), 17.4, [60, 200]);                       // place the order
   ring(B.ov, S(44), S(326), S(736), S(510), 18.3, 19.0, 40);            // 4 chat with the seller
@@ -331,19 +331,19 @@ const S1 = {};
   const stamp = el('div', 'pill', s, { left: '330px', top: '582px', width: '420px', textAlign: 'center', border: '3px solid #F59E0B', color: '#FFC764', background: 'rgba(30,20,4,.92)', fontSize: '28px' });
   stamp.textContent = 'SAMPLE ORDER'; stamp.dataset.safe = 'stamp';
   title(s, 'Order in *a few taps.*', { y: 300, size: 86, t0: 13.35, out: 18.85, name: 'order-1' });
-  chip(s, 'Pick your meal', { n: 1, x: W / 2, y: 460, t0: 13.8, out: 15.05 });
-  chip(s, 'Add your unit', { n: 2, x: W / 2, y: 460, t0: 15.12, out: 16.2 });
+  chip(s, 'Pick your meal', { n: 1, x: W / 2, y: 460, t0: 13.8, out: 14.9 });
+  chip(s, 'Add your unit', { n: 2, x: W / 2, y: 460, t0: 14.95, out: 16.1 });
   chip(s, 'Pay cash or GCash', { n: 3, x: W / 2, y: 460, t0: 16.2, out: 17.55 });
   chip(s, 'Follow it live', { n: 4, x: W / 2, y: 460, t0: 17.75, out: 18.85 });
-  cue(13.2, 'whoosh'); cue(13.35, 'tick'); cue(13.8, 'pop'); cue(15.0, 'swipe'); cue(15.12, 'pop'); cue(16.2, 'pop'); cue(17.7, 'ding'); cue(17.7, 'swipe'); cue(17.75, 'pop'); cue(18.3, 'pop');
+  cue(13.2, 'whoosh'); cue(13.35, 'tick'); cue(13.8, 'pop'); cue(14.8, 'swipe'); cue(14.95, 'pop'); cue(16.2, 'pop'); cue(17.7, 'ding'); cue(17.7, 'swipe'); cue(17.75, 'pop'); cue(18.3, 'pop');
 
   track((t) => {
     const inn = p(t, 13.2, 0.75, E.out4), out = p(t, 18.85, 0.6, E.in);
     const X = PH.x, Y = PH.y + (1 - inn) * 1250 + out * 900 + Math.sin(t * 1.5) * 5 * inn;
     place(B.ph, X, Y, SC); vis(B.ph, clamp(inn * 3) * (1 - out));
     glow.style.opacity = inn * (1 - out); SCRIM.style.opacity = 1;
-    // screens: store -> checkout (15.0) -> tracker (17.7)
-    const a = p(t, 15.0, 0.5, E.io), b = p(t, 17.7, 0.5, E.io);
+    // screens: store -> checkout (14.8) -> tracker (17.7)
+    const a = p(t, 14.8, 0.5, E.io), b = p(t, 17.7, 0.5, E.io);
     const [i0, i1, i2] = B.imgs;
     i0.style.transform = `translateX(${-a * 120}px)`; i0.style.opacity = 1 - a;
     i1.style.transform = `translateX(${(1 - a) * 608 - b * 120}px)`; i1.style.opacity = a * (1 - b);
@@ -354,31 +354,31 @@ const S1 = {};
 
 // ═════════════════════════════════════════════ S5  THE CALL TO ACTION  (19.2 – 24.0 s)
 (() => {
-  const s = sceneRoot(18.9, 24.1);
+  const s = sceneRoot(18.9, 24.7);
   const bg = el('div', '', s, { left: 0, top: 0, width: W + 'px', height: H + 'px', overflow: 'hidden' });
   const art = img(bg, AS.art + 'closing-night.jpg'); Object.assign(art.style, { left: '0px', top: '0px', width: '3413px', height: '1920px' });
   el('div', '', s, { left: 0, top: 0, width: W + 'px', height: H + 'px', background: 'linear-gradient(180deg,rgba(7,18,13,.9) 0,rgba(7,18,13,.74) 52%,rgba(7,18,13,.46) 100%)' });
   const logo = img(s, AS.brand + 'logo-full-dark.png'); logo.dataset.safe = 'logo';
   rect(logo, 220, 318, 640, 176);
-  title(s, 'Everything local.\n*One place.*', { y: 560, size: 108, lh: 1.0, t0: 19.7, out: null, stag: 0.09, name: 'cta-1' });
-  const where = block(s, 'sub', { left: '60px', top: '846px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.22 }, { t0: 20.4, name: 'cta-where' });
+  title(s, 'Everything local.\n*One place.*', { y: 560, size: 108, lh: 1.0, t0: 19.4, out: null, stag: 0.09, name: 'cta-1' });
+  const where = block(s, 'sub', { left: '60px', top: '846px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.22 }, { t0: 21.0, name: 'cta-where' });
   where.innerHTML = '<span class="flow">Now open at <b class="flow" style="font-weight:800;color:#fff">GRASS Residences</b>,<br class="flow">Quezon City</span>';
   // A link, not a fake button: the picture says where to go, the platform's own link / button does the tap.
-  const open = block(s, 'sub', { left: '60px', top: '1000px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.2, fontWeight: 700, color: '#fff' }, { t0: 20.4, name: 'cta-open' }); open.textContent = 'Open it in your browser';
+  const open = block(s, 'sub', { left: '60px', top: '1000px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.2, fontWeight: 700, color: '#fff' }, { t0: 21.7, name: 'cta-open' }); open.textContent = 'Open it in your browser';
   const lp = el('div', 'linkpill', s, { left: '60px', top: '1074px', width: '960px', height: '100px' }); lp.dataset.safe = 'linkpill';
   const lt = el('span', 'flow', lp); lt.textContent = 'norrisgabrielfontanilla-cell.github.io/lokalfinder';
-  const free = block(s, 'small', { left: '60px', top: '1214px', width: '960px', textAlign: 'center', fontSize: '37px', fontWeight: 800, color: '#3FD39B' }, { t0: 21.1, name: 'cta-noaccount' }); free.textContent = 'No account needed · Pay cash or GCash';
+  const free = block(s, 'small', { left: '60px', top: '1214px', width: '960px', textAlign: 'center', fontSize: '37px', fontWeight: 800, color: '#3FD39B' }, { t0: 22.4, name: 'cta-noaccount' }); free.textContent = 'No account needed · Pay cash or GCash';
   const div = el('div', '', s, { left: '300px', top: '1306px', width: '480px', height: '3px', background: 'rgba(255,255,255,.22)' });
-  const sell = block(s, 'small', { left: '60px', top: '1340px', width: '960px', textAlign: 'center', fontSize: '36px' }, { t0: 21.5, name: 'cta-seller' }); sell.textContent = 'Selling? Apply to list your store in the app.';
-  cue(19.2, 'whoosh'); cue(19.7, 'tick'); cue(20.4, 'pop'); cue(20.9, 'chime'); cue(21.1, 'pop'); cue(21.5, 'pop');
+  const sell = block(s, 'small', { left: '60px', top: '1340px', width: '960px', textAlign: 'center', fontSize: '36px' }, { t0: 22.9, name: 'cta-seller' }); sell.textContent = 'Selling? Apply to list your store in the app.';
+  cue(19.2, 'whoosh'); cue(19.4, 'tick'); cue(21.0, 'pop'); cue(21.7, 'pop'); cue(22.0, 'chime'); cue(22.4, 'pop'); cue(22.9, 'pop');
   track((t) => {
     const a = p(t, 19.1, 0.6, E.out), logoIn = p(t, 19.3, 0.6, E.out4);
     bg.style.opacity = a;
-    const pan = lerp(-1585, -1700, p(t, 19.2, 4.8, E.lin)); art.style.transform = `translateX(${pan}px) scale(1.04)`; art.style.transformOrigin = '1700px 900px';
+    const pan = lerp(-1585, -1700, p(t, 19.2, 5.4, E.lin)); art.style.transform = `translateX(${pan}px) scale(1.04)`; art.style.transformOrigin = '1700px 900px';
     vis(logo, logoIn); logo.style.transform = `translateY(${(1 - logoIn) * 26}px)`;
-    const bi = p(t, 20.85, 0.5, E.back);
-    vis(lp, clamp(bi * 2)); lp.style.transform = `scale(${lerp(0.9, 1, bi)})`;
-    vis(div, p(t, 21.4, 0.4));
+    const bi = p(t, 22.0, 0.5, E.out4);
+    vis(lp, clamp(bi * 2)); lp.style.transform = `scale(${lerp(0.92, 1, bi)})`;
+    vis(div, p(t, 22.7, 0.4));
   });
 })();
 
