@@ -5,7 +5,7 @@ traction, revenue, business model, roadmap or competitors. Everything it says is
 
 | File | What it is |
 |---|---|
-| `Lokal_Finder_Ad_9x16.mp4` | The ad. 1080 x 1920, 30 fps, 24.0 s, H.264 + AAC (stereo, about -15 LUFS), `faststart`. For Reels, TikTok, Stories, Facebook and Viber / Messenger status. |
+| `Lokal_Finder_Ad_9x16.mp4` | The ad. 1080 x 1920, 30 fps, 24.0 s, 12.4 MB, H.264 + AAC (stereo, about -15 LUFS), `faststart`. For Reels, TikTok, Stories, Facebook and Viber / Messenger status. |
 | `cards/*.jpg` | The same story as 7 still cards (1080 x 1920): hook, app, open now, real food, order, follow it live, link. For Stories, Status or a carousel. |
 | `Lokal_Finder_Ad_preview.jpg` | All 7 cards on one sheet. |
 | `ad.html` | The ad itself: one page whose every frame is a pure function of time (`window.seek(t)`). Edit wording and timing here. |
@@ -71,6 +71,13 @@ Needs Node, Playwright with Chromium, Python 3 with numpy, and an ffmpeg with li
 The page loads its pictures from `../presentation/assets` (real screens, seller photos, skyline art, logo) and its fonts from
 `../pamphlet/assets/fonts` (Fraunces and Plus Jakarta Sans, SIL Open Font License), so nothing is copied twice.
 
-## Status
+## Checked / not checked
 
-Work in progress: this commit holds the source (page, renderer, soundtrack). The video and the story cards are added in the next commit, together with what was checked on them.
+Checked:
+* **The file.** MP4, H.264 High + AAC-LC stereo, 1080 x 1920, 30 fps, exactly 24.00 s, 12.4 MB, `faststart` (the index is at the front, so it starts playing before it has fully downloaded).
+* **The sound inside it.** About -15.0 LUFS integrated, true peak -3.7 dBFS (ffmpeg `ebur128`). The sound effects are placed from the same cue list the page uses, so they land on the pictures by construction.
+* **The encode against the page.** Frames decoded from the MP4 at 0.5, 5.5, 12.4, 16.75 and 22.9 s against the page's own stills: PSNR 35-41 dB, mean colour shift about 1 / 255 (no colour-matrix error).
+* **The safe zone.** `node render.js check`: 746 headline, chip and label boxes over 24 s, none outside x 56-1024, y 290-1480.
+* **By eye:** the key frames of every scene, the transitions (3.7, 4.0, 8.9, 13.5, 14.3, 17.3, 18.6, 19.4 s) and the 7 cards.
+
+Not checked: playback on real phones and inside Reels, TikTok and Facebook (each draws its own buttons over the video); how the music sounds (it was measured and looked at as a spectrogram, not heard); and the sellers' permission.
