@@ -1,6 +1,6 @@
 // Rebuilds the files that tools/emit.js sent as annotations, and checks every checksum.
 //
-//   tools/fetch-run.sh RUN_ID out-dir          (gets every job's annotations with `gh api`, then runs this)
+//   tools/fetch-run.sh COMMIT_SHA out-dir      (gets the check run's annotations with `gh api`, then runs this)
 //   node tools/reassemble.js annotations.json out-dir
 //
 // It also reads the plain log form (lines such as "::notice title=B|0|3::BASE64"), which is how the local test checks the round trip.
@@ -16,8 +16,15 @@ const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 const raw = fs.readFileSync(input, 'utf8');
 let items = [];
 if (/^\s*[\[{]/.test(raw)) {
-  // `gh api --paginate` prints one JSON array per page, back to back
-  items = JSON.parse(raw.trim().replace(/\]\s*\[/g, ',')).map((a) => ({ title: a.title, message: a.message }));
+  // `gh api --paginate` prints one JSON array per page, back to back: read the top-level values one after another
+  let depth = 0, inStr = false, esc = false, start = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === '[' || c === '{') { if (depth === 0) start = i; depth++; }
+    else if (c === ']' || c === '}') { depth--; if (depth === 0) { const v = JSON.parse(raw.slice(start, i + 1)); for (const a of (Array.isArray(v) ? v : [v])) items.push({ title: a.title, message: a.message }); } }
+  }
 } else {
   for (const line of raw.split(/\r?\n/)) {
     const m = /::notice title=([^:]+)::(.*)$/.exec(line);

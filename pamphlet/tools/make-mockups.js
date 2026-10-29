@@ -11,7 +11,7 @@ const fs = require('fs');
 const sharp = require('sharp');
 
 const D = path.resolve(__dirname, '..');
-const IN = process.env.LF_SCREENS || path.join(D, 'tools', 'out', 'screens');
+const IN = process.env.LF_SCREENS || path.join(D, 'tools', 'out-live', 'screens');
 const OUT = path.join(D, 'assets', 'live');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -48,7 +48,7 @@ const statusSvg = (ink) => `
 </svg>`;
 
 async function build(name) {
-  const src = path.join(IN, name + '.png');
+  const src = ['.png', '.jpg'].map((e) => path.join(IN, name + e)).find((f) => fs.existsSync(f));
   const shot = await sharp(src).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const px = (x, y) => { const i = (y * shot.info.width + x) * 4; return [shot.data[i], shot.data[i + 1], shot.data[i + 2]]; };
   const top = [px(6, 4), px(SW / 2, 4), px(SW - 8, 4)];
@@ -110,7 +110,7 @@ async function build(name) {
 }
 
 (async () => {
-  const files = fs.readdirSync(IN).filter((f) => f.endsWith('.png')).map((f) => f.replace(/\.png$/, ''));
+  const files = fs.readdirSync(IN).filter((f) => /\.(png|jpg)$/.test(f)).map((f) => f.replace(/\.(png|jpg)$/, ''));
   const meta = {};
   for (const n of files) { meta[n] = await build(n); console.log('  mockup', n, meta[n].w + 'x' + meta[n].h); }
   fs.writeFileSync(path.join(OUT, 'mockups.json'), JSON.stringify(meta, null, 2));

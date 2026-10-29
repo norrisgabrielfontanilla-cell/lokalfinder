@@ -1,16 +1,15 @@
-// Sends the files collected by live-capture.js from the GitHub runner to the person reading the run, through the runs'
-// annotations (the check-run annotations API). Why: GitHub Actions artifacts are served from a storage host that the Claude
-// sandbox cannot reach, but api.github.com (annotations) it can. All files are packed into ONE tar (JPEGs do not compress, so it
-// is stored as is) and the tar is cut into 45,000-byte slices, one base64 slice per annotation.
+// Sends the files collected by live-capture.js from the GitHub runner to the person reading the run, as the annotations of one
+// check run created through the Checks API. Why: GitHub Actions artifacts are served from a storage host that the Claude sandbox
+// cannot reach, but api.github.com (check-run annotations) it can. All files are packed into ONE tar (JPEGs do not compress, so
+// it is stored as is) and the tar is cut into 45,000-byte slices, one base64 slice per annotation (the API allows 64 KB each).
+// (Annotations written by workflow commands are cut to 4,096 characters, which is why they are not used.)
 //
-//   node tools/emit.js prepare              recompress what is worth sending, write out/send/bundle.tar and out/send/plan.json
-//   node tools/emit.js sums                 print the one annotation that carries the checksums
-//   node tools/emit.js send <part> <step>   print the annotations of one step of one sender job (4 steps x 10 slices per job)
-//   tools/reassemble.js                     turns the annotations back into the files and checks every checksum
+//   node tools/emit.js prepare     recompress what is worth sending, write out/send/bundle.tar and out/send/plan.json
+//   node tools/emit.js check       create the check run "photo-bundle" on this commit and append the annotations (50 per request)
+//   tools/reassemble.js            turns the annotations back into the files and checks every checksum
 //
-// GitHub keeps 10 annotations per level per step and about 50 per job, so a sender job sends at most 40 slices and the work is
-// spread over parallel jobs. What is sent: menu photos, store logos, store covers and a few real phone screens, i.e. what a
-// resident can already see in the public app. Nothing else leaves the runner.
+// What is sent: menu photos, store logos, store covers and a few real phone screens, i.e. what a resident can already see in the
+// public app. Nothing else leaves the runner.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -19,10 +18,8 @@ const { execFileSync } = require('child_process');
 const OUT = process.env.LF_OUT ? path.resolve(process.env.LF_OUT) : path.resolve(__dirname, 'out');
 const SEND = path.join(OUT, 'send');
 const CHUNK = 45000;            // raw bytes per annotation: 60,000 base64 characters, under the 64 KB annotation limit
-const PER_STEP = 10;
-const STEPS = 4;
-const PER_JOB = PER_STEP * STEPS;
-const JOBS = 3;
+const MAX_SLICES = 400;         // about 18 MB: far more than the pamphlet needs
+const PER_REQUEST = 50;          // annotations per Checks API request
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 async function prepare() {
@@ -40,7 +37,7 @@ async function prepare() {
   if (shots.includes('home.png')) wanted.push({ name: 'screens/home.jpg', src: 'screens/home.png', screen: true });
   for (const s of bestStores) if (shots.includes(`store-${s.id}.png`)) wanted.push({ name: `screens/store-${s.id}.jpg`, src: `screens/store-${s.id}.png`, screen: true });
 
-  const budget = JOBS * PER_JOB - 4;
+  const budget = MAX_SLICES - 4;
   let files, tarBytes, n;
   for (const q of [90, 84, 78, 72, 66, 60]) {                      // lower the quality only if the budget demands it
     files = [];
@@ -65,32 +62,44 @@ async function prepare() {
   execFileSync('tar', ['-cf', path.join(SEND, 'bundle.tar'), '-C', stage, '.']);
   const bundle = fs.readFileSync(path.join(SEND, 'bundle.tar'));
   const plan = { bytes: bundle.length, sha256: sha(bundle), n: Math.ceil(bundle.length / CHUNK), files: sums };
-  if (plan.n > JOBS * PER_JOB) throw new Error(`${plan.n} slices is more than ${JOBS} jobs can send`);
+  if (plan.n > MAX_SLICES) throw new Error(`${plan.n} slices is more than the ${MAX_SLICES} allowed`);
   fs.writeFileSync(path.join(SEND, 'plan.json'), JSON.stringify(plan));
   fs.rmSync(stage, { recursive: true, force: true });
-  console.log(`${files.length} files, ${Math.round(bundle.length / 1024)} KB bundle, ${plan.n} slices (${Math.ceil(plan.n / PER_JOB)} sender job(s) needed of ${JOBS})`);
+  console.log(`${files.length} files, ${Math.round(bundle.length / 1024)} KB bundle, ${plan.n} slices`);
 }
 
 function plan() { return JSON.parse(fs.readFileSync(path.join(SEND, 'plan.json'), 'utf8')); }
 
-function sums() {
-  console.log(`::notice title=SUMS::${Buffer.from(JSON.stringify(plan())).toString('base64')}`);
-}
-
-function send(part, step) {
+async function check() {
   const p = plan();
   const bundle = fs.readFileSync(path.join(SEND, 'bundle.tar'));
-  const from = part * PER_JOB + step * PER_STEP, to = Math.min(from + PER_STEP, p.n);
-  let sent = 0;
-  for (let i = from; i < to; i++) {
-    console.log(`::notice title=B|${i}|${p.n}::${bundle.subarray(i * CHUNK, Math.min((i + 1) * CHUNK, bundle.length)).toString('base64')}`);
-    sent++;
+  const ann = (title, buf) => ({ path: '.github/workflows/fetch-store-photos.yml', start_line: 1, end_line: 1, annotation_level: 'notice', title, message: buf.toString('base64') });
+  const all = [ann('SUMS', Buffer.from(JSON.stringify(p)))];
+  for (let i = 0; i < p.n; i++) all.push(ann(`B|${i}|${p.n}`, bundle.subarray(i * CHUNK, Math.min((i + 1) * CHUNK, bundle.length))));
+  for (const a of all) if (a.message.length > 64000) throw new Error(`annotation ${a.title} is ${a.message.length} characters`);
+  const batches = [];
+  for (let i = 0; i < all.length; i += PER_REQUEST) batches.push(all.slice(i, i + PER_REQUEST));
+  console.log(`${all.length} annotations in ${batches.length} request(s), largest ${Math.max(...all.map((a) => a.message.length))} characters`);
+  if (process.env.LF_DRY) return;
+
+  const repo = process.env.GITHUB_REPOSITORY, token = process.env.GITHUB_TOKEN, sha = process.env.GITHUB_SHA;
+  if (!repo || !token || !sha) throw new Error('GITHUB_REPOSITORY, GITHUB_TOKEN and GITHUB_SHA are needed');
+  const api = async (method, url, body) => {
+    const r = await fetch(`https://api.github.com/repos/${repo}${url}`, { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const text = await r.text();
+    if (!r.ok) throw new Error(`${method} ${url} -> ${r.status} ${text.slice(0, 300)}`);
+    return JSON.parse(text);
+  };
+  const output = (annotations) => ({ title: 'photo-bundle', summary: `${p.n} slices of one tar (${p.bytes} bytes, sha256 ${p.sha256}); see tools/emit.js`, annotations });
+  const created = await api('POST', '/check-runs', { name: 'photo-bundle', head_sha: sha, status: 'completed', conclusion: 'neutral', output: output(batches[0]) });
+  console.log(`check run ${created.id} created with ${batches[0].length} annotations`);
+  for (let i = 1; i < batches.length; i++) {
+    await api('PATCH', `/check-runs/${created.id}`, { output: output(batches[i]) });
+    console.log(`appended ${batches[i].length} annotations (request ${i + 1} of ${batches.length})`);
   }
-  console.error(`part ${part} step ${step}: sent ${sent} slices (${from}..${to - 1} of ${p.n})`);
 }
 
-const [cmd, a, b] = process.argv.slice(2);
+const [cmd] = process.argv.slice(2);
 if (cmd === 'prepare') prepare().catch((e) => { console.error(e); process.exit(1); });
-else if (cmd === 'sums') sums();
-else if (cmd === 'send') send(Number(a || 0), Number(b || 0));
-else { console.error('usage: node tools/emit.js prepare | sums | send <part> <step>'); process.exit(2); }
+else if (cmd === 'check') check().catch((e) => { console.error(e); process.exit(1); });
+else { console.error('usage: node tools/emit.js prepare | check'); process.exit(2); }

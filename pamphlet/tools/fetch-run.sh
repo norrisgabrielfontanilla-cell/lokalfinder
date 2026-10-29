@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Collects the annotations of every job of one workflow run and rebuilds the files they carry.
-#   tools/fetch-run.sh RUN_ID OUT_DIR [owner/repo]
+# Collects the annotations of the check run "photo-bundle" on one commit and rebuilds the files they carry.
+#   tools/fetch-run.sh COMMIT_SHA OUT_DIR [owner/repo]
 set -euo pipefail
-RUN="${1:?run id}"; OUT="${2:?output dir}"; REPO="${3:-norrisgabrielfontanilla-cell/lokalfinder}"
+SHA="${1:?commit sha}"; OUT="${2:?output dir}"; REPO="${3:-norrisgabrielfontanilla-cell/lokalfinder}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TMP="$(mktemp)"
-for J in $(gh api "repos/$REPO/actions/runs/$RUN/jobs?per_page=100" --jq '.jobs[].id'); do
-  gh api "repos/$REPO/check-runs/$J/annotations?per_page=100" --paginate >> "$TMP"
-  echo >> "$TMP"
-done
+ID="$(gh api "repos/$REPO/commits/$SHA/check-runs?check_name=photo-bundle&per_page=100" --jq '[.check_runs[] | select(.name=="photo-bundle")] | sort_by(.id) | last | .id')"
+[ -n "$ID" ] && [ "$ID" != "null" ] || { echo "no check run named photo-bundle on $SHA" >&2; exit 1; }
+echo "check run $ID" >&2
+gh api "repos/$REPO/check-runs/$ID/annotations?per_page=100" --paginate > "$TMP"
 node "$HERE/reassemble.js" "$TMP" "$OUT"
 rm -f "$TMP"
