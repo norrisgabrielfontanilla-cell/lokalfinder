@@ -36,11 +36,12 @@ async function scan(file) {
   check(info.fonts.length > 0 && info.fonts.every((f) => f.embedded), `all ${info.fonts.length} fonts embedded: ${info.fonts.map((f) => f.name.replace(/^[A-Z]{6}\+/, '')).join(', ')}`);
   check(info.min_font_pt >= 6.8, `smallest text is ${info.min_font_pt} pt (fine print only)`);
   check(!info.has_replacement_char, 'no broken characters in the text');
+  check(info.images >= 12, `${info.images} pictures in the PDF (logo, real phone screen, 6 real photos, icons)`);
   check(info.title && /Lokal Finder/.test(info.title), `document title: "${info.title}"`);
   const flat = info.text.replace(/\s+/g, ' ');
   const appHost = appUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   check(flat.includes(appHost), `the printed link reads ${appHost}`);
-  for (const line of ['Everything local', 'One place', 'GRASS Residences', 'Discover', 'Choose', 'Order', 'Receive', 'For residents', 'For sellers', 'cash or GCash', 'does not process payments']) {
+  for (const line of ['Everything local', 'One place', 'GRASS Residences', 'Discover', 'Choose', 'Order', 'Receive', 'Order from nearby', 'Sell to your neighbors', 'From the sellers on Lokal Finder', 'King’s Wings', 'ADBUNS', 'Liam’s Homemade', 'Rouie Snacks', 'cash or GCash', 'does not process payments', 'sellers’ own menus']) {
     check(flat.toLowerCase().includes(line.toLowerCase()), `text contains "${line}"`);
   }
 

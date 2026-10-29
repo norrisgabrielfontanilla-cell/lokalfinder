@@ -1,0 +1,12 @@
+{
+  "from": "tools/out-live",
+  "tiles": [
+    { "src": "stores/vvamv6c6yf4u95vb/items/00-porkchop-salted-egg.jpg", "out": "kings-porkchop-salted-egg", "w": 600, "h": 460, "pos": "centre" },
+    { "src": "stores/adbuns/items/08-nobashi-ebi.jpg", "out": "adbuns-nobashi-ebi", "w": 600, "h": 460, "pos": "centre" },
+    { "src": "stores/vvamv3k1gdhx8omu/items/01-banana-cake.jpg", "out": "liams-banana-cake", "w": 600, "h": 460, "pos": "attention" },
+    { "src": "stores/adbuns/items/10-beef-tapa-w-egg.jpg", "out": "adbuns-beef-tapa", "w": 600, "h": 460, "pos": "centre" },
+    { "src": "stores/vvamv6c6yf4u95vb/items/12-buffalo-tenders-ala-carte.jpg", "out": "kings-buffalo-tenders", "w": 600, "h": 460, "pos": "attention" },
+    { "src": "stores/v1781761617360/items/00-home-made-cheese-stick-10pcs.jpg", "out": "rouie-cheese-sticks", "w": 600, "h": 460, "pos": "attention" }
+  ],
+  "logos": []
+}
