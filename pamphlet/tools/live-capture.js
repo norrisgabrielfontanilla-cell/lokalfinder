@@ -127,6 +127,20 @@ async function capture(page, OUT, opts = {}) {
       if (scrolled) { await sleep(500); await shot(page, path.join(S, `store-${m.id}-menu.png`)); }
     } catch (e) { console.log(`! store ${m.id}: ${String(e.message).split('\n')[0]}`); }
   }
+
+  // a real checkout page: two real items of the store with the most photos go into the cart (local state only, nothing is sent),
+  // then the cart page is shown with the customer's details left empty
+  if (pick[0]) {
+    try {
+      await page.evaluate((id) => {
+        goCust();
+        (MENU[id] || []).filter((i) => i && i.avail !== false).slice(0, 2).forEach((i) => addToCart(id, i.name, i.emoji || '🍽️', i.price));
+        goPage('p-ccart');
+      }, pick[0].id);
+      await sleep(1500);
+      await shot(page, path.join(S, 'checkout.png'));
+    } catch (e) { console.log(`! checkout: ${String(e.message).split('\n')[0]}`); }
+  }
   return manifest;
 }
 

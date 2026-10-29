@@ -69,7 +69,7 @@ async function jpeg(w, h, color) {
   const text = fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8');
   check(!/\+63917|09171234567|contact|desc|data:image/i.test(text), 'the manifest has no contact numbers, descriptions or embedded pictures');
   check(by.plain.items.every((i) => !i.photo), 'a store without photos has none');
-  for (const s of ['home.png', 'home-scroll.png', 'store-tacos.png', 'store-lechon.png']) {
+  for (const s of ['home.png', 'home-scroll.png', 'store-tacos.png', 'store-lechon.png', 'checkout.png']) {
     const f = path.join(OUT, 'screens', s);
     const meta = fs.existsSync(f) ? await sharp(f).metadata() : null;
     check(meta && meta.width === 780 && meta.height === 1688, `${s} is a 780 x 1688 phone screen`);

@@ -29,13 +29,18 @@ async function prepare() {
   // the real phone screens worth sending: the home page and the store pages that have the most photos
   const bestStores = stores.filter((s) => s.items.some((i) => i.photo)).sort((a, b) => b.items.filter((i) => i.photo).length - a.items.filter((i) => i.photo).length).slice(0, 2);
   const wanted = [];
-  for (const s of stores) {
+  const screensOnly = process.env.LF_SEND === 'screens';            // LF_SEND=screens: only the phone screens (every screen that was captured)
+  for (const s of screensOnly ? [] : stores) {
     if (s.logo) wanted.push({ name: `stores/${s.id}/logo.jpg`, src: s.logo.file, w: 300, h: 300 });
     if (s.cover) wanted.push({ name: `stores/${s.id}/cover.jpg`, src: s.cover.file, w: 1200, h: 1200 });
     for (const i of s.items) if (i.photo) wanted.push({ name: path.posix.join('stores', s.id, 'items', path.posix.basename(i.photo.file).replace(/\.\w+$/, '.jpg')), src: i.photo.file, w: 500, h: 500 });
   }
-  if (shots.includes('home.png')) wanted.push({ name: 'screens/home.jpg', src: 'screens/home.png', screen: true });
-  for (const s of bestStores) if (shots.includes(`store-${s.id}.png`)) wanted.push({ name: `screens/store-${s.id}.jpg`, src: `screens/store-${s.id}.png`, screen: true });
+  if (screensOnly) {
+    for (const f of shots.filter((f) => f.endsWith('.png')).sort()) wanted.push({ name: `screens/${f.replace(/\.png$/, '.jpg')}`, src: `screens/${f}`, screen: true });
+  } else {
+    if (shots.includes('home.png')) wanted.push({ name: 'screens/home.jpg', src: 'screens/home.png', screen: true });
+    for (const s of bestStores) if (shots.includes(`store-${s.id}.png`)) wanted.push({ name: `screens/store-${s.id}.jpg`, src: `screens/store-${s.id}.png`, screen: true });
+  }
 
   const budget = MAX_SLICES - 4;
   let files, tarBytes, n;

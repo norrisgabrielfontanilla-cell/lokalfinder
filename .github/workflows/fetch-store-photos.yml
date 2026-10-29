@@ -1,0 +1,50 @@
+name: Fetch real store photos (read-only, one-off)
+
+# One-off, for the pamphlet and the presentation. Runs only on this branch and only when THIS FILE changes. Never merge to main; delete it after use.
+#
+# Reads what a resident can see in the live app and hands it to the person who started the run: the visible stores, their logos,
+# covers, menu items and menu photos, and real phone screens (home and store pages). It is READ-ONLY: the app is opened in a
+# browser in which every request that is not a GET/HEAD/OPTIONS is aborted, so nothing in production can change. It never opens
+# orders, chats, notifications, the admin or the vendor portal. The repository is public, so the log prints store-level facts only.
+#
+# The files travel as the annotations of a check run called "photo-bundle" (see pamphlet/tools/emit.js): the Claude sandbox cannot
+# download artifacts (they are served from a storage host it cannot reach) but it can read the check-runs API. That is the only
+# reason for `checks: write`; the token cannot change code or settings.
+on:
+  push:
+    branches: [claude/lokal-finder-ai-os-e6593p]
+    paths: ['.github/workflows/fetch-store-photos.yml']
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: fetch-store-photos
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install headless browser
+        working-directory: tests
+        run: npm install && npx playwright install --with-deps chromium
+      - name: Install image tools
+        working-directory: pamphlet
+        run: npm ci
+      - name: Read the live app (read-only) and save photos and screens
+        run: NODE_PATH="$GITHUB_WORKSPACE/tests/node_modules" node pamphlet/tools/live-capture.js
+      - name: Pack what is sent (only the phone screens this time)
+        env:
+          LF_SEND: screens
+        run: node pamphlet/tools/emit.js prepare
+      - name: Send it as check-run annotations
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node pamphlet/tools/emit.js check
