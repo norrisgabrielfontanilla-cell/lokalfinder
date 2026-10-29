@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lokal Finder: vertical ad (1080 x 1920)</title>
+<meta name="viewport" content="width=1080">
+<!--
+  The ad is ONE page whose every frame is a pure function of time: window.seek(t) sets every style from t, nothing runs on
+  its own. render.js calls seek(t) and takes a screenshot per frame, so the video is exactly reproducible.
+  Customer-facing only: no traction, revenue, pricing model, roadmap or competitor content. Every claim is something the
+  app does today (see README.md). Pictures: real app screens and real seller photos from presentation/assets, art from
+  presentation/assets/art (illustration, not a photograph of any real building).
+-->
+<style>
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:600;src:url('../pamphlet/assets/fonts/fraunces-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:italic;font-weight:600;src:url('../pamphlet/assets/fonts/fraunces-latin-600-italic.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:700;src:url('../pamphlet/assets/fonts/fraunces-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:500;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:600;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:700;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:800;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2')}
+:root{--night:#06120C;--forest:#0F4A32;--green:#0E8A5A;--mint:#12B76A;--mintl:#3FD39B;--amber:#F59E0B;--gold:#F5C842;--mist:#F0F7F3;--ink:#0D2B1A}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:linear-gradient(180deg,#091511 0%,#0a1c15 40%,#0b2a1d 100%);font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#fff;-webkit-font-smoothing:antialiased;font-synthesis:none}
+.flow{position:static}
+.rel{position:relative}
+.scene{left:0;top:0;width:1080px;height:1920px;overflow:hidden}
+.ttl{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.012em}
+.ttl .w{display:inline-block;overflow:hidden;vertical-align:top;padding:.12em .08em .28em;margin:-.12em -.08em -.28em}
+.ttl .wi{display:inline-block;will-change:transform}
+.ttl .em{font-style:italic;color:var(--mintl)}
+.sub{font-weight:600;color:rgba(255,255,255,.86)}
+.chip{display:flex;align-items:center;gap:18px;padding:18px 36px 18px 22px;border-radius:999px;background:var(--mintl);color:#06210F;font-weight:800;font-size:46px;line-height:1;white-space:nowrap;box-shadow:0 16px 44px rgba(0,0,0,.4)}
+.chip .n{display:inline-flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;background:#06210F;color:var(--mintl);font-size:36px;font-weight:800}
+.pill{padding:10px 22px;border-radius:999px;font-weight:800;letter-spacing:.14em;font-size:27px;line-height:1;white-space:nowrap}
+.phone{left:0;top:0;width:640px;height:1348px;border-radius:88px;background:#0b100e;box-shadow:inset 0 0 0 3px #2c3e35,0 0 0 2px #04080a,0 60px 140px rgba(0,0,0,.6),0 0 180px rgba(18,183,106,.16);transform-origin:0 0}
+.screen{left:16px;top:16px;width:608px;height:1316px;border-radius:72px;overflow:hidden;background:#fff}
+.screen .simg{left:0;top:0;width:608px;height:1316px;object-fit:cover}
+.ov{left:0;top:0;width:608px;height:1316px;pointer-events:none}
+.ring{border:5px solid var(--mintl);border-radius:26px;box-shadow:0 0 0 7px rgba(63,211,155,.2),0 0 44px rgba(63,211,155,.65)}
+.finger{width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 10px 34px rgba(0,0,0,.4),0 0 0 4px rgba(13,43,26,.18)}
+.tapring{width:120px;height:120px;border-radius:50%;border:7px solid var(--mintl)}
+.tile{border-radius:38px;overflow:hidden;background:#12261c;box-shadow:0 26px 60px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.1)}
+.tile img{left:0;top:0;width:100%;height:100%;object-fit:cover}
+.tile .tag{left:18px;bottom:18px;padding:12px 22px;border-radius:999px;background:rgba(6,18,12,.74);font-weight:800;font-size:31px;line-height:1;color:#fff;white-space:nowrap}
+.btn{display:flex;align-items:center;justify-content:center;gap:22px;border-radius:999px;background:linear-gradient(180deg,#46dba5,#1fbf80);color:#06210F;font-weight:800;font-size:56px;line-height:1;box-shadow:0 22px 60px rgba(18,183,106,.45),0 0 0 2px rgba(255,255,255,.18) inset}
+.linkpill{display:flex;align-items:center;justify-content:center;border-radius:999px;border:3px solid var(--mintl);background:rgba(7,32,21,.92);color:#fff;font-weight:800;font-size:33px;line-height:1;white-space:nowrap;box-shadow:0 0 50px rgba(63,211,155,.25)}
+.small{font-weight:600;font-size:33px;line-height:1.25;color:rgba(255,255,255,.84)}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+(() => {
+'use strict';
+const W = 1080, H = 1920;
+// Where text may sit: clear of the top / bottom interface bands of Reels, TikTok and Stories, and of the 4:5 feed crop.
+const SAFE = { x0: 56, x1: 1024, y0: 290, y1: 1480 };
+const AS = { art: '../presentation/assets/art/', brand: '../presentation/assets/brand/', scr: '../presentation/assets/screens/', ph: '../presentation/assets/live/photos/' };
+
+// ───────────────────────────────────────────── helpers
+const clamp = (x, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = {
+  lin: (x) => x, out: (x) => 1 - Math.pow(1 - x, 3), out4: (x) => 1 - Math.pow(1 - x, 4), in: (x) => x * x * x, in2: (x) => x * x,
+  io: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2), io2: (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2),
+  back: (x) => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+};
+const p = (t, t0, d, e = E.out) => e(clamp((t - t0) / d));
+const TR = []; const track = (f) => { TR.push(f); };
+const CUES = []; const cue = (t, k, v) => { CUES.push({ t: +t.toFixed(3), k, v: v == null ? 1 : v }); };
+const stage = document.getElementById('stage');
+const el = (tag, cls, parent, css) => { const e = document.createElement(tag); if (cls) e.className = cls; if (!/\b(flow|rel)\b/.test(cls || '')) e.style.position = 'absolute'; if (css) Object.assign(e.style, css); (parent || stage).appendChild(e); return e; };
+const rect = (e, x, y, w, h) => { e.style.left = x + 'px'; e.style.top = y + 'px'; if (w != null) e.style.width = w + 'px'; if (h != null) e.style.height = h + 'px'; return e; };
+const xf = (e, x = 0, y = 0, s = 1, r = 0) => { e.style.transform = `translate(${x}px,${y}px) rotate(${r}deg) scale(${s})`; };
+const vis = (e, o) => { e.style.opacity = o; e.style.visibility = o <= 0.002 ? 'hidden' : 'visible'; e.dataset.v = o > 0.05 ? 1 : 0; };
+const img = (parent, src, cls) => { const i = el('img', cls || '', parent); i.src = src; i.draggable = false; return i; };
+const rng = (seed) => { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+
+// A headline whose words rise out of a mask. *asterisks* mark the italic mint words, \n breaks a line.
+function title(parent, text, o) {
+  const { x = 60, y = 330, w = 960, size = 86, lh = 1.06, align = 'center', color = '#fff', t0, out = null, stag = 0.075, dur = 0.62, name = 'title', family } = o;
+  const box = el('div', 'ttl', parent, { left: x + 'px', top: y + 'px', width: w + 'px', fontSize: size + 'px', lineHeight: lh, textAlign: align, color });
+  if (family) box.style.fontFamily = family;
+  box.dataset.safe = name;
+  const ws = []; let em = false;
+  text.split('\n').forEach((line, li, arr) => {
+    line.split(/(\*)/).forEach((seg) => {
+      if (seg === '*') { em = !em; return; }
+      seg.split(' ').filter(Boolean).forEach((word) => {
+        const a = el('span', 'w rel', box), b = el('span', 'wi rel' + (em ? ' em' : ''), a); b.textContent = word; ws.push(b);
+        box.appendChild(document.createTextNode(' '));
+      });
+    });
+    if (li < arr.length - 1) box.appendChild(document.createElement('br'));
+  });
+  track((t) => {
+    let any = false;
+    ws.forEach((b, i) => {
+      const a = p(t, t0 + i * stag, dur, E.out4), c = out == null ? 0 : p(t, out + i * 0.03, 0.3, E.in);
+      b.style.transform = `translateY(${(1 - a) * 118 - c * 118}%)`;
+      const v = a > 0.01 && c < 0.99; b.style.visibility = v ? 'visible' : 'hidden'; any = any || v;
+    });
+    box.dataset.v = any ? 1 : 0;
+  });
+  return box;
+}
+
+// A plain block that fades and rises in, and out.
+function block(parent, cls, css, o) {
+  const b = el('div', cls, parent, css);
+  const { t0, out = null, dur = 0.5, rise = 28, name } = o;
+  if (name) b.dataset.safe = name;
+  track((t) => {
+    const a = p(t, t0, dur, E.out4), c = out == null ? 0 : p(t, out, 0.3, E.in);
+    vis(b, a * (1 - c)); b.style.transform = `translateY(${(1 - a) * rise - c * 18}px)`;
+  });
+  return b;
+}
+
+function chip(parent, txt, o) {
+  const c = el('div', 'chip', parent, { left: o.x + 'px', top: o.y + 'px' });
+  if (o.n != null) { const n = el('span', 'n flow', c); n.textContent = o.n; }
+  const s = el('span', 'flow', c); s.textContent = txt;
+  c.dataset.safe = 'chip:' + txt;
+  const { t0, out = null } = o;
+  track((t) => {
+    const a = p(t, t0, 0.42, E.back), b = out == null ? 0 : p(t, out, 0.22, E.in);
+    vis(c, clamp(a * 2) * (1 - b)); c.style.transform = `translate(-50%,0) scale(${lerp(0.7, 1, a) - b * 0.12})`;
+  });
+  c.style.transformOrigin = '50% 50%';
+  return c;
+}
+
+// The phone: the real screens live inside .screen (608 x 1316, the screen's aspect 780:1688). `ov` takes rings and fingers in screen pixels.
+function phone(parent, srcs) {
+  const ph = el('div', 'phone', parent);
+  const scr = el('div', 'screen', ph);
+  const imgs = srcs.map((s) => img(scr, s, 'simg'));
+  const ov = el('div', 'ov', scr);
+  return { ph, scr, imgs, ov };
+}
+const K = 608 / 780;                       // source screenshot px -> screen px
+const S = (v) => v * K;
+const place = (ph, x, y, s = 1) => { ph.style.transform = `translate(${x}px,${y}px) scale(${s})`; };
+
+function ring(ov, x0, y0, x1, y1, t0, t1, rad = 26) {
+  const r = el('div', 'ring', ov, { left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px', borderRadius: rad + 'px' });
+  track((t) => {
+    const a = p(t, t0, 0.35, E.back), b = p(t, t1, 0.25, E.in);
+    const pulse = 1 + 0.025 * Math.sin((t - t0) * 7);
+    vis(r, clamp(a * 2) * (1 - b)); r.style.transform = `scale(${lerp(1.12, 1, a) * pulse})`;
+  });
+}
+function tapAt(ov, x, y, tT, from = [150, 280]) {
+  const f = el('div', 'finger', ov), tr = el('div', 'tapring', ov);
+  cue(tT, 'tap');
+  track((t) => {
+    const m = p(t, tT - 0.55, 0.5, E.io), press = p(t, tT, 0.12, E.out), gone = p(t, tT + 0.3, 0.3, E.in);
+    f.style.left = (x - 44 + (1 - m) * from[0]) + 'px'; f.style.top = (y - 44 + (1 - m) * from[1]) + 'px';
+    vis(f, clamp(m * 3) * (1 - gone)); f.style.transform = `scale(${1 - 0.16 * press})`;
+    const k = p(t, tT, 0.5, E.out);
+    tr.style.left = (x - 60) + 'px'; tr.style.top = (y - 60) + 'px';
+    vis(tr, t >= tT ? (1 - k) * 0.95 : 0); tr.style.transform = `scale(${lerp(0.3, 1.25, k)})`;
+  });
+}
+
+const sceneRoot = (a, b) => { const s = el('div', 'scene', stage); track((t) => { s.style.display = (t >= a && t < b) ? 'block' : 'none'; }); return s; };
+
+// ───────────────────────────────────────────── time map (seconds; one beat = 0.6 s at 100 bpm)
+const T = { hook: [0, 3.6], home: [3.6, 9.0], food: [9.0, 13.2], order: [13.2, 19.2], cta: [19.2, 24.0] };
+const DUR = 24.0;
+
+// stars (static, seeded) behind everything
+(() => {
+  const c = el('canvas', '', stage, { left: 0, top: 0, width: W + 'px', height: H + 'px' }); c.width = W; c.height = H;
+  const g = c.getContext('2d'), r = rng(7);
+  for (let i = 0; i < 170; i++) { const x = r() * W, y = Math.pow(r(), 1.5) * 1250, s = 0.7 + r() * 1.5; g.fillStyle = `rgba(232,255,244,${0.12 + r() * 0.5})`; g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
+})();
+
+// ═════════════════════════════════════════════ S1  THE HOOK  (0 – 3.6 s, hands over to the phone by 4.1 s)
+const S1 = {};
+(() => {
+  const s = sceneRoot(0, 4.4); S1.root = s;
+  const cam = el('div', '', s, { left: 0, top: 0, width: W + 'px', height: H + 'px' });
+  const TW = { s: 0.62, left: 44, top: 520 };
+  const tx = (ax) => TW.left + ax * TW.s, ty = (ay) => TW.top + ay * TW.s;
+  const YOU = { x: tx(936), y: ty(792.8) }, SEL = { x: tx(936), y: ty(1438.3) };
+  const WIN = { w: 119.04 * TW.s, h: 51.64 * TW.s };
+  S1.you = YOU; S1.win = WIN;
+
+  // a soft mint glow behind the tower
+  el('div', '', cam, { left: '-100px', top: '700px', width: '1280px', height: '1300px', background: 'radial-gradient(ellipse at 50% 55%,rgba(18,183,106,.28) 0,rgba(18,183,106,.08) 45%,transparent 70%)' });
+  const t = img(cam, AS.art + 'problem-tower.jpg');
+  Object.assign(t.style, { left: TW.left + 'px', top: TW.top + 'px', width: (1600 * TW.s) + 'px', height: (2400 * TW.s) + 'px',
+    WebkitMaskImage: 'linear-gradient(90deg,transparent 0,#000 11%,#000 89%,transparent 100%),linear-gradient(180deg,transparent 0,#000 9%)', WebkitMaskComposite: 'source-in', maskComposite: 'intersect' });
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  Object.assign(svg.style, { left: 0, top: 0, position: 'absolute', overflow: 'visible' }); cam.appendChild(svg);
+  const mk = (n, a) => { const e = document.createElementNS(svgNS, n); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+  const rings = [0, 1, 2].map(() => mk('circle', { cx: YOU.x, cy: YOU.y, r: 10, fill: 'none', stroke: '#3FD39B', 'stroke-width': 4 }));
+  // the route: from the "you" window out to the right and into the "seller" window
+  const P0 = [YOU.x + WIN.w / 2 + 4, YOU.y], P3 = [SEL.x + WIN.w / 2 + 4, SEL.y], P1 = [P0[0] + 150, P0[1] + 20], P2 = [P3[0] + 150, P3[1] - 20];
+  const bez = (u) => { const a = 1 - u; return [a * a * a * P0[0] + 3 * a * a * u * P1[0] + 3 * a * u * u * P2[0] + u * u * u * P3[0], a * a * a * P0[1] + 3 * a * a * u * P1[1] + 3 * a * u * u * P2[1] + u * u * u * P3[1]]; };
+  const clip = document.createElementNS(svgNS, 'clipPath'); clip.setAttribute('id', 'rc');
+  const cr = document.createElementNS(svgNS, 'rect'); cr.setAttribute('x', 0); cr.setAttribute('y', 0); cr.setAttribute('width', W); cr.setAttribute('height', 0); clip.appendChild(cr); svg.appendChild(clip);
+  const route = mk('path', { d: `M${P0[0]} ${P0[1]} C ${P1[0]} ${P1[1]}, ${P2[0]} ${P2[1]}, ${P3[0]} ${P3[1]}`, fill: 'none', stroke: '#8EF0C8', 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-dasharray': '0.01 19', 'clip-path': 'url(#rc)' });
+  const dotGlow = mk('circle', { r: 26, fill: 'rgba(63,211,155,.35)' }), dot = mk('circle', { r: 12, fill: '#E8FFF4' });
+  // labels
+  const youP = el('div', 'pill', cam, { background: 'rgba(6,24,16,.9)', border: '3px solid #3FD39B', color: '#8EF0C8' }); youP.textContent = 'YOU';
+  const selP = el('div', 'pill', cam, { background: 'rgba(30,20,4,.9)', border: '3px solid #F59E0B', color: '#FFC764' }); selP.textContent = 'SELLER';
+  rect(youP, YOU.x - WIN.w / 2 - 26 - 112, YOU.y - 25); rect(selP, SEL.x - WIN.w / 2 - 26 - 152, SEL.y - 25);
+
+  title(s, 'Dinner shouldn’t mean\ngoing *downstairs.*', { y: 330, size: 86, t0: 0.18, out: 1.8, name: 'hook-1' });
+  title(s, 'Order from a\n*neighbor* instead.', { y: 330, size: 86, t0: 1.9, out: 3.3, name: 'hook-2' });
+  cue(0.12, 'swell'); cue(0.2, 'tick'); cue(1.9, 'tick'); cue(1.2, 'pop'); cue(2.4, 'pop'); cue(2.4, 'draw');
+
+  track((tm) => {
+    const fade = lerp(0.6, 1, p(tm, 0, 0.45, E.out));
+    const zoom = lerp(1, 1.08, p(tm, 0, 3.2, E.io2));
+    const cut = p(tm, 3.25, 0.95, E.io);              // match cut: the "you" window grows into the phone screen
+    const k = zoom * lerp(1, 2.1, cut);
+    cam.style.transformOrigin = `${YOU.x}px ${YOU.y}px`; cam.style.transform = `scale(${k})`;
+    cam.style.opacity = fade * (1 - p(tm, 3.6, 0.55, E.in)); cam.style.visibility = cam.style.opacity <= 0.002 ? 'hidden' : 'visible';
+    rings.forEach((c, i) => { const ph = ((tm * 0.8 + i / 3) % 1 + 1) % 1; c.setAttribute('r', 22 + ph * 150); c.setAttribute('opacity', tm > 0.25 ? (1 - ph) * 0.8 * (1 - p(tm, 3.1, 0.3)) : 0); });
+    const d = p(tm, 2.4, 0.8, E.io2);
+    cr.setAttribute('height', lerp(P0[1] - 12, P3[1] + 24, d));        // the dotted route is revealed from the "you" window down to the seller
+    const u = d >= 1 ? ((tm - 3.2) * 0.9 % 1 + 1) % 1 : d;            // then the order dot keeps travelling it
+    const pos = bez(u);
+    dot.setAttribute('cx', pos[0]); dot.setAttribute('cy', pos[1]); dotGlow.setAttribute('cx', pos[0]); dotGlow.setAttribute('cy', pos[1]);
+    const dv = d > 0.01 ? 1 : 0; dot.setAttribute('opacity', dv); dotGlow.setAttribute('opacity', dv * (0.6 + 0.4 * Math.sin(tm * 9)));
+    route.setAttribute('opacity', dv);
+    const pp = (a) => p(tm, a, 0.38, E.back);
+    vis(youP, clamp(pp(1.2) * 2)); youP.style.transform = `scale(${lerp(0.6, 1, pp(1.2))})`;
+    vis(selP, clamp(pp(2.4) * 2)); selP.style.transform = `scale(${lerp(0.6, 1, pp(2.4))})`;
+    youP.dataset.safe = 'pill'; selP.dataset.safe = 'pill';
+    if (tm > 3.3) { youP.dataset.v = 0; selP.dataset.v = 0; }
+  });
+
+  // the match-cut shape
+  const mc = el('div', '', stage, { background: '#d6f7e8', borderRadius: '6px' });
+  S1.mc = mc;
+  S1.mcFrom = { x: YOU.x - WIN.w / 2, y: YOU.y - WIN.h / 2, w: WIN.w, h: WIN.h };
+})();
+
+// ═════════════════════════════════════════════ S2  THE APP  (3.6 – 9.0 s)
+(() => {
+  const s = sceneRoot(3.1, 9.7);
+  const glow = el('div', '', s, { left: '-200px', top: '700px', width: '1480px', height: '1300px', background: 'radial-gradient(ellipse at 50% 45%,rgba(18,183,106,.34) 0,rgba(18,183,106,.1) 42%,transparent 70%)' });
+  const PH = { x: 220, y: 540 };
+  const A = phone(s, [AS.scr + 'live-home.png']);
+  // highlights in screen px (source px x 0.7795): the two "Open" badges
+  ring(A.ov, S(60), S(1103), S(212), S(1162), 6.3, 8.9, 20);
+  ring(A.ov, S(432), S(1103), S(584), S(1162), 6.6, 8.9, 20);
+  // top scrim so the headline reads over the phone once it is zoomed
+  const scrim = el('div', '', s, { left: 0, top: 0, width: W + 'px', height: '700px' });
+  title(s, 'Meet *Lokal Finder.*', { y: 300, size: 92, t0: 4.35, out: 5.8, name: 'home-1' });
+  const sub = block(s, 'sub', { left: '60px', top: '430px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.2 }, { t0: 4.9, out: 5.8, name: 'home-sub' }); sub.textContent = 'Your neighborhood marketplace.';
+  title(s, 'See who’s *open now.*', { y: 300, size: 92, t0: 6.15, out: 8.75, name: 'home-2' });
+  const sub2 = block(s, 'sub', { left: '60px', top: '430px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.2 }, { t0: 6.7, out: 8.75, name: 'home-sub2' }); sub2.textContent = 'Stores right in your community.';
+  cue(4.35, 'tick'); cue(6.15, 'tick'); cue(6.3, 'pop'); cue(6.6, 'pop'); cue(3.2, 'whoosh'); cue(4.2, 'impact'); cue(6.0, 'swish');
+
+  const FL = (t) => Math.sin(t * 1.6) * 7;
+  track((t) => {
+    // 3.1 – 4.05 the window becomes the screen; 3.95 the bezel and screen appear
+    const cut = p(t, 3.25, 0.95, E.io);
+    const mc = S1.mc, f = S1.mcFrom, to = { x: PH.x + 16, y: PH.y + 16, w: 608, h: 1316 };
+    rect(mc, lerp(f.x, to.x, cut), lerp(f.y, to.y, cut), lerp(f.w, to.w, cut), lerp(f.h, to.h, cut));
+    mc.style.borderRadius = lerp(6, 72, cut) + 'px';
+    mc.style.background = cut < 0.999 ? `rgb(${lerp(214, 255, cut) | 0},${lerp(247, 255, cut) | 0},${lerp(232, 255, cut) | 0})` : '#fff';
+    mc.style.boxShadow = `0 0 ${60 * cut}px rgba(63,211,155,${0.5 * cut})`;
+    const mcOn = t >= 3.25 && t < 4.3; vis(mc, mcOn ? 1 : 0); mc.style.zIndex = 5;
+    // phone
+    const show = p(t, 4.1, 0.3, E.out), out = p(t, 8.7, 0.6, E.in);
+    const zoom = p(t, 6.0, 1.1, E.io2), z = lerp(1, 1.3, zoom), ty = lerp(0, -330, zoom);
+    const cx = PH.x + 320, cy = PH.y + 674;               // phone centre, for the zoom
+    const sc = z, X = cx - 320 * sc, Y = cy - 674 * sc + ty + FL(t) * (1 - zoom) + out * 760;
+    place(A.ph, X, Y, sc);
+    vis(A.ph, show * (1 - out)); A.imgs[0].style.opacity = p(t, 4.12, 0.2);
+    glow.style.opacity = show * (1 - out);
+    scrim.style.opacity = p(t, 4.1, 0.3) * (1 - out);
+    scrim.style.background = `linear-gradient(180deg,#091511 0,#091511 ${lerp(470, 545, zoom)}px,rgba(9,21,17,0) ${lerp(545, 650, zoom)}px)`;
+  });
+})();
+
+// ═════════════════════════════════════════════ S3  REAL FOOD  (9.0 – 13.2 s)
+(() => {
+  const s = sceneRoot(8.8, 13.9);
+  el('div', '', s, { left: '-300px', top: '300px', width: '900px', height: '900px', background: 'radial-gradient(circle,rgba(18,183,106,.22) 0,transparent 66%)' });
+  el('div', '', s, { left: '500px', top: '1150px', width: '900px', height: '900px', background: 'radial-gradient(circle,rgba(245,158,11,.16) 0,transparent 66%)' });
+  const TILES = [
+    { f: 'adbuns-beef-tapa.jpg', s: 'ADBUNS', c: 0, r: 0 }, { f: 'kings-porkchop-salted-egg.jpg', s: 'King’s Wings', c: 1, r: 0 },
+    { f: 'kings-buffalo-tenders.jpg', s: 'King’s Wings', c: 0, r: 1 }, { f: 'adbuns-nobashi-ebi.jpg', s: 'ADBUNS', c: 1, r: 1 },
+    { f: 'liams-banana-cake.jpg', s: 'Liam’s Homemade', c: 0, r: 2 }, { f: 'rouie-cheese-sticks.jpg', s: 'Rouie Snacks', c: 1, r: 2 },
+  ];
+  const TWd = 444, THt = 330, X0 = [84, 552], Y0 = 452, PITCH = 346;
+  const tiles = TILES.map((d, i) => {
+    const t = el('div', 'tile', s, { width: TWd + 'px', height: THt + 'px' }); img(t, AS.ph + d.f);
+    const tag = el('div', 'tag', t); tag.textContent = d.s; tag.dataset.safe = 'tag:' + d.s;
+    const t0 = 9.45 + i * 0.15; cue(t0, 'pop');
+    return { t, tag, x: X0[d.c], y: Y0 + d.r * PITCH, t0, d };
+  });
+  title(s, 'Real food. *Real sellers.*', { y: 300, size: 80, t0: 9.1, out: 12.95, name: 'food-1' });
+  cue(9.0, 'whoosh'); cue(9.1, 'tick');
+  track((t) => {
+    tiles.forEach((o, i) => {
+      const a = p(t, o.t0, 0.55, E.back), b = p(t, 12.95 + i * 0.04, 0.4, E.in);
+      const drift = (t - 9) * (o.d.c ? 3 : -3);
+      vis(o.t, clamp(a * 2) * (1 - b)); rect(o.t, o.x, o.y + drift);
+      o.tag.dataset.v = (a > 0.985 && b < 0.01) ? 1 : 0;
+      o.t.style.transform = `translateY(${(1 - a) * 130 + b * 160}px) scale(${lerp(0.86, 1, a)}) rotate(${(1 - a) * (o.d.c ? 3 : -3)}deg)`;
+    });
+  });
+})();
+
+// ═════════════════════════════════════════════ S4  ORDER IN A FEW TAPS  (13.2 – 19.2 s)
+(() => {
+  const s = sceneRoot(12.9, 19.9);
+  const glow = el('div', '', s, { left: '-200px', top: '800px', width: '1480px', height: '1200px', background: 'radial-gradient(ellipse at 50% 45%,rgba(18,183,106,.3) 0,rgba(18,183,106,.08) 44%,transparent 70%)' });
+  const SC = 0.9, PH = { x: (W - 640 * SC) / 2, y: 640 };
+  const B = phone(s, [AS.scr + 'live-store.png', AS.scr + 'live-checkout.png', AS.scr + 'tracker-ready.png']);
+  tapAt(B.ov, S(710), S(998), 14.4, [20, 250]);                         // 1 pick: tap the first "+"
+  ring(B.ov, S(18), S(912), S(762), S(1076), 13.95, 14.9, 18);
+  ring(B.ov, S(24), S(618), S(756), S(722), 15.45, 16.2, 40);            // 2 unit
+  ring(B.ov, S(24), S(938), S(756), S(1152), 16.3, 17.3, 36);          // 3 pay
+  tapAt(B.ov, S(390), S(1592), 17.4, [60, 200]);                       // place the order
+  ring(B.ov, S(44), S(326), S(736), S(510), 18.3, 19.0, 40);            // 4 chat with the seller
+  const SCRIM = el('div', '', s, { left: 0, top: 0, width: W + 'px', height: '640px', background: 'linear-gradient(180deg,#091511 0,#091511 66%,rgba(9,21,17,0) 100%)' });
+  // the screen after the order is a SAMPLE (made-up unit, id and total): say so on the picture
+  const stamp = el('div', 'pill', s, { left: '330px', top: '582px', width: '420px', textAlign: 'center', border: '3px solid #F59E0B', color: '#FFC764', background: 'rgba(30,20,4,.92)', fontSize: '28px' });
+  stamp.textContent = 'SAMPLE ORDER'; stamp.dataset.safe = 'stamp';
+  title(s, 'Order in *a few taps.*', { y: 300, size: 86, t0: 13.35, out: 18.85, name: 'order-1' });
+  chip(s, 'Pick your meal', { n: 1, x: W / 2, y: 460, t0: 13.8, out: 15.05 });
+  chip(s, 'Add your unit', { n: 2, x: W / 2, y: 460, t0: 15.12, out: 16.2 });
+  chip(s, 'Pay cash or GCash', { n: 3, x: W / 2, y: 460, t0: 16.2, out: 17.55 });
+  chip(s, 'Follow it live', { n: 4, x: W / 2, y: 460, t0: 17.75, out: 18.85 });
+  cue(13.2, 'whoosh'); cue(13.35, 'tick'); cue(13.8, 'pop'); cue(15.0, 'swipe'); cue(15.12, 'pop'); cue(16.2, 'pop'); cue(17.7, 'ding'); cue(17.7, 'swipe'); cue(17.75, 'pop'); cue(18.3, 'pop');
+
+  track((t) => {
+    const inn = p(t, 13.2, 0.75, E.out4), out = p(t, 18.85, 0.6, E.in);
+    const X = PH.x, Y = PH.y + (1 - inn) * 1250 + out * 900 + Math.sin(t * 1.5) * 5 * inn;
+    place(B.ph, X, Y, SC); vis(B.ph, clamp(inn * 3) * (1 - out));
+    glow.style.opacity = inn * (1 - out); SCRIM.style.opacity = 1;
+    // screens: store -> checkout (15.0) -> tracker (17.7)
+    const a = p(t, 15.0, 0.5, E.io), b = p(t, 17.7, 0.5, E.io);
+    const [i0, i1, i2] = B.imgs;
+    i0.style.transform = `translateX(${-a * 120}px)`; i0.style.opacity = 1 - a;
+    i1.style.transform = `translateX(${(1 - a) * 608 - b * 120}px)`; i1.style.opacity = a * (1 - b);
+    i2.style.transform = `translateX(${(1 - b) * 608}px)`; i2.style.opacity = b;
+    const sv = p(t, 17.9, 0.35, E.back) * (1 - p(t, 18.75, 0.2, E.in)); vis(stamp, clamp(sv * 2)); stamp.style.transform = `scale(${lerp(0.8, 1, p(t, 17.9, 0.35, E.back))})`;
+  });
+})();
+
+// ═════════════════════════════════════════════ S5  THE CALL TO ACTION  (19.2 – 24.0 s)
+(() => {
+  const s = sceneRoot(18.9, 24.1);
+  const bg = el('div', '', s, { left: 0, top: 0, width: W + 'px', height: H + 'px', overflow: 'hidden' });
+  const art = img(bg, AS.art + 'closing-night.jpg'); Object.assign(art.style, { left: '0px', top: '0px', width: '3413px', height: '1920px' });
+  el('div', '', s, { left: 0, top: 0, width: W + 'px', height: H + 'px', background: 'linear-gradient(180deg,rgba(7,18,13,.9) 0,rgba(7,18,13,.74) 52%,rgba(7,18,13,.46) 100%)' });
+  const logo = img(s, AS.brand + 'logo-full-dark.png'); logo.dataset.safe = 'logo';
+  rect(logo, 220, 318, 640, 176);
+  title(s, 'Everything local.\n*One place.*', { y: 560, size: 108, lh: 1.0, t0: 19.7, out: null, stag: 0.09, name: 'cta-1' });
+  const where = block(s, 'sub', { left: '60px', top: '846px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.22 }, { t0: 20.4, name: 'cta-where' });
+  where.innerHTML = '<span class="flow">Now open at <b class="flow" style="font-weight:800;color:#fff">GRASS Residences</b>,<br class="flow">Quezon City</span>';
+  // A link, not a fake button: the picture says where to go, the platform's own link / button does the tap.
+  const open = block(s, 'sub', { left: '60px', top: '1000px', width: '960px', textAlign: 'center', fontSize: '46px', lineHeight: 1.2, fontWeight: 700, color: '#fff' }, { t0: 20.4, name: 'cta-open' }); open.textContent = 'Open it in your browser';
+  const lp = el('div', 'linkpill', s, { left: '60px', top: '1074px', width: '960px', height: '100px' }); lp.dataset.safe = 'linkpill';
+  const lt = el('span', 'flow', lp); lt.textContent = 'norrisgabrielfontanilla-cell.github.io/lokalfinder';
+  const free = block(s, 'small', { left: '60px', top: '1214px', width: '960px', textAlign: 'center', fontSize: '37px', fontWeight: 800, color: '#3FD39B' }, { t0: 21.1, name: 'cta-noaccount' }); free.textContent = 'No account needed · Pay cash or GCash';
+  const div = el('div', '', s, { left: '300px', top: '1306px', width: '480px', height: '3px', background: 'rgba(255,255,255,.22)' });
+  const sell = block(s, 'small', { left: '60px', top: '1340px', width: '960px', textAlign: 'center', fontSize: '36px' }, { t0: 21.5, name: 'cta-seller' }); sell.textContent = 'Selling? Apply to list your store in the app.';
+  cue(19.2, 'whoosh'); cue(19.7, 'tick'); cue(20.4, 'pop'); cue(20.9, 'chime'); cue(21.1, 'pop'); cue(21.5, 'pop');
+  track((t) => {
+    const a = p(t, 19.1, 0.6, E.out), logoIn = p(t, 19.3, 0.6, E.out4);
+    bg.style.opacity = a;
+    const pan = lerp(-1585, -1700, p(t, 19.2, 4.8, E.lin)); art.style.transform = `translateX(${pan}px) scale(1.04)`; art.style.transformOrigin = '1700px 900px';
+    vis(logo, logoIn); logo.style.transform = `translateY(${(1 - logoIn) * 26}px)`;
+    const bi = p(t, 20.85, 0.5, E.back);
+    vis(lp, clamp(bi * 2)); lp.style.transform = `scale(${lerp(0.9, 1, bi)})`;
+    vis(div, p(t, 21.4, 0.4));
+  });
+})();
+
+// ───────────────────────────────────────────── plumbing
+window.seek = (t) => { for (const f of TR) f(t); };
+// Boxes of everything visible that carries data-safe (a headline counts only the words that are showing).
+window.__safeReport = () => [...document.querySelectorAll('[data-safe]')].filter((e) => e.dataset.v === '1').map((e) => {
+  let r;
+  if (e.classList.contains('ttl')) {
+    const ws = [...e.querySelectorAll('.w')].filter((w) => w.firstChild.style.visibility === 'visible').map((w) => w.getBoundingClientRect());
+    if (!ws.length) return null;
+    r = { left: Math.min(...ws.map((b) => b.left)) + 6, right: Math.max(...ws.map((b) => b.right)) - 6, top: Math.min(...ws.map((b) => b.top)) + 8, bottom: Math.max(...ws.map((b) => b.bottom)) - 14 };
+  } else {
+    let b = e.getBoundingClientRect();
+    if (/\b(sub|small|pill)\b/.test(e.className)) { const rg = document.createRange(); rg.selectNodeContents(e); const q = rg.getBoundingClientRect(); if (q.width) b = e.classList.contains('pill') ? b : q; }
+    if (!b.width && !b.height) return null;
+    r = { left: b.left, right: b.right, top: b.top, bottom: b.bottom };
+  }
+  return { n: e.dataset.safe, x0: r.left, x1: r.right, y0: r.top, y1: r.bottom };
+}).filter(Boolean);
+window.CUES = CUES;
+window.DURATION = DUR;
+window.SAFE = SAFE;
+window.__ready = (async () => {
+  const faces = ['600 80px Fraunces', 'italic 600 80px Fraunces', '700 80px Fraunces', '500 30px "Plus Jakarta Sans"', '600 30px "Plus Jakarta Sans"', '700 30px "Plus Jakarta Sans"', '800 30px "Plus Jakarta Sans"'];
+  await Promise.all(faces.map((f) => document.fonts.load(f, 'AaBb 0123 ₱')));
+  await document.fonts.ready;
+  await Promise.all([...document.images].map((i) => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
+  window.seek(0);
+  return true;
+})();
+const q = /[?&]t=([\d.]+)/.exec(location.search); if (q) window.__ready.then(() => window.seek(parseFloat(q[1])));
+})();
+</script>
+</body>
+</html>
