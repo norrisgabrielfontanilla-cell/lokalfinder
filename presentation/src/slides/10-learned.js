@@ -11,7 +11,7 @@ module.exports = (kit) => {
       key: 'Demonstrated', tag: 'Demonstrated', sub: 'Evidence on file', icon: 'check', fill: 'green', line: 'green', body: 'white',
       items: [
         'Real sales: about ₱23,000 through the earlier web app (founder-reported).',
-        'Real stores have listed their own menus and prices in the app.',
+        'Real stores list their own menus and photos: 8 stores, 84 items.',
         'The full order flow works in the product, covered by 1,651 automated checks.',
       ],
     },
@@ -46,14 +46,14 @@ module.exports = (kit) => {
   });
 
   s.text('The sales so far show the concept can work. They do not yet show demand that repeats or scales.', { x: 0.75, y: 6.45, w: 11.85, h: 0.4, size: 20, italic: true, color: 'ink', font: '+mj-lt', valign: 'middle', name: 'Conclusion', fx: ['rise', 2.1] });
-  kit.foot(s, 'Evidence ladder: demonstrated, believed, not yet known.', { fx: ['fade', 2.4] });
+  kit.foot(s, 'Evidence ladder: demonstrated, believed, not yet known. Store and item counts: live app, 29 Oct 2026.', { fx: ['fade', 2.4] });
 
   s.notes(
 `WHAT WE HAVE LEARNED (about 1 minute)
 
 Credible and analytical, not promotional. Three columns, three levels of confidence.
 
-Demonstrated: real sales happened through the earlier web app (about ₱23,000, founder-reported); real stores listed their own menus and prices; and the order flow works in the product, which is verified by 1,651 automated checks. (The automated checks prove the software behaves as designed, not that customers want it.)
+Demonstrated: real sales happened through the earlier web app (about ₱23,000, founder-reported); real stores listed their own menus, prices and photos (8 stores and 84 items in the live app on 29 October 2026); and the order flow works in the product, which is verified by 1,651 automated checks. (The automated checks prove the software behaves as designed, not that customers want it.)
 
 Believed possible, the founder's view: residents will choose nearby sellers for everyday food; one platform can serve several kinds of local service; a launch playbook can repeat across communities.
 

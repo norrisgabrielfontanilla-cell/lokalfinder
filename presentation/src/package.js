@@ -33,6 +33,16 @@ function dedupeShapeIds(xml) {
   });
 }
 
+/**
+ * A picture whose object name starts with "Round " is cropped to a rounded rectangle (PowerPoint's Crop to Shape): still one
+ * editable picture, still a small JPEG. pptxgenjs can only make circles, so the geometry is swapped here.
+ */
+function roundPictures(xml) {
+  return xml.replace(/<p:pic>[\s\S]*?<\/p:pic>/g, (pic) => (/<p:cNvPr id="\d+" name="Round [^"]*"/.test(pic)
+    ? pic.replace(/<a:prstGeom prst="rect">\s*<a:avLst\s*\/>\s*<\/a:prstGeom>/, '<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 7000"/></a:avLst></a:prstGeom>')
+    : pic));
+}
+
 /** pptxgenjs names title placeholders "Text 0"; give them the name PowerPoint's Selection Pane should show. */
 function nameTitles(xml) {
   return xml.replace(/(<p:cNvPr id="\d+" name=")[^"]*("><\/p:cNvPr><p:cNvSpPr\/><p:nvPr><p:ph\s+idx="100"\s+type="title")/g, '$1Title$2');
@@ -55,7 +65,7 @@ async function finalize(file, { theme, scenes }) {
     const part = `ppt/slides/slide${sc.index}.xml`;
     const f = zip.file(part);
     if (!f) throw new Error('missing ' + part);
-    const { xml, effects } = motionForSlide(nameTitles(dedupeShapeIds(await f.async('string'))), sc);
+    const { xml, effects } = motionForSlide(nameTitles(dedupeShapeIds(roundPictures(await f.async('string')))), sc);
     zip.file(part, xml);
     summary.push({ slide: sc.index, label: sc.label, transition: sc.transition ? `${sc.transition.kind} ${sc.transition.dur}s` : '-', effects });
   }

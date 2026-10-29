@@ -27,7 +27,7 @@ const OUT = path.join(__dirname, 'Lokal_Finder_Premium_Presentation.pptx');   //
 
   const dir = path.join(__dirname, 'src', 'slides');
   const only = process.argv[2];                         // e.g. "03" builds just that slide for a quick look
-  const files = fs.readdirSync(dir).filter((f) => /^\d\d-.*\.js$/.test(f)).sort();
+  const files = fs.readdirSync(dir).filter((f) => /^\d\d[a-z]?-.*\.js$/.test(f)).sort();
   for (const f of files) {
     if (only && !f.startsWith(only)) continue;
     require(path.join(dir, f))(kit);

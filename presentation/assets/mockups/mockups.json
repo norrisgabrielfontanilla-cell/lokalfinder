@@ -111,6 +111,48 @@
     "phoneW": 662,
     "phoneH": 1426
   },
+  "live-checkout": {
+    "name": "live-checkout",
+    "w": 816,
+    "h": 1579,
+    "cropH": 961,
+    "tallH": 1274,
+    "scrX": 96,
+    "scrY": 138.4,
+    "scrK": 0.8,
+    "padX": 77,
+    "padY": 77,
+    "phoneW": 662,
+    "phoneH": 1426
+  },
+  "live-home": {
+    "name": "live-home",
+    "w": 816,
+    "h": 1579,
+    "cropH": 961,
+    "tallH": 1274,
+    "scrX": 96,
+    "scrY": 138.4,
+    "scrK": 0.8,
+    "padX": 77,
+    "padY": 77,
+    "phoneW": 662,
+    "phoneH": 1426
+  },
+  "live-store": {
+    "name": "live-store",
+    "w": 816,
+    "h": 1579,
+    "cropH": 961,
+    "tallH": 1274,
+    "scrX": 96,
+    "scrY": 138.4,
+    "scrK": 0.8,
+    "padX": 77,
+    "padY": 77,
+    "phoneW": 662,
+    "phoneH": 1426
+  },
   "store": {
     "name": "store",
     "w": 816,

@@ -148,7 +148,7 @@ function makeKit(pres) {
     }
     img(file, o = {}) {
       const name = this._n(o.name, 'Image');
-      this.slide.addImage(stripUndef({ path: asset(file), x: o.x, y: o.y, w: o.w, h: o.h, altText: o.alt || '', objectName: name, flipH: o.flipH, flipV: o.flipV, transparency: o.alpha, rotate: o.rotate }));
+      this.slide.addImage(stripUndef({ path: asset(file), x: o.x, y: o.y, w: o.w, h: o.h, altText: o.alt || '', objectName: name, flipH: o.flipH, flipV: o.flipV, transparency: o.alpha, rotate: o.rotate, rounding: o.circle ? true : undefined }));
       this._fxOpt(name, o);
       return name;
     }

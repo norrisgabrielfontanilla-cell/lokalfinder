@@ -22,7 +22,7 @@ module.exports = (kit) => {
   });
 
   // ── the real home screen, rising from the bottom, with three labels ───────────────────────────
-  const ph = s.phone('home', { x: 7.05, w: 3.2, bottom: H, crop: 'tall', name: 'Phone home', alt: 'The Lokal Finder home screen: a search box, store categories and nearby stores marked Open (real app screen, demo data).', fx: ['rise', 0.3, 0.9] });
+  const ph = s.phone('live-home', { x: 7.05, w: 3.2, bottom: H, crop: 'tall', name: 'Phone home', alt: 'The Lokal Finder home screen: a search box, store categories and nearby stores marked Open (a real screen from the live app).', fx: ['rise', 0.3, 0.9] });
   const marks = [
     { sy: 212, t: 'Search your community', n: 'Search' },
     { sy: 464, t: 'Browse by category', n: 'Category' },
@@ -37,14 +37,14 @@ module.exports = (kit) => {
     s.fx([`Mark ${m.n} dot`], 'fade', 1.5 + i * 0.25, 0.4).fx([`Mark ${m.n} line`], 'wipe', 1.5 + i * 0.25, 0.5).fx([`Mark ${m.n}`], 'fade', 1.7 + i * 0.25);
   });
 
-  kit.foot(s, 'Real app screen (v86 build) with demo data.', { fx: ['fade', 2.4] });
+  kit.foot(s, 'A real screen from the live app (29 Oct 2026).', { w: 5.6, fx: ['fade', 2.4] });
 
   s.notes(
 `THE SOLUTION (about 1 minute)
 
 Lokal Finder is a neighborhood-focused discovery and ordering platform.
 
-For a resident: find a seller nearby, order in a few taps, and follow the order to your door. The screen on the right is the real home screen of the app, captured from the actual build with demo data: search, categories, and nearby stores marked open.
+For a resident: find a seller nearby, order in a few taps, and follow the order to your door. The screen on the right is the real home screen of the live app, captured on 29 October 2026: search, categories, and nearby stores marked open, with the sellers' own logos and photos.
 
 For a seller: a storefront and an order desk in the same app (next slides).
 

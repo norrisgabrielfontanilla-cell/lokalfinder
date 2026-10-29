@@ -1,0 +1,120 @@
+{
+  "from": "../../pamphlet/tools/out-live",
+  "tile": {
+    "w": 480,
+    "h": 408
+  },
+  "photos": [
+    {
+      "src": "stores/vvamv6c6yf4u95vb/items/00-porkchop-salted-egg.jpg",
+      "out": "kings-porkchop-salted-egg",
+      "store": "King’s Wings",
+      "dish": "Porkchop with salted egg",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/adbuns/items/01-torikatsu.jpg",
+      "out": "adbuns-torikatsu",
+      "store": "ADBUNS",
+      "dish": "Torikatsu rice meal",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/vvamv3k1gdhx8omu/items/01-banana-cake.jpg",
+      "out": "liams-banana-cake",
+      "store": "Liam’s Homemade",
+      "dish": "Banana cake",
+      "pos": "attention"
+    },
+    {
+      "src": "stores/adbuns/items/10-beef-tapa-w-egg.jpg",
+      "out": "adbuns-beef-tapa",
+      "store": "ADBUNS",
+      "dish": "Beef tapa with egg",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/vvamv6c6yf4u95vb/items/12-buffalo-tenders-ala-carte.jpg",
+      "out": "kings-buffalo-tenders",
+      "store": "King’s Wings",
+      "dish": "Buffalo chicken tenders",
+      "pos": "attention"
+    },
+    {
+      "src": "stores/v1781761617360/items/00-home-made-cheese-stick-10pcs.jpg",
+      "out": "rouie-cheese-sticks",
+      "store": "Rouie Snacks",
+      "dish": "Home-made cheese sticks",
+      "pos": "attention"
+    },
+    {
+      "src": "stores/vvamv3k1gdhx8omu/items/02-chocolate-crinkles.jpg",
+      "out": "liams-chocolate-crinkles",
+      "store": "Liam’s Homemade",
+      "dish": "Chocolate crinkles",
+      "pos": "attention"
+    },
+    {
+      "src": "stores/adbuns/items/08-nobashi-ebi.jpg",
+      "out": "adbuns-nobashi-ebi",
+      "store": "ADBUNS",
+      "dish": "Breaded shrimp rice meal",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/vvamv6c6yf4u95vb/items/05-chicken-tenders-salted-egg.jpg",
+      "out": "kings-tenders-salted-egg",
+      "store": "King’s Wings",
+      "dish": "Salted egg chicken tenders",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/adbuns/items/00-chicken-fillet-w-egg.jpg",
+      "out": "adbuns-chicken-fillet",
+      "store": "ADBUNS",
+      "dish": "Chicken fillet rice meal",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/vvamv6c6yf4u95vb/items/07-chicken-tenders-buffalo.jpg",
+      "out": "kings-tenders-rice",
+      "store": "King’s Wings",
+      "dish": "Buffalo tenders with rice",
+      "pos": "centre"
+    },
+    {
+      "src": "stores/vvamv3k1gdhx8omu/items/00-cheesy-baked-mac.jpg",
+      "out": "liams-baked-mac",
+      "store": "Liam’s Homemade",
+      "dish": "Cheesy baked mac",
+      "pos": "attention"
+    }
+  ],
+  "logos": [
+    {
+      "src": "stores/adbuns/logo.jpg",
+      "out": "adbuns",
+      "store": "ADBUNS"
+    },
+    {
+      "src": "stores/vvamv6c6yf4u95vb/logo.jpg",
+      "out": "kings-wings",
+      "store": "King’s Wings"
+    },
+    {
+      "src": "stores/vvamukm8cwdk33x4/logo.jpg",
+      "out": "noird-coffee",
+      "store": "Noird. Coffee"
+    },
+    {
+      "src": "stores/vvamv3k1gdhx8omu/logo.jpg",
+      "out": "liams-homemade",
+      "store": "Liam’s Homemade"
+    },
+    {
+      "src": "stores/v1781761617360/logo.jpg",
+      "out": "rouie-snacks",
+      "store": "Rouie Snacks"
+    }
+  ]
+}

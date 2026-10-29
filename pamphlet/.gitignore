@@ -3,4 +3,4 @@ out/
 share-url.txt
 tools/out/
 tools/out-test/
-tools/out-live/
+tools/out-live*/
