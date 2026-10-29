@@ -1,0 +1,24 @@
+{
+  "name": "lokal-finder-presentation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generator for the Lokal Finder business presentation (editable .pptx with native transitions and animations).",
+  "scripts": {
+    "assets": "node tools/capture-screens.js && node tools/make-logo.js && node tools/make-mockups.js && node tools/make-art.js && node tools/make-icons.js",
+    "build": "node build.js",
+    "verify": "python3 tools/verify-package.py Lokal_Finder_Premium_Presentation.pptx --lo"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "sharp": "^0.34.0"
+  },
+  "devDependencies": {
+    "@fontsource/bricolage-grotesque": "^5.2.0",
+    "@fontsource/fraunces": "^5.2.0",
+    "@fontsource/plus-jakarta-sans": "^5.2.0"
+  }
+}
