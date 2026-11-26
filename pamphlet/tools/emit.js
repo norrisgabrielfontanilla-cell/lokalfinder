@@ -29,13 +29,15 @@ async function prepare() {
   // the real phone screens worth sending: the home page and the store pages that have the most photos
   const bestStores = stores.filter((s) => s.items.some((i) => i.photo)).sort((a, b) => b.items.filter((i) => i.photo).length - a.items.filter((i) => i.photo).length).slice(0, 2);
   const wanted = [];
-  const screensOnly = process.env.LF_SEND === 'screens';            // LF_SEND=screens: only the phone screens (every screen that was captured)
+  const mode = process.env.LF_SEND || '';                            // LF_SEND=screens: only the phone screens (every screen that was captured)
+  const screensOnly = mode === 'screens';                           // LF_SEND=all: the menu photos and logos AND every screen (no covers: the store screens show them)
+  const everyScreen = mode === 'screens' || mode === 'all';
   for (const s of screensOnly ? [] : stores) {
     if (s.logo) wanted.push({ name: `stores/${s.id}/logo.jpg`, src: s.logo.file, w: 300, h: 300 });
-    if (s.cover) wanted.push({ name: `stores/${s.id}/cover.jpg`, src: s.cover.file, w: 1200, h: 1200 });
+    if (s.cover && mode !== 'all') wanted.push({ name: `stores/${s.id}/cover.jpg`, src: s.cover.file, w: 1200, h: 1200 });
     for (const i of s.items) if (i.photo) wanted.push({ name: path.posix.join('stores', s.id, 'items', path.posix.basename(i.photo.file).replace(/\.\w+$/, '.jpg')), src: i.photo.file, w: 500, h: 500 });
   }
-  if (screensOnly) {
+  if (everyScreen) {
     for (const f of shots.filter((f) => f.endsWith('.png')).sort()) wanted.push({ name: `screens/${f.replace(/\.png$/, '.jpg')}`, src: `screens/${f}`, screen: true });
   } else {
     if (shots.includes('home.png')) wanted.push({ name: 'screens/home.jpg', src: 'screens/home.png', screen: true });

@@ -141,6 +141,26 @@ async function capture(page, OUT, opts = {}) {
       await shot(page, path.join(S, 'checkout.png'));
     } catch (e) { console.log(`! checkout: ${String(e.message).split('\n')[0]}`); }
   }
+
+  // the store application ("List your store") and the share card with the QR code and the Add-to-Home-Screen steps: both are public
+  // screens of the app; only local state changes (the form is opened, never filled in or sent)
+  try {
+    await page.evaluate(() => { goCust(); openVendorApply(); });
+    await sleep(1300);
+    await shot(page, path.join(S, 'apply.png'));
+    await page.evaluate(() => { const sc = document.querySelector('#p-signup .scrl'); if (sc) sc.scrollTop = 560; });
+    await sleep(500);
+    await shot(page, path.join(S, 'apply-2.png'));
+  } catch (e) { console.log(`! apply: ${String(e.message).split('\n')[0]}`); }
+  try {
+    await page.evaluate(() => { goCust(); const sc = document.querySelector('#p-chome .scrl'); if (sc) sc.scrollTop = 0; openShareQR(); lfA2HS('ios'); });
+    await sleep(1000);
+    await shot(page, path.join(S, 'share-ios.png'));
+    await page.evaluate(() => lfA2HS('android'));
+    await sleep(500);
+    await shot(page, path.join(S, 'share-android.png'));
+    await page.evaluate(() => closeShareQR());
+  } catch (e) { console.log(`! share: ${String(e.message).split('\n')[0]}`); }
   return manifest;
 }
 
@@ -157,7 +177,7 @@ if (require.main === module) {
     const blocked = await readOnly(ctx);                                  // nothing may change in production: only reads go out
     const page = await ctx.newPage();
     await page.addInitScript(() => { try { localStorage.setItem('lf-splash-seen', '1'); } catch (e) { /* storage may be blocked */ } });
-    await page.clock.setFixedTime(new Date('2026-10-29T12:10:00+08:00'));   // lunchtime in Manila, so stores show the state a resident sees at lunch
+    await page.clock.setFixedTime(new Date(process.env.LF_CLOCK || '2026-11-26T12:10:00+08:00'));   // lunchtime in Manila, so stores show the state a resident sees at lunch
     await page.goto(SITE, { waitUntil: 'domcontentloaded' });
     try { await capture(page, OUT, { seeds, stores: 4 }); } finally {
       console.log('\nrequests that would have written (all aborted):', JSON.stringify(blocked));
