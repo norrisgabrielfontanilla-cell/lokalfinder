@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lokal Finder: five Instagram posters (1080 x 1350)</title>
+<!--
+  Five different Instagram posters, 4:5 (1080 x 1350), drawn from the CURRENT live app (screens and menu photos read on 26 Nov 2026,
+  read-only; see README.md). Customer- and seller-facing only: no sales, traction, business model or roadmap.
+  Every claim is something the app does today. Brand: the product's own colours, Fraunces + Plus Jakarta Sans.
+  Text stays inside x 84-996 so Instagram's 3:4 profile-grid crop (34 px off each side) never touches it.
+  Copy: "Fresh from your neighbors" is the app's own food tagline (index.html, MARKETPLACES.food.tagline); the four steps are the landing
+  page's Discover / Choose / Order / Receive; the seller steps are the live "List your store" screen; the phone-setup lines are the app's own share sheet.
+-->
+<style>
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:600;src:url('../pamphlet/assets/fonts/fraunces-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:italic;font-weight:600;src:url('../pamphlet/assets/fonts/fraunces-latin-600-italic.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:700;src:url('../pamphlet/assets/fonts/fraunces-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:500;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:600;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:700;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Plus Jakarta Sans';font-weight:800;src:url('../pamphlet/assets/fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2')}
+:root{--night:#06120C;--forest:#0F4A32;--green:#0E8A5A;--mint:#12B76A;--mintl:#3FD39B;--amber:#F59E0B;--gold:#F5C842;--mist:#F0F7F3;--tint:#E6F7EF;--ink:#0D2B1A;--sage:#6B8F7A}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#222;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none}
+body{display:flex;flex-direction:column;gap:40px;align-items:center;padding:40px 0}
+.poster{position:relative;width:1080px;height:1350px;overflow:hidden;flex:none}
+.poster *{position:static}
+.poster .a{position:absolute}
+.h1{position:absolute;font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.014em;line-height:1.02}
+.h1 .em,.em{font-style:italic}
+.sub{position:absolute;font-weight:600;line-height:1.28}
+.pill{position:absolute;display:inline-flex;align-items:center;gap:14px;padding:13px 28px;border-radius:999px;font-weight:700;font-size:30px;line-height:1;white-space:nowrap}
+.eyebrow{position:absolute;font-weight:800;font-size:28px;letter-spacing:.16em;line-height:1;white-space:nowrap}
+.dot{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--mintl);box-shadow:0 0 0 6px rgba(63,211,155,.25)}
+.tick{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;flex:none}
+.tick svg{width:26px;height:26px}
+ul.list{position:absolute;list-style:none;display:flex;flex-direction:column}
+ul.list li{display:flex;align-items:center;gap:20px;font-weight:700;line-height:1.18}
+.phone{--pw:560px;--bz:calc(var(--pw)*0.026);position:absolute;width:var(--pw);height:calc((var(--pw) - 2*var(--bz))*1688/780 + 2*var(--bz));border-radius:calc(var(--pw)*.14);background:#0b100e;box-shadow:inset 0 0 0 3px #2c3e35,0 0 0 2px #04080a,0 50px 110px rgba(0,0,0,.5),0 0 150px rgba(18,183,106,.16)}
+.phone .scr{position:absolute;left:var(--bz);top:var(--bz);right:var(--bz);bottom:var(--bz);border-radius:calc(var(--pw)*.115);overflow:hidden;background:#fff}
+.phone .scr img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block}
+.crop{position:relative;overflow:hidden;background:#fff}
+.crop img{position:absolute;left:0;display:block}
+.logo{position:absolute}
+/* no one-word last lines: lines are balanced wherever a text wraps */
+.p4 .sub,.p4 .step b,.p4 .step i,.p5 .sub,.p5 ul.list li>span:last-child,.p5 .how p,.p4 .badge{text-wrap:balance}
+
+/* ───────── 1  Everything local. One place. (dark, awareness) */
+.p1{background:var(--night);color:#fff}
+.p1 .art{position:absolute;height:1350px;left:-1230px;top:0}
+.p1 .scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,18,12,.92) 0%,rgba(6,18,12,.6) 46%,rgba(6,18,12,.08) 100%),linear-gradient(180deg,rgba(6,18,12,.78) 0%,rgba(6,18,12,0) 38%,rgba(6,18,12,.6) 100%)}
+.p1 .pill{background:rgba(63,211,155,.14);border:2px solid rgba(63,211,155,.55);color:#BFF3DE}
+.p1 .h1 .l1{display:block;font-size:112px;color:#fff}
+.p1 .h1 .l2{display:block;font-size:116px;color:var(--mintl);margin-top:0}
+.p1 .sub{font-size:38px;color:rgba(255,255,255,.9)}
+.p1 ul.list li{font-size:34px;color:#fff;white-space:nowrap}
+.p1 .tick{background:var(--mintl)}
+.p1 .cta-note{position:absolute;font-weight:600;font-size:30px;color:rgba(255,255,255,.78)}
+.p1 .cta-pill{background:linear-gradient(180deg,#46dba5,#1fbf80);color:#06210F;font-size:34px;font-weight:800;padding:20px 34px;box-shadow:0 18px 50px rgba(18,183,106,.4)}
+
+/* ───────── 2  From craving to doorstep (light, how it works) */
+.p2{background:linear-gradient(180deg,#F8FCFA 0%,#E4F3EA 100%);color:var(--ink)}
+.p2 .eyebrow{color:var(--green)}
+.p2 .h1{font-size:72px;color:var(--ink)}
+.p2 .h1 .em{color:var(--green)}
+.p2 .card{position:absolute;width:444px;height:404px;border-radius:38px;background:#fff;box-shadow:0 20px 50px rgba(15,74,50,.12),0 0 0 2px rgba(14,138,90,.1)}
+.p2 .card .crop{position:absolute;left:12px;top:12px;width:420px;height:226px;border-radius:28px;box-shadow:inset 0 0 0 2px rgba(14,138,90,.12)}
+.p2 .card .ttl{position:absolute;left:28px;top:252px;display:flex;align-items:center;gap:16px;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:42px;line-height:1}
+.p2 .card .n{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;font-family:'Plus Jakarta Sans';font-weight:800;font-size:28px}
+.p2 .card .txt{position:absolute;left:28px;right:24px;top:320px;font-weight:600;font-size:28px;line-height:1.24;color:#3d5b4b;text-wrap:balance}
+.p2 .tag{position:absolute;left:28px;top:28px;padding:7px 14px;border-radius:999px;background:rgba(13,43,26,.82);color:#fff;font-weight:800;font-size:19px;letter-spacing:.1em;line-height:1}
+.p2 .foot{position:absolute;left:84px;right:84px;top:1216px;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:30px;color:var(--green)}
+.p2 .foot .go{background:var(--green);color:#fff;padding:14px 30px;border-radius:999px;font-weight:800;line-height:1.1}
+
+/* ───────── 3  Real food from real neighbors (photos) */
+.p3{background:radial-gradient(ellipse at 20% 0%,#14603f 0%,#0b2d20 45%,#06120C 100%);color:#fff}
+.p3 .h1{font-size:92px;color:#fff}
+.p3 .h1 .em{color:var(--mintl)}
+.p3 .grid{position:absolute;left:88px;top:396px;width:904px;display:grid;grid-template-columns:repeat(3,292px);grid-auto-rows:232px;gap:14px}
+.p3 .tile{position:relative;overflow:hidden;border-radius:28px;background:#12261c;box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.1)}
+.p3 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.p3 .tile span{position:absolute;left:14px;bottom:14px;padding:9px 16px;border-radius:999px;background:rgba(6,18,12,.78);font-weight:800;font-size:25px;line-height:1;white-space:nowrap}
+.p3 .lab{position:absolute;font-weight:800;font-size:26px;letter-spacing:.14em;color:var(--mintl);white-space:nowrap}
+.p3 .logos{position:absolute;display:flex;gap:12px}
+.p3 .logos img{width:64px;height:64px;border-radius:19px;object-fit:cover;box-shadow:0 0 0 3px rgba(255,255,255,.22)}
+.p3 .go{position:absolute;background:linear-gradient(180deg,#46dba5,#1fbf80);color:#06210F;padding:17px 26px;border-radius:999px;font-weight:800;font-size:27px;line-height:1;box-shadow:0 16px 44px rgba(18,183,106,.4);white-space:nowrap}
+
+/* ───────── 4  Selling food? List your store (sellers) */
+.p4{background:radial-gradient(ellipse at 88% 8%,rgba(245,158,11,.30) 0%,rgba(245,158,11,0) 46%),linear-gradient(180deg,#0F4A32 0%,#08241a 100%);color:#fff}
+.p4 .eyebrow{color:var(--gold);border:2px solid rgba(245,200,66,.6);padding:12px 22px;border-radius:999px;font-size:26px}
+.p4 .h1{font-size:94px}
+.p4 .h1 .em{color:var(--gold)}
+.p4 .sub{font-size:36px;color:rgba(255,255,255,.88)}
+.p4 .steps{position:absolute;left:84px;top:520px;width:452px;display:flex;flex-direction:column;gap:28px}
+.p4 .step{display:flex;gap:22px;align-items:flex-start}
+.p4 .step .n{flex:none;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;background:var(--amber);color:#2b1a00;font-weight:800;font-size:30px;margin-top:2px}
+.p4 .step b{display:block;font-weight:800;font-size:34px;line-height:1.14;color:#fff}
+.p4 .step i{display:block;font-style:normal;font-weight:600;font-size:27px;line-height:1.28;color:rgba(255,255,255,.76);margin-top:6px}
+.p4 .badge{position:absolute;left:84px;top:1018px;width:452px;padding:20px 24px;border-radius:26px;background:rgba(245,158,11,.14);border:2px solid rgba(245,200,66,.55);font-weight:700;font-size:27px;line-height:1.28;color:#FFE9A8}
+.p4 .go{position:absolute;left:84px;top:1196px;background:linear-gradient(180deg,#FFD65C,#F5B52B);color:#2b1a00;padding:18px 30px;border-radius:999px;font-weight:800;font-size:31px;line-height:1;white-space:nowrap;box-shadow:0 16px 44px rgba(245,158,11,.32)}
+
+/* ───────── 5  No account. No app store. (bright, easy to start) */
+.p5{background:linear-gradient(160deg,#0E8A5A 0%,#12B76A 100%);color:#fff}
+.p5 .rings{position:absolute;right:-300px;top:-260px;width:1100px;opacity:.5}
+.p5 .brandbar{position:absolute;left:84px;top:72px;width:290px;height:104px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(6,40,24,.25)}
+.p5 .brandbar img{width:236px;display:block}
+.p5 .h1{font-size:104px;color:#fff}
+.p5 .h1 .em{color:#FFE9A8}
+.p5 .sub{font-size:38px;color:rgba(255,255,255,.95)}
+.p5 ul.list li{font-size:35px;color:#fff;align-items:flex-start}
+.p5 .tick{background:#fff;margin-top:-2px}
+.p5 .qrcard{position:absolute;left:640px;top:594px;width:356px;padding:24px 26px 22px;border-radius:38px;background:#fff;color:var(--ink);text-align:center;box-shadow:0 26px 60px rgba(6,40,24,.32)}
+.p5 .qrcard img{width:300px;height:300px;display:block;margin:0 auto}
+.p5 .qrcard b{display:block;font-weight:800;font-size:30px;margin-top:12px;line-height:1.1}
+.p5 .qrcard u{display:block;text-decoration:none;font-weight:600;font-size:23px;color:var(--sage);margin-top:8px;line-height:1.2}
+.p5 .how{position:absolute;top:1052px;width:444px;height:172px;border-radius:30px;background:rgba(6,40,24,.28);border:2px solid rgba(255,255,255,.35);padding:20px 26px}
+.p5 .how svg{display:inline-block;vertical-align:-5px;width:12px;height:26px;margin:0 1px}
+.p5 .how h3{font-weight:800;font-size:29px;line-height:1;letter-spacing:.04em}
+.p5 .how p{font-weight:600;font-size:27px;line-height:1.26;margin-top:12px;color:rgba(255,255,255,.96)}
+.p5 .how p b{font-weight:800;color:#fff}
+.p5 .to{position:absolute;left:84px;top:1250px;font-weight:700;font-size:26px;line-height:1.2;color:rgba(255,255,255,.92);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ═════════════ 1  Everything local. One place. -->
+<section class="poster p1" id="p1" data-slug="fresh-from-neighbors">
+  <img class="art" src="../presentation/assets/art/cover-night.jpg" alt="">
+  <div class="scrim"></div>
+  <img class="logo" src="../presentation/assets/brand/logo-full-dark.png" style="left:84px;top:78px;width:290px" alt="LokalFinder">
+  <div class="pill" style="left:84px;top:196px" data-safe="p1-pill"><span class="dot"></span>Now open at GRASS Residences</div>
+  <h1 class="h1" style="left:84px;top:268px;width:912px" data-safe="p1-h1"><span class="l1">Fresh from</span><span class="l2 em">your neighbors.</span></h1>
+  <p class="sub" style="left:84px;top:540px;width:912px" data-safe="p1-sub">The stores in your community,<br>all in one place.</p>
+  <ul class="list" style="left:84px;top:772px;width:440px;gap:38px" data-safe="p1-list">
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#06210F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>See who’s open now</span></li>
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#06210F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Real menus &amp; prices</span></li>
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#06210F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Order to your unit</span></li>
+  </ul>
+  <div class="phone" style="--pw:500px;left:548px;top:676px;transform:rotate(3deg);transform-origin:50% 0"><div class="scr"><img src="assets/live/screens/home.jpg" alt="The Lokal Finder home screen (a real screen from the live app)"></div></div>
+  <div class="cta-note" style="left:84px;top:1148px" data-safe="p1-note">Open it in your browser</div>
+  <div class="pill cta-pill" style="left:84px;top:1200px" data-safe="p1-cta">Link in bio <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#06210F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+</section>
+
+<!-- ═════════════ 2  From craving to doorstep in four steps -->
+<section class="poster p2" id="p2" data-slug="four-steps">
+  <img class="logo" src="../presentation/assets/brand/logo-full-light.png" style="left:84px;top:76px;width:264px" alt="LokalFinder">
+  <div class="eyebrow" style="right:84px;top:100px" data-safe="p2-eyebrow">HOW IT WORKS</div>
+  <h1 class="h1" style="left:84px;top:172px;width:912px" data-safe="p2-h1">From craving to <span class="em">doorstep</span><br>in four steps.</h1>
+
+  <div class="card" style="left:84px;top:360px" data-safe="p2-c1">
+    <div class="crop" data-src="assets/live/screens/home.jpg" data-y="826" data-w="380" data-x="20" data-bg="#F1F7F3"></div>
+    <div class="ttl"><span class="n">1</span>Discover</div>
+    <p class="txt">Browse nearby stores. See who’s open.</p>
+  </div>
+  <div class="card" style="left:552px;top:360px" data-safe="p2-c2">
+    <div class="crop" data-src="assets/live/screens/store-vvamv6c6yf4u95vb.jpg" data-y="866" data-w="420"></div>
+    <div class="ttl"><span class="n">2</span>Choose</div>
+    <p class="txt">Open a store to see its full menu and prices.</p>
+  </div>
+  <div class="card" style="left:84px;top:784px" data-safe="p2-c3">
+    <div class="crop" data-src="assets/live/screens/checkout.jpg" data-y="740" data-w="420"></div>
+    <div class="ttl"><span class="n">3</span>Order</div>
+    <p class="txt">Add your unit and number. Pay cash or GCash.</p>
+  </div>
+  <div class="card" style="left:552px;top:784px" data-safe="p2-c4">
+    <div class="crop" data-src="assets/sample/tracker-ready.png" data-y="52" data-w="380" data-x="20"></div>
+    <span class="tag">SAMPLE</span>
+    <div class="ttl"><span class="n">4</span>Receive</div>
+    <p class="txt">Follow it live. The seller brings it to your unit.</p>
+  </div>
+  <div class="foot" data-safe="p2-foot"><span>No account needed</span><span class="go">Try it · link in bio</span></div>
+</section>
+
+<!-- ═════════════ 3  Real food from real neighbors -->
+<section class="poster p3" id="p3" data-slug="real-food">
+  <img class="logo" src="../presentation/assets/brand/logo-full-dark.png" style="left:84px;top:76px;width:250px" alt="LokalFinder">
+  <h1 class="h1" style="left:84px;top:178px;width:912px" data-safe="p3-h1">Real food from<br><span class="em">real neighbors.</span></h1>
+  <div class="grid">
+    <div class="tile"><img src="assets/live/photos/adbuns-torikatsu.jpg" alt=""><span data-safe="p3-t1">ADBUNS</span></div>
+    <div class="tile"><img src="assets/live/photos/kings-porkchop-salted-egg.jpg" alt=""><span data-safe="p3-t2">King’s Wings</span></div>
+    <div class="tile"><img src="assets/live/photos/adbuns-nobashi-ebi.jpg" alt=""><span data-safe="p3-t3">ADBUNS</span></div>
+    <div class="tile"><img src="assets/live/photos/liams-banana-cake.jpg" alt=""><span data-safe="p3-t4">Liam’s Homemade</span></div>
+    <div class="tile"><img src="assets/live/photos/adbuns-beef-tapa.jpg" alt=""><span data-safe="p3-t5">ADBUNS</span></div>
+    <div class="tile"><img src="assets/live/photos/kings-buffalo-tenders.jpg" alt=""><span data-safe="p3-t6">King’s Wings</span></div>
+    <div class="tile"><img src="assets/live/photos/adbuns-chicken-shots.jpg" alt=""><span data-safe="p3-t7">ADBUNS</span></div>
+    <div class="tile"><img src="assets/live/photos/liams-baked-mac.jpg" alt=""><span data-safe="p3-t8">Liam’s Homemade</span></div>
+    <div class="tile"><img src="assets/live/photos/rouie-cheese-sticks.jpg" alt=""><span data-safe="p3-t9">Rouie Snacks</span></div>
+  </div>
+  <div class="lab" style="left:88px;top:1150px" data-safe="p3-lab">SELLING ON LOKAL FINDER</div>
+  <div class="logos" style="left:88px;top:1196px" data-safe="p3-logos">
+    <img src="assets/live/logos/adbuns.jpg" alt=""><img src="assets/live/logos/kings-wings.jpg" alt=""><img src="assets/live/logos/liams-homemade.jpg" alt=""><img src="assets/live/logos/rouie-snacks.jpg" alt=""><img src="assets/live/logos/noird-coffee.jpg" alt="">
+  </div>
+  <div class="go" style="right:88px;top:1202px" data-safe="p3-go">See who’s open · link in bio</div>
+</section>
+
+<!-- ═════════════ 4  Selling food? List your store -->
+<section class="poster p4" id="p4" data-slug="sell-with-us">
+  <div class="eyebrow" style="left:84px;top:84px" data-safe="p4-eyebrow">FOR SELLERS</div>
+  <h1 class="h1" style="left:84px;top:178px;width:912px" data-safe="p4-h1">Selling food?<br><span class="em">List your store.</span></h1>
+  <p class="sub" style="left:84px;top:384px;width:600px" data-safe="p4-sub">Reach the neighbors already in your community.</p>
+  <div class="steps" data-safe="p4-steps">
+    <div class="step"><span class="n">1</span><div><b>Tap Vendor, then “List your store”</b></div></div>
+    <div class="step"><span class="n">2</span><div><b>Add your store details</b><i>Choose your own PIN.</i></div></div>
+    <div class="step"><span class="n">3</span><div><b>We review it</b><i>You get a message on your number.</i></div></div>
+    <div class="step"><span class="n">4</span><div><b>Sign in and add your menu</b></div></div>
+  </div>
+  <div class="phone" style="--pw:410px;left:566px;top:500px;transform:rotate(-3deg);transform-origin:50% 0"><div class="scr"><img src="assets/live/screens/apply.jpg" alt="The Lokal Finder store application (a real screen from the live app)"></div></div>
+  <div class="badge" data-safe="p4-badge">Your store stays hidden from customers until it’s approved.</div>
+  <div class="go" data-safe="p4-go">Apply · link in bio</div>
+</section>
+
+<!-- ═════════════ 5  No account. No app store. -->
+<section class="poster p5" id="p5" data-slug="no-account">
+  <img class="rings" src="../presentation/assets/art/rings-mint.png" alt="">
+  <div class="brandbar"><img src="../presentation/assets/brand/logo-full-light.png" alt="LokalFinder"></div>
+  <h1 class="h1" style="left:84px;top:214px;width:912px" data-safe="p5-h1">No account.<br><span class="em">No app store.</span></h1>
+  <p class="sub" style="left:84px;top:462px;width:700px" data-safe="p5-sub">Open Lokal Finder in your browser and order from your neighbors.</p>
+  <ul class="list" style="left:84px;top:652px;width:520px;gap:30px" data-safe="p5-list">
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>No account needed</span></li>
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Pay the seller: cash or GCash</span></li>
+    <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#0E8A5A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Add it to your Home Screen like an app</span></li>
+  </ul>
+  <div class="qrcard" data-safe="p5-qr"><img src="assets/qr.svg" alt="QR code to open Lokal Finder"><b>Scan to open</b><u>or use the link in bio</u></div>
+  <div class="how" style="left:84px" data-safe="p5-ios"><h3>iPHONE</h3><p>Open it in <b>Safari</b>, tap <b>Share</b>, then <b>Add to Home Screen</b>.</p></div>
+  <div class="how" style="left:552px" data-safe="p5-android"><h3>ANDROID</h3><p>Open it in <b>Chrome</b>, tap <svg viewBox="0 0 8 24" role="img" aria-label="the three-dot menu"><circle cx="4" cy="4" r="3" fill="#fff"/><circle cx="4" cy="12" r="3" fill="#fff"/><circle cx="4" cy="20" r="3" fill="#fff"/></svg>, then <b>Add to Home screen</b>.</p></div>
+  <div class="to" data-safe="p5-foot">Now open at GRASS Residences, Quezon City · link in bio</div>
+</section>
+
+<script>
+// crops of real phone screens: a window of the screenshot (780 px wide), scaled to the window's width, starting at source row data-y
+document.querySelectorAll('.crop').forEach((c) => {
+  const w = +c.dataset.w, k = w / 780, i = document.createElement('img');
+  i.src = c.dataset.src; i.style.width = w + 'px'; i.style.top = (-(+c.dataset.y) * k) + 'px'; i.style.left = (+c.dataset.x || 0) + 'px'; if (c.dataset.bg) c.style.background = c.dataset.bg;
+  c.appendChild(i);
+});
+window.__ready = (async () => {
+  await Promise.all(['600 80px Fraunces', 'italic 600 80px Fraunces', '700 80px Fraunces', '500 30px "Plus Jakarta Sans"', '600 30px "Plus Jakarta Sans"', '700 30px "Plus Jakarta Sans"', '800 30px "Plus Jakarta Sans"'].map((f) => document.fonts.load(f, 'AaBb 0123 ₱⋮’“”')));
+  await document.fonts.ready;
+  await Promise.all([...document.images].map((i) => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
+  return true;
+})();
+</script>
+</body>
+</html>
